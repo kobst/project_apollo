@@ -1,0 +1,24 @@
+{
+  "name": "project-apollo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Screenplay knowledge graph system for AI-assisted narrative development",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "keywords": [
+    "screenplay",
+    "knowledge-graph",
+    "narrative",
+    "ai-assisted"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

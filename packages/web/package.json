@@ -1,0 +1,15 @@
+{
+  "name": "@apollo/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Web frontend for Project Apollo (placeholder)",
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'Frontend not yet implemented'",
+    "build": "echo 'Frontend not yet implemented'",
+    "typecheck": "echo 'Frontend not yet implemented'"
+  },
+  "dependencies": {
+    "@apollo/core": "*"
+  }
+}
