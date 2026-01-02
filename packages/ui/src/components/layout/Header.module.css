@@ -1,0 +1,19 @@
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: #16162a;
+  border-bottom: 1px solid #3a3a5a;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #888;
+}

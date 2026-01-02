@@ -13,3 +13,9 @@ export { createDiffHandler } from './diff.js';
 export { createBranchHandler, createListBranchesHandler } from './branch.js';
 export { createCheckoutHandler } from './checkout.js';
 export { createLogHandler } from './log.js';
+export { createListStoriesHandler } from './list.js';
+export {
+  createListNodesHandler,
+  createGetNodeHandler,
+  createNodeRelationsHandler,
+} from './nodes.js';

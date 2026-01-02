@@ -1,0 +1,157 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  background: #1e1e2e;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: #666;
+  text-align: center;
+}
+
+.empty h2 {
+  font-size: 20px;
+  margin-bottom: 8px;
+  color: #888;
+}
+
+.empty p {
+  font-size: 14px;
+}
+
+.header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #2a2a4a;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.listPane {
+  width: 280px;
+  border-right: 1px solid #2a2a4a;
+  overflow-y: auto;
+  background: #1a1a2e;
+}
+
+.detailPane {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  min-width: 300px;
+}
+
+.clusterPane {
+  width: 360px;
+  border-left: 1px solid #2a2a4a;
+  overflow-y: auto;
+  background: #1a1a2e;
+}
+
+.loading,
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #666;
+  font-size: 14px;
+}
+
+.error {
+  color: #e57373;
+}
+
+.noSelection,
+.noCluster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #666;
+  font-size: 14px;
+  text-align: center;
+  padding: 20px;
+}
+
+.clusterContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.clusterHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.clusterHeader h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ccc;
+  margin: 0;
+}
+
+.rejectBtn {
+  padding: 6px 12px;
+  border: 1px solid #4a4a6a;
+  border-radius: 4px;
+  background: transparent;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.rejectBtn:hover {
+  background: #2a2a4a;
+  color: #ccc;
+}
+
+.previewSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #2a2a4a;
+}
+
+.acceptBtn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  background: #4a7c59;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.acceptBtn:hover:not(:disabled) {
+  background: #5a8c69;
+}
+
+.acceptBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -1,0 +1,34 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main {
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  flex: 1;
+  gap: 1px;
+  background: #2a2a4a;
+}
+
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: #666;
+  text-align: center;
+  background: #1e1e2e;
+}
+
+.placeholder h2 {
+  font-size: 24px;
+  margin-bottom: 8px;
+  color: #888;
+}
+
+.placeholder p {
+  font-size: 14px;
+}

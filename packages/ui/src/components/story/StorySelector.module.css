@@ -1,0 +1,97 @@
+.container {
+  padding: 12px 16px;
+  background: #1e1e36;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #888;
+}
+
+.newBtn {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid #4a4a6a;
+  border-radius: 4px;
+  color: #aaa;
+  cursor: pointer;
+}
+
+.newBtn:hover {
+  background: #2a2a4a;
+  color: #fff;
+}
+
+.select {
+  width: 100%;
+  padding: 8px 12px;
+  background: #2a2a4a;
+  border: 1px solid #3a3a5a;
+  border-radius: 4px;
+  color: #eee;
+  font-size: 14px;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #5a5a8a;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 8px 12px;
+  background: #2a2a4a;
+  border: 1px solid #3a3a5a;
+  border-radius: 4px;
+  color: #eee;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #5a5a8a;
+}
+
+.createBtn {
+  padding: 8px 16px;
+  background: #4a7c59;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.createBtn:hover:not(:disabled) {
+  background: #5a8c69;
+}
+
+.createBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -1,9 +1,12 @@
 /**
- * POST /stories/:id/clusters - Generate move cluster for an open question
+ * POST /stories/:id/clusters - Generate move cluster
+ * Can be triggered by:
+ * - oqId: Generate cluster for a specific open question
+ * - scopeNodeId: Generate cluster for OQs targeting a specific node
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { deriveOpenQuestions, generateClusterForQuestion } from '@apollo/core';
+import { deriveOpenQuestions, generateClusterForQuestion, getNode } from '@apollo/core';
 import type { OQPhase } from '@apollo/core';
 import type { StorageContext } from '../config.js';
 import { loadVersionedStateById, deserializeGraph } from '../storage.js';
@@ -24,10 +27,11 @@ export function createClustersHandler(ctx: StorageContext) {
   ): Promise<void> => {
     try {
       const { id } = req.params;
-      const { oqId, count = 4, seed: requestedSeed } = req.body;
+      const { oqId, scopeNodeId, count = 4, seed: requestedSeed } = req.body;
 
-      if (!oqId) {
-        throw new BadRequestError('oqId is required');
+      // Require either oqId or scopeNodeId
+      if (!oqId && !scopeNodeId) {
+        throw new BadRequestError('Either oqId or scopeNodeId is required');
       }
 
       if (count < 1 || count > 12) {
@@ -51,13 +55,58 @@ export function createClustersHandler(ctx: StorageContext) {
       const phase: OQPhase = state.metadata?.phase ?? 'OUTLINE';
       const questions = deriveOpenQuestions(graph, phase);
 
-      // Find the question
-      const oq = questions.find((q) => q.id === oqId);
-      if (!oq) {
-        throw new NotFoundError(
-          `Open question "${oqId}"`,
-          'Use GET /stories/:id/open-questions to see available questions'
+      // Find the question to use
+      let oq: typeof questions[number] | undefined;
+      let seedKey: string = '';
+
+      if (oqId) {
+        // Direct OQ selection
+        oq = questions.find((q) => q.id === oqId);
+        if (!oq) {
+          throw new NotFoundError(
+            `Open question "${oqId}"`,
+            'Use GET /stories/:id/open-questions to see available questions'
+          );
+        }
+        seedKey = oqId;
+      } else if (scopeNodeId) {
+        // Scoped generation - find OQs targeting this node
+        const node = getNode(graph, scopeNodeId);
+        if (!node) {
+          throw new NotFoundError(
+            `Node "${scopeNodeId}"`,
+            'Use GET /stories/:id/nodes to see available nodes'
+          );
+        }
+
+        // Find questions that target this node
+        const scopedQuestions = questions.filter(
+          (q) => q.target_node_id === scopeNodeId
         );
+
+        if (scopedQuestions.length === 0) {
+          throw new BadRequestError(
+            `No open questions target node "${scopeNodeId}". ` +
+            'Try selecting a different node or use Contract view to work with general OQs.'
+          );
+        }
+
+        // Use the highest priority question (BLOCKING > IMPORTANT > SOFT)
+        const priorityOrder = ['BLOCKING', 'IMPORTANT', 'SOFT'];
+        scopedQuestions.sort(
+          (a, b) =>
+            priorityOrder.indexOf(a.severity) - priorityOrder.indexOf(b.severity)
+        );
+        oq = scopedQuestions[0];
+        seedKey = `scope_${scopeNodeId}`;
+      } else {
+        // This shouldn't happen due to earlier check
+        throw new BadRequestError('Either oqId or scopeNodeId is required');
+      }
+
+      // Type guard - oq should be defined after the above logic
+      if (!oq) {
+        throw new BadRequestError('Failed to find a valid open question');
       }
 
       // Determine seed
@@ -66,7 +115,7 @@ export function createClustersHandler(ctx: StorageContext) {
         seed = requestedSeed;
       } else {
         // Get last seed and increment for different results
-        const lastSeed = await getLastSeedById(id, oqId, ctx);
+        const lastSeed = await getLastSeedById(id, seedKey, ctx);
         seed = lastSeed ? lastSeed + 1 : Date.now();
       }
 
@@ -82,7 +131,7 @@ export function createClustersHandler(ctx: StorageContext) {
       );
 
       // Save seed
-      await setLastSeedById(id, oqId, seed, ctx);
+      await setLastSeedById(id, seedKey, seed, ctx);
 
       // Save to session
       await addClusterById(id, clusterResult, ctx);

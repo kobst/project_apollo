@@ -1,0 +1,94 @@
+.section {
+  margin-top: 8px;
+}
+
+.sectionTitle {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  margin-bottom: 4px;
+  background: #2a2a4a;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.badge {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.added .badge {
+  background: rgba(129, 199, 132, 0.2);
+  color: #81c784;
+}
+
+.removed .badge {
+  background: rgba(229, 115, 115, 0.2);
+  color: #e57373;
+}
+
+.modified .badge {
+  background: rgba(100, 181, 246, 0.2);
+  color: #64b5f6;
+}
+
+.type {
+  color: #888;
+  font-size: 11px;
+}
+
+.label {
+  color: #ccc;
+}
+
+.edge {
+  color: #aaa;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.changes {
+  width: 100%;
+  margin-top: 6px;
+  padding-left: 22px;
+}
+
+.change {
+  display: flex;
+  gap: 6px;
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+.field {
+  color: #666;
+}
+
+.oldValue {
+  color: #e57373;
+  text-decoration: line-through;
+}
+
+.arrow {
+  color: #666;
+}
+
+.newValue {
+  color: #81c784;
+}

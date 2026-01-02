@@ -1,0 +1,75 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #666;
+  margin: 0;
+}
+
+.empty {
+  font-size: 13px;
+  color: #666;
+  font-style: italic;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.groupLabel {
+  font-size: 11px;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.edges {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.edge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #2a2a4a;
+  border-radius: 4px;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.edgeType {
+  font-family: monospace;
+  color: #64b5f6;
+  background: rgba(100, 181, 246, 0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.arrow {
+  color: #666;
+}
+
+.edgeTarget,
+.edgeSource {
+  color: #ccc;
+  font-weight: 500;
+}
+
+.targetType,
+.sourceType {
+  font-size: 10px;
+  color: #888;
+  background: #3a3a5a;
+  padding: 2px 5px;
+  border-radius: 3px;
+}

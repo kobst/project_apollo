@@ -1,13 +1,8 @@
 /**
- * API request and response types
+ * API response types (mirrored from @apollo/api)
  */
 
-import type { OQPhase, OQSeverity, OQDomain } from '@apollo/core';
-
-// =============================================================================
-// Response Types
-// =============================================================================
-
+// Response wrapper
 export interface APIResponse<T = unknown> {
   success: boolean;
   data?: T;
@@ -15,23 +10,12 @@ export interface APIResponse<T = unknown> {
   suggestion?: string;
 }
 
-export interface ValidationErrorDetail {
-  code: string;
-  node_id?: string | undefined;
-  field?: string | undefined;
-  suggested_fix?: string | undefined;
-}
+// Phases, severities, domains
+export type OQPhase = 'OUTLINE' | 'DRAFT' | 'REVISION';
+export type OQSeverity = 'BLOCKING' | 'IMPORTANT' | 'SOFT';
+export type OQDomain = 'STRUCTURE' | 'SCENE' | 'CHARACTER' | 'CONFLICT' | 'THEME_MOTIF';
 
-export interface ValidationErrorResponse {
-  success: false;
-  error: string;
-  validationErrors: ValidationErrorDetail[];
-}
-
-// =============================================================================
-// Status Response (Bootstrap Endpoint)
-// =============================================================================
-
+// Status (bootstrap endpoint)
 export interface StoryStats {
   scenes: number;
   beats: number;
@@ -50,8 +34,8 @@ export interface OpenQuestionSummary {
 
 export interface StatusData {
   storyId: string;
-  name?: string | undefined;
-  logline?: string | undefined;
+  name?: string;
+  logline?: string;
   phase: OQPhase;
   currentVersionId: string;
   currentBranch: string | null;
@@ -60,17 +44,14 @@ export interface StatusData {
   openQuestions: OpenQuestionSummary;
 }
 
-// =============================================================================
-// Open Questions Response
-// =============================================================================
-
+// Open Questions
 export interface OpenQuestionData {
   id: string;
   message: string;
   phase: OQPhase;
   severity: OQSeverity;
   domain: OQDomain;
-  target_node_id?: string | undefined;
+  target_node_id?: string;
 }
 
 export interface OpenQuestionsData {
@@ -78,10 +59,7 @@ export interface OpenQuestionsData {
   phase: OQPhase;
 }
 
-// =============================================================================
-// Cluster Response
-// =============================================================================
-
+// Clusters and Moves
 export interface MoveData {
   id: string;
   title: string;
@@ -98,10 +76,7 @@ export interface ClusterData {
   moves: MoveData[];
 }
 
-// =============================================================================
-// Preview Response
-// =============================================================================
-
+// Preview
 export interface PatchOpData {
   op: string;
   type?: string;
@@ -112,6 +87,13 @@ export interface PatchOpData {
     source: string;
     target: string;
   };
+}
+
+export interface ValidationErrorDetail {
+  code: string;
+  node_id?: string;
+  field?: string;
+  suggested_fix?: string;
 }
 
 export interface PreviewData {
@@ -127,14 +109,11 @@ export interface PreviewData {
   };
 }
 
-// =============================================================================
-// Diff Response
-// =============================================================================
-
+// Diff
 export interface NodeChange {
   id: string;
   type: string;
-  label?: string | undefined;
+  label?: string;
 }
 
 export interface FieldChange {
@@ -176,10 +155,7 @@ export interface DiffData {
   };
 }
 
-// =============================================================================
-// Log Response
-// =============================================================================
-
+// Version history
 export interface VersionData {
   id: string;
   label: string;
@@ -194,10 +170,7 @@ export interface LogData {
   currentBranch: string | null;
 }
 
-// =============================================================================
-// Branch Response
-// =============================================================================
-
+// Branches
 export interface BranchData {
   name: string;
   headVersionId: string;
@@ -206,19 +179,10 @@ export interface BranchData {
   isCurrent: boolean;
 }
 
-// =============================================================================
-// Request Types
-// =============================================================================
-
+// Request types
 export interface InitRequest {
   name?: string;
   logline: string;
-}
-
-export interface InputRequest {
-  type: 'character' | 'location' | 'conflict' | 'scene';
-  name: string;
-  description?: string;
 }
 
 export interface ClusterRequest {
@@ -232,19 +196,31 @@ export interface AcceptRequest {
   moveIds: string[];
 }
 
-export interface BranchRequest {
-  name: string;
-  description?: string;
+// Init response
+export interface InitData {
+  storyId: string;
+  name?: string;
+  logline: string;
+  versionId: string;
+  stats: StoryStats;
 }
 
-export interface CheckoutRequest {
-  target: string;  // Version ID or branch name
+// Accept response
+export interface AcceptData {
+  accepted: Array<{
+    moveId: string;
+    title: string;
+  }>;
+  newVersionId: string;
+  patchOpsApplied: number;
 }
 
-// =============================================================================
-// Nodes Response (Node Browser)
-// =============================================================================
+// List stories response
+export interface ListStoriesData {
+  stories: string[];
+}
 
+// Node browsing
 export interface NodeData {
   id: string;
   type: string;

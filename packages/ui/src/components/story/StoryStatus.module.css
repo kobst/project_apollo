@@ -1,0 +1,77 @@
+.container {
+  padding: 12px 16px;
+  background: #1e1e36;
+}
+
+.loading,
+.error {
+  font-size: 13px;
+  color: #888;
+}
+
+.error {
+  color: #e57373;
+}
+
+.name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.logline {
+  font-size: 13px;
+  color: #aaa;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.label {
+  color: #888;
+}
+
+.value {
+  color: #ccc;
+  font-family: monospace;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  text-align: center;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  background: #2a2a4a;
+  border-radius: 4px;
+}
+
+.statValue {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.statLabel {
+  font-size: 10px;
+  color: #888;
+  text-transform: uppercase;
+}

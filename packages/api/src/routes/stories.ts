@@ -6,6 +6,7 @@ import { Router } from 'express';
 import type { StorageContext } from '../config.js';
 import {
   createInitHandler,
+  createListStoriesHandler,
   createStatusHandler,
   createOQsHandler,
   createClustersHandler,
@@ -17,10 +18,16 @@ import {
   createListBranchesHandler,
   createCheckoutHandler,
   createLogHandler,
+  createListNodesHandler,
+  createGetNodeHandler,
+  createNodeRelationsHandler,
 } from '../handlers/index.js';
 
 export function createStoriesRouter(ctx: StorageContext): Router {
   const router = Router();
+
+  // List all stories
+  router.get('/', createListStoriesHandler(ctx));
 
   // Core endpoints
   router.post('/init', createInitHandler(ctx));
@@ -37,6 +44,11 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.get('/:id/branches', createListBranchesHandler(ctx));
   router.post('/:id/checkout', createCheckoutHandler(ctx));
   router.get('/:id/log', createLogHandler(ctx));
+
+  // Node browsing endpoints
+  router.get('/:id/nodes', createListNodesHandler(ctx));
+  router.get('/:id/nodes/:nodeId', createGetNodeHandler(ctx));
+  router.get('/:id/nodes/:nodeId/relations', createNodeRelationsHandler(ctx));
 
   return router;
 }

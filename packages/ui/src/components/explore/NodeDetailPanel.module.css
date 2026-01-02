@@ -1,0 +1,128 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #666;
+  font-size: 14px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.label {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.type {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: #3a3a5a;
+  color: #aaa;
+}
+
+.id {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.idLabel {
+  color: #666;
+}
+
+.idValue {
+  font-family: monospace;
+  color: #888;
+  background: #2a2a4a;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #666;
+  margin: 0;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: #2a2a4a;
+  border-radius: 4px;
+}
+
+.fieldName {
+  font-size: 11px;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.fieldValue {
+  font-size: 13px;
+  color: #ccc;
+  word-break: break-word;
+}
+
+.empty {
+  font-size: 13px;
+  color: #666;
+  font-style: italic;
+}
+
+.actions {
+  margin-top: 10px;
+  padding-top: 20px;
+  border-top: 1px solid #2a2a4a;
+}
+
+.actionBtn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  background: #4a7c59;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.actionBtn:hover:not(:disabled) {
+  background: #5a8c69;
+}
+
+.actionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
