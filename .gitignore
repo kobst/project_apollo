@@ -27,3 +27,6 @@ coverage/
 .env
 .env.local
 .env.*.local
+
+# CLI local state
+.apollo/
