@@ -1,10 +1,10 @@
 /**
- * apollo accept <move_id> - Apply a move's patch
+ * project-apollo accept <move_id> - Apply a move's patch
  */
 
 import type { Command } from 'commander';
 import { applyPatch, validatePatch } from '@apollo/core';
-import { loadState, deserializeGraph, updateState } from '../state/store.js';
+import { loadState, deserializeGraph, updateState, getCurrentStoryId } from '../state/store.js';
 import { acceptMove } from '../state/session.js';
 import {
   CLIError,
@@ -22,15 +22,23 @@ export function acceptCommand(program: Command): void {
     .argument('<move_id>', 'The move ID to accept')
     .action(async (moveId: string) => {
       try {
+        const storyId = await getCurrentStoryId();
+        if (!storyId) {
+          throw new CLIError(
+            'No story selected.',
+            'Run "project-apollo list" to see stories, or "project-apollo open <id>" to select one.'
+          );
+        }
+
         const state = await loadState();
-        requireState(state);
+        requireState(state, 'Current story not found.');
 
         // Find and remove the move from session
         const found = await acceptMove(moveId);
         if (!found) {
           throw new CLIError(
             `Move "${moveId}" not found in active clusters.`,
-            'Run "apollo cluster <oq_id>" to generate moves first.'
+            'Run "project-apollo cluster <oq_id>" to generate moves first.'
           );
         }
 
@@ -56,8 +64,8 @@ export function acceptCommand(program: Command): void {
         success(`Move accepted: ${move.title}`);
         console.log(pc.dim('Patch applied:'), `${patch.ops.length} operations`);
         console.log();
-        console.log('Run "apollo status" to see updated story.');
-        console.log('Run "apollo oqs" to see remaining open questions.');
+        console.log('Run "project-apollo status" to see updated story.');
+        console.log('Run "project-apollo oqs" to see remaining open questions.');
       } catch (error) {
         handleError(error);
       }

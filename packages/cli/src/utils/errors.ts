@@ -21,7 +21,11 @@ export class CLIError extends Error {
 
 export class StateError extends CLIError {
   constructor(message: string) {
-    super(message, 'Run "apollo init" to create a new story.', 1);
+    super(
+      message,
+      'Run "project-apollo list" to see stories, or "project-apollo init" to create one.',
+      1
+    );
     this.name = 'StateError';
   }
 }

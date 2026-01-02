@@ -1,12 +1,12 @@
 /**
- * apollo oqs - List open questions
+ * project-apollo oqs - List open questions
  */
 
 import type { Command } from 'commander';
 import { deriveOpenQuestions } from '@apollo/core';
 import type { OQPhase, OQSeverity, OQDomain } from '@apollo/core';
-import { loadState, deserializeGraph } from '../state/store.js';
-import { requireState, handleError } from '../utils/errors.js';
+import { loadState, deserializeGraph, getCurrentStoryId } from '../state/store.js';
+import { requireState, handleError, CLIError } from '../utils/errors.js';
 import { heading, formatOQList, phaseColor } from '../utils/format.js';
 
 export function oqsCommand(program: Command): void {
@@ -29,8 +29,16 @@ export function oqsCommand(program: Command): void {
         domain?: string;
       }) => {
         try {
+          const storyId = await getCurrentStoryId();
+          if (!storyId) {
+            throw new CLIError(
+              'No story selected.',
+              'Run "project-apollo list" to see stories, or "project-apollo open <id>" to select one.'
+            );
+          }
+
           const state = await loadState();
-          requireState(state);
+          requireState(state, 'Current story not found.');
 
           const graph = deserializeGraph(state.graph);
           const phase: OQPhase =
@@ -56,7 +64,7 @@ export function oqsCommand(program: Command): void {
           if (questions.length > 0) {
             console.log();
             console.log(
-              'Run "apollo cluster <oq_id>" to generate moves for a question.'
+              'Run "project-apollo cluster <oq_id>" to generate moves for a question.'
             );
           }
         } catch (error) {

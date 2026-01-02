@@ -1,11 +1,11 @@
 /**
- * apollo cluster <oq_id> - Generate move cluster for an open question
+ * project-apollo cluster <oq_id> - Generate move cluster for an open question
  */
 
 import type { Command } from 'commander';
 import { deriveOpenQuestions, generateClusterForQuestion } from '@apollo/core';
 import type { OQPhase } from '@apollo/core';
-import { loadState, deserializeGraph } from '../state/store.js';
+import { loadState, deserializeGraph, getCurrentStoryId } from '../state/store.js';
 import { addCluster } from '../state/session.js';
 import { CLIError, requireState, handleError } from '../utils/errors.js';
 import { heading, formatMoveList, info } from '../utils/format.js';
@@ -18,8 +18,16 @@ export function clusterCommand(program: Command): void {
     .argument('<oq_id>', 'The open question ID')
     .action(async (oqId: string) => {
       try {
+        const storyId = await getCurrentStoryId();
+        if (!storyId) {
+          throw new CLIError(
+            'No story selected.',
+            'Run "project-apollo list" to see stories, or "project-apollo open <id>" to select one.'
+          );
+        }
+
         const state = await loadState();
-        requireState(state);
+        requireState(state, 'Current story not found.');
 
         const graph = deserializeGraph(state.graph);
         const phase: OQPhase = state.metadata?.phase ?? 'OUTLINE';
@@ -30,7 +38,7 @@ export function clusterCommand(program: Command): void {
         if (!oq) {
           throw new CLIError(
             `Open question "${oqId}" not found.`,
-            'Run "apollo oqs" to see available questions.'
+            'Run "project-apollo oqs" to see available questions.'
           );
         }
 
@@ -58,7 +66,7 @@ export function clusterCommand(program: Command): void {
         console.log(formatMoveList(clusterResult.moves));
 
         console.log(
-          'Run "apollo accept <move_id>" to apply a move.'
+          'Run "project-apollo accept <move_id>" to apply a move.'
         );
       } catch (error) {
         handleError(error);

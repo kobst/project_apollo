@@ -76,28 +76,36 @@ project-apollo --help
 
 ### `project-apollo init [logline]`
 
-Initialize a new story in the current directory.
+Initialize a new story with optional name and logline.
 
-**With logline** (recommended for getting started):
+**With name and logline** (recommended):
 ```bash
-project-apollo init "A detective solves an impossible crime in a locked room"
+project-apollo init --name "Detective Story" "A detective solves an impossible crime"
 ```
 Creates: 15 beats + 1 character + 1 conflict + 1 location
 
+**With logline only** (ID derived from logline):
+```bash
+project-apollo init "A detective solves an impossible crime in a locked room"
+```
+
 **Without logline** (empty structure):
 ```bash
-project-apollo init
+project-apollo init --name "My Story"
 ```
 Creates: 15 beats only
 
 **Options:**
-- `-f, --force` - Overwrite existing story
+- `-n, --name <name>` - Story name (used to generate ID)
+- `-f, --force` - Overwrite existing story with same ID
 
 **Output:**
 ```
 Story Initialized
 ─────────────────
-Logline: "A detective solves an impossible crime in a locked room"
+ID: detective-story
+Name: Detective Story
+Logline: "A detective solves an impossible crime"
 
 Nodes:
   Beat           15
@@ -105,7 +113,69 @@ Nodes:
   Conflict       1
   Location       1
 
-✓ Story created. Run "project-apollo oqs" to see open questions.
+✓ Story created and set as current.
+Run "project-apollo oqs" to see open questions.
+```
+
+---
+
+### `project-apollo list`
+
+List all stories in the central registry.
+
+```bash
+project-apollo list
+project-apollo ls    # Alias
+```
+
+**Output:**
+```
+Stories
+───────
+* detective-story  (Detective Story) "A detective solves an impossible..." (current)
+  wizard-tale      (Wizard Tale) "A young wizard discovers..."
+  untitled-123     (no logline)
+
+3 stories total
+```
+
+---
+
+### `project-apollo open <name-or-id>`
+
+Switch to a different story.
+
+```bash
+project-apollo open detective-story    # By ID
+project-apollo open "Detective Story"  # By original name
+```
+
+**Output:**
+```
+✓ Switched to story: detective-story
+Name: Detective Story
+Logline: "A detective solves an impossible crime"
+```
+
+---
+
+### `project-apollo current`
+
+Show the currently active story.
+
+```bash
+project-apollo current
+```
+
+**Output:**
+```
+Current Story
+─────────────
+ID: detective-story
+Name: Detective Story
+Logline: "A detective solves an impossible crime"
+Phase: OUTLINE
+Updated: 2026-01-02T12:00:00.000Z
 ```
 
 ---
@@ -122,9 +192,10 @@ project-apollo status
 ```
 Story Status
 ────────────
+Story: detective-story
+Name: Detective Story
 Logline: A detective solves an impossible crime in a locked room
 Phase: OUTLINE
-Version: sv_1234567890
 Updated: 2026-01-02T12:00:00.000Z
 
 Nodes:
@@ -240,25 +311,27 @@ project-apollo save backup    # Adds .json automatically
 
 ### `project-apollo load <file>`
 
-Load story from a JSON file.
+Load story from a JSON file into the central registry.
 
 ```bash
 project-apollo load mystory.json
+project-apollo load mystory.json --name "My Imported Story"  # Custom name
 project-apollo load mystory.json --force  # Overwrite existing
 ```
 
 **Options:**
-- `-f, --force` - Overwrite existing story
+- `-n, --name <name>` - Story name (overrides name from file)
+- `-f, --force` - Overwrite existing story with same ID
 
 ## Typical Workflow
 
 ### 1. Start a New Story
 
 ```bash
-mkdir my-screenplay
-cd my-screenplay
-project-apollo init "A young wizard discovers their true powers"
+project-apollo init --name "Wizard Tale" "A young wizard discovers their true powers"
 ```
+
+This creates the story with ID `wizard-tale` and sets it as current.
 
 ### 2. Check Open Questions
 
@@ -299,17 +372,45 @@ Repeat steps 3-5 until your outline is complete.
 project-apollo save screenplay-v1.json
 ```
 
+### 7. Work on Multiple Stories
+
+```bash
+# Create another story
+project-apollo init --name "Detective Case" "A detective solves an impossible crime"
+
+# List all stories
+project-apollo list
+
+# Switch between stories
+project-apollo open wizard-tale
+project-apollo open "Detective Case"
+
+# Check which story is active
+project-apollo current
+```
+
 ## State Storage
 
-The CLI stores state in a `.apollo/` directory in your current working directory:
+The CLI stores all stories in a central location at `~/.apollo/`:
 
 ```
-.apollo/
-├── state.json      # Graph state (nodes, edges, metadata)
-└── session.json    # Active clusters and recent moves
+~/.apollo/
+├── current              # Text file containing current story ID
+└── stories/
+    ├── wizard-tale/
+    │   ├── state.json   # Graph state (nodes, edges, metadata)
+    │   └── session.json # Active clusters and recent moves
+    └── detective-case/
+        ├── state.json
+        └── session.json
 ```
 
-This means each story project should be in its own directory.
+**Key points:**
+- Stories are identified by slugified IDs (e.g., "Wizard Tale" → `wizard-tale`)
+- One story is "current" at a time - all commands operate on it
+- You can work from any directory - stories are stored centrally
+- Use `project-apollo list` to see all stories
+- Use `project-apollo open <id>` to switch stories
 
 ## Open Question Types
 
@@ -365,8 +466,10 @@ The CLI currently works best in the OUTLINE phase. DRAFT and REVISION phases hav
 {
   "version": "1.0.0",
   "exportedAt": "2026-01-02T12:00:00.000Z",
+  "storyId": "wizard-tale",
   "storyVersionId": "sv_1234567890",
   "metadata": {
+    "name": "Wizard Tale",
     "logline": "A young wizard discovers their true powers",
     "phase": "OUTLINE"
   },

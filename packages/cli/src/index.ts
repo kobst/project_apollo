@@ -6,6 +6,9 @@
 
 import { Command } from 'commander';
 import { initCommand } from './commands/init.js';
+import { listCommand } from './commands/list.js';
+import { openCommand } from './commands/open.js';
+import { currentCommand } from './commands/current.js';
 import { statusCommand } from './commands/status.js';
 import { oqsCommand } from './commands/oqs.js';
 import { clusterCommand } from './commands/cluster.js';
@@ -23,6 +26,9 @@ program
 
 // Register commands
 initCommand(program);
+listCommand(program);
+openCommand(program);
+currentCommand(program);
 statusCommand(program);
 oqsCommand(program);
 clusterCommand(program);

@@ -1,23 +1,31 @@
 /**
- * apollo status - Show current graph summary
+ * project-apollo status - Show current graph summary
  */
 
 import type { Command } from 'commander';
 import { getGraphStats, deriveOpenQuestions } from '@apollo/core';
-import { loadState, deserializeGraph } from '../state/store.js';
+import { loadState, deserializeGraph, getCurrentStoryId } from '../state/store.js';
 import { loadSession } from '../state/session.js';
-import { requireState, handleError } from '../utils/errors.js';
+import { requireState, handleError, CLIError } from '../utils/errors.js';
 import { heading, formatNodeCounts, phaseColor } from '../utils/format.js';
 import pc from 'picocolors';
 
 export function statusCommand(program: Command): void {
   program
     .command('status')
-    .description('Show current graph summary')
+    .description('Show current story summary')
     .action(async () => {
       try {
+        const storyId = await getCurrentStoryId();
+        if (!storyId) {
+          throw new CLIError(
+            'No story selected.',
+            'Run "project-apollo list" to see stories, or "project-apollo open <id>" to select one.'
+          );
+        }
+
         const state = await loadState();
-        requireState(state);
+        requireState(state, 'Current story not found.');
 
         const graph = deserializeGraph(state.graph);
         const stats = getGraphStats(graph);
@@ -27,12 +35,15 @@ export function statusCommand(program: Command): void {
 
         heading('Story Status');
 
-        // Metadata
+        // Story ID and metadata
+        console.log(pc.dim('Story:'), storyId);
+        if (state.metadata?.name && state.metadata.name !== storyId) {
+          console.log(pc.dim('Name:'), state.metadata.name);
+        }
         if (state.metadata?.logline) {
           console.log(pc.dim('Logline:'), state.metadata.logline);
         }
         console.log(pc.dim('Phase:'), phaseColor(phase));
-        console.log(pc.dim('Version:'), state.storyVersionId);
         console.log(pc.dim('Updated:'), state.updatedAt);
         console.log();
 
@@ -69,7 +80,7 @@ export function statusCommand(program: Command): void {
         if (session.activeClusters.length > 0) {
           console.log(
             pc.dim(
-              `Active clusters: ${session.activeClusters.length} (run "apollo accept <move_id>" to apply)`
+              `Active clusters: ${session.activeClusters.length} (run "project-apollo accept <move_id>" to apply)`
             )
           );
         }
