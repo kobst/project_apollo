@@ -5,8 +5,8 @@
 import type { Command } from 'commander';
 import { deriveOpenQuestions } from '@apollo/core';
 import type { OQPhase, OQSeverity, OQDomain } from '@apollo/core';
-import { loadState, deserializeGraph, getCurrentStoryId } from '../state/store.js';
-import { requireState, handleError, CLIError } from '../utils/errors.js';
+import { loadGraph, loadVersionedState, getCurrentStoryId } from '../state/store.js';
+import { handleError, CLIError } from '../utils/errors.js';
 import { heading, formatOQList, phaseColor } from '../utils/format.js';
 
 export function oqsCommand(program: Command): void {
@@ -37,12 +37,14 @@ export function oqsCommand(program: Command): void {
             );
           }
 
-          const state = await loadState();
-          requireState(state, 'Current story not found.');
+          const graph = await loadGraph();
+          if (!graph) {
+            throw new CLIError('Current story not found.');
+          }
 
-          const graph = deserializeGraph(state.graph);
+          const state = await loadVersionedState();
           const phase: OQPhase =
-            (options.phase as OQPhase) ?? state.metadata?.phase ?? 'OUTLINE';
+            (options.phase as OQPhase) ?? state?.metadata?.phase ?? 'OUTLINE';
 
           let questions = deriveOpenQuestions(graph, phase);
 

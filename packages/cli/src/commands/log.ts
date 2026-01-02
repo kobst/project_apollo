@@ -93,8 +93,9 @@ export function logCommand(program: Command): void {
             : pc.bold(version.label);
           const time = pc.dim(formatRelativeTime(version.created_at));
           const currentTag = version.isCurrent ? pc.green(' (current)') : '';
+          const branchTag = version.branch ? pc.yellow(` (${version.branch})`) : '';
 
-          console.log(`${marker} ${id}${currentTag}`);
+          console.log(`${marker} ${id}${currentTag}${branchTag}`);
           console.log(`  ${label} - ${time}`);
           if (version.parent_id) {
             console.log(`  ${pc.dim('parent:')} ${version.parent_id}`);
@@ -109,6 +110,7 @@ export function logCommand(program: Command): void {
 
         console.log(pc.dim('Commands:'));
         console.log(`  ${pc.cyan('project-apollo checkout <version_id>')} - Switch to a version`);
+        console.log(`  ${pc.cyan('project-apollo branch')} - Manage branches`);
       } catch (error) {
         handleError(error);
         process.exit(1);

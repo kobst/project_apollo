@@ -5,9 +5,9 @@
 import type { Command } from 'commander';
 import { deriveOpenQuestions, generateClusterForQuestion } from '@apollo/core';
 import type { OQPhase } from '@apollo/core';
-import { loadState, deserializeGraph, getCurrentStoryId } from '../state/store.js';
+import { loadGraph, loadVersionedState, getCurrentStoryId } from '../state/store.js';
 import { addCluster, getLastSeed, setLastSeed, clearClusters } from '../state/session.js';
-import { CLIError, requireState, handleError } from '../utils/errors.js';
+import { CLIError, handleError } from '../utils/errors.js';
 import { heading, formatMoveList, info } from '../utils/format.js';
 import pc from 'picocolors';
 
@@ -35,10 +35,15 @@ export function clusterCommand(program: Command): void {
           );
         }
 
-        const state = await loadState();
-        requireState(state, 'Current story not found.');
+        const graph = await loadGraph();
+        if (!graph) {
+          throw new CLIError('Current story not found.');
+        }
 
-        const graph = deserializeGraph(state.graph);
+        const state = await loadVersionedState();
+        if (!state) {
+          throw new CLIError('Current story state not found.');
+        }
         const phase: OQPhase = state.metadata?.phase ?? 'OUTLINE';
         const questions = deriveOpenQuestions(graph, phase);
 
@@ -82,7 +87,7 @@ export function clusterCommand(program: Command): void {
         // Generate cluster with options
         const clusterResult = generateClusterForQuestion(
           oq,
-          state.storyVersionId,
+          state.history.currentVersionId,
           phase,
           { count, seed }
         );

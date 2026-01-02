@@ -21,6 +21,8 @@ import { editCommand } from './commands/edit.js';
 import { deleteCommand } from './commands/delete.js';
 import { logCommand } from './commands/log.js';
 import { checkoutCommand } from './commands/checkout.js';
+import { branchCommand } from './commands/branch.js';
+import { diffCommand } from './commands/diff.js';
 import { handleError } from './utils/errors.js';
 
 const program = new Command();
@@ -47,6 +49,8 @@ editCommand(program);
 deleteCommand(program);
 logCommand(program);
 checkoutCommand(program);
+branchCommand(program);
+diffCommand(program);
 
 // Global error handling
 program.exitOverride((err) => {

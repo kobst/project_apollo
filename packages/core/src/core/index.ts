@@ -14,3 +14,6 @@ export * from './validator.js';
 
 // OpenQuestion derivation
 export * from './deriveOpenQuestions.js';
+
+// Graph diff
+export * from './diff.js';

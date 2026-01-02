@@ -4,9 +4,9 @@
 
 import type { Command } from 'commander';
 import { getGraphStats, deriveOpenQuestions } from '@apollo/core';
-import { loadState, deserializeGraph, getCurrentStoryId } from '../state/store.js';
+import { loadGraph, loadVersionedState, getCurrentStoryId } from '../state/store.js';
 import { loadSession } from '../state/session.js';
-import { requireState, handleError, CLIError } from '../utils/errors.js';
+import { handleError, CLIError } from '../utils/errors.js';
 import { heading, formatNodeCounts, phaseColor } from '../utils/format.js';
 import pc from 'picocolors';
 
@@ -24,10 +24,15 @@ export function statusCommand(program: Command): void {
           );
         }
 
-        const state = await loadState();
-        requireState(state, 'Current story not found.');
+        const graph = await loadGraph();
+        if (!graph) {
+          throw new CLIError('Current story not found.');
+        }
 
-        const graph = deserializeGraph(state.graph);
+        const state = await loadVersionedState();
+        if (!state) {
+          throw new CLIError('Current story state not found.');
+        }
         const stats = getGraphStats(graph);
         const phase = state.metadata?.phase ?? 'OUTLINE';
         const questions = deriveOpenQuestions(graph, phase);

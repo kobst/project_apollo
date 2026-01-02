@@ -49,18 +49,20 @@ export function checkoutCommand(program: Command): void {
           return;
         }
 
-        // Perform checkout
-        await checkoutVersion(versionId);
+        // Perform checkout - returns branch info
+        const { branch } = await checkoutVersion(versionId);
 
         success(`Switched to version: ${versionId}`);
         console.log(pc.dim('Label:'), version.label);
 
-        // Warn if this is not the latest version (detached state)
-        const latestVersion = history[0];
-        if (latestVersion && latestVersion.id !== versionId) {
+        // Show branch status
+        if (branch) {
+          console.log(pc.dim('Branch:'), pc.green(branch));
+        } else {
           console.log();
-          warn('You are in detached state.');
-          console.log(pc.dim('Any changes will create a new branch from this version.'));
+          warn('You are in detached HEAD state.');
+          console.log(pc.dim('Create a branch to save your work:'));
+          console.log(`  ${pc.cyan('project-apollo branch create <name>')}`);
         }
 
         console.log();

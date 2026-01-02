@@ -5,11 +5,10 @@
 import type { Command } from 'commander';
 import { createInterface } from 'readline';
 import { applyPatch, validatePatch } from '@apollo/core';
-import { loadState, deserializeGraph, updateState, getCurrentStoryId } from '../state/store.js';
+import { loadGraph, updateState, getCurrentStoryId } from '../state/store.js';
 import { findMove, acceptMove } from '../state/session.js';
 import {
   CLIError,
-  requireState,
   handleError,
 } from '../utils/errors.js';
 import { success, formatPatch, formatValidationErrors, heading } from '../utils/format.js';
@@ -48,8 +47,10 @@ export function acceptCommand(program: Command): void {
           );
         }
 
-        const state = await loadState();
-        requireState(state, 'Current story not found.');
+        const graph = await loadGraph();
+        if (!graph) {
+          throw new CLIError('Current story not found.');
+        }
 
         // Find the move (don't remove yet - only after confirmation)
         const found = await findMove(moveId);
@@ -61,7 +62,6 @@ export function acceptCommand(program: Command): void {
         }
 
         const { move, patch } = found;
-        const graph = deserializeGraph(state.graph);
 
         // Validate patch first
         const validation = validatePatch(graph, patch);

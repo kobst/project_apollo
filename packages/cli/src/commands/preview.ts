@@ -4,9 +4,9 @@
 
 import type { Command } from 'commander';
 import { validatePatch } from '@apollo/core';
-import { loadState, deserializeGraph, getCurrentStoryId } from '../state/store.js';
+import { loadGraph, getCurrentStoryId } from '../state/store.js';
 import { findMove } from '../state/session.js';
-import { CLIError, requireState, handleError } from '../utils/errors.js';
+import { CLIError, handleError } from '../utils/errors.js';
 import { heading, formatPatch, info, formatValidationErrors } from '../utils/format.js';
 import pc from 'picocolors';
 
@@ -25,8 +25,10 @@ export function previewCommand(program: Command): void {
           );
         }
 
-        const state = await loadState();
-        requireState(state, 'Current story not found.');
+        const graph = await loadGraph();
+        if (!graph) {
+          throw new CLIError('Current story not found.');
+        }
 
         // Find the move
         const found = await findMove(moveId);
@@ -38,7 +40,6 @@ export function previewCommand(program: Command): void {
         }
 
         const { move, patch } = found;
-        const graph = deserializeGraph(state.graph);
 
         // Display move info
         heading(`Move Preview: ${move.title}`);

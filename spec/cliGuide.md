@@ -650,17 +650,21 @@ project-apollo log -n 20      # Show last 20 versions
 Version History
 ───────────────
 
-* sv_1735789234_abc123 (current)
+* sv_1735789234_abc123 (current) (main)
   Added Catalyst scene - just now
   parent: sv_1735789000_xyz789
 
   sv_1735789000_xyz789
   Initial - 2 hours ago
-  parent: (none)
 
 Commands:
   project-apollo checkout <version_id> - Switch to a version
+  project-apollo branch - Manage branches
 ```
+
+**Notes:**
+- Branch names are shown in parentheses for versions that are branch heads
+- Use `--all` to see the complete version history
 
 ---
 
@@ -676,18 +680,108 @@ project-apollo checkout sv_1735789000_xyz789
 ```
 ✓ Switched to version: sv_1735789000_xyz789
 Label: Initial
-
-⚠ You are in detached state.
-Any changes will create a new branch from this version.
+Branch: main
 
 Run "project-apollo status" to see the story at this version.
 Run "project-apollo log" to see version history.
 ```
 
+Or if not on a branch head:
+```
+✓ Switched to version: sv_1735789000_xyz789
+Label: Initial
+
+⚠ You are in detached HEAD state.
+Create a branch to save your work:
+  project-apollo branch create <name>
+```
+
+---
+
+### `project-apollo branch [command]`
+
+Manage named branches for the story.
+
+```bash
+project-apollo branch                           # List all branches
+project-apollo branch create "experiment"       # Create new branch at current version
+project-apollo branch create "alt" -d "Testing alternate approach"
+project-apollo branch switch main               # Switch to a branch
+project-apollo branch delete experiment         # Delete a branch (with confirmation)
+project-apollo branch delete experiment --force # Delete without confirmation
+```
+
+**Subcommands:**
+- `branch` (no args) - List all branches
+- `branch create <name>` - Create and switch to a new branch
+- `branch switch <name>` - Switch to an existing branch
+- `branch delete <name>` - Delete a branch
+
+**Options (create):**
+- `-d, --description <text>` - Branch description
+
+**Options (delete):**
+- `-f, --force` - Skip confirmation
+
+**Output (list):**
+```
+Branches
+────────
+
+* main → sv_1735789234_abc... 2 hours ago
+  experiment → sv_1735789500_xyz... 1 hour ago
+    Testing alternate approach
+
+Commands:
+  project-apollo branch create <name>  - Create a new branch
+  project-apollo branch switch <name>  - Switch to a branch
+```
+
 **Notes:**
-- Checking out a non-latest version puts you in "detached state"
-- Any new changes (accepting moves, adding nodes) create a new branch
-- Use `project-apollo log` to see all versions and their relationships
+- The `main` branch is created automatically when you initialize a story
+- New versions are always added to the current branch
+- Checking out a non-branch-head version puts you in "detached HEAD" state
+- Create a branch from detached state to save your work
+
+---
+
+### `project-apollo diff [ref1] [ref2]`
+
+Compare versions or branches.
+
+```bash
+project-apollo diff                       # Current vs parent (last change)
+project-apollo diff sv_123                # Compare sv_123 to current
+project-apollo diff sv_123 sv_456         # Compare two versions
+project-apollo diff main experiment       # Compare branch heads
+```
+
+**Arguments:**
+- `ref1` - First version ID or branch name (omit to use parent)
+- `ref2` - Second version ID or branch name (default: current)
+
+**Output:**
+```
+Comparing sv_1735789000_xyz → sv_1735789234_abc
+──────────────────────────────────────────────
+
+Nodes:
+  + scene_catalyst_001 (Scene) "INT. CAFE - DAY"
+  ~ char_john_abc:
+      name "John" → "Jonathan"
+  - loc_old_warehouse (Location) "Old Warehouse"
+
+Edges:
+  + HAS_CHARACTER scene_catalyst_001 → char_john_abc
+  - LOCATED_AT scene_001 → loc_old_warehouse
+
+Summary: +1 ~1 -1 nodes | +1 -1 edges
+```
+
+**Use cases:**
+- See what changed since last save: `diff`
+- Compare feature branches: `diff main experiment`
+- Review a specific version's changes: `diff <version_id>`
 
 ---
 
@@ -780,29 +874,38 @@ The CLI stores all stories in a central location at `~/.apollo/`:
 - Use `project-apollo list` to see all stories
 - Use `project-apollo open <id>` to switch stories
 
-### Version History
+### Version History & Branches
 
-Each story maintains a complete version history. Every change (accepting moves, adding/editing/deleting nodes) creates a new version with a parent link:
+Each story maintains a complete version history with named branches. Every change (accepting moves, adding/editing/deleting nodes) creates a new version:
 
 ```json
 {
   "history": {
     "versions": {
       "sv_123": { "id": "sv_123", "parent_id": null, "label": "Initial", "graph": {...} },
-      "sv_456": { "id": "sv_456", "parent_id": "sv_123", "label": "Added scene", "graph": {...} }
+      "sv_456": { "id": "sv_456", "parent_id": "sv_123", "label": "Update", "graph": {...} }
     },
+    "branches": {
+      "main": { "name": "main", "headVersionId": "sv_456", "createdAt": "..." }
+    },
+    "currentBranch": "main",
     "currentVersionId": "sv_456"
   }
 }
 ```
 
 **Commands:**
-- `project-apollo log` - View version history
-- `project-apollo checkout <version_id>` - Switch to a previous version
+- `project-apollo log` - View version history with branch tags
+- `project-apollo checkout <version_id>` - Switch to a version
+- `project-apollo branch` - List/create/switch/delete branches
+- `project-apollo diff` - Compare versions or branches
 
 **Notes:**
-- Old stories (V1 format) are automatically migrated to V2 with version history
-- Branching is supported: checking out an old version and making changes creates a new branch
+- Old stories are automatically migrated to have version history and a "main" branch
+- Each story starts with a "main" branch
+- New versions update the current branch's head pointer
+- Checkout a non-head version to enter "detached HEAD" state
+- Create a branch from detached state to save experimental work
 
 ## Open Question Types
 
@@ -1012,4 +1115,4 @@ Potential future development:
 3. **Web UI** - Visual graph editor in the browser
 4. **Collaboration** - Multi-user story development
 5. **Export Formats** - Final Draft, Fountain, PDF screenplay export
-6. **Branch Management** - Named branches, merge support, diff between versions
+6. **Merge Support** - Merge branches together (branches and diff are implemented)

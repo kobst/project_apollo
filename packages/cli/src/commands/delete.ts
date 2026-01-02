@@ -6,12 +6,11 @@ import type { Command } from 'commander';
 import { createInterface } from 'readline';
 import { applyPatch, validatePatch, type Patch } from '@apollo/core';
 import {
-  loadState,
-  deserializeGraph,
+  loadGraph,
   updateState,
   getCurrentStoryId,
 } from '../state/store.js';
-import { CLIError, requireState, handleError } from '../utils/errors.js';
+import { CLIError, handleError } from '../utils/errors.js';
 import {
   success,
   formatValidationErrors,
@@ -72,10 +71,10 @@ async function deleteNode(nodeId: string, options: DeleteOptions): Promise<void>
     );
   }
 
-  const state = await loadState();
-  requireState(state, 'Current story not found.');
-
-  const graph = deserializeGraph(state.graph);
+  const graph = await loadGraph();
+  if (!graph) {
+    throw new CLIError('Current story not found.');
+  }
 
   // Find the node
   const node = graph.nodes.get(nodeId);

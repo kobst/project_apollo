@@ -15,12 +15,11 @@ import {
   type ConflictType,
 } from '@apollo/core';
 import {
-  loadState,
-  deserializeGraph,
+  loadGraph,
   updateState,
   getCurrentStoryId,
 } from '../state/store.js';
-import { CLIError, requireState, handleError } from '../utils/errors.js';
+import { CLIError, handleError } from '../utils/errors.js';
 import {
   success,
   formatPatch,
@@ -69,10 +68,10 @@ async function applyPatchWithConfirmation(
     );
   }
 
-  const state = await loadState();
-  requireState(state, 'Current story not found.');
-
-  const graph = deserializeGraph(state.graph);
+  const graph = await loadGraph();
+  if (!graph) {
+    throw new CLIError('Current story not found.');
+  }
 
   // Validate patch first
   const validation = validatePatch(graph, patch);

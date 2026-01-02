@@ -37,10 +37,22 @@ export interface StoredVersion {
 }
 
 /**
+ * A named branch pointing to a version.
+ */
+export interface Branch {
+  name: string;
+  headVersionId: string;
+  createdAt: string;
+  description?: string;
+}
+
+/**
  * Version history for a story.
  */
 export interface VersionHistory {
   versions: Record<string, StoredVersion>;
+  branches: Record<string, Branch>;
+  currentBranch: string | null;  // null = detached state
   currentVersionId: string;
 }
 
@@ -94,6 +106,15 @@ export interface VersionInfo {
   label: string;
   parent_id: string | null;
   created_at: string;
+  isCurrent: boolean;
+  branch?: string;  // Branch name if this version is a branch head
+}
+
+export interface BranchInfo {
+  name: string;
+  headVersionId: string;
+  createdAt: string;
+  description?: string;
   isCurrent: boolean;
 }
 
@@ -317,21 +338,36 @@ export async function saveStateById(storyId: string, state: PersistedState): Pro
 // =============================================================================
 
 /**
- * Load state for the current story.
- * Returns null if no current story is set.
+ * @deprecated Use loadGraph() for graph data or loadVersionedState() for full state.
+ * This function only works with non-versioned state and will be removed.
  */
 export async function loadState(): Promise<PersistedState | null> {
   const storyId = await getCurrentStoryId();
   if (!storyId) return null;
-  return loadStateById(storyId);
+  const state = await loadStateById(storyId);
+  if (!state || isVersionedState(state)) return null;
+  return state;
 }
 
 /**
  * Load and deserialize the graph from current story.
+ * Works with both legacy (PersistedState) and versioned (VersionedState) formats.
  */
 export async function loadGraph(): Promise<GraphState | null> {
-  const state = await loadState();
+  const storyId = await getCurrentStoryId();
+  if (!storyId) return null;
+
+  const state = await loadStateById(storyId);
   if (!state) return null;
+
+  // Handle versioned state (V2+)
+  if (isVersionedState(state)) {
+    const currentVersion = state.history.versions[state.history.currentVersionId];
+    if (!currentVersion) return null;
+    return deserializeGraph(currentVersion.graph);
+  }
+
+  // Legacy format (V1)
   return deserializeGraph(state.graph);
 }
 
@@ -370,32 +406,14 @@ export async function createStory(
 }
 
 /**
- * Update the graph in current story.
+ * Update the graph in current story. Creates a new version.
  */
 export async function updateState(
   graph: GraphState,
   metadataUpdates?: Partial<StoryMetadata>
 ): Promise<void> {
-  const storyId = await getCurrentStoryId();
-  if (!storyId) {
-    throw new Error('No current story set');
-  }
-
-  const existing = await loadStateById(storyId);
-  if (!existing) {
-    throw new Error('Current story state not found');
-  }
-
-  const state: PersistedState = {
-    ...existing,
-    updatedAt: new Date().toISOString(),
-    graph: serializeGraph(graph),
-    metadata: {
-      ...existing.metadata,
-      ...metadataUpdates,
-    },
-  };
-  await saveStateById(storyId, state);
+  // Delegate to version-aware update with a generic label
+  await updateStateWithVersion(graph, 'Update', metadataUpdates);
 }
 
 // =============================================================================
@@ -440,6 +458,7 @@ function generateVersionId(): string {
 
 /**
  * Migrate a V1 PersistedState to V2 VersionedState.
+ * Auto-creates "main" branch pointing to the initial version.
  */
 export function migrateToVersioned(state: PersistedState): VersionedState {
   const version: StoredVersion = {
@@ -450,13 +469,21 @@ export function migrateToVersioned(state: PersistedState): VersionedState {
     graph: state.graph,
   };
 
+  const mainBranch: Branch = {
+    name: 'main',
+    headVersionId: version.id,
+    createdAt: state.createdAt,
+  };
+
   const result: VersionedState = {
-    version: '2.0.0',
+    version: '3.0.0',  // V3 includes branches
     storyId: state.storyId,
     createdAt: state.createdAt,
     updatedAt: state.updatedAt,
     history: {
       versions: { [version.id]: version },
+      branches: { main: mainBranch },
+      currentBranch: 'main',
       currentVersionId: version.id,
     },
   };
@@ -469,7 +496,33 @@ export function migrateToVersioned(state: PersistedState): VersionedState {
 }
 
 /**
- * Load state and ensure it's in versioned format.
+ * Migrate V2 state (no branches) to V3 (with branches).
+ */
+function migrateV2ToV3(state: VersionedState): VersionedState {
+  // Already has branches
+  if (state.history.branches && Object.keys(state.history.branches).length > 0) {
+    return state;
+  }
+
+  const mainBranch: Branch = {
+    name: 'main',
+    headVersionId: state.history.currentVersionId,
+    createdAt: state.createdAt,
+  };
+
+  return {
+    ...state,
+    version: '3.0.0',
+    history: {
+      ...state.history,
+      branches: { main: mainBranch },
+      currentBranch: 'main',
+    },
+  };
+}
+
+/**
+ * Load state and ensure it's in versioned format with branches.
  */
 export async function loadVersionedState(): Promise<VersionedState | null> {
   const storyId = await getCurrentStoryId();
@@ -478,12 +531,18 @@ export async function loadVersionedState(): Promise<VersionedState | null> {
   const state = await loadStateById(storyId);
   if (!state) return null;
 
-  // Migrate if needed
+  // Migrate from V1 if needed
   if (!isVersionedState(state)) {
     const versioned = migrateToVersioned(state);
-    // Save migrated state
     await saveVersionedState(storyId, versioned);
     return versioned;
+  }
+
+  // Migrate from V2 (no branches) to V3 if needed
+  if (!state.history.branches || Object.keys(state.history.branches).length === 0) {
+    const upgraded = migrateV2ToV3(state);
+    await saveVersionedState(storyId, upgraded);
+    return upgraded;
   }
 
   return state;
@@ -499,6 +558,7 @@ export async function saveVersionedState(storyId: string, state: VersionedState)
 
 /**
  * Create a new version from the current state.
+ * If on a branch, also updates the branch head.
  */
 export async function createVersion(
   graph: GraphState,
@@ -525,14 +585,30 @@ export async function createVersion(
     graph: serializeGraph(graph),
   };
 
+  // Update branch head if on a branch
+  const updatedBranches = { ...state.history.branches };
+  if (state.history.currentBranch) {
+    const currentBranchData = updatedBranches[state.history.currentBranch];
+    if (currentBranchData) {
+      updatedBranches[state.history.currentBranch] = {
+        name: currentBranchData.name,
+        headVersionId: newVersionId,
+        createdAt: currentBranchData.createdAt,
+        ...(currentBranchData.description !== undefined && { description: currentBranchData.description }),
+      };
+    }
+  }
+
   state = {
     ...state,
     updatedAt: now,
     history: {
+      ...state.history,
       versions: {
         ...state.history.versions,
         [newVersionId]: newVersion,
       },
+      branches: updatedBranches,
       currentVersionId: newVersionId,
     },
   };
@@ -548,13 +624,23 @@ export async function getVersionHistory(): Promise<VersionInfo[]> {
   const state = await loadVersionedState();
   if (!state) return [];
 
-  const versions = Object.values(state.history.versions).map((v) => ({
-    id: v.id,
-    label: v.label,
-    parent_id: v.parent_id,
-    created_at: v.created_at,
-    isCurrent: v.id === state.history.currentVersionId,
-  }));
+  // Build a map of version ID -> branch name (for branch heads)
+  const branchHeads = new Map<string, string>();
+  for (const [branchName, branch] of Object.entries(state.history.branches)) {
+    branchHeads.set(branch.headVersionId, branchName);
+  }
+
+  const versions: VersionInfo[] = Object.values(state.history.versions).map((v) => {
+    const branchName = branchHeads.get(v.id);
+    return {
+      id: v.id,
+      label: v.label,
+      parent_id: v.parent_id,
+      created_at: v.created_at,
+      isCurrent: v.id === state.history.currentVersionId,
+      ...(branchName !== undefined && { branch: branchName }),
+    };
+  });
 
   // Sort by created_at (most recent first)
   versions.sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -584,8 +670,10 @@ export async function getVersion(versionId: string): Promise<StoredVersion | nul
 
 /**
  * Checkout a specific version (switch to it).
+ * If the version is a branch head, switch to that branch.
+ * Otherwise, enter detached state.
  */
-export async function checkoutVersion(versionId: string): Promise<void> {
+export async function checkoutVersion(versionId: string): Promise<{ branch: string | null }> {
   const storyId = await getCurrentStoryId();
   if (!storyId) {
     throw new Error('No current story set');
@@ -601,21 +689,33 @@ export async function checkoutVersion(versionId: string): Promise<void> {
     throw new Error(`Version "${versionId}" not found`);
   }
 
+  // Check if this version is a branch head
+  let targetBranch: string | null = null;
+  for (const [branchName, branch] of Object.entries(state.history.branches)) {
+    if (branch.headVersionId === versionId) {
+      targetBranch = branchName;
+      break;
+    }
+  }
+
   const updatedState: VersionedState = {
     ...state,
     updatedAt: new Date().toISOString(),
     history: {
       ...state.history,
+      currentBranch: targetBranch,
       currentVersionId: versionId,
     },
   };
 
   await saveVersionedState(storyId, updatedState);
+  return { branch: targetBranch };
 }
 
 /**
  * Update state with version tracking.
  * Creates a new version with the given label.
+ * If on a branch, also updates the branch head.
  */
 export async function updateStateWithVersion(
   graph: GraphState,
@@ -643,6 +743,20 @@ export async function updateStateWithVersion(
     graph: serializeGraph(graph),
   };
 
+  // Update branch head if on a branch
+  const updatedBranches = { ...state.history.branches };
+  if (state.history.currentBranch) {
+    const currentBranchData = updatedBranches[state.history.currentBranch];
+    if (currentBranchData) {
+      updatedBranches[state.history.currentBranch] = {
+        name: currentBranchData.name,
+        headVersionId: newVersionId,
+        createdAt: currentBranchData.createdAt,
+        ...(currentBranchData.description !== undefined && { description: currentBranchData.description }),
+      };
+    }
+  }
+
   state = {
     ...state,
     updatedAt: now,
@@ -651,14 +765,171 @@ export async function updateStateWithVersion(
       ...metadataUpdates,
     },
     history: {
+      ...state.history,
       versions: {
         ...state.history.versions,
         [newVersionId]: newVersion,
       },
+      branches: updatedBranches,
       currentVersionId: newVersionId,
     },
   };
 
   await saveVersionedState(storyId, state);
   return newVersionId;
+}
+
+// =============================================================================
+// Branch Operations
+// =============================================================================
+
+/**
+ * Get all branches for the current story.
+ */
+export async function listBranches(): Promise<BranchInfo[]> {
+  const state = await loadVersionedState();
+  if (!state) return [];
+
+  return Object.values(state.history.branches).map((b): BranchInfo => ({
+    name: b.name,
+    headVersionId: b.headVersionId,
+    createdAt: b.createdAt,
+    ...(b.description !== undefined && { description: b.description }),
+    isCurrent: b.name === state.history.currentBranch,
+  }));
+}
+
+/**
+ * Get current branch name.
+ */
+export async function getCurrentBranch(): Promise<string | null> {
+  const state = await loadVersionedState();
+  if (!state) return null;
+  return state.history.currentBranch;
+}
+
+/**
+ * Create a new branch at the current version.
+ */
+export async function createBranch(
+  name: string,
+  description?: string
+): Promise<void> {
+  const storyId = await getCurrentStoryId();
+  if (!storyId) {
+    throw new Error('No current story set');
+  }
+
+  const state = await loadVersionedState();
+  if (!state) {
+    throw new Error('Current story state not found');
+  }
+
+  // Check if branch already exists
+  if (state.history.branches[name]) {
+    throw new Error(`Branch "${name}" already exists`);
+  }
+
+  const newBranch: Branch = {
+    name,
+    headVersionId: state.history.currentVersionId,
+    createdAt: new Date().toISOString(),
+    ...(description && { description }),
+  };
+
+  const updatedState: VersionedState = {
+    ...state,
+    updatedAt: new Date().toISOString(),
+    history: {
+      ...state.history,
+      branches: {
+        ...state.history.branches,
+        [name]: newBranch,
+      },
+      currentBranch: name,
+    },
+  };
+
+  await saveVersionedState(storyId, updatedState);
+}
+
+/**
+ * Switch to a different branch.
+ */
+export async function switchBranch(name: string): Promise<void> {
+  const storyId = await getCurrentStoryId();
+  if (!storyId) {
+    throw new Error('No current story set');
+  }
+
+  const state = await loadVersionedState();
+  if (!state) {
+    throw new Error('Current story state not found');
+  }
+
+  const branch = state.history.branches[name];
+  if (!branch) {
+    throw new Error(`Branch "${name}" not found`);
+  }
+
+  const updatedState: VersionedState = {
+    ...state,
+    updatedAt: new Date().toISOString(),
+    history: {
+      ...state.history,
+      currentBranch: name,
+      currentVersionId: branch.headVersionId,
+    },
+  };
+
+  await saveVersionedState(storyId, updatedState);
+}
+
+/**
+ * Delete a branch.
+ */
+export async function deleteBranch(name: string): Promise<void> {
+  const storyId = await getCurrentStoryId();
+  if (!storyId) {
+    throw new Error('No current story set');
+  }
+
+  const state = await loadVersionedState();
+  if (!state) {
+    throw new Error('Current story state not found');
+  }
+
+  if (!state.history.branches[name]) {
+    throw new Error(`Branch "${name}" not found`);
+  }
+
+  if (name === 'main') {
+    throw new Error('Cannot delete the main branch');
+  }
+
+  if (state.history.currentBranch === name) {
+    throw new Error('Cannot delete the current branch. Switch to another branch first.');
+  }
+
+  const { [name]: _deleted, ...remainingBranches } = state.history.branches;
+
+  const updatedState: VersionedState = {
+    ...state,
+    updatedAt: new Date().toISOString(),
+    history: {
+      ...state.history,
+      branches: remainingBranches,
+    },
+  };
+
+  await saveVersionedState(storyId, updatedState);
+}
+
+/**
+ * Get branch by name.
+ */
+export async function getBranch(name: string): Promise<Branch | null> {
+  const state = await loadVersionedState();
+  if (!state) return null;
+  return state.history.branches[name] ?? null;
 }
