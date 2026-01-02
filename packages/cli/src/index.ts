@@ -13,6 +13,7 @@ import { statusCommand } from './commands/status.js';
 import { oqsCommand } from './commands/oqs.js';
 import { clusterCommand } from './commands/cluster.js';
 import { acceptCommand } from './commands/accept.js';
+import { previewCommand } from './commands/preview.js';
 import { saveCommand } from './commands/save.js';
 import { loadCommand } from './commands/load.js';
 import { handleError } from './utils/errors.js';
@@ -33,6 +34,7 @@ statusCommand(program);
 oqsCommand(program);
 clusterCommand(program);
 acceptCommand(program);
+previewCommand(program);
 saveCommand(program);
 loadCommand(program);
 

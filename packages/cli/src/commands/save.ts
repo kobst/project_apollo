@@ -26,11 +26,21 @@ export function saveCommand(program: Command): void {
         const state = await loadState();
         requireState(state, 'Current story not found.');
 
-        // Prepare export data
+        // Prepare export data with v1-aligned storyVersion object
         const exportData = {
           version: state.version,
           exportedAt: new Date().toISOString(),
           storyId: state.storyId,
+          // Full StoryVersion object per v1 spec
+          storyVersion: {
+            id: state.storyVersionId,
+            parent_story_version_id: null, // Linear history for now
+            created_at: state.createdAt,
+            label: state.metadata?.name ?? state.storyId,
+            ...(state.metadata?.logline && { logline: state.metadata.logline }),
+            tags: [],
+          },
+          // Keep storyVersionId for backward compatibility
           storyVersionId: state.storyVersionId,
           metadata: state.metadata,
           graph: state.graph,

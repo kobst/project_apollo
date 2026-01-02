@@ -395,13 +395,139 @@ function getMoveVariants(oq: OpenQuestion): MoveVariant[] {
 // =============================================================================
 
 /**
+ * Options for cluster generation.
+ */
+export interface ClusterGenerationOptions {
+  /** Number of moves to generate (default: 4, max: 12) */
+  count?: number;
+  /** Seed for deterministic generation (for reproducibility) */
+  seed?: number;
+}
+
+/**
+ * Simple seeded random number generator.
+ */
+function seededRandom(seed: number): () => number {
+  let state = seed;
+  return () => {
+    state = (state * 1103515245 + 12345) & 0x7fffffff;
+    return state / 0x7fffffff;
+  };
+}
+
+/**
  * Generate a single MoveCluster for a specific OpenQuestion.
  */
 export function generateClusterForQuestion(
   oq: OpenQuestion,
   baseVersionId: string,
-  phase: OQPhase = 'OUTLINE'
+  phase: OQPhase = 'OUTLINE',
+  options: ClusterGenerationOptions = {}
 ): ClusterResult {
   const timestamp = new Date().toISOString();
-  return generateClusterForOQ(oq, [], baseVersionId, timestamp, phase);
+  const count = Math.min(Math.max(options.count ?? 4, 1), 12);
+  const seed = options.seed ?? Date.now();
+
+  // Use seeded random for reproducibility
+  const random = seededRandom(seed);
+
+  const clusterId = `mc_${seed}_${Math.floor(random() * 100000).toString(36)}`;
+  const clusterType = mapDomainToClusterType(oq.domain, oq.type);
+  const scopeBudget = getScopeBudget(clusterType, phase);
+
+  const cluster: MoveCluster = {
+    type: 'MoveCluster',
+    id: clusterId,
+    base_story_version_id: baseVersionId,
+    created_at: timestamp,
+    title: generateClusterTitle(oq),
+    description: `Addresses: ${oq.message}`,
+    cluster_type: clusterType,
+    primary_open_question_id: oq.id,
+    supporting_open_question_ids: [],
+    scope_budget: scopeBudget,
+    status: 'PROPOSED',
+  };
+
+  // Generate moves with the seeded random
+  const moves = generateMovesForClusterWithSeed(
+    cluster,
+    oq,
+    baseVersionId,
+    timestamp,
+    count,
+    random
+  );
+
+  return { cluster, moves };
+}
+
+/**
+ * Generate moves for a cluster with a seeded random generator.
+ */
+function generateMovesForClusterWithSeed(
+  cluster: MoveCluster,
+  primaryOQ: OpenQuestion,
+  baseVersionId: string,
+  timestamp: string,
+  count: number,
+  random: () => number
+): NarrativeMoveWithPatch[] {
+  const moves: NarrativeMoveWithPatch[] = [];
+  const baseVariants = getMoveVariants(primaryOQ);
+
+  // Generate up to count moves, cycling through variants if needed
+  for (let i = 0; i < count; i++) {
+    const variant = baseVariants[i % baseVariants.length];
+    if (!variant) continue;
+
+    // Add variation to make each move unique when count > base variants
+    const variationSuffix = i >= baseVariants.length ? `_v${Math.floor(i / baseVariants.length) + 1}` : '';
+
+    const moveId = `mv_${cluster.id.replace('mc_', '')}_${i}`;
+    const patchId = `patch_${cluster.id.replace('mc_', '')}_${i}`;
+
+    // Create patch with variation
+    const patch: Patch = {
+      type: 'Patch',
+      id: patchId,
+      base_story_version_id: baseVersionId,
+      created_at: timestamp,
+      ops: variant.ops.map((op) => {
+        if (op.op === 'ADD_NODE' && 'node' in op) {
+          const node = { ...op.node };
+          if ('id' in node) {
+            node.id = `${node.id}${variationSuffix}`;
+          }
+          return { ...op, node };
+        }
+        return op;
+      }),
+      metadata: {
+        source: 'clusterStub',
+        moveVariant: variant.style,
+        variationIndex: i,
+      },
+    };
+
+    const move: NarrativeMove = {
+      type: 'NarrativeMove',
+      id: moveId,
+      cluster_id: cluster.id,
+      patch_id: patchId,
+      title: variationSuffix ? `${variant.title} (Alt ${Math.floor(i / baseVariants.length) + 1})` : variant.title,
+      rationale: variant.rationale,
+      created_at: timestamp,
+      expected_effects: [`Resolves ${primaryOQ.type}`],
+      move_style_tags: variant.tags,
+      resolves_open_question_ids: [primaryOQ.id],
+      introduces_open_question_ids: [],
+      confidence: 0.5 + random() * 0.4, // Use seeded random for confidence
+      status: 'PROPOSED',
+    };
+
+    moves.push({ move, patch });
+  }
+
+  return moves;
 }

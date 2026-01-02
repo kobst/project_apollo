@@ -22,6 +22,8 @@ export interface ClusterResult {
 export interface SessionState {
   activeClusters: ClusterResult[];
   recentMoves: NarrativeMove[];
+  /** Last seeds used per OQ ID (for --regenerate) */
+  lastSeeds?: Record<string, number>;
 }
 
 // =============================================================================
@@ -142,4 +144,22 @@ export async function clearSession(): Promise<void> {
   } catch {
     // Ignore if file doesn't exist
   }
+}
+
+/**
+ * Get the last seed used for an OQ.
+ */
+export async function getLastSeed(oqId: string): Promise<number | null> {
+  const session = await loadSession();
+  return session.lastSeeds?.[oqId] ?? null;
+}
+
+/**
+ * Store the last seed used for an OQ.
+ */
+export async function setLastSeed(oqId: string, seed: number): Promise<void> {
+  const session = await loadSession();
+  session.lastSeeds = session.lastSeeds ?? {};
+  session.lastSeeds[oqId] = seed;
+  await saveSession(session);
 }

@@ -33,6 +33,27 @@ packages/
 | **Move Cluster** | A set of possible moves (patches) to address an open question |
 | **Phase** | Story development phase: OUTLINE → DRAFT → REVISION |
 
+### Edge Types (Relationships)
+
+Edges connect nodes to form the knowledge graph. The system uses 9 edge types:
+
+| Edge Type | Source → Target | Required | Description |
+|-----------|-----------------|----------|-------------|
+| **FULFILLS** | Scene → Beat | Implicit | Scene realizes/delivers the beat. Created automatically from `Scene.beat_id`. |
+| **HAS_CHARACTER** | Scene → Character | DRAFT | Character appears in the scene. |
+| **LOCATED_AT** | Scene → Location | DRAFT | Scene's primary location. |
+| **FEATURES_OBJECT** | Scene → Object | Optional | Significant prop/object in scene. |
+| **INVOLVES** | Conflict → Character | DRAFT | Character is party to the conflict. |
+| **MANIFESTS_IN** | Conflict → Scene | DRAFT | Scene shows the conflict in action. |
+| **HAS_ARC** | Character → CharacterArc | Optional | Arc belongs to this character. |
+| **EXPRESSED_IN** | Theme → Scene/Beat | REVISION | Theme is evidenced by scene or beat. |
+| **APPEARS_IN** | Motif → Scene | REVISION | Motif appears in the scene. |
+
+**Notes:**
+- FULFILLS edges are derived from `Scene.beat_id` — never create them manually via patches.
+- Edges are unique by `(type, from, to)` — no duplicates allowed.
+- "Required" column indicates when validation enforces the edge (by phase).
+
 ### The 15-Beat Structure
 
 The system uses Save the Cat's 15 beats as the structural backbone:
@@ -246,55 +267,163 @@ Run "project-apollo cluster <oq_id>" to generate moves for a question.
 
 ---
 
-### `project-apollo cluster <oq_id>`
+### `project-apollo cluster <oq_id> [options]`
 
 Generate move options to address an open question.
 
 ```bash
 project-apollo cluster oq_beat_beat_Catalyst
+project-apollo cluster oq_beat_beat_Catalyst --count 6      # Generate 6 moves
+project-apollo cluster oq_beat_beat_Catalyst --regenerate   # Try different options
+project-apollo cluster oq_beat_beat_Catalyst --seed 12345   # Reproducible generation
+```
+
+**Options:**
+- `-c, --count <n>` - Number of moves to generate (default: 4, max: 12)
+- `-s, --seed <n>` - Seed for reproducible generation
+- `-r, --regenerate` - Generate new moves with a fresh seed (implicit rejection)
+
+**Output:**
+```
+ℹ Generating 4 moves for: Beat "Catalyst" has no scenes assigned
+
+Realize beat: Catalyst
+──────────────────────
+Cluster ID: mc_1234567890_abc
+Cluster type: STRUCTURE
+Scope: OUTLINE
+Seed: 1234567890
+
+Available Moves (4):
+
+1. [mv_1234567890_abc_0] Catalyst: Dramatic confrontation (88% confidence)
+   A high-tension scene that delivers the beat through conflict.
+
+2. [mv_1234567890_abc_1] Catalyst: Quiet revelation (75% confidence)
+   A contemplative scene that delivers the beat through internal discovery.
+
+3. [mv_1234567890_abc_2] Catalyst: Action sequence (60% confidence)
+   A kinetic scene that delivers the beat through physical action.
+
+4. [mv_1234567890_abc_3] Catalyst: Dramatic confrontation (Alt 2) (72% confidence)
+   A high-tension scene that delivers the beat through conflict.
+
+Commands:
+  project-apollo preview <move_id>  - Preview a move before accepting
+  project-apollo accept <move_id>   - Apply a move
+  project-apollo cluster oq_beat_beat_Catalyst --regenerate - Try different options
+```
+
+**Reject All / Try Again:**
+To reject all current moves and generate new options, simply run the cluster command again with `--regenerate`. This is the canonical "try again" flow—rejection is implicit when you generate a new cluster.
+
+---
+
+### `project-apollo preview <move_id>`
+
+Preview a move's patch operations before accepting it.
+
+```bash
+project-apollo preview mv_1234567890_0
 ```
 
 **Output:**
 ```
-ℹ Generating moves for: Beat "Catalyst" has no scenes assigned
+Move Preview: Catalyst: Dramatic confrontation
+────────────────────────────────────────────
 
-Realize beat: Catalyst
-──────────────────────
-Cluster type: STRUCTURE
-Scope: OUTLINE
+Confidence: 88%
+Rationale: A high-tension scene that delivers the beat through conflict.
 
-Available Moves:
+Patch Operations (3 ops):
 
-1. [mv_1234567890_0] Catalyst: Dramatic confrontation (88% confidence)
-   A high-tension scene that delivers the beat through conflict.
+1. ADD_NODE Scene
+   id: scene_001
+   heading: "INT. WIZARD TOWER - NIGHT"
+   overview: "The young wizard accidentally unleashes a powerful spell..."
+   beat_id: beat_Catalyst
 
-2. [mv_1234567890_1] Catalyst: Quiet revelation (75% confidence)
-   A contemplative scene that delivers the beat through internal discovery.
+2. ADD_EDGE HAS_CHARACTER
+   scene_001 → char_protagonist
 
-3. [mv_1234567890_2] Catalyst: Action sequence (60% confidence)
-   A kinetic scene that delivers the beat through physical action.
+3. ADD_EDGE LOCATED_AT
+   scene_001 → loc_001
 
-Run "project-apollo accept <move_id>" to apply a move.
+Expected Effects:
+  • Resolves BeatUnrealized(Catalyst)
+  • Introduces protagonist agency
+
+Style tags: dramatic, confrontation, high-tension
+
+ℹ Patch validation: PASS
+
+To apply this move, run:
+  project-apollo accept mv_1234567890_0
 ```
 
 ---
 
-### `project-apollo accept <move_id>`
+### `project-apollo accept <move_id> [options]`
 
-Apply a move's patch to the story.
+Apply a move's patch to the story. By default, shows a preview and asks for confirmation.
 
 ```bash
-project-apollo accept mv_1234567890_0
+project-apollo accept mv_1234567890_0         # Shows preview, asks for confirmation
+project-apollo accept mv_1234567890_0 --yes   # Skip confirmation, apply immediately
 ```
 
-**Output:**
+**Options:**
+- `-y, --yes` - Skip confirmation and apply immediately
+
+**Output (with confirmation):**
 ```
+Accept Move: Catalyst: Dramatic confrontation
+─────────────────────────────────────────────
+
+Confidence: 88%
+Rationale: A high-tension scene that delivers the beat through conflict.
+
+Patch Operations (3 ops):
+
+1. ADD_NODE Scene
+   id: scene_001
+   heading: "INT. WIZARD TOWER - NIGHT"
+   overview: "The young wizard accidentally unleashes..."
+   beat_id: beat_Catalyst
+
+2. ADD_EDGE HAS_CHARACTER
+   scene_001 → char_protagonist
+
+3. ADD_EDGE LOCATED_AT
+   scene_001 → loc_001
+
+Apply this patch? [y/N] y
 ✓ Move accepted: Catalyst: Dramatic confrontation
-Patch applied: 1 operations
-
-Run "project-apollo status" to see updated story.
-Run "project-apollo oqs" to see remaining open questions.
+Patch applied: 3 operations
 ```
+
+**Validation Failure:**
+If the patch fails validation, the command shows structured errors with suggested fixes:
+```
+Validation Failed: 2 errors
+
+1. FK_INTEGRITY
+   Scene "scene_001" references non-existent Beat "beat_INVALID"
+   node: scene_001
+   field: beat_id
+   fix: Ensure the beat exists before creating the scene
+
+2. CONSTRAINT_VIOLATION
+   Scene "scene_001" has scene_overview shorter than 20 characters
+   node: scene_001
+   field: scene_overview
+   fix: Scene overview must be at least 20 characters
+
+Next Actions:
+  • Regenerate moves: project-apollo cluster <oq_id> --regenerate
+  • Add missing nodes: project-apollo add <type> --name "..."
+```
+The command exits with code 1 on validation failure.
 
 ---
 
@@ -414,16 +543,50 @@ The CLI stores all stories in a central location at `~/.apollo/`:
 
 ## Open Question Types
 
-| Type | Phase | Description |
-|------|-------|-------------|
-| `BeatUnrealized` | OUTLINE+ | Beat has no scenes assigned |
-| `ActImbalance` | OUTLINE+ | Act is empty while neighbors have 2+ scenes |
-| `SceneHasNoCast` | DRAFT+ | Scene has no characters |
-| `ConflictNeedsParties` | DRAFT+ | Conflict missing involved characters |
-| `MissingCharacterArc` | DRAFT+ | Character in 3+ scenes but no arc defined |
-| `ThemeUngrounded` | REVISION | Theme not expressed in any scene/beat |
-| `MotifUngrounded` | REVISION | Motif not appearing in any scene |
-| `ArcUngrounded` | REVISION | Character arc not grounded in scenes |
+Open questions are derived automatically from graph state. They're organized by domain and surfaced based on the current phase.
+
+### STRUCTURE Domain
+
+| Type | Severity | Phase | Trigger |
+|------|----------|-------|---------|
+| `BeatUnrealized` | IMPORTANT | OUTLINE | Beat has 0 scenes fulfilling it |
+| `ActImbalance` | IMPORTANT | OUTLINE | Act has 0 scenes while neighbors have 2+ |
+| `SceneUnplaced` | BLOCKING | OUTLINE | Scene has invalid/missing beat assignment |
+
+### SCENE Domain
+
+| Type | Severity | Phase | Trigger |
+|------|----------|-------|---------|
+| `SceneNeedsOverview` | BLOCKING | DRAFT | Scene overview missing or < 20 chars |
+| `SceneHasNoCast` | IMPORTANT | DRAFT | Scene has 0 HAS_CHARACTER edges |
+| `SceneNeedsLocation` | IMPORTANT | DRAFT | Scene has 0 LOCATED_AT edges |
+
+### CHARACTER Domain
+
+| Type | Severity | Phase | Trigger |
+|------|----------|-------|---------|
+| `CharacterUnderspecified` | SOFT | DRAFT | Character in 2+ scenes with no description |
+| `MissingCharacterArc` | IMPORTANT | DRAFT | Character in 3+ scenes with no HAS_ARC edge |
+| `ArcUngrounded` | SOFT | REVISION | CharacterArc has 0 turn_refs |
+
+### CONFLICT Domain
+
+| Type | Severity | Phase | Trigger |
+|------|----------|-------|---------|
+| `ConflictNeedsParties` | IMPORTANT | DRAFT | Conflict has 0 INVOLVES edges |
+| `ConflictNeedsManifestation` | IMPORTANT | DRAFT | Conflict has 0 MANIFESTS_IN edges |
+
+### THEME_MOTIF Domain
+
+| Type | Severity | Phase | Trigger |
+|------|----------|-------|---------|
+| `ThemeUngrounded` | SOFT | REVISION | Theme is FLOATING with 0 EXPRESSED_IN edges |
+| `MotifUngrounded` | SOFT | REVISION | Motif is FLOATING with 0 APPEARS_IN edges |
+
+**Severity Levels:**
+- **BLOCKING** — Must resolve before proceeding; prevents phase transition
+- **IMPORTANT** — Should resolve before phase transition
+- **SOFT** — Suggestion; may remain unresolved
 
 ## Current Limitations
 
@@ -462,11 +625,21 @@ The CLI currently works best in the OUTLINE phase. DRAFT and REVISION phases hav
 
 ### Export Format (save/load)
 
+The export format includes a full `storyVersion` object per the v1 spec:
+
 ```json
 {
   "version": "1.0.0",
   "exportedAt": "2026-01-02T12:00:00.000Z",
   "storyId": "wizard-tale",
+  "storyVersion": {
+    "id": "sv_1234567890",
+    "parent_story_version_id": null,
+    "created_at": "2026-01-02T10:00:00.000Z",
+    "label": "Wizard Tale",
+    "logline": "A young wizard discovers their true powers",
+    "tags": []
+  },
   "storyVersionId": "sv_1234567890",
   "metadata": {
     "name": "Wizard Tale",
@@ -499,6 +672,11 @@ The CLI currently works best in the OUTLINE phase. DRAFT and REVISION phases hav
   }
 }
 ```
+
+**Notes:**
+- `storyVersion.parent_story_version_id` is `null` for linear history (branching support coming later)
+- `storyVersionId` is kept for backward compatibility with older exports
+- The `load` command accepts both old format (just `storyVersionId`) and new format (`storyVersion` object)
 
 ## Development
 

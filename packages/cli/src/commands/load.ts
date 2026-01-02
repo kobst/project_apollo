@@ -39,6 +39,15 @@ export function loadCommand(program: Command): void {
           version?: string;
           storyId?: string;
           storyVersionId?: string;
+          // v1 format: full storyVersion object
+          storyVersion?: {
+            id: string;
+            parent_story_version_id: string | null;
+            created_at: string;
+            label: string;
+            logline?: string;
+            tags?: string[];
+          };
           metadata?: PersistedState['metadata'];
           graph?: PersistedState['graph'];
         };
@@ -48,12 +57,16 @@ export function loadCommand(program: Command): void {
           throw new CLIError('Invalid JSON file');
         }
 
-        // Validate structure
-        if (!data.version || !data.storyVersionId || !data.graph) {
+        // Validate structure - support both old (storyVersionId) and new (storyVersion) formats
+        const storyVersionId = data.storyVersion?.id ?? data.storyVersionId;
+        if (!data.version || !storyVersionId || !data.graph) {
           throw new CLIError(
-            'Invalid export file: missing required fields (version, storyVersionId, graph)'
+            'Invalid export file: missing required fields (version, storyVersionId or storyVersion.id, graph)'
           );
         }
+
+        // Extract logline from storyVersion if available (v1 format)
+        const logline = data.storyVersion?.logline ?? data.metadata?.logline;
 
         // Validate graph
         const graph = deserializeGraph(data.graph);
@@ -81,9 +94,9 @@ export function loadCommand(program: Command): void {
         }
 
         // Create story
-        await createStory(storyId, graph, data.storyVersionId, {
-          name: options.name ?? data.metadata?.name ?? storyId,
-          ...(data.metadata?.logline && { logline: data.metadata.logline }),
+        await createStory(storyId, graph, storyVersionId, {
+          name: options.name ?? data.storyVersion?.label ?? data.metadata?.name ?? storyId,
+          ...(logline && { logline }),
           phase: data.metadata?.phase ?? 'OUTLINE',
         });
 
