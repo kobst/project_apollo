@@ -522,7 +522,7 @@ function generateMovesForClusterWithSeed(
       move_style_tags: variant.tags,
       resolves_open_question_ids: [primaryOQ.id],
       introduces_open_question_ids: [],
-      confidence: 0.5 + random() * 0.4, // Use seeded random for confidence
+      confidence: 0.6 + random() * 0.3, // Use seeded random for confidence (0.6-0.9 range)
       status: 'PROPOSED',
     };
 

@@ -16,6 +16,11 @@ import { acceptCommand } from './commands/accept.js';
 import { previewCommand } from './commands/preview.js';
 import { saveCommand } from './commands/save.js';
 import { loadCommand } from './commands/load.js';
+import { addCommand } from './commands/add.js';
+import { editCommand } from './commands/edit.js';
+import { deleteCommand } from './commands/delete.js';
+import { logCommand } from './commands/log.js';
+import { checkoutCommand } from './commands/checkout.js';
 import { handleError } from './utils/errors.js';
 
 const program = new Command();
@@ -37,6 +42,11 @@ acceptCommand(program);
 previewCommand(program);
 saveCommand(program);
 loadCommand(program);
+addCommand(program);
+editCommand(program);
+deleteCommand(program);
+logCommand(program);
+checkoutCommand(program);
 
 // Global error handling
 program.exitOverride((err) => {

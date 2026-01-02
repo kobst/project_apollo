@@ -452,6 +452,245 @@ project-apollo load mystory.json --force  # Overwrite existing
 - `-n, --name <name>` - Story name (overrides name from file)
 - `-f, --force` - Overwrite existing story with same ID
 
+---
+
+### `project-apollo add <type> [options]`
+
+Add nodes directly to the story graph. Supports characters, locations, conflicts, and scenes.
+
+#### Add Character
+
+```bash
+project-apollo add character "John Smith"
+project-apollo add character "John Smith" --description "A mysterious stranger"
+project-apollo add character "John Smith" --archetype "Hero" --traits "brave,loyal"
+project-apollo add character "John Smith" -y  # Skip confirmation
+```
+
+**Options:**
+- `-d, --description <text>` - Character description
+- `-a, --archetype <type>` - Character archetype (e.g., Hero, Mentor, Threshold Guardian)
+- `-t, --traits <list>` - Comma-separated traits (e.g., "brave,loyal,stubborn")
+- `-y, --yes` - Skip confirmation
+
+#### Add Location
+
+```bash
+project-apollo add location "Paris"
+project-apollo add location "Eiffel Tower" --parent loc_paris_abc
+project-apollo add location "Cafe" --description "A cozy corner cafe" --tags "romantic,quiet"
+```
+
+**Options:**
+- `-d, --description <text>` - Location description
+- `-p, --parent <id>` - Parent location ID (for nested locations)
+- `-t, --tags <list>` - Comma-separated tags
+- `-y, --yes` - Skip confirmation
+
+#### Add Conflict
+
+```bash
+project-apollo add conflict "Save the President" \
+  --type societal \
+  --description "A coup unfolds aboard Air Force One while the president tries to survive."
+```
+
+**Required options:**
+- `--type <type>` - Conflict type: `interpersonal`, `internal`, `societal`, `ideological`, `systemic`, `nature`, `technological`
+- `--description <text>` - Conflict description (min 20 chars)
+
+**Optional:**
+- `--stakes <text>` - Stakes description
+- `--intensity <n>` - Intensity level 1-5
+- `-y, --yes` - Skip confirmation
+
+#### Add Scene
+
+```bash
+project-apollo add scene \
+  --beat Catalyst \
+  --overview "The detective discovers the locked room crime scene for the first time."
+
+project-apollo add scene \
+  --beat Midpoint \
+  --heading "INT. WAREHOUSE - NIGHT" \
+  --overview "A tense confrontation where the protagonist faces the antagonist." \
+  --characters "char_john_abc,char_mary_xyz" \
+  --location "loc_warehouse_123"
+```
+
+**Required options:**
+- `--beat <beatType>` - Beat type (e.g., Catalyst, Midpoint, Finale)
+- `--overview <text>` - Scene overview (min 20 chars)
+
+**Optional:**
+- `--heading <text>` - Scene heading (e.g., "INT. CAFE - DAY")
+- `--characters <ids>` - Comma-separated character IDs
+- `--location <id>` - Location ID
+- `--order <n>` - Order index within beat (default: 1)
+- `-y, --yes` - Skip confirmation
+
+**Output:**
+```
+Add Character: John Smith
+─────────────────────────
+
+Patch Operations (1 ops):
+
+1. ADD_NODE Character
+   id: char_john_smith_abc123
+   name: "John Smith"
+   description: "A mysterious stranger"
+   archetype: "Hero"
+
+Apply this change? [y/N] y
+✓ Add Character: John Smith
+ID: char_john_smith_abc123
+```
+
+---
+
+### `project-apollo edit <node_id> [options]`
+
+Edit a node's properties in the story graph.
+
+```bash
+project-apollo edit char_john_abc --set name="Jonathan"
+project-apollo edit char_john_abc --set archetype="Mentor" --set traits="wise,patient"
+project-apollo edit scene_001 --set mood="tense" --set scene_overview="Updated overview text..."
+project-apollo edit char_john_abc --unset traits --unset notes
+project-apollo edit char_john_abc --set name="John" -y  # Skip confirmation
+```
+
+**Options:**
+- `--set <key=value>` - Set field value (repeatable for multiple fields)
+- `--unset <field>` - Remove a field (repeatable)
+- `-y, --yes` - Skip confirmation
+
+**Notes:**
+- For array fields (traits, tags, scene_tags), use comma-separated values: `--set traits="brave,loyal"`
+- Values are auto-parsed: numbers become numbers, `["a","b"]` becomes arrays
+- Use quotes for values with spaces: `--set description="A tall stranger"`
+
+**Output:**
+```
+Edit: char_john_abc
+───────────────────
+
+Current node type: Character
+
+Current values:
+  name: "John"
+  archetype: "Hero"
+
+Changes:
+  set name = "Jonathan"
+  set archetype = "Mentor"
+
+Apply these changes? [y/N] y
+✓ Updated: char_john_abc
+```
+
+---
+
+### `project-apollo delete <node_id> [options]`
+
+Delete a node from the story graph.
+
+```bash
+project-apollo delete char_john_abc
+project-apollo delete char_john_abc --force    # Skip confirmation
+project-apollo delete char_john_abc --cascade  # Also delete connected edges
+```
+
+**Options:**
+- `-f, --force` - Skip confirmation
+- `--cascade` - Explicitly delete connected edges (edges are always removed for consistency)
+
+**Output:**
+```
+Delete: char_john_abc
+─────────────────────
+
+Type: Character
+Name: John Smith
+Description: A mysterious stranger
+
+Connected edges (2):
+  DELETE HAS_CHARACTER → scene_001
+  DELETE HAS_CHARACTER → scene_003
+
+This action cannot be undone.
+
+Delete this node? [y/N] y
+✓ Deleted: char_john_abc
+Also removed 2 connected edge(s).
+```
+
+**Warning:** Deletion is permanent. Connected edges are automatically removed to maintain graph consistency.
+
+---
+
+### `project-apollo log [options]`
+
+Show version history for the current story.
+
+```bash
+project-apollo log
+project-apollo log --all      # Show all versions
+project-apollo log -n 20      # Show last 20 versions
+```
+
+**Options:**
+- `-a, --all` - Show all versions (default: last 10)
+- `-n, --limit <n>` - Limit number of versions shown
+
+**Output:**
+```
+Version History
+───────────────
+
+* sv_1735789234_abc123 (current)
+  Added Catalyst scene - just now
+  parent: sv_1735789000_xyz789
+
+  sv_1735789000_xyz789
+  Initial - 2 hours ago
+  parent: (none)
+
+Commands:
+  project-apollo checkout <version_id> - Switch to a version
+```
+
+---
+
+### `project-apollo checkout <version_id>`
+
+Switch to a specific version of the story.
+
+```bash
+project-apollo checkout sv_1735789000_xyz789
+```
+
+**Output:**
+```
+✓ Switched to version: sv_1735789000_xyz789
+Label: Initial
+
+⚠ You are in detached state.
+Any changes will create a new branch from this version.
+
+Run "project-apollo status" to see the story at this version.
+Run "project-apollo log" to see version history.
+```
+
+**Notes:**
+- Checking out a non-latest version puts you in "detached state"
+- Any new changes (accepting moves, adding nodes) create a new branch
+- Use `project-apollo log` to see all versions and their relationships
+
+---
+
 ## Typical Workflow
 
 ### 1. Start a New Story
@@ -527,7 +766,7 @@ The CLI stores all stories in a central location at `~/.apollo/`:
 ├── current              # Text file containing current story ID
 └── stories/
     ├── wizard-tale/
-    │   ├── state.json   # Graph state (nodes, edges, metadata)
+    │   ├── state.json   # Graph state with version history
     │   └── session.json # Active clusters and recent moves
     └── detective-case/
         ├── state.json
@@ -540,6 +779,30 @@ The CLI stores all stories in a central location at `~/.apollo/`:
 - You can work from any directory - stories are stored centrally
 - Use `project-apollo list` to see all stories
 - Use `project-apollo open <id>` to switch stories
+
+### Version History
+
+Each story maintains a complete version history. Every change (accepting moves, adding/editing/deleting nodes) creates a new version with a parent link:
+
+```json
+{
+  "history": {
+    "versions": {
+      "sv_123": { "id": "sv_123", "parent_id": null, "label": "Initial", "graph": {...} },
+      "sv_456": { "id": "sv_456", "parent_id": "sv_123", "label": "Added scene", "graph": {...} }
+    },
+    "currentVersionId": "sv_456"
+  }
+}
+```
+
+**Commands:**
+- `project-apollo log` - View version history
+- `project-apollo checkout <version_id>` - Switch to a previous version
+
+**Notes:**
+- Old stories (V1 format) are automatically migrated to V2 with version history
+- Branching is supported: checking out an old version and making changes creates a new branch
 
 ## Open Question Types
 
@@ -604,18 +867,29 @@ The current system uses **deterministic stubs** instead of real LLM integration.
 - Produce story-specific conflict descriptions
 - Offer creative, diverse move options
 
-### Missing Manual Commands
+### Manual Commands
 
-Currently there's no way to manually add nodes. Planned commands:
+The CLI now supports direct node manipulation:
 
 ```bash
-# Not yet implemented
-project-apollo add character --name "John" --role "antagonist"
-project-apollo add conflict --description "..."
-project-apollo add location --name "Paris"
-project-apollo edit <node_id> --field value
-project-apollo delete <node_id>
+# Add nodes
+project-apollo add character "John" --description "..."
+project-apollo add location "Paris" --description "..."
+project-apollo add conflict "Save the world" --type societal --description "..."
+project-apollo add scene --beat Catalyst --overview "..."
+
+# Edit nodes
+project-apollo edit char_john_abc --set name="Jonathan"
+
+# Delete nodes
+project-apollo delete char_john_abc
+
+# Version history
+project-apollo log
+project-apollo checkout sv_123
 ```
+
+See the command reference above for full documentation.
 
 ### Single-Phase Focus
 
@@ -734,8 +1008,8 @@ Apollo/
 Potential future development:
 
 1. **LLM Integration** - Replace stubs with Claude API calls for real content generation
-2. **Manual Node Commands** - Add/edit/delete characters, conflicts, locations
-3. **Interactive Mode** - Guided story building with prompts
-4. **Web UI** - Visual graph editor in the browser
-5. **Collaboration** - Multi-user story development
-6. **Export Formats** - Final Draft, Fountain, PDF screenplay export
+2. **Interactive Mode** - Guided story building with prompts
+3. **Web UI** - Visual graph editor in the browser
+4. **Collaboration** - Multi-user story development
+5. **Export Formats** - Final Draft, Fountain, PDF screenplay export
+6. **Branch Management** - Named branches, merge support, diff between versions
