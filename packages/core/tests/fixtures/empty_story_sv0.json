@@ -1,0 +1,29 @@
+{
+  "description": "Baseline empty story with 15 beats (v0)",
+  "storyVersion": {
+    "type": "StoryVersion",
+    "id": "sv0",
+    "parent_story_version_id": null,
+    "created_at": "2025-01-01T00:00:00.000Z",
+    "label": "Initial Story",
+    "logline": "A hero must save the world."
+  },
+  "nodes": [
+    { "type": "Beat", "id": "beat_OpeningImage", "beat_type": "OpeningImage", "act": 1, "position_index": 1, "status": "EMPTY" },
+    { "type": "Beat", "id": "beat_ThemeStated", "beat_type": "ThemeStated", "act": 1, "position_index": 2, "status": "EMPTY" },
+    { "type": "Beat", "id": "beat_Setup", "beat_type": "Setup", "act": 1, "position_index": 3, "status": "EMPTY" },
+    { "type": "Beat", "id": "beat_Catalyst", "beat_type": "Catalyst", "act": 1, "position_index": 4, "status": "EMPTY" },
+    { "type": "Beat", "id": "beat_Debate", "beat_type": "Debate", "act": 1, "position_index": 5, "status": "EMPTY" },
+    { "type": "Beat", "id": "beat_BreakIntoTwo", "beat_type": "BreakIntoTwo", "act": 2, "position_index": 6, "status": "EMPTY" },
+    { "type": "Beat", "id": "beat_BStory", "beat_type": "BStory", "act": 2, "position_index": 7, "status": "EMPTY" },
+    { "type": "Beat", "id": "beat_FunAndGames", "beat_type": "FunAndGames", "act": 2, "position_index": 8, "status": "EMPTY" },
+    { "type": "Beat", "id": "beat_Midpoint", "beat_type": "Midpoint", "act": 3, "position_index": 9, "status": "EMPTY" },
+    { "type": "Beat", "id": "beat_BadGuysCloseIn", "beat_type": "BadGuysCloseIn", "act": 3, "position_index": 10, "status": "EMPTY" },
+    { "type": "Beat", "id": "beat_AllIsLost", "beat_type": "AllIsLost", "act": 4, "position_index": 11, "status": "EMPTY" },
+    { "type": "Beat", "id": "beat_DarkNightOfSoul", "beat_type": "DarkNightOfSoul", "act": 4, "position_index": 12, "status": "EMPTY" },
+    { "type": "Beat", "id": "beat_BreakIntoThree", "beat_type": "BreakIntoThree", "act": 5, "position_index": 13, "status": "EMPTY" },
+    { "type": "Beat", "id": "beat_Finale", "beat_type": "Finale", "act": 5, "position_index": 14, "status": "EMPTY" },
+    { "type": "Beat", "id": "beat_FinalImage", "beat_type": "FinalImage", "act": 5, "position_index": 15, "status": "EMPTY" }
+  ],
+  "edges": []
+}
