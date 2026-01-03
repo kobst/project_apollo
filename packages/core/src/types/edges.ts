@@ -33,13 +33,68 @@ export type EdgeType =
   | 'EXPRESSED_IN'
   | 'APPEARS_IN';
 
+// =============================================================================
+// Edge Properties and Metadata
+// =============================================================================
+
+/**
+ * Optional properties that can be attached to an edge.
+ */
+export interface EdgeProperties {
+  /** Ordering within a container (e.g., scene order in beat) */
+  order?: number;
+  /** Strength of relation (0-1) */
+  weight?: number;
+  /** AI confidence score (0-1) */
+  confidence?: number;
+  /** Human-readable annotation */
+  notes?: string;
+}
+
+/**
+ * Provenance tracking for edge creation.
+ */
+export interface EdgeProvenance {
+  /** Who/what created this edge */
+  source: 'human' | 'extractor' | 'import';
+  /** ID of the patch that created this edge (for grouping) */
+  patchId?: string;
+  /** AI model that generated this (if source=extractor) */
+  model?: string;
+  /** Hash of prompt that generated this */
+  promptHash?: string;
+  /** User ID who created/approved this */
+  createdBy?: string;
+}
+
+/**
+ * Edge lifecycle status.
+ */
+export type EdgeStatus = 'proposed' | 'approved' | 'rejected';
+
 /**
  * Edge object representing a relationship between two nodes.
+ * First-class entity with ID, properties, provenance, and lifecycle status.
  */
 export interface Edge {
+  /** Unique identifier (UUID) */
+  id: string;
+  /** Edge type defining the relationship */
   type: EdgeType;
+  /** Source node ID */
   from: string;
+  /** Target node ID */
   to: string;
+  /** Optional properties (order, weight, confidence, notes) */
+  properties?: EdgeProperties | undefined;
+  /** Provenance tracking (who/what created this) */
+  provenance?: EdgeProvenance | undefined;
+  /** Lifecycle status (proposed, approved, rejected) */
+  status?: EdgeStatus | undefined;
+  /** ISO timestamp of creation */
+  createdAt?: string | undefined;
+  /** ISO timestamp of last update */
+  updatedAt?: string | undefined;
 }
 
 // =============================================================================
@@ -148,7 +203,77 @@ export function getEdgeRule(type: EdgeType): EdgeRule {
 
 /**
  * Create a unique key for an edge (used for deduplication).
+ * Two edges with the same type, from, and to are considered duplicates.
  */
-export function edgeKey(edge: Edge): string {
+export function edgeKey(edge: Pick<Edge, 'type' | 'from' | 'to'>): string {
   return `${edge.type}:${edge.from}:${edge.to}`;
+}
+
+/**
+ * Alias for edgeKey - explicit name for deduplication contexts.
+ */
+export const edgeUniqueKey = edgeKey;
+
+/**
+ * Generate a unique edge ID (UUID v4).
+ */
+export function generateEdgeId(): string {
+  // Use crypto.randomUUID if available, otherwise fallback
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `edge_${crypto.randomUUID()}`;
+  }
+  // Fallback for older environments
+  return `edge_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
+/**
+ * Check if an edge has the new first-class format (with ID).
+ */
+export function isFirstClassEdge(edge: unknown): edge is Edge {
+  return (
+    typeof edge === 'object' &&
+    edge !== null &&
+    'id' in edge &&
+    typeof (edge as Edge).id === 'string'
+  );
+}
+
+/**
+ * Generate a deterministic edge ID from the edge's unique key.
+ * Used for migrating legacy edges without IDs - ensures the same
+ * edge always gets the same ID across server restarts.
+ */
+function generateDeterministicEdgeId(type: string, from: string, to: string): string {
+  // Simple hash based on the unique key components
+  const key = `${type}:${from}:${to}`;
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    const char = key.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  // Convert to positive hex string
+  const hexHash = Math.abs(hash).toString(16).padStart(8, '0');
+  return `edge_legacy_${hexHash}`;
+}
+
+/**
+ * Normalize a legacy edge (without ID) to first-class format.
+ * Assigns a deterministic ID based on edge key (for stability) and default status/provenance.
+ */
+export function normalizeEdge(
+  edge: Pick<Edge, 'type' | 'from' | 'to'> & Partial<Edge>
+): Edge {
+  return {
+    // Use existing ID, or generate deterministic one for legacy edges
+    id: edge.id ?? generateDeterministicEdgeId(edge.type, edge.from, edge.to),
+    type: edge.type,
+    from: edge.from,
+    to: edge.to,
+    properties: edge.properties,
+    provenance: edge.provenance ?? { source: 'import' },
+    status: edge.status ?? 'approved',
+    createdAt: edge.createdAt ?? new Date().toISOString(),
+    updatedAt: edge.updatedAt,
+  };
 }

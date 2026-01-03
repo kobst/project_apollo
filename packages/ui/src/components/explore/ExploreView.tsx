@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { api } from '../../api/client';
-import type { NodeData, NodeRelationsData } from '../../api/types';
+import type { NodeData, NodeRelationsData, EdgeData, CreateEdgeRequest, EdgeProperties, EdgeStatus } from '../../api/types';
 import { NodeTypeFilter, type NodeTypeOption } from './NodeTypeFilter';
 import { NodeList } from './NodeList';
 import { NodeDetailPanel } from './NodeDetailPanel';
@@ -12,6 +12,10 @@ import { ClusterCard } from '../clusters/ClusterCard';
 import { PatchPreview } from '../preview/PatchPreview';
 import { ValidationStatus } from '../preview/ValidationStatus';
 import { InputPanel } from '../input/InputPanel';
+import { EditEdgeModal } from './EditEdgeModal';
+import { AddRelationModal } from './AddRelationModal';
+import { EdgePatchBuilder, PendingEdgeOp } from './EdgePatchBuilder';
+import { InteractiveEdgeData } from './NodeRelations';
 import styles from './ExploreView.module.css';
 
 export function ExploreView() {
@@ -43,6 +47,14 @@ export function ExploreView() {
   const [editChanges, setEditChanges] = useState<Record<string, unknown>>({});
   const [committing, setCommitting] = useState(false);
 
+  // Edge editing state
+  const [editingEdge, setEditingEdge] = useState<EdgeData | null>(null);
+  const [addEdgeDirection, setAddEdgeDirection] = useState<'outgoing' | 'incoming' | null>(null);
+  const [pendingEdgeOps, setPendingEdgeOps] = useState<PendingEdgeOp[]>([]);
+  const [edgeCommitting, setEdgeCommitting] = useState(false);
+  const [fullEdges, setFullEdges] = useState<EdgeData[]>([]);
+  const [allNodes, setAllNodes] = useState<NodeData[]>([]);
+
   // Fetch nodes when story or type changes
   const fetchNodes = useCallback(async () => {
     if (!currentStoryId) return;
@@ -67,9 +79,31 @@ export function ExploreView() {
     setNodeRelations(null);
   }, [fetchNodes]);
 
+  // Fetch full edge data for a node (for interactive editing)
+  const fetchFullEdges = useCallback(async (nodeId: string): Promise<EdgeData[]> => {
+    if (!currentStoryId) return [];
+
+    try {
+      const [outgoingEdges, incomingEdges] = await Promise.all([
+        api.listEdges(currentStoryId, { from: nodeId }),
+        api.listEdges(currentStoryId, { to: nodeId }),
+      ]);
+
+      // Combine edges without duplicates
+      const edgeMap = new Map<string, EdgeData>();
+      outgoingEdges.edges.forEach(e => edgeMap.set(e.id, e));
+      incomingEdges.edges.forEach(e => edgeMap.set(e.id, e));
+      return Array.from(edgeMap.values());
+    } catch (err) {
+      console.error('Failed to load full edge data:', err);
+      return [];
+    }
+  }, [currentStoryId]);
+
   // Fetch relations when node selected
   const selectNode = useCallback(async (nodeId: string | null) => {
     setSelectedNodeId(nodeId);
+    setFullEdges([]); // Reset edges on new selection
 
     if (!nodeId || !currentStoryId) {
       setNodeRelations(null);
@@ -79,14 +113,39 @@ export function ExploreView() {
     setRelationsLoading(true);
 
     try {
-      const data = await api.getNodeRelations(currentStoryId, nodeId);
-      setNodeRelations(data);
+      // Fetch relations and full edges in parallel
+      const [relationsData, edgesData] = await Promise.all([
+        api.getNodeRelations(currentStoryId, nodeId),
+        fetchFullEdges(nodeId),
+      ]);
+      setNodeRelations(relationsData);
+      setFullEdges(edgesData);
     } catch (err) {
-      console.error('Failed to load relations:', err);
+      console.error('Failed to load node data:', err);
       setNodeRelations(null);
+      setFullEdges([]);
     } finally {
       setRelationsLoading(false);
     }
+  }, [currentStoryId, fetchFullEdges]);
+
+  // Fetch all nodes for the node picker (used when adding relations)
+  useEffect(() => {
+    const fetchAllNodes = async () => {
+      if (!currentStoryId) return;
+      try {
+        // Fetch nodes of all types for the picker
+        const types = ['Beat', 'Scene', 'Character', 'Conflict', 'Location', 'Theme', 'Motif', 'CharacterArc', 'Object'];
+        const results = await Promise.all(
+          types.map(type => api.listNodes(currentStoryId, type).catch(() => ({ nodes: [] })))
+        );
+        const all = results.flatMap(r => r.nodes);
+        setAllNodes(all);
+      } catch (err) {
+        console.error('Failed to load all nodes:', err);
+      }
+    };
+    void fetchAllNodes();
   }, [currentStoryId]);
 
   // Handle generate for selected node
@@ -143,11 +202,152 @@ export function ExploreView() {
     }
   }, [currentStoryId, selectedNodeId, editChanges, fetchNodes]);
 
+  // Edge editing handlers
+  const handleEditEdge = useCallback((edge: EdgeData) => {
+    setEditingEdge(edge);
+  }, []);
+
+  const handleDeleteEdge = useCallback((edgeId: string) => {
+    const edge = fullEdges.find(e => e.id === edgeId);
+    if (!edge) return;
+
+    setPendingEdgeOps(prev => [...prev, {
+      op: 'DELETE_EDGE',
+      edgeId: edge.id,
+      edgeType: edge.type,
+      from: edge.from,
+      to: edge.to,
+    }]);
+  }, [fullEdges]);
+
+  const handleAddEdge = useCallback((direction: 'outgoing' | 'incoming') => {
+    setAddEdgeDirection(direction);
+  }, []);
+
+  const handleSaveEdge = useCallback((edgeId: string, changes: { properties?: EdgeProperties | undefined; status?: EdgeStatus | undefined }) => {
+    const edge = fullEdges.find(e => e.id === edgeId);
+    if (!edge) return;
+
+    const pendingChanges: { properties?: EdgeProperties; status?: EdgeStatus } = {};
+    if (changes.properties !== undefined) {
+      pendingChanges.properties = changes.properties;
+    }
+    if (changes.status !== undefined) {
+      pendingChanges.status = changes.status;
+    }
+
+    setPendingEdgeOps(prev => [...prev, {
+      op: 'UPDATE_EDGE',
+      edgeId,
+      edgeType: edge.type,
+      from: edge.from,
+      to: edge.to,
+      changes: pendingChanges,
+    }]);
+    setEditingEdge(null);
+  }, [fullEdges]);
+
+  const handleAddNewEdge = useCallback((edgeRequest: CreateEdgeRequest) => {
+    setPendingEdgeOps(prev => [...prev, {
+      op: 'ADD_EDGE',
+      edge: edgeRequest,
+    }]);
+    setAddEdgeDirection(null);
+  }, []);
+
+  const handleRemoveEdgeOp = useCallback((index: number) => {
+    setPendingEdgeOps(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleDiscardEdgeOps = useCallback(() => {
+    setPendingEdgeOps([]);
+  }, []);
+
+  const handleCommitEdgeOps = useCallback(async () => {
+    if (!currentStoryId || pendingEdgeOps.length === 0) return;
+
+    setEdgeCommitting(true);
+    try {
+      // Execute operations via batch endpoint
+      const adds: CreateEdgeRequest[] = [];
+      const updates: Array<{ id: string; set?: Partial<EdgeProperties>; status?: EdgeStatus }> = [];
+      const deletes: string[] = [];
+
+      for (const pendingOp of pendingEdgeOps) {
+        if (pendingOp.op === 'ADD_EDGE') {
+          adds.push(pendingOp.edge);
+        } else if (pendingOp.op === 'UPDATE_EDGE') {
+          const updateEntry: { id: string; set?: Partial<EdgeProperties>; status?: EdgeStatus } = {
+            id: pendingOp.edgeId,
+          };
+          if (pendingOp.changes.properties !== undefined) {
+            updateEntry.set = pendingOp.changes.properties;
+          }
+          if (pendingOp.changes.status !== undefined) {
+            updateEntry.status = pendingOp.changes.status;
+          }
+          updates.push(updateEntry);
+        } else if (pendingOp.op === 'DELETE_EDGE') {
+          deletes.push(pendingOp.edgeId);
+        }
+      }
+
+      await api.batchEdges(currentStoryId, { adds, updates, deletes });
+
+      // Clear pending ops and refresh
+      setPendingEdgeOps([]);
+      if (selectedNodeId) {
+        void selectNode(selectedNodeId);
+      }
+    } catch (err) {
+      console.error('Failed to commit edge changes:', err);
+    } finally {
+      setEdgeCommitting(false);
+    }
+  }, [currentStoryId, pendingEdgeOps, selectedNodeId, selectNode]);
+
   // Get selected node data for editor
   const selectedNode = useMemo(() => {
     if (!nodeRelations) return null;
     return nodeRelations.node;
   }, [nodeRelations]);
+
+  // Convert full edges to interactive edge data for NodeRelations
+  const interactiveEdges = useMemo(() => {
+    if (!selectedNodeId || !nodeRelations) return { outgoing: [] as InteractiveEdgeData[], incoming: [] as InteractiveEdgeData[] };
+
+    const outgoing: InteractiveEdgeData[] = nodeRelations.outgoing.map(rel => {
+      const fullEdge = fullEdges.find(e => e.from === rel.source && e.to === rel.target && e.type === rel.type);
+      const result: InteractiveEdgeData = { ...rel };
+      if (fullEdge?.id !== undefined) {
+        result.edgeId = fullEdge.id;
+      }
+      if (fullEdge?.properties !== undefined) {
+        result.properties = fullEdge.properties;
+      }
+      if (fullEdge?.status !== undefined) {
+        result.status = fullEdge.status;
+      }
+      return result;
+    });
+
+    const incoming: InteractiveEdgeData[] = nodeRelations.incoming.map(rel => {
+      const fullEdge = fullEdges.find(e => e.from === rel.source && e.to === rel.target && e.type === rel.type);
+      const result: InteractiveEdgeData = { ...rel };
+      if (fullEdge?.id !== undefined) {
+        result.edgeId = fullEdge.id;
+      }
+      if (fullEdge?.properties !== undefined) {
+        result.properties = fullEdge.properties;
+      }
+      if (fullEdge?.status !== undefined) {
+        result.status = fullEdge.status;
+      }
+      return result;
+    });
+
+    return { outgoing, incoming };
+  }, [selectedNodeId, nodeRelations, fullEdges]);
 
   // Check if we have a cluster for the current selected node
   const hasClusterForNode = cluster && scopedNodeId === selectedNodeId;
@@ -223,13 +423,29 @@ export function ExploreView() {
               )}
             </div>
           ) : selectedNodeId && nodeRelations ? (
-            <NodeDetailPanel
-              relations={nodeRelations}
-              loading={relationsLoading}
-              onGenerate={handleGenerate}
-              generating={clusterLoading}
-              onEdit={handleStartEdit}
-            />
+            <>
+              <NodeDetailPanel
+                relations={nodeRelations}
+                loading={relationsLoading}
+                onGenerate={handleGenerate}
+                generating={clusterLoading}
+                onEdit={handleStartEdit}
+                onEditEdge={handleEditEdge}
+                onDeleteEdge={handleDeleteEdge}
+                onAddEdge={handleAddEdge}
+                fullEdges={interactiveEdges}
+              />
+              {/* Edge pending changes preview */}
+              {pendingEdgeOps.length > 0 && (
+                <EdgePatchBuilder
+                  operations={pendingEdgeOps}
+                  onRemove={handleRemoveEdgeOp}
+                  onCommit={handleCommitEdgeOps}
+                  onDiscard={handleDiscardEdgeOps}
+                  committing={edgeCommitting}
+                />
+              )}
+            </>
           ) : (
             <div className={styles.noSelection}>
               <p>Select a node to view details</p>
@@ -279,6 +495,31 @@ export function ExploreView() {
           ) : null}
         </div>
       </div>
+
+      {/* Edge editing modals */}
+      {editingEdge && (
+        <EditEdgeModal
+          edge={editingEdge}
+          onSave={handleSaveEdge}
+          onDelete={(edgeId) => {
+            handleDeleteEdge(edgeId);
+            setEditingEdge(null);
+          }}
+          onCancel={() => setEditingEdge(null)}
+          saving={edgeCommitting}
+        />
+      )}
+
+      {addEdgeDirection && selectedNode && (
+        <AddRelationModal
+          currentNode={selectedNode}
+          direction={addEdgeDirection}
+          availableNodes={allNodes}
+          onAdd={handleAddNewEdge}
+          onCancel={() => setAddEdgeDirection(null)}
+          saving={edgeCommitting}
+        />
+      )}
     </div>
   );
 }

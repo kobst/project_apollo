@@ -26,6 +26,13 @@ import {
   createExtractHandler,
   createExtractPreviewHandler,
   createExtractAcceptHandler,
+  createListEdgesHandler,
+  createGetEdgeHandler,
+  createAddEdgeHandler,
+  createUpdateEdgeHandler,
+  createDeleteEdgeHandler,
+  createBatchEdgesHandler,
+  createUpsertEdgeHandler,
 } from '../handlers/index.js';
 
 export function createStoriesRouter(ctx: StorageContext): Router {
@@ -63,6 +70,16 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.post('/:id/extract', createExtractHandler(ctx));
   router.get('/:id/extract/:proposalId/preview', createExtractPreviewHandler(ctx));
   router.post('/:id/extract/:proposalId/accept', createExtractAcceptHandler(ctx));
+
+  // Edge CRUD endpoints
+  router.get('/:id/edges', createListEdgesHandler(ctx));
+  router.get('/:id/edges/:edgeId', createGetEdgeHandler(ctx));
+  router.post('/:id/edges', createAddEdgeHandler(ctx));
+  router.patch('/:id/edges/:edgeId', createUpdateEdgeHandler(ctx));
+  router.delete('/:id/edges/:edgeId', createDeleteEdgeHandler(ctx));
+  // Note: Using regex to match :batch and :upsert as sub-resources
+  router.post('/:id/edges\\:batch', createBatchEdgesHandler(ctx));
+  router.post('/:id/edges\\:upsert', createUpsertEdgeHandler(ctx));
 
   return router;
 }

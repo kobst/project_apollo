@@ -77,13 +77,21 @@ export function createPreviewHandler(ctx: StorageContext) {
             },
           };
         } else if (op.op === 'DELETE_EDGE') {
+          // DELETE_EDGE can have { id } or { type, from, to }
+          if ('type' in op.edge && 'from' in op.edge && 'to' in op.edge) {
+            return {
+              op: op.op,
+              edge: {
+                type: op.edge.type,
+                source: op.edge.from,
+                target: op.edge.to,
+              },
+            };
+          }
+          // ID-based deletion
           return {
             op: op.op,
-            edge: {
-              type: op.edge.type,
-              source: op.edge.from,
-              target: op.edge.to,
-            },
+            id: (op.edge as { id: string }).id,
           };
         }
         return { op: (op as { op: string }).op };

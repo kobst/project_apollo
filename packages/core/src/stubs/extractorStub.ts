@@ -15,6 +15,7 @@ import type {
   Scene,
 } from '../types/nodes.js';
 import { BEAT_ACT_MAP, BEAT_POSITION_MAP } from '../types/nodes.js';
+import { generateEdgeId } from '../types/edges.js';
 
 // =============================================================================
 // Extractor Stub
@@ -78,6 +79,7 @@ export function extractFromLogline(
       {
         op: 'ADD_EDGE',
         edge: {
+          id: generateEdgeId(),
           type: 'INVOLVES',
           from: 'conf_central',
           to: 'char_protagonist',
@@ -364,6 +366,7 @@ export function extractFromInput(
       {
         op: 'ADD_EDGE',
         edge: {
+          id: generateEdgeId(),
           type: 'FULFILLS',
           from: sceneId,
           to: beatId,

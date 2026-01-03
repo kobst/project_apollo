@@ -6,6 +6,7 @@
 import { readFile, writeFile, mkdir, access, readdir } from 'fs/promises';
 import { join } from 'path';
 import type { GraphState, KGNode, Edge, OQPhase } from '@apollo/core';
+import { normalizeEdge } from '@apollo/core';
 import type { StorageContext } from './config.js';
 
 // =============================================================================
@@ -130,7 +131,8 @@ export function serializeGraph(graph: GraphState): SerializedGraph {
 export function deserializeGraph(data: SerializedGraph): GraphState {
   return {
     nodes: new Map(Object.entries(data.nodes)),
-    edges: data.edges,
+    // Normalize edges to ensure they have IDs (migration for old data)
+    edges: data.edges.map(edge => normalizeEdge(edge)),
   };
 }
 

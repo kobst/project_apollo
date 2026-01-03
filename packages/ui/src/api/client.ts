@@ -24,6 +24,15 @@ import type {
   ExtractRequest,
   ExtractPreviewData,
   ExtractAcceptData,
+  EdgesListData,
+  EdgeData,
+  EdgeMutationData,
+  BatchEdgeResult,
+  UpsertEdgeResult,
+  EdgeFilters,
+  CreateEdgeRequest,
+  UpdateEdgeRequest,
+  BatchEdgeRequest,
 } from './types';
 
 const API_BASE = '/api';
@@ -39,7 +48,7 @@ class ApiError extends Error {
 }
 
 async function request<T>(
-  method: 'GET' | 'POST' | 'PATCH',
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown
 ): Promise<T> {
@@ -75,6 +84,10 @@ function POST<T>(path: string, body?: unknown): Promise<T> {
 
 function PATCH<T>(path: string, body?: unknown): Promise<T> {
   return request<T>('PATCH', path, body);
+}
+
+function DELETE<T>(path: string): Promise<T> {
+  return request<T>('DELETE', path);
 }
 
 export const api = {
@@ -136,6 +149,29 @@ export const api = {
     GET<ExtractPreviewData>(`/stories/${storyId}/extract/${proposalId}/preview`),
   acceptExtract: (storyId: string, proposalId: string) =>
     POST<ExtractAcceptData>(`/stories/${storyId}/extract/${proposalId}/accept`),
+
+  // Edge CRUD (Phase D)
+  listEdges: (storyId: string, filters?: EdgeFilters) => {
+    const params = new URLSearchParams();
+    if (filters?.type) params.set('type', filters.type);
+    if (filters?.from) params.set('from', filters.from);
+    if (filters?.to) params.set('to', filters.to);
+    if (filters?.status) params.set('status', filters.status);
+    const query = params.toString();
+    return GET<EdgesListData>(`/stories/${storyId}/edges${query ? `?${query}` : ''}`);
+  },
+  getEdge: (storyId: string, edgeId: string) =>
+    GET<EdgeData>(`/stories/${storyId}/edges/${edgeId}`),
+  createEdge: (storyId: string, data: CreateEdgeRequest) =>
+    POST<EdgeMutationData>(`/stories/${storyId}/edges`, data),
+  updateEdge: (storyId: string, edgeId: string, data: UpdateEdgeRequest) =>
+    PATCH<EdgeMutationData>(`/stories/${storyId}/edges/${edgeId}`, data),
+  deleteEdge: (storyId: string, edgeId: string) =>
+    DELETE<{ deleted: boolean; newVersionId: string }>(`/stories/${storyId}/edges/${edgeId}`),
+  batchEdges: (storyId: string, data: BatchEdgeRequest) =>
+    POST<BatchEdgeResult>(`/stories/${storyId}/edges:batch`, data),
+  upsertEdge: (storyId: string, data: CreateEdgeRequest) =>
+    POST<UpsertEdgeResult>(`/stories/${storyId}/edges:upsert`, data),
 };
 
 export { ApiError };

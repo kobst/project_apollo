@@ -4,7 +4,7 @@
  */
 
 import type { ContentNode, BaseNode } from './nodes.js';
-import type { Edge } from './edges.js';
+import type { Edge, EdgeProperties, EdgeStatus } from './edges.js';
 
 // =============================================================================
 // Patch Operations
@@ -48,10 +48,57 @@ export interface AddEdgeOp {
 
 /**
  * DELETE_EDGE operation - removes an edge from the graph.
+ * Can delete by ID or by (type, from, to) tuple.
  */
 export interface DeleteEdgeOp {
   op: 'DELETE_EDGE';
+  /** Edge to delete - can be full edge or just { type, from, to } or { id } */
+  edge: Pick<Edge, 'type' | 'from' | 'to'> | { id: string };
+}
+
+/**
+ * UPDATE_EDGE operation - updates properties on an existing edge.
+ * Cannot update 'id', 'type', 'from', or 'to' fields.
+ */
+export interface UpdateEdgeOp {
+  op: 'UPDATE_EDGE';
+  /** Edge ID to update */
+  id: string;
+  /** Properties to set */
+  set?: Partial<EdgeProperties> | undefined;
+  /** Property keys to unset */
+  unset?: (keyof EdgeProperties)[] | undefined;
+  /** New status */
+  status?: EdgeStatus | undefined;
+}
+
+/**
+ * UPSERT_EDGE operation - insert if not exists, update if exists.
+ * Deduplication based on uniqueKey (type:from:to).
+ */
+export interface UpsertEdgeOp {
+  op: 'UPSERT_EDGE';
+  /** Edge to upsert - if exists by uniqueKey, merge properties */
   edge: Edge;
+}
+
+/**
+ * BATCH_EDGE operation - atomically process multiple edge operations.
+ * All operations succeed or all fail.
+ */
+export interface BatchEdgeOp {
+  op: 'BATCH_EDGE';
+  /** Edges to add */
+  adds?: Edge[] | undefined;
+  /** Edge updates by ID */
+  updates?: Array<{
+    id: string;
+    set?: Partial<EdgeProperties> | undefined;
+    unset?: (keyof EdgeProperties)[] | undefined;
+    status?: EdgeStatus | undefined;
+  }> | undefined;
+  /** Edge IDs to delete */
+  deletes?: string[] | undefined;
 }
 
 /**
@@ -62,7 +109,10 @@ export type PatchOp =
   | UpdateNodeOp
   | DeleteNodeOp
   | AddEdgeOp
-  | DeleteEdgeOp;
+  | DeleteEdgeOp
+  | UpdateEdgeOp
+  | UpsertEdgeOp
+  | BatchEdgeOp;
 
 /**
  * All valid operation type strings.
@@ -72,7 +122,10 @@ export type PatchOpType =
   | 'UPDATE_NODE'
   | 'DELETE_NODE'
   | 'ADD_EDGE'
-  | 'DELETE_EDGE';
+  | 'DELETE_EDGE'
+  | 'UPDATE_EDGE'
+  | 'UPSERT_EDGE'
+  | 'BATCH_EDGE';
 
 /**
  * List of all operation types for validation.
@@ -83,6 +136,9 @@ export const PATCH_OP_TYPES: PatchOpType[] = [
   'DELETE_NODE',
   'ADD_EDGE',
   'DELETE_EDGE',
+  'UPDATE_EDGE',
+  'UPSERT_EDGE',
+  'BATCH_EDGE',
 ];
 
 // =============================================================================
@@ -156,4 +212,25 @@ export function isAddEdgeOp(op: PatchOp): op is AddEdgeOp {
  */
 export function isDeleteEdgeOp(op: PatchOp): op is DeleteEdgeOp {
   return op.op === 'DELETE_EDGE';
+}
+
+/**
+ * Type guard for UPDATE_EDGE operation.
+ */
+export function isUpdateEdgeOp(op: PatchOp): op is UpdateEdgeOp {
+  return op.op === 'UPDATE_EDGE';
+}
+
+/**
+ * Type guard for UPSERT_EDGE operation.
+ */
+export function isUpsertEdgeOp(op: PatchOp): op is UpsertEdgeOp {
+  return op.op === 'UPSERT_EDGE';
+}
+
+/**
+ * Type guard for BATCH_EDGE operation.
+ */
+export function isBatchEdgeOp(op: PatchOp): op is BatchEdgeOp {
+  return op.op === 'BATCH_EDGE';
 }

@@ -1,0 +1,253 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #1a1a2e;
+  border-radius: 8px;
+  border: 1px solid #3a3a5a;
+  padding: 14px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ddd;
+  margin: 0;
+}
+
+.count {
+  font-size: 11px;
+  color: #888;
+  background: #2a2a4a;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.summary {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.summaryAdd {
+  color: #4caf50;
+}
+
+.summaryUpdate {
+  color: #ffc107;
+}
+
+.summaryDelete {
+  color: #f44336;
+}
+
+.operations {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.operation {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #2a2a4a;
+  border-radius: 6px;
+}
+
+.opContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.opHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.opType {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: monospace;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.opAdd {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+}
+
+.opUpdate {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+}
+
+.opDelete {
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+}
+
+.edgeType {
+  font-family: monospace;
+  font-size: 11px;
+  color: #64b5f6;
+}
+
+.opDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.edgeLabel {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.edgeEndpoints {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.nodeId {
+  font-size: 10px;
+  color: #888;
+  background: #1e1e2e;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.arrow {
+  color: #666;
+  font-size: 12px;
+}
+
+.properties {
+  font-size: 11px;
+  color: #888;
+  font-style: italic;
+}
+
+.changes {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.changeItem {
+  display: flex;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.changeLabel {
+  color: #666;
+}
+
+.changeValue {
+  color: #aaa;
+}
+
+.statusProposed {
+  color: #ffc107;
+}
+
+.statusApproved {
+  color: #4caf50;
+}
+
+.statusRejected {
+  color: #f44336;
+}
+
+.removeBtn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: #666;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.removeBtn:hover:not(:disabled) {
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+}
+
+.removeBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid #2a2a4a;
+}
+
+.discardBtn {
+  padding: 8px 16px;
+  border: 1px solid #f44336;
+  border-radius: 4px;
+  background: transparent;
+  color: #f44336;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.discardBtn:hover:not(:disabled) {
+  background: rgba(244, 67, 54, 0.1);
+}
+
+.discardBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.commitBtn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 4px;
+  background: #4caf50;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.commitBtn:hover:not(:disabled) {
+  background: #5cb85c;
+}
+
+.commitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -37,7 +37,10 @@ export type ValidationErrorCode =
   | 'OUT_OF_RANGE'
   | 'INVALID_EDGE_TYPE'
   | 'INVALID_EDGE_SOURCE'
-  | 'INVALID_EDGE_TARGET';
+  | 'INVALID_EDGE_TARGET'
+  | 'INVALID_EDGE_ID'
+  | 'INVALID_EDGE_PROPERTY'
+  | 'INVALID_EDGE_STATUS';
 
 /**
  * A single validation error.
@@ -230,13 +233,36 @@ function checkFKIntegrity(graph: GraphState): ValidationError[] {
 // =============================================================================
 
 /**
- * Check that all edges have valid types and source/target node types.
+ * Valid edge status values.
+ */
+const VALID_EDGE_STATUSES = ['proposed', 'approved', 'rejected'] as const;
+
+/**
+ * Check that all edges have valid types, source/target node types, and properties.
  */
 function checkEdgeValidity(graph: GraphState): ValidationError[] {
   const errors: ValidationError[] = [];
-  const seen = new Set<string>();
+  const seenKeys = new Set<string>();
+  const seenIds = new Set<string>();
 
   for (const edge of graph.edges) {
+    // Check for missing or invalid edge ID
+    if (!edge.id || typeof edge.id !== 'string') {
+      errors.push({
+        code: 'INVALID_EDGE_ID',
+        message: `Edge "${edge.type}" from "${edge.from}" to "${edge.to}" has missing or invalid ID`,
+      });
+    } else {
+      // Check for duplicate edge IDs
+      if (seenIds.has(edge.id)) {
+        errors.push({
+          code: 'INVALID_EDGE_ID',
+          message: `Duplicate edge ID: "${edge.id}"`,
+        });
+      }
+      seenIds.add(edge.id);
+    }
+
     // Check for unknown edge types
     if (!(edge.type in EDGE_RULES)) {
       errors.push({
@@ -265,15 +291,66 @@ function checkEdgeValidity(graph: GraphState): ValidationError[] {
       });
     }
 
-    // Check for duplicate edges
+    // Check for duplicate edges (by uniqueKey)
     const key = `${edge.type}:${edge.from}:${edge.to}`;
-    if (seen.has(key)) {
+    if (seenKeys.has(key)) {
       errors.push({
         code: 'DUPLICATE_EDGE',
         message: `Duplicate edge: "${edge.type}" from "${edge.from}" to "${edge.to}"`,
       });
     }
-    seen.add(key);
+    seenKeys.add(key);
+
+    // Validate edge properties
+    if (edge.properties) {
+      // order must be >= 1
+      if (edge.properties.order !== undefined) {
+        if (typeof edge.properties.order !== 'number' || edge.properties.order < 1) {
+          errors.push({
+            code: 'INVALID_EDGE_PROPERTY',
+            message: `Edge "${edge.id}" has invalid order: ${edge.properties.order} (must be >= 1)`,
+          });
+        }
+      }
+
+      // weight must be 0-1
+      if (edge.properties.weight !== undefined) {
+        if (
+          typeof edge.properties.weight !== 'number' ||
+          edge.properties.weight < 0 ||
+          edge.properties.weight > 1
+        ) {
+          errors.push({
+            code: 'INVALID_EDGE_PROPERTY',
+            message: `Edge "${edge.id}" has invalid weight: ${edge.properties.weight} (must be 0-1)`,
+          });
+        }
+      }
+
+      // confidence must be 0-1
+      if (edge.properties.confidence !== undefined) {
+        if (
+          typeof edge.properties.confidence !== 'number' ||
+          edge.properties.confidence < 0 ||
+          edge.properties.confidence > 1
+        ) {
+          errors.push({
+            code: 'INVALID_EDGE_PROPERTY',
+            message: `Edge "${edge.id}" has invalid confidence: ${edge.properties.confidence} (must be 0-1)`,
+          });
+        }
+      }
+    }
+
+    // Validate edge status
+    if (edge.status !== undefined) {
+      if (!VALID_EDGE_STATUSES.includes(edge.status as any)) {
+        errors.push({
+          code: 'INVALID_EDGE_STATUS',
+          message: `Edge "${edge.id}" has invalid status: "${edge.status}" (must be one of: ${VALID_EDGE_STATUSES.join(', ')})`,
+        });
+      }
+    }
   }
 
   return errors;

@@ -14,7 +14,12 @@ import type {
   DeleteNodeOp,
   AddEdgeOp,
   DeleteEdgeOp,
+  UpdateEdgeOp,
+  UpsertEdgeOp,
+  BatchEdgeOp,
 } from '../types/patch.js';
+import type { Edge, EdgeProperties } from '../types/edges.js';
+import { edgeKey, normalizeEdge } from '../types/edges.js';
 
 // =============================================================================
 // Patch Application Errors
@@ -88,6 +93,15 @@ function applyOp(graph: GraphState, op: PatchOp): void {
       break;
     case 'DELETE_EDGE':
       applyDeleteEdge(graph, op);
+      break;
+    case 'UPDATE_EDGE':
+      applyUpdateEdge(graph, op);
+      break;
+    case 'UPSERT_EDGE':
+      applyUpsertEdge(graph, op);
+      break;
+    case 'BATCH_EDGE':
+      applyBatchEdge(graph, op);
       break;
     default:
       // TypeScript exhaustiveness check
@@ -169,39 +183,208 @@ function applyDeleteNode(graph: GraphState, op: DeleteNodeOp): void {
 
 /**
  * Apply ADD_EDGE operation.
+ * Auto-generates ID if not provided.
  */
 function applyAddEdge(graph: GraphState, op: AddEdgeOp): void {
   const { edge } = op;
 
-  // Check for duplicate edge
-  const exists = graph.edges.some(
-    (e) => e.type === edge.type && e.from === edge.from && e.to === edge.to
-  );
+  // Check for duplicate edge by uniqueKey
+  const key = edgeKey(edge);
+  const exists = graph.edges.some((e) => edgeKey(e) === key);
   if (exists) {
     throw new Error(
       `Edge "${edge.type}" from "${edge.from}" to "${edge.to}" already exists`
     );
   }
 
-  graph.edges.push(edge);
+  // Normalize edge (add ID if missing, set defaults)
+  const normalizedEdge = normalizeEdge(edge);
+
+  // Check for duplicate ID
+  if (graph.edges.some((e) => e.id === normalizedEdge.id)) {
+    throw new Error(`Edge with ID "${normalizedEdge.id}" already exists`);
+  }
+
+  graph.edges.push(normalizedEdge);
 }
 
 /**
  * Apply DELETE_EDGE operation.
+ * Supports deletion by ID or by (type, from, to) tuple.
  */
 function applyDeleteEdge(graph: GraphState, op: DeleteEdgeOp): void {
   const { edge } = op;
 
   const initialLength = graph.edges.length;
-  graph.edges = graph.edges.filter(
-    (e) =>
-      !(e.type === edge.type && e.from === edge.from && e.to === edge.to)
-  );
 
-  if (graph.edges.length === initialLength) {
-    throw new Error(
-      `Edge "${edge.type}" from "${edge.from}" to "${edge.to}" not found`
-    );
+  // Check if deleting by ID
+  if ('id' in edge && edge.id && !('type' in edge)) {
+    graph.edges = graph.edges.filter((e) => e.id !== edge.id);
+    if (graph.edges.length === initialLength) {
+      throw new Error(`Edge with ID "${edge.id}" not found`);
+    }
+  } else if ('type' in edge && 'from' in edge && 'to' in edge) {
+    // Delete by (type, from, to) tuple
+    const key = edgeKey(edge as Pick<Edge, 'type' | 'from' | 'to'>);
+    graph.edges = graph.edges.filter((e) => edgeKey(e) !== key);
+    if (graph.edges.length === initialLength) {
+      throw new Error(
+        `Edge "${(edge as Edge).type}" from "${(edge as Edge).from}" to "${(edge as Edge).to}" not found`
+      );
+    }
+  } else {
+    throw new Error('DELETE_EDGE requires either { id } or { type, from, to }');
+  }
+}
+
+/**
+ * Apply UPDATE_EDGE operation.
+ * Updates properties on an existing edge by ID.
+ */
+function applyUpdateEdge(graph: GraphState, op: UpdateEdgeOp): void {
+  const { id, set, unset, status } = op;
+
+  const edgeIndex = graph.edges.findIndex((e) => e.id === id);
+  if (edgeIndex === -1) {
+    throw new Error(`Edge with ID "${id}" not found`);
+  }
+
+  const existing = graph.edges[edgeIndex];
+  if (!existing) {
+    throw new Error(`Edge with ID "${id}" not found`);
+  }
+
+  // Build updated properties
+  let updatedProperties: EdgeProperties | undefined = existing.properties
+    ? { ...existing.properties }
+    : undefined;
+
+  if (set) {
+    updatedProperties = { ...updatedProperties, ...set };
+  }
+
+  if (unset && updatedProperties) {
+    for (const key of unset) {
+      delete updatedProperties[key];
+    }
+    // Remove properties object if empty
+    if (Object.keys(updatedProperties).length === 0) {
+      updatedProperties = undefined;
+    }
+  }
+
+  // Build updated edge
+  graph.edges[edgeIndex] = {
+    ...existing,
+    properties: updatedProperties,
+    status: status ?? existing.status,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Apply UPSERT_EDGE operation.
+ * Insert if not exists, update if exists (by uniqueKey).
+ */
+function applyUpsertEdge(graph: GraphState, op: UpsertEdgeOp): void {
+  const { edge } = op;
+  const key = edgeKey(edge);
+
+  const existingIndex = graph.edges.findIndex((e) => edgeKey(e) === key);
+
+  if (existingIndex === -1) {
+    // Insert new edge
+    const normalizedEdge = normalizeEdge(edge);
+    graph.edges.push(normalizedEdge);
+  } else {
+    // Update existing edge - merge properties
+    const existing = graph.edges[existingIndex];
+    if (!existing) return;
+
+    const mergedProperties: EdgeProperties | undefined =
+      edge.properties || existing.properties
+        ? { ...existing.properties, ...edge.properties }
+        : undefined;
+
+    graph.edges[existingIndex] = {
+      ...existing,
+      properties: mergedProperties,
+      provenance: edge.provenance ?? existing.provenance,
+      status: edge.status ?? existing.status,
+      updatedAt: new Date().toISOString(),
+    };
+  }
+}
+
+/**
+ * Apply BATCH_EDGE operation.
+ * Atomically process adds, updates, and deletes.
+ */
+function applyBatchEdge(graph: GraphState, op: BatchEdgeOp): void {
+  const { adds, updates, deletes } = op;
+
+  // Process deletes first (by ID)
+  if (deletes && deletes.length > 0) {
+    const deleteSet = new Set(deletes);
+    graph.edges = graph.edges.filter((e) => !deleteSet.has(e.id));
+    // Note: We don't throw if some IDs weren't found - they may already be deleted
+  }
+
+  // Process updates
+  if (updates && updates.length > 0) {
+    for (const update of updates) {
+      const edgeIndex = graph.edges.findIndex((e) => e.id === update.id);
+      if (edgeIndex === -1) {
+        throw new Error(`BATCH_EDGE: Edge with ID "${update.id}" not found for update`);
+      }
+
+      const existing = graph.edges[edgeIndex];
+      if (!existing) continue;
+
+      let updatedProperties: EdgeProperties | undefined = existing.properties
+        ? { ...existing.properties }
+        : undefined;
+
+      if (update.set) {
+        updatedProperties = { ...updatedProperties, ...update.set };
+      }
+
+      if (update.unset && updatedProperties) {
+        for (const key of update.unset) {
+          delete updatedProperties[key];
+        }
+        if (Object.keys(updatedProperties).length === 0) {
+          updatedProperties = undefined;
+        }
+      }
+
+      graph.edges[edgeIndex] = {
+        ...existing,
+        properties: updatedProperties,
+        status: update.status ?? existing.status,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+  }
+
+  // Process adds last
+  if (adds && adds.length > 0) {
+    for (const edge of adds) {
+      const key = edgeKey(edge);
+      const exists = graph.edges.some((e) => edgeKey(e) === key);
+      if (exists) {
+        throw new Error(
+          `BATCH_EDGE: Edge "${edge.type}" from "${edge.from}" to "${edge.to}" already exists`
+        );
+      }
+
+      const normalizedEdge = normalizeEdge(edge);
+      if (graph.edges.some((e) => e.id === normalizedEdge.id)) {
+        throw new Error(`BATCH_EDGE: Edge with ID "${normalizedEdge.id}" already exists`);
+      }
+
+      graph.edges.push(normalizedEdge);
+    }
   }
 }
 

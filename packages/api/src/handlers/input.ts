@@ -6,6 +6,7 @@ import type { Request, Response, NextFunction } from 'express';
 import {
   applyPatch,
   validatePatch,
+  generateEdgeId,
   type Patch,
   type Character,
   type Location,
@@ -217,6 +218,7 @@ export function createInputHandler(ctx: StorageContext) {
               ops.push({
                 op: 'ADD_EDGE',
                 edge: {
+                  id: generateEdgeId(),
                   type: 'HAS_CHARACTER',
                   from: nodeId,
                   to: charId.startsWith('char_') ? charId : `char_${charId}`,
@@ -232,7 +234,7 @@ export function createInputHandler(ctx: StorageContext) {
               : `loc_${rest.location}`;
             ops.push({
               op: 'ADD_EDGE',
-              edge: { type: 'LOCATED_AT', from: nodeId, to: locId },
+              edge: { id: generateEdgeId(), type: 'LOCATED_AT', from: nodeId, to: locId },
             });
           }
 

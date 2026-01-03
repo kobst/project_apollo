@@ -59,9 +59,9 @@
     }
   ],
   "edges": [
-    { "type": "INVOLVES", "from": "conf_central", "to": "char_protagonist" },
-    { "type": "HAS_CHARACTER", "from": "scene_catalyst_001", "to": "char_protagonist" },
-    { "type": "LOCATED_AT", "from": "scene_catalyst_001", "to": "loc_hometown" },
-    { "type": "MANIFESTS_IN", "from": "conf_central", "to": "scene_catalyst_001" }
+    { "id": "edge_acc_001", "type": "INVOLVES", "from": "conf_central", "to": "char_protagonist" },
+    { "id": "edge_acc_002", "type": "HAS_CHARACTER", "from": "scene_catalyst_001", "to": "char_protagonist" },
+    { "id": "edge_acc_003", "type": "LOCATED_AT", "from": "scene_catalyst_001", "to": "loc_hometown" },
+    { "id": "edge_acc_004", "type": "MANIFESTS_IN", "from": "conf_central", "to": "scene_catalyst_001" }
   ]
 }

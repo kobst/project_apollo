@@ -3,7 +3,8 @@
  */
 
 import type { KGNode } from '../types/patch.js';
-import type { Edge, EdgeType } from '../types/edges.js';
+import type { Edge, EdgeType, EdgeStatus } from '../types/edges.js';
+import { edgeKey } from '../types/edges.js';
 
 // =============================================================================
 // Graph State
@@ -15,6 +16,8 @@ import type { Edge, EdgeType } from '../types/edges.js';
 export interface GraphState {
   nodes: Map<string, KGNode>;
   edges: Edge[];
+  /** Optional index for O(1) edge lookups by ID. Call rebuildEdgeIndex() to populate. */
+  edgeIndex?: Map<string, number> | undefined;
 }
 
 // =============================================================================
@@ -177,6 +180,120 @@ export function getAllEdges(graph: GraphState): Edge[] {
  */
 export function getEdgeCount(graph: GraphState): number {
   return graph.edges.length;
+}
+
+// =============================================================================
+// Edge ID Operations
+// =============================================================================
+
+/**
+ * Get an edge by its ID.
+ * Uses index if available for O(1) lookup, otherwise O(n) scan.
+ */
+export function getEdgeById(graph: GraphState, id: string): Edge | undefined {
+  // Use index if available
+  if (graph.edgeIndex) {
+    const index = graph.edgeIndex.get(id);
+    if (index !== undefined) {
+      return graph.edges[index];
+    }
+    return undefined;
+  }
+  // Fallback to linear scan
+  return graph.edges.find((e) => e.id === id);
+}
+
+/**
+ * Get an edge by its unique key (type:from:to).
+ */
+export function getEdgeByKey(
+  graph: GraphState,
+  type: EdgeType,
+  from: string,
+  to: string
+): Edge | undefined {
+  const key = edgeKey({ type, from, to });
+  return graph.edges.find((e) => edgeKey(e) === key);
+}
+
+/**
+ * Check if an edge with the given ID exists.
+ */
+export function hasEdgeById(graph: GraphState, id: string): boolean {
+  if (graph.edgeIndex) {
+    return graph.edgeIndex.has(id);
+  }
+  return graph.edges.some((e) => e.id === id);
+}
+
+/**
+ * Rebuild the edge index for O(1) ID lookups.
+ * Call this after batch edge mutations for performance.
+ */
+export function rebuildEdgeIndex(graph: GraphState): void {
+  const index = new Map<string, number>();
+  for (let i = 0; i < graph.edges.length; i++) {
+    const edge = graph.edges[i];
+    if (edge) {
+      index.set(edge.id, i);
+    }
+  }
+  graph.edgeIndex = index;
+}
+
+/**
+ * Invalidate the edge index.
+ * Call this when edges are mutated to ensure consistency.
+ */
+export function invalidateEdgeIndex(graph: GraphState): void {
+  graph.edgeIndex = undefined;
+}
+
+/**
+ * Filter options for querying edges.
+ */
+export interface EdgeFilters {
+  type?: EdgeType | undefined;
+  from?: string | undefined;
+  to?: string | undefined;
+  status?: EdgeStatus | undefined;
+  hasOrder?: boolean | undefined;
+  minConfidence?: number | undefined;
+}
+
+/**
+ * Get edges matching the given filters.
+ */
+export function getEdgesWithFilters(
+  graph: GraphState,
+  filters: EdgeFilters
+): Edge[] {
+  return graph.edges.filter((e) => {
+    if (filters.type && e.type !== filters.type) return false;
+    if (filters.from && e.from !== filters.from) return false;
+    if (filters.to && e.to !== filters.to) return false;
+    if (filters.status && e.status !== filters.status) return false;
+    if (filters.hasOrder !== undefined) {
+      const hasOrder = e.properties?.order !== undefined;
+      if (filters.hasOrder !== hasOrder) return false;
+    }
+    if (filters.minConfidence !== undefined) {
+      const confidence = e.properties?.confidence ?? 0;
+      if (confidence < filters.minConfidence) return false;
+    }
+    return true;
+  });
+}
+
+/**
+ * Get edges sorted by order property (for ordered relations).
+ */
+export function getEdgesSortedByOrder(edges: Edge[]): Edge[] {
+  return [...edges].sort((a, b) => {
+    const orderA = a.properties?.order ?? Number.MAX_SAFE_INTEGER;
+    const orderB = b.properties?.order ?? Number.MAX_SAFE_INTEGER;
+    return orderA - orderB;
+  });
 }
 
 // =============================================================================

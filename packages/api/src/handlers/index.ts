@@ -26,3 +26,12 @@ export {
   createExtractPreviewHandler,
   createExtractAcceptHandler,
 } from './extract.js';
+export {
+  createListEdgesHandler,
+  createGetEdgeHandler,
+  createAddEdgeHandler,
+  createUpdateEdgeHandler,
+  createDeleteEdgeHandler,
+  createBatchEdgesHandler,
+  createUpsertEdgeHandler,
+} from './edges.js';

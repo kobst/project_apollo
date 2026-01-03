@@ -235,7 +235,7 @@ export interface NodesListData {
   offset: number;
 }
 
-export interface EdgeData {
+export interface RelationEdgeData {
   type: string;
   source: string;
   target: string;
@@ -243,8 +243,8 @@ export interface EdgeData {
 
 export interface NodeRelationsData {
   node: NodeData;
-  outgoing: EdgeData[];
-  incoming: EdgeData[];
+  outgoing: RelationEdgeData[];
+  incoming: RelationEdgeData[];
   relatedNodes: NodeData[];
 }
 
@@ -350,4 +350,103 @@ export interface UpdateNodeData {
   node: NodeData;
   newVersionId: string;
   fieldsUpdated: string[];
+}
+
+// =============================================================================
+// Edge Types (Phase D - First-Class Edges)
+// =============================================================================
+
+export type EdgeType =
+  | 'FULFILLS'
+  | 'HAS_CHARACTER'
+  | 'LOCATED_AT'
+  | 'FEATURES_OBJECT'
+  | 'INVOLVES'
+  | 'MANIFESTS_IN'
+  | 'HAS_ARC'
+  | 'EXPRESSED_IN'
+  | 'APPEARS_IN';
+
+export type EdgeStatus = 'proposed' | 'approved' | 'rejected';
+
+export interface EdgeProperties {
+  order?: number;
+  weight?: number;
+  confidence?: number;
+  notes?: string;
+}
+
+export interface EdgeProvenance {
+  source: 'human' | 'extractor' | 'import';
+  patchId?: string;
+  model?: string;
+  promptHash?: string;
+  createdBy?: string;
+}
+
+export interface EdgeData {
+  id: string;
+  type: EdgeType;
+  from: string;
+  to: string;
+  properties?: EdgeProperties;
+  provenance?: EdgeProvenance;
+  status?: EdgeStatus;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface EdgesListData {
+  edges: EdgeData[];
+  totalCount: number;
+  limit: number;
+  offset: number;
+}
+
+export interface EdgeMutationData {
+  edge: EdgeData;
+  newVersionId: string;
+}
+
+export interface BatchEdgeResult {
+  added: number;
+  updated: number;
+  deleted: number;
+  newVersionId: string;
+}
+
+export interface UpsertEdgeResult extends EdgeMutationData {
+  wasInsert: boolean;
+}
+
+export interface EdgeFilters {
+  type?: EdgeType;
+  from?: string;
+  to?: string;
+  status?: EdgeStatus;
+}
+
+export interface CreateEdgeRequest {
+  type: EdgeType;
+  from: string;
+  to: string;
+  properties?: EdgeProperties;
+  status?: EdgeStatus;
+}
+
+export interface UpdateEdgeRequest {
+  set?: Partial<EdgeProperties>;
+  unset?: (keyof EdgeProperties)[];
+  status?: EdgeStatus;
+}
+
+export interface BatchEdgeRequest {
+  adds?: CreateEdgeRequest[];
+  updates?: Array<{
+    id: string;
+    set?: Partial<EdgeProperties>;
+    unset?: (keyof EdgeProperties)[];
+    status?: EdgeStatus;
+  }>;
+  deletes?: string[];
 }

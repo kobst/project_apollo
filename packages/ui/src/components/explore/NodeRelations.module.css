@@ -4,6 +4,12 @@
   gap: 10px;
 }
 
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .sectionTitle {
   font-size: 12px;
   font-weight: 600;
@@ -24,10 +30,33 @@
   gap: 8px;
 }
 
+.groupHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .groupLabel {
   font-size: 11px;
   color: #888;
   text-transform: uppercase;
+}
+
+.addBtn {
+  padding: 4px 10px;
+  border: 1px solid #5a7ca5;
+  border-radius: 4px;
+  background: transparent;
+  color: #5a7ca5;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.addBtn:hover {
+  background: rgba(90, 124, 165, 0.2);
+  color: #7aa5d5;
 }
 
 .edges {
@@ -39,12 +68,65 @@
 .edge {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   padding: 8px 12px;
   background: #2a2a4a;
   border-radius: 4px;
   font-size: 12px;
+  transition: background 0.15s ease;
+}
+
+.edgeInteractive:hover {
+  background: #323252;
+}
+
+.edgeContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.edgeActions {
+  display: flex;
+  gap: 4px;
+}
+
+.editBtn,
+.deleteBtn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.15s ease;
+}
+
+.editBtn {
+  color: #888;
+}
+
+.editBtn:hover {
+  background: rgba(100, 181, 246, 0.2);
+  color: #64b5f6;
+}
+
+.deleteBtn {
+  color: #888;
+  font-size: 18px;
+}
+
+.deleteBtn:hover {
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
 }
 
 .edgeType {
@@ -72,4 +154,38 @@
   background: #3a3a5a;
   padding: 2px 5px;
   border-radius: 3px;
+}
+
+.statusBadge {
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.statusProposed {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+}
+
+.statusRejected {
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+}
+
+.addFirstBtn {
+  padding: 10px 16px;
+  border: 1px dashed #5a7ca5;
+  border-radius: 4px;
+  background: transparent;
+  color: #5a7ca5;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.addFirstBtn:hover {
+  background: rgba(90, 124, 165, 0.1);
+  border-style: solid;
 }

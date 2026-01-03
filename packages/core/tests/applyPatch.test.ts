@@ -171,16 +171,16 @@ describe('applyPatch', () => {
       graph.nodes.set(char.id, char);
       graph.nodes.set(scene.id, scene);
 
-      const patch = createMinimalPatch('sv0', [
-        { op: 'ADD_EDGE', edge: edges.hasCharacter('scene_test', 'char_test') },
-      ]);
+      const edge = edges.hasCharacter('scene_test', 'char_test', 'edge_add_test');
+      const patch = createMinimalPatch('sv0', [{ op: 'ADD_EDGE', edge }]);
 
       const result = applyPatch(graph, patch);
 
       expect(result.edges.length).toBe(1);
-      expect(result.edges[0]).toEqual(
-        edges.hasCharacter('scene_test', 'char_test')
-      );
+      expect(result.edges[0]?.id).toBe('edge_add_test');
+      expect(result.edges[0]?.type).toBe('HAS_CHARACTER');
+      expect(result.edges[0]?.from).toBe('scene_test');
+      expect(result.edges[0]?.to).toBe('char_test');
     });
 
     it('should fail on duplicate edge', () => {
@@ -199,18 +199,36 @@ describe('applyPatch', () => {
   });
 
   describe('DELETE_EDGE operations', () => {
-    it('should delete existing edge', () => {
+    it('should delete existing edge by type/from/to', () => {
       const char = createCharacter({ id: 'char_test' });
       const scene = createScene('beat_Catalyst', { id: 'scene_test' });
       graph.nodes.set(char.id, char);
       graph.nodes.set(scene.id, scene);
-      graph.edges.push(edges.hasCharacter('scene_test', 'char_test'));
+      const edge = edges.hasCharacter('scene_test', 'char_test');
+      graph.edges.push(edge);
 
       const patch = createMinimalPatch('sv0', [
         {
           op: 'DELETE_EDGE',
-          edge: edges.hasCharacter('scene_test', 'char_test'),
+          edge: { type: edge.type, from: edge.from, to: edge.to },
         },
+      ]);
+
+      const result = applyPatch(graph, patch);
+
+      expect(result.edges.length).toBe(0);
+    });
+
+    it('should delete existing edge by ID', () => {
+      const char = createCharacter({ id: 'char_test' });
+      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      graph.nodes.set(char.id, char);
+      graph.nodes.set(scene.id, scene);
+      const edge = edges.hasCharacter('scene_test', 'char_test', 'edge_to_delete');
+      graph.edges.push(edge);
+
+      const patch = createMinimalPatch('sv0', [
+        { op: 'DELETE_EDGE', edge: { id: 'edge_to_delete' } },
       ]);
 
       const result = applyPatch(graph, patch);
@@ -222,11 +240,237 @@ describe('applyPatch', () => {
       const patch = createMinimalPatch('sv0', [
         {
           op: 'DELETE_EDGE',
-          edge: edges.hasCharacter('nonexistent', 'also_nonexistent'),
+          edge: { type: 'HAS_CHARACTER', from: 'nonexistent', to: 'also_nonexistent' },
         },
       ]);
 
       expect(() => applyPatch(graph, patch)).toThrow('not found');
+    });
+
+    it('should fail on non-existent edge ID', () => {
+      const patch = createMinimalPatch('sv0', [
+        { op: 'DELETE_EDGE', edge: { id: 'nonexistent_edge_id' } },
+      ]);
+
+      expect(() => applyPatch(graph, patch)).toThrow('not found');
+    });
+  });
+
+  describe('UPDATE_EDGE operations', () => {
+    it('should update edge properties', () => {
+      const char = createCharacter({ id: 'char_test' });
+      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      graph.nodes.set(char.id, char);
+      graph.nodes.set(scene.id, scene);
+      const edge = edges.hasCharacter('scene_test', 'char_test', 'edge_update_test');
+      graph.edges.push(edge);
+
+      const patch = createMinimalPatch('sv0', [
+        {
+          op: 'UPDATE_EDGE',
+          id: 'edge_update_test',
+          set: { order: 1, confidence: 0.9 },
+        },
+      ]);
+
+      const result = applyPatch(graph, patch);
+
+      expect(result.edges[0]?.properties?.order).toBe(1);
+      expect(result.edges[0]?.properties?.confidence).toBe(0.9);
+    });
+
+    it('should update edge status', () => {
+      const char = createCharacter({ id: 'char_test' });
+      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      graph.nodes.set(char.id, char);
+      graph.nodes.set(scene.id, scene);
+      const edge = edges.hasCharacter('scene_test', 'char_test', 'edge_status_test');
+      graph.edges.push(edge);
+
+      const patch = createMinimalPatch('sv0', [
+        { op: 'UPDATE_EDGE', id: 'edge_status_test', status: 'rejected' },
+      ]);
+
+      const result = applyPatch(graph, patch);
+
+      expect(result.edges[0]?.status).toBe('rejected');
+    });
+
+    it('should unset edge properties', () => {
+      const char = createCharacter({ id: 'char_test' });
+      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      graph.nodes.set(char.id, char);
+      graph.nodes.set(scene.id, scene);
+      const edge = edges.hasCharacter('scene_test', 'char_test', 'edge_unset_test');
+      edge.properties = { order: 5, notes: 'Test note' };
+      graph.edges.push(edge);
+
+      const patch = createMinimalPatch('sv0', [
+        { op: 'UPDATE_EDGE', id: 'edge_unset_test', unset: ['notes'] },
+      ]);
+
+      const result = applyPatch(graph, patch);
+
+      expect(result.edges[0]?.properties?.order).toBe(5);
+      expect(result.edges[0]?.properties?.notes).toBeUndefined();
+    });
+
+    it('should fail on non-existent edge ID', () => {
+      const patch = createMinimalPatch('sv0', [
+        { op: 'UPDATE_EDGE', id: 'nonexistent', set: { order: 1 } },
+      ]);
+
+      expect(() => applyPatch(graph, patch)).toThrow('not found');
+    });
+  });
+
+  describe('UPSERT_EDGE operations', () => {
+    it('should insert new edge when not exists', () => {
+      const char = createCharacter({ id: 'char_test' });
+      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      graph.nodes.set(char.id, char);
+      graph.nodes.set(scene.id, scene);
+
+      const edge = edges.hasCharacter('scene_test', 'char_test', 'edge_upsert_new');
+      const patch = createMinimalPatch('sv0', [{ op: 'UPSERT_EDGE', edge }]);
+
+      const result = applyPatch(graph, patch);
+
+      expect(result.edges.length).toBe(1);
+      expect(result.edges[0]?.type).toBe('HAS_CHARACTER');
+    });
+
+    it('should update existing edge when exists', () => {
+      const char = createCharacter({ id: 'char_test' });
+      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      graph.nodes.set(char.id, char);
+      graph.nodes.set(scene.id, scene);
+      const existingEdge = edges.hasCharacter('scene_test', 'char_test', 'edge_existing');
+      existingEdge.properties = { order: 1 };
+      graph.edges.push(existingEdge);
+
+      // Upsert with same type/from/to but different properties
+      const upsertEdge = edges.hasCharacter('scene_test', 'char_test', 'edge_new_id');
+      upsertEdge.properties = { order: 5, confidence: 0.8 };
+
+      const patch = createMinimalPatch('sv0', [{ op: 'UPSERT_EDGE', edge: upsertEdge }]);
+
+      const result = applyPatch(graph, patch);
+
+      // Should still be one edge (updated, not added)
+      expect(result.edges.length).toBe(1);
+      // Properties should be merged
+      expect(result.edges[0]?.properties?.order).toBe(5);
+      expect(result.edges[0]?.properties?.confidence).toBe(0.8);
+      // ID should be preserved from existing edge
+      expect(result.edges[0]?.id).toBe('edge_existing');
+    });
+  });
+
+  describe('BATCH_EDGE operations', () => {
+    it('should add multiple edges atomically', () => {
+      const char = createCharacter({ id: 'char_test' });
+      const loc = createLocation({ id: 'loc_test' });
+      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      graph.nodes.set(char.id, char);
+      graph.nodes.set(loc.id, loc);
+      graph.nodes.set(scene.id, scene);
+
+      const patch = createMinimalPatch('sv0', [
+        {
+          op: 'BATCH_EDGE',
+          adds: [
+            edges.hasCharacter('scene_test', 'char_test'),
+            edges.locatedAt('scene_test', 'loc_test'),
+          ],
+        },
+      ]);
+
+      const result = applyPatch(graph, patch);
+
+      expect(result.edges.length).toBe(2);
+    });
+
+    it('should update multiple edges atomically', () => {
+      const char = createCharacter({ id: 'char_test' });
+      const loc = createLocation({ id: 'loc_test' });
+      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      graph.nodes.set(char.id, char);
+      graph.nodes.set(loc.id, loc);
+      graph.nodes.set(scene.id, scene);
+      graph.edges.push(edges.hasCharacter('scene_test', 'char_test', 'edge_1'));
+      graph.edges.push(edges.locatedAt('scene_test', 'loc_test', 'edge_2'));
+
+      const patch = createMinimalPatch('sv0', [
+        {
+          op: 'BATCH_EDGE',
+          updates: [
+            { id: 'edge_1', set: { order: 1 } },
+            { id: 'edge_2', set: { order: 2 } },
+          ],
+        },
+      ]);
+
+      const result = applyPatch(graph, patch);
+
+      expect(result.edges.find((e) => e.id === 'edge_1')?.properties?.order).toBe(1);
+      expect(result.edges.find((e) => e.id === 'edge_2')?.properties?.order).toBe(2);
+    });
+
+    it('should delete multiple edges atomically', () => {
+      const char = createCharacter({ id: 'char_test' });
+      const loc = createLocation({ id: 'loc_test' });
+      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      graph.nodes.set(char.id, char);
+      graph.nodes.set(loc.id, loc);
+      graph.nodes.set(scene.id, scene);
+      graph.edges.push(edges.hasCharacter('scene_test', 'char_test', 'edge_1'));
+      graph.edges.push(edges.locatedAt('scene_test', 'loc_test', 'edge_2'));
+
+      const patch = createMinimalPatch('sv0', [
+        { op: 'BATCH_EDGE', deletes: ['edge_1', 'edge_2'] },
+      ]);
+
+      const result = applyPatch(graph, patch);
+
+      expect(result.edges.length).toBe(0);
+    });
+
+    it('should combine adds, updates, and deletes', () => {
+      const char = createCharacter({ id: 'char_test' });
+      const loc = createLocation({ id: 'loc_test' });
+      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      graph.nodes.set(char.id, char);
+      graph.nodes.set(loc.id, loc);
+      graph.nodes.set(scene.id, scene);
+      graph.edges.push(edges.hasCharacter('scene_test', 'char_test', 'edge_to_delete'));
+      graph.edges.push(edges.locatedAt('scene_test', 'loc_test', 'edge_to_update'));
+
+      const patch = createMinimalPatch('sv0', [
+        {
+          op: 'BATCH_EDGE',
+          adds: [edges.involves('conf_1', 'char_test', 'edge_new')],
+          updates: [{ id: 'edge_to_update', set: { confidence: 0.9 } }],
+          deletes: ['edge_to_delete'],
+        },
+      ]);
+
+      // Add conf_1 node for the new edge
+      graph.nodes.set('conf_1', {
+        type: 'Conflict',
+        id: 'conf_1',
+        name: 'Test',
+        conflict_type: 'internal',
+        description: 'Test conflict for batch test',
+        status: 'ACTIVE',
+      });
+
+      const result = applyPatch(graph, patch);
+
+      expect(result.edges.length).toBe(2);
+      expect(result.edges.some((e) => e.id === 'edge_to_delete')).toBe(false);
+      expect(result.edges.find((e) => e.id === 'edge_to_update')?.properties?.confidence).toBe(0.9);
+      expect(result.edges.some((e) => e.id === 'edge_new')).toBe(true);
     });
   });
 

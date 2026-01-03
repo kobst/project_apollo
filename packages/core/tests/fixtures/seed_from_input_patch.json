@@ -37,7 +37,7 @@
     },
     {
       "op": "ADD_EDGE",
-      "edge": { "type": "INVOLVES", "from": "conf_central", "to": "char_protagonist" }
+      "edge": { "id": "edge_seed_001", "type": "INVOLVES", "from": "conf_central", "to": "char_protagonist" }
     }
   ],
   "metadata": {
