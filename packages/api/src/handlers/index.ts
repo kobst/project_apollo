@@ -18,4 +18,11 @@ export {
   createListNodesHandler,
   createGetNodeHandler,
   createNodeRelationsHandler,
+  createUpdateNodeHandler,
 } from './nodes.js';
+export { createOutlineHandler } from './outline.js';
+export {
+  createExtractHandler,
+  createExtractPreviewHandler,
+  createExtractAcceptHandler,
+} from './extract.js';

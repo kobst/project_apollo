@@ -14,8 +14,12 @@ A comprehensive guide to using the Apollo Contract UI for screenplay development
 6. [Previewing Moves](#previewing-moves)
 7. [Accepting or Rejecting Moves](#accepting-or-rejecting-moves)
 8. [Understanding Diffs](#understanding-diffs)
-9. [Feature Catalog](#feature-catalog)
-10. [Troubleshooting](#troubleshooting)
+9. [Explore View](#explore-view)
+10. [Outline View](#outline-view)
+11. [Input Panel & Extraction](#input-panel--extraction)
+12. [Node Editing](#node-editing)
+13. [Feature Catalog](#feature-catalog)
+14. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -43,12 +47,32 @@ The UI proxies all `/api/*` requests to the API server automatically.
 
 ## Interface Overview
 
-The application uses a **3-column layout** with a footer action bar:
+The application uses a **tabbed interface** with three main views:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Header: Apollo Contract UI                                 │
-├─────────────┬─────────────────────────┬─────────────────────┤
+├─────────────────────────────────────────────────────────────┤
+│  [Contract]  [Explore]  [Outline]   ← View Tabs             │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│              View-specific content                          │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### View Tabs
+
+| Tab | Purpose |
+|-----|---------|
+| **Contract** | Open questions workflow with cluster generation (original view) |
+| **Explore** | Node browser with detail panel, input extraction, and editing |
+| **Outline** | Beat-by-beat structure view with scenes organized by act |
+
+### Contract View Layout (3-Column)
+
+```
+┌─────────────┬─────────────────────────┬─────────────────────┐
 │ LEFT COLUMN │ CENTER COLUMN           │ RIGHT COLUMN        │
 │             │                         │                     │
 │ Story State │ Exploration             │ Inspection          │
@@ -57,8 +81,6 @@ The application uses a **3-column layout** with a footer action bar:
 │  Footer: Action Buttons (Accept / Reject / Regenerate)      │
 └─────────────────────────────────────────────────────────────┘
 ```
-
-### Column Purposes
 
 | Column | Purpose |
 |--------|---------|
@@ -339,13 +361,262 @@ abc123 → def456
 
 ---
 
+## Explore View
+
+The **Explore** tab provides a node browser for directly viewing and editing story elements.
+
+### Layout
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ [Beats] [Scenes] [Characters] [Conflicts] [Locations] [Themes] ...     │
+├─────────────────┬───────────────────────────┬───────────────────────────┤
+│ Node List       │ Node Detail Panel         │ Input Panel + Clusters    │
+│                 │                           │                           │
+│ ┌─────────────┐ │ Name: John Smith          │ ┌───────────────────────┐ │
+│ │ John Smith  │ │ Type: Character           │ │ Extract from Input    │ │
+│ │ Character   │ │ Archetype: Protagonist    │ │                       │ │
+│ └─────────────┘ │                           │ │ [textarea]            │ │
+│ ┌─────────────┐ │ Relations:                │ │                       │ │
+│ │ Jane Doe    │ │   → Scene: Opening        │ │ [Target] [Beat]       │ │
+│ │ Character   │ │   → Conflict: Internal    │ │ [Extract]             │ │
+│ └─────────────┘ │                           │ └───────────────────────┘ │
+│                 │ [Edit Node] [Generate]    │                           │
+└─────────────────┴───────────────────────────┴───────────────────────────┘
+```
+
+### Node Type Filter
+
+Click the tabs at the top to filter nodes by type:
+
+| Type | Description |
+|------|-------------|
+| **Beats** | The 15 Save the Cat beats |
+| **Scenes** | Scene nodes linked to beats |
+| **Characters** | Character nodes |
+| **Conflicts** | Conflict nodes |
+| **Locations** | Location nodes |
+| **Themes** | Theme nodes |
+
+### Node List
+
+- Shows all nodes of the selected type
+- Click a node to view its details
+- Displays node label and type badge
+
+### Node Detail Panel
+
+When a node is selected, shows:
+
+| Section | Content |
+|---------|---------|
+| **Header** | Node label and type |
+| **ID** | Unique node identifier |
+| **Properties** | All node data fields |
+| **Relations** | Incoming and outgoing edges with related nodes |
+| **Actions** | "Edit Node" and "Generate Moves" buttons |
+
+### Actions
+
+| Button | Action |
+|--------|--------|
+| **Edit Node** | Enter edit mode to modify node properties |
+| **Generate Moves** | Generate cluster moves scoped to this node |
+
+---
+
+## Outline View
+
+The **Outline** tab displays the story structure as a beat-by-beat grid.
+
+### Layout
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  ACT 1                                                                  │
+│  ┌──────────┬──────────┬──────────┬──────────┬──────────┐              │
+│  │ Opening  │ Theme    │ Setup    │ Catalyst │ Debate   │              │
+│  │ Image    │ Stated   │          │          │          │              │
+│  ├──────────┼──────────┼──────────┼──────────┼──────────┤              │
+│  │ Scene 1  │ Scene 3  │ Scene 4  │ Scene 8  │ Scene 10 │              │
+│  │ "Dawn"   │ "Mentor" │ "Home"   │ "Call"   │ "Doubt"  │              │
+│  ├──────────┼──────────┼──────────┼──────────┼──────────┤              │
+│  │          │          │ Scene 5  │          │ Scene 11 │              │
+│  │ (empty)  │ (empty)  │ "Work"   │ (empty)  │ "Fear"   │              │
+│  └──────────┴──────────┴──────────┴──────────┴──────────┘              │
+│                                                                         │
+│  ACT 2                                                                  │
+│  ┌──────────┬──────────┬──────────┐                                    │
+│  │ Break    │ B Story  │ Fun &    │                                    │
+│  │ Into Two │          │ Games    │                                    │
+│  └──────────┴──────────┴──────────┘                                    │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Structure
+
+- **Acts**: Horizontal sections grouping related beats
+- **Beats**: Columns within each act showing the beat type
+- **Scenes**: Cards within each beat column showing linked scenes
+- **Empty Slots**: Visual indicators for beats with no scenes
+
+### Beat Information
+
+Each beat column header shows:
+- Beat type name (e.g., "Catalyst", "Midpoint")
+- Number of scenes linked to that beat
+
+### Scene Cards
+
+Each scene card displays:
+- Scene heading (e.g., "INT. CAFE - DAY")
+- Brief overview excerpt
+- Status indicator
+
+### Empty Beat Slots
+
+When a beat has no scenes, an empty slot is shown with:
+- "No scenes" message
+- Visual indicator that content is needed
+
+---
+
+## Input Panel & Extraction
+
+The **Input Panel** in the Explore view allows freeform text extraction to create story elements.
+
+### Location
+
+Found in the right column of the Explore view, above any cluster results.
+
+### Components
+
+| Element | Purpose |
+|---------|---------|
+| **Textarea** | Enter freeform text (character descriptions, scene ideas, etc.) |
+| **Target Type** | Dropdown to specify extraction type |
+| **Beat Selector** | (Shown when "Beat" is selected) Choose which beat to link scenes to |
+| **Extract Button** | Process input and generate proposals |
+
+### Target Types
+
+| Type | Result |
+|------|--------|
+| **Auto-detect** | System determines best extraction type |
+| **Character** | Extract character nodes |
+| **Location** | Extract location nodes |
+| **Scene** | Extract scene nodes |
+| **Conflict** | Extract conflict nodes |
+| **Beat** | Create a scene linked to a specific beat |
+
+### Beat Targeting
+
+When "Beat" is selected as the target type:
+
+1. A second dropdown appears with all 15 STC beats
+2. Select which beat the scene should fulfill
+3. Extraction creates a Scene with:
+   - `beat_id` field set to the selected beat
+   - `FULFILLS` edge from Scene → Beat
+
+### Extraction Workflow
+
+1. Enter text describing a story element
+2. Select target type (or use auto-detect)
+3. If targeting a beat, select the specific beat
+4. Click **Extract**
+5. Review generated proposals
+6. Click **Accept** on proposals you want to apply
+
+### Proposal Cards
+
+Each proposal shows:
+- Title describing the extraction
+- Confidence score
+- List of entities that will be created
+- Number of patch operations
+
+---
+
+## Node Editing
+
+The **Node Editor** allows direct modification of committed graph nodes.
+
+### Entering Edit Mode
+
+1. Select a node in the Explore view
+2. Click **Edit Node** in the detail panel
+3. The panel switches to edit mode
+
+### Edit Mode Components
+
+| Component | Purpose |
+|-----------|---------|
+| **NodeEditor** | Form with editable fields for the node type |
+| **PatchBuilder** | Preview of UPDATE_NODE operations |
+| **CommitPanel** | Validation status and commit button |
+
+### Editable Fields by Node Type
+
+| Node Type | Editable Fields |
+|-----------|-----------------|
+| **Beat** | guidance, notes, status |
+| **Scene** | heading, scene_overview, mood, int_ext, time_of_day, status |
+| **Character** | name, description, archetype, status |
+| **Conflict** | name, description, conflict_type, status |
+| **Location** | name, description, atmosphere |
+| **Theme** | name, description |
+| **Motif** | name, symbol, description |
+
+### PatchBuilder Preview
+
+Shows pending changes as UPDATE_NODE operations:
+- Field name being modified
+- Old value (with red indicator)
+- New value (with green indicator)
+
+### Validation
+
+The CommitPanel validates changes before allowing commit:
+
+| Check | Description |
+|-------|-------------|
+| **Required fields** | Ensures required fields aren't emptied |
+| **Minimum lengths** | Validates description fields have sufficient content |
+
+### Committing Changes
+
+1. Make edits in the form
+2. Review changes in PatchBuilder
+3. Check validation status (must show "Ready to commit")
+4. Click **Commit Changes**
+5. A new version is created with the updates
+6. Edit mode closes and node detail refreshes
+
+### Canceling Edits
+
+Click **Cancel** to:
+- Discard all pending changes
+- Exit edit mode
+- Return to read-only detail view
+
+---
+
 ## Feature Catalog
 
 ### Complete Component List
 
+#### Layout Components
+
 | Component | Location | Purpose |
 |-----------|----------|---------|
 | **Header** | Top | Application title and branding |
+| **ViewTabs** | Below header | Switch between Contract, Explore, and Outline views |
+
+#### Contract View Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
 | **StorySelector** | Left column | Create/select stories |
 | **StoryStatus** | Left column | Display story metadata and stats |
 | **OpenQuestionsList** | Left column | List and select open questions |
@@ -361,7 +632,34 @@ abc123 → def456
 | **EdgeChangeList** | Right column | Edge additions/removals |
 | **ActionBar** | Footer | Accept/Reject/Regenerate buttons |
 
+#### Explore View Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| **NodeTypeFilter** | Top | Tabs to filter nodes by type |
+| **NodeList** | Left pane | List of nodes of selected type |
+| **NodeCard** | Left pane | Individual node in list |
+| **NodeDetailPanel** | Center pane | Full node properties and relations |
+| **NodeRelations** | Center pane | Incoming/outgoing edges display |
+| **NodeEditor** | Center pane | Edit form for node fields |
+| **PatchBuilder** | Center pane | Preview of pending UPDATE_NODE ops |
+| **CommitPanel** | Center pane | Validation and commit button |
+| **InputPanel** | Right pane | Freeform text extraction |
+| **ProposalCard** | Right pane | Extraction proposal display |
+
+#### Outline View Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| **OutlineView** | Main | Container for outline grid |
+| **ActRow** | Main | Horizontal row for each act |
+| **BeatColumn** | Within ActRow | Column for each beat |
+| **SceneCard** | Within BeatColumn | Scene display within beat |
+| **EmptyBeatSlot** | Within BeatColumn | Visual indicator for missing scenes |
+
 ### All User Interactions
+
+#### Contract View
 
 | Interaction | Component | Effect |
 |-------------|-----------|--------|
@@ -376,6 +674,31 @@ abc123 → def456
 | Accept move | ActionBar button | Applies move, creates version |
 | Reject all | ActionBar button | Clears cluster and selections |
 | Regenerate | ActionBar button | Creates new cluster |
+
+#### Explore View
+
+| Interaction | Component | Effect |
+|-------------|-----------|--------|
+| Switch view | ViewTabs | Changes between Contract/Explore/Outline |
+| Filter by type | NodeTypeFilter tabs | Shows nodes of selected type |
+| Select node | NodeCard click | Shows node details in center pane |
+| Edit node | NodeDetailPanel button | Enters edit mode |
+| Generate moves | NodeDetailPanel button | Creates cluster scoped to node |
+| Modify field | NodeEditor form | Updates pending changes |
+| Commit changes | CommitPanel button | Applies edits, creates version |
+| Cancel edit | CommitPanel button | Discards changes, exits edit mode |
+| Enter text | InputPanel textarea | Prepares text for extraction |
+| Select target | InputPanel dropdown | Sets extraction target type |
+| Select beat | InputPanel dropdown | Sets beat for scene linking |
+| Extract | InputPanel button | Generates proposals from text |
+| Accept proposal | ProposalCard button | Applies proposal to graph |
+
+#### Outline View
+
+| Interaction | Component | Effect |
+|-------------|-----------|--------|
+| View outline | ViewTabs | Shows beat-by-beat structure |
+| Scroll acts | OutlineView | Navigate through acts horizontally |
 
 ### Loading States
 

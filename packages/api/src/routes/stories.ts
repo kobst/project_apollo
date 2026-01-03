@@ -21,6 +21,11 @@ import {
   createListNodesHandler,
   createGetNodeHandler,
   createNodeRelationsHandler,
+  createUpdateNodeHandler,
+  createOutlineHandler,
+  createExtractHandler,
+  createExtractPreviewHandler,
+  createExtractAcceptHandler,
 } from '../handlers/index.js';
 
 export function createStoriesRouter(ctx: StorageContext): Router {
@@ -45,10 +50,19 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.post('/:id/checkout', createCheckoutHandler(ctx));
   router.get('/:id/log', createLogHandler(ctx));
 
-  // Node browsing endpoints
+  // Node browsing and editing endpoints
   router.get('/:id/nodes', createListNodesHandler(ctx));
   router.get('/:id/nodes/:nodeId', createGetNodeHandler(ctx));
   router.get('/:id/nodes/:nodeId/relations', createNodeRelationsHandler(ctx));
+  router.patch('/:id/nodes/:nodeId', createUpdateNodeHandler(ctx));
+
+  // Outline endpoint
+  router.get('/:id/outline', createOutlineHandler(ctx));
+
+  // Extraction endpoints
+  router.post('/:id/extract', createExtractHandler(ctx));
+  router.get('/:id/extract/:proposalId/preview', createExtractPreviewHandler(ctx));
+  router.post('/:id/extract/:proposalId/accept', createExtractAcceptHandler(ctx));
 
   return router;
 }

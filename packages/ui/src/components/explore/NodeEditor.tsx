@@ -1,0 +1,187 @@
+import { useState, useCallback, useMemo } from 'react';
+import type { NodeData } from '../../api/types';
+import styles from './NodeEditor.module.css';
+
+interface NodeEditorProps {
+  node: NodeData;
+  onSave: (changes: Record<string, unknown>) => void;
+  onCancel: () => void;
+  saving: boolean;
+}
+
+// Define which fields are editable per node type
+const EDITABLE_FIELDS: Record<string, string[]> = {
+  Beat: ['guidance', 'notes', 'status'],
+  Scene: ['heading', 'scene_overview', 'mood', 'int_ext', 'time_of_day', 'status'],
+  Character: ['name', 'description', 'archetype', 'status'],
+  Conflict: ['name', 'description', 'conflict_type', 'status'],
+  Location: ['name', 'description', 'atmosphere'],
+  Theme: ['name', 'description'],
+  Motif: ['name', 'symbol', 'description'],
+  CharacterArc: ['arc_type', 'description', 'status'],
+  Object: ['name', 'description', 'symbolic_meaning'],
+};
+
+// Field types for rendering appropriate inputs
+const FIELD_TYPES: Record<string, 'text' | 'textarea' | 'select'> = {
+  description: 'textarea',
+  scene_overview: 'textarea',
+  guidance: 'textarea',
+  notes: 'textarea',
+  status: 'select',
+  conflict_type: 'select',
+  archetype: 'select',
+  int_ext: 'select',
+  arc_type: 'select',
+};
+
+// Select options per field
+const SELECT_OPTIONS: Record<string, string[]> = {
+  status: ['EMPTY', 'DRAFT', 'COMPLETE', 'ACTIVE', 'FLOATING', 'RESOLVED', 'ABANDONED'],
+  conflict_type: ['interpersonal', 'internal', 'societal', 'situational', 'cosmic', 'supernatural'],
+  archetype: ['PROTAGONIST', 'ANTAGONIST', 'MENTOR', 'ALLY', 'LOVE_INTEREST', 'TRICKSTER', 'THRESHOLD_GUARDIAN', 'HERALD', 'SHAPESHIFTER', 'SHADOW'],
+  int_ext: ['INT', 'EXT', 'INT/EXT'],
+  arc_type: ['POSITIVE', 'NEGATIVE', 'FLAT', 'CORRUPTION', 'DISILLUSIONMENT'],
+};
+
+export function NodeEditor({ node, onSave, onCancel, saving }: NodeEditorProps) {
+  // Get editable fields for this node type
+  const editableFields = EDITABLE_FIELDS[node.type] || [];
+
+  // Initialize form state with current values
+  const [formData, setFormData] = useState<Record<string, unknown>>(() => {
+    const initial: Record<string, unknown> = {};
+    for (const field of editableFields) {
+      initial[field] = node.data[field] ?? '';
+    }
+    return initial;
+  });
+
+  // Track what's changed
+  const changes = useMemo(() => {
+    const diff: Record<string, unknown> = {};
+    for (const field of editableFields) {
+      const originalValue = node.data[field] ?? '';
+      const currentValue = formData[field] ?? '';
+      if (currentValue !== originalValue) {
+        diff[field] = currentValue;
+      }
+    }
+    return diff;
+  }, [formData, node.data, editableFields]);
+
+  const hasChanges = Object.keys(changes).length > 0;
+
+  const handleFieldChange = useCallback((field: string, value: unknown) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleSave = useCallback(() => {
+    if (hasChanges) {
+      onSave(changes);
+    }
+  }, [hasChanges, changes, onSave]);
+
+  const renderField = (field: string) => {
+    const fieldType = FIELD_TYPES[field] || 'text';
+    const value = (formData[field] as string) || '';
+    const label = field.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+    if (fieldType === 'textarea') {
+      return (
+        <div key={field} className={styles.field}>
+          <label className={styles.label}>{label}</label>
+          <textarea
+            className={styles.textarea}
+            value={value}
+            onChange={(e) => handleFieldChange(field, e.target.value)}
+            rows={4}
+            disabled={saving}
+          />
+        </div>
+      );
+    }
+
+    if (fieldType === 'select') {
+      const options = SELECT_OPTIONS[field] || [];
+      return (
+        <div key={field} className={styles.field}>
+          <label className={styles.label}>{label}</label>
+          <select
+            className={styles.select}
+            value={value}
+            onChange={(e) => handleFieldChange(field, e.target.value)}
+            disabled={saving}
+          >
+            <option value="">Select...</option>
+            {options.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </div>
+      );
+    }
+
+    return (
+      <div key={field} className={styles.field}>
+        <label className={styles.label}>{label}</label>
+        <input
+          type="text"
+          className={styles.input}
+          value={value}
+          onChange={(e) => handleFieldChange(field, e.target.value)}
+          disabled={saving}
+        />
+      </div>
+    );
+  };
+
+  if (editableFields.length === 0) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.noFields}>
+          No editable fields for {node.type} nodes.
+        </div>
+        <div className={styles.actions}>
+          <button className={styles.cancelBtn} onClick={onCancel} type="button">
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <h3 className={styles.title}>Edit {node.type}</h3>
+        <span className={styles.nodeId}>{node.id}</span>
+      </div>
+
+      <div className={styles.form}>
+        {editableFields.map(renderField)}
+      </div>
+
+      <div className={styles.actions}>
+        <button
+          className={styles.cancelBtn}
+          onClick={onCancel}
+          disabled={saving}
+          type="button"
+        >
+          Cancel
+        </button>
+        <button
+          className={styles.saveBtn}
+          onClick={handleSave}
+          disabled={!hasChanges || saving}
+          type="button"
+        >
+          {saving ? 'Saving...' : 'Save Changes'}
+        </button>
+      </div>
+    </div>
+  );
+}

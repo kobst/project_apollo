@@ -28,8 +28,6 @@ export function ViewTabs({ activeView, onViewChange }: ViewTabsProps) {
         className={`${styles.tab} ${activeView === 'outline' ? styles.active : ''}`}
         onClick={() => onViewChange('outline')}
         type="button"
-        disabled
-        title="Coming soon"
       >
         Outline
       </button>

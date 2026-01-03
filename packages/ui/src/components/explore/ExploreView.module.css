@@ -57,11 +57,21 @@
   min-width: 300px;
 }
 
+.editMode {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .clusterPane {
-  width: 360px;
+  width: 400px;
   border-left: 1px solid #2a2a4a;
   overflow-y: auto;
-  background: #1a1a2e;
+  background: #1e1e2e;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .loading,
@@ -95,7 +105,10 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 16px;
+  background: #1a1a2e;
+  border-radius: 8px;
+  border: 1px solid #2a2a4a;
+  padding: 12px;
 }
 
 .clusterHeader {

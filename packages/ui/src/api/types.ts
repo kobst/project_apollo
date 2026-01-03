@@ -247,3 +247,107 @@ export interface NodeRelationsData {
   incoming: EdgeData[];
   relatedNodes: NodeData[];
 }
+
+// Outline
+export interface OutlineScene {
+  id: string;
+  heading: string;
+  overview: string;
+  orderIndex: number;
+  intExt?: string;
+  timeOfDay?: string;
+  mood?: string;
+  status?: string;
+}
+
+export interface OutlineBeat {
+  id: string;
+  beatType: string;
+  act: number;
+  positionIndex: number;
+  guidance?: string;
+  status?: string;
+  notes?: string;
+  scenes: OutlineScene[];
+}
+
+export interface OutlineAct {
+  act: number;
+  beats: OutlineBeat[];
+}
+
+export interface OutlineData {
+  storyId: string;
+  acts: OutlineAct[];
+  summary: {
+    totalBeats: number;
+    totalScenes: number;
+    emptyBeats: number;
+  };
+}
+
+// Extraction
+export interface ExtractedEntity {
+  type: string;
+  name: string;
+  id: string;
+}
+
+export interface ExtractProposalData {
+  id: string;
+  title: string;
+  description: string;
+  confidence: number;
+  extractedEntities: ExtractedEntity[];
+  patchId: string;
+  opsCount: number;
+}
+
+export interface ExtractData {
+  storyId: string;
+  inputSummary: string;
+  targetType: string | null;
+  targetNodeId: string | null;
+  proposals: ExtractProposalData[];
+}
+
+export interface ExtractRequest {
+  input: string;
+  targetType?: string | undefined;
+  targetNodeId?: string | undefined;
+}
+
+export interface ExtractPreviewData {
+  proposal: {
+    id: string;
+    title: string;
+    description: string;
+    confidence: number;
+    extractedEntities: ExtractedEntity[];
+  };
+  patch: {
+    id: string;
+    baseVersionId: string;
+    ops: PatchOpData[];
+  };
+  validation: {
+    valid: boolean;
+    errors?: ValidationErrorDetail[];
+  };
+}
+
+export interface ExtractAcceptData {
+  accepted: {
+    proposalId: string;
+    title: string;
+  };
+  newVersionId: string;
+  opsApplied: number;
+}
+
+// Node update
+export interface UpdateNodeData {
+  node: NodeData;
+  newVersionId: string;
+  fieldsUpdated: string[];
+}

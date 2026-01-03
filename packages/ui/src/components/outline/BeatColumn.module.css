@@ -1,0 +1,79 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  max-width: 200px;
+  background: #1e1e2e;
+  flex-shrink: 0;
+}
+
+.container.realized {
+  border-top: 3px solid #4a7c59;
+}
+
+.container.planned {
+  border-top: 3px solid #5a7ca5;
+}
+
+.container.empty {
+  border-top: 3px solid #4a4a6a;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #1a1a2e;
+  border-bottom: 1px solid #2a2a4a;
+  min-height: 44px;
+}
+
+.beatType {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ccc;
+  line-height: 1.3;
+}
+
+.guidance {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3a3a5a;
+  color: #888;
+  font-size: 11px;
+  cursor: help;
+  flex-shrink: 0;
+}
+
+.guidance:hover {
+  background: #4a4a6a;
+  color: #aaa;
+}
+
+.scenes {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px;
+  min-height: 80px;
+  flex: 1;
+}
+
+.notes {
+  padding: 6px 12px;
+  background: #252540;
+  border-top: 1px solid #2a2a4a;
+  font-size: 10px;
+  color: #666;
+  text-transform: uppercase;
+  cursor: help;
+}
+
+.notes:hover {
+  color: #888;
+}

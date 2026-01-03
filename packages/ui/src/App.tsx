@@ -8,6 +8,7 @@ import { CenterColumn } from './components/layout/CenterColumn';
 import { RightColumn } from './components/layout/RightColumn';
 import { Footer } from './components/layout/Footer';
 import { ExploreView } from './components/explore/ExploreView';
+import { OutlineView } from './components/outline/OutlineView';
 
 export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('contract');
@@ -34,10 +35,7 @@ export default function App() {
         )}
 
         {viewMode === 'outline' && (
-          <div className={styles.placeholder}>
-            <h2>Outline View</h2>
-            <p>Coming in Phase C.1b</p>
-          </div>
+          <OutlineView />
         )}
       </div>
     </StoryProvider>

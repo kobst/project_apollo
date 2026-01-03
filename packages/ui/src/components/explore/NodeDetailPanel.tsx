@@ -7,9 +7,10 @@ interface NodeDetailPanelProps {
   loading: boolean;
   onGenerate: () => void;
   generating: boolean;
+  onEdit: () => void;
 }
 
-export function NodeDetailPanel({ relations, loading, onGenerate, generating }: NodeDetailPanelProps) {
+export function NodeDetailPanel({ relations, loading, onGenerate, generating, onEdit }: NodeDetailPanelProps) {
   if (loading) {
     return <div className={styles.loading}>Loading details...</div>;
   }
@@ -55,6 +56,13 @@ export function NodeDetailPanel({ relations, loading, onGenerate, generating }: 
 
       {/* Actions */}
       <div className={styles.actions}>
+        <button
+          className={styles.editBtn}
+          onClick={onEdit}
+          type="button"
+        >
+          Edit Node
+        </button>
         <button
           className={styles.actionBtn}
           onClick={onGenerate}

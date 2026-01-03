@@ -1,0 +1,46 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+  padding: 12px;
+  background: #1a1a2e;
+  border: 1px dashed #3a3a5a;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.container:hover {
+  background: #1e1e38;
+  border-color: #5a5a7a;
+}
+
+.container:hover .icon {
+  color: #9d8cd9;
+}
+
+.container:hover .hint {
+  opacity: 1;
+}
+
+.icon {
+  font-size: 20px;
+  color: #4a4a6a;
+  margin-bottom: 4px;
+  transition: color 0.15s ease;
+}
+
+.text {
+  font-size: 10px;
+  color: #555;
+  margin-bottom: 2px;
+}
+
+.hint {
+  font-size: 9px;
+  color: #666;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}

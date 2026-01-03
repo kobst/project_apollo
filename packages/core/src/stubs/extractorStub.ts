@@ -12,6 +12,7 @@ import type {
   Location,
   Beat,
   BeatType,
+  Scene,
 } from '../types/nodes.js';
 import { BEAT_ACT_MAP, BEAT_POSITION_MAP } from '../types/nodes.js';
 
@@ -188,5 +189,254 @@ export function initializeStory(
       action: 'initializeStory',
       logline,
     },
+  };
+}
+
+// =============================================================================
+// Freeform Extraction Result
+// =============================================================================
+
+export interface ExtractionProposal {
+  id: string;
+  title: string;
+  description: string;
+  patch: Patch;
+  confidence: number;
+  extractedEntities: Array<{
+    type: string;
+    name: string;
+    id: string;
+  }>;
+}
+
+export interface ExtractionResult {
+  proposals: ExtractionProposal[];
+  inputSummary: string;
+  targetType: string | null;
+  targetNodeId: string | null;
+}
+
+/**
+ * Extract structured proposals from freeform text input.
+ * In production, this would be an LLM call that analyzes the text
+ * and generates appropriate patches.
+ *
+ * @param input - Freeform text input from user
+ * @param baseVersionId - The base story version ID
+ * @param targetType - Optional target node type to focus extraction
+ * @param targetNodeId - Optional specific node to modify/extend
+ * @returns Extraction result with proposals
+ */
+export function extractFromInput(
+  input: string,
+  baseVersionId: string,
+  targetType?: string,
+  targetNodeId?: string
+): ExtractionResult {
+  const timestamp = new Date().toISOString();
+  const proposals: ExtractionProposal[] = [];
+
+  // Simple keyword-based extraction for stub
+  const lowerInput = input.toLowerCase();
+
+  // Detect character mentions
+  const characterMatches = input.match(/(?:named?\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/g) || [];
+  const uniqueCharacters = [...new Set(characterMatches)].slice(0, 3);
+
+  // Detect location mentions
+  const locationPatterns = /(?:in|at|the)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/gi;
+  const locationMatches = [...input.matchAll(locationPatterns)].map(m => m[1]).slice(0, 2);
+
+  // Detect scene/action descriptions
+  const hasSceneContent = lowerInput.includes('scene') ||
+    lowerInput.includes('INT.') || lowerInput.includes('EXT.') ||
+    lowerInput.length > 100;
+
+  // Generate proposals based on detected content
+  if (targetType === 'Character' || (!targetType && uniqueCharacters.length > 0)) {
+    // Character extraction proposal
+    for (let i = 0; i < Math.min(uniqueCharacters.length, 2); i++) {
+      const charName = uniqueCharacters[i] || 'Unknown Character';
+      const charId = `char_${charName.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}_${i}`;
+      const patchId = `patch_char_${Date.now()}_${i}`;
+
+      proposals.push({
+        id: `prop_char_${i}`,
+        title: `Add character: ${charName}`,
+        description: `Extract "${charName}" as a new character based on the input.`,
+        confidence: 0.7 + Math.random() * 0.2,
+        extractedEntities: [{ type: 'Character', name: charName, id: charId }],
+        patch: {
+          type: 'Patch',
+          id: patchId,
+          base_story_version_id: baseVersionId,
+          created_at: timestamp,
+          ops: [
+            {
+              op: 'ADD_NODE',
+              node: {
+                type: 'Character',
+                id: charId,
+                name: charName,
+                description: `Character extracted from: "${input.slice(0, 100)}..."`,
+                status: 'ACTIVE',
+              } as Character,
+            },
+          ],
+          metadata: {
+            source: 'extractorStub',
+            action: 'extractFromInput',
+          },
+        },
+      });
+    }
+  }
+
+  if (targetType === 'Location' || (!targetType && locationMatches.length > 0)) {
+    // Location extraction proposal
+    for (let i = 0; i < Math.min(locationMatches.length, 2); i++) {
+      const locName = locationMatches[i] || 'Unknown Location';
+      const locId = `loc_${locName.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}_${i}`;
+      const patchId = `patch_loc_${Date.now()}_${i}`;
+
+      proposals.push({
+        id: `prop_loc_${i}`,
+        title: `Add location: ${locName}`,
+        description: `Extract "${locName}" as a new location based on the input.`,
+        confidence: 0.65 + Math.random() * 0.2,
+        extractedEntities: [{ type: 'Location', name: locName, id: locId }],
+        patch: {
+          type: 'Patch',
+          id: patchId,
+          base_story_version_id: baseVersionId,
+          created_at: timestamp,
+          ops: [
+            {
+              op: 'ADD_NODE',
+              node: {
+                type: 'Location',
+                id: locId,
+                name: locName,
+                description: `Location extracted from input`,
+              } as Location,
+            },
+          ],
+          metadata: {
+            source: 'extractorStub',
+            action: 'extractFromInput',
+          },
+        },
+      });
+    }
+  }
+
+  if (targetType === 'Scene' || (!targetType && hasSceneContent)) {
+    // Scene extraction proposal
+    const sceneId = `scene_extracted_${Date.now()}`;
+    const patchId = `patch_scene_${Date.now()}`;
+
+    // Try to extract a scene heading or create one
+    let heading = 'INT. LOCATION - DAY';
+    const headingMatch = input.match(/(?:INT\.|EXT\.)[^\n.]+/i);
+    if (headingMatch) {
+      heading = headingMatch[0];
+    }
+
+    // Determine which beat this scene fulfills
+    const beatId = targetNodeId || 'beat_Setup';
+    const beatLabel = beatId.replace('beat_', '').replace(/([A-Z])/g, ' $1').trim();
+
+    // Build ops: ADD_NODE Scene, then ADD_EDGE FULFILLS Scene → Beat
+    const ops: Patch['ops'] = [
+      {
+        op: 'ADD_NODE',
+        node: {
+          type: 'Scene',
+          id: sceneId,
+          heading,
+          scene_overview: input.slice(0, 500),
+          beat_id: beatId,
+          order_index: 1,
+          status: 'DRAFT',
+          source_provenance: 'USER',
+        } as Scene,
+      },
+      {
+        op: 'ADD_EDGE',
+        edge: {
+          type: 'FULFILLS',
+          from: sceneId,
+          to: beatId,
+        },
+      },
+    ];
+
+    proposals.push({
+      id: 'prop_scene_0',
+      title: targetNodeId
+        ? `Create scene for ${beatLabel}`
+        : 'Create scene from input',
+      description: targetNodeId
+        ? `Create a new scene that fulfills the ${beatLabel} beat.`
+        : 'Extract a new scene based on the input description.',
+      confidence: 0.75,
+      extractedEntities: [{ type: 'Scene', name: heading, id: sceneId }],
+      patch: {
+        type: 'Patch',
+        id: patchId,
+        base_story_version_id: baseVersionId,
+        created_at: timestamp,
+        ops,
+        metadata: {
+          source: 'extractorStub',
+          action: 'extractFromInput',
+          targetBeat: targetNodeId || undefined,
+        },
+      },
+    });
+  }
+
+  // If no specific extractions, create a generic conflict/theme proposal
+  if (proposals.length === 0) {
+    const conflictId = `conf_extracted_${Date.now()}`;
+    const patchId = `patch_conflict_${Date.now()}`;
+
+    proposals.push({
+      id: 'prop_conflict_0',
+      title: 'Extract conflict/theme',
+      description: 'Create a new conflict or thematic element from the input.',
+      confidence: 0.6,
+      extractedEntities: [{ type: 'Conflict', name: 'Extracted Conflict', id: conflictId }],
+      patch: {
+        type: 'Patch',
+        id: patchId,
+        base_story_version_id: baseVersionId,
+        created_at: timestamp,
+        ops: [
+          {
+            op: 'ADD_NODE',
+            node: {
+              type: 'Conflict',
+              id: conflictId,
+              name: 'Extracted Conflict',
+              conflict_type: 'interpersonal',
+              description: input.slice(0, 300),
+              status: 'FLOATING',
+            } as Conflict,
+          },
+        ],
+        metadata: {
+          source: 'extractorStub',
+          action: 'extractFromInput',
+        },
+      },
+    });
+  }
+
+  return {
+    proposals,
+    inputSummary: input.slice(0, 100) + (input.length > 100 ? '...' : ''),
+    targetType: targetType || null,
+    targetNodeId: targetNodeId || null,
   };
 }

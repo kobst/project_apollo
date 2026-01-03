@@ -20,10 +20,24 @@ export interface ClusterResult {
   }>;
 }
 
+export interface ExtractionProposal {
+  id: string;
+  title: string;
+  description: string;
+  confidence: number;
+  extractedEntities: Array<{
+    type: string;
+    name: string;
+    id: string;
+  }>;
+  patch: Patch;
+}
+
 export interface SessionState {
   activeClusters: ClusterResult[];
   recentMoves: NarrativeMove[];
   lastSeeds?: Record<string, number>;
+  extractionProposals?: ExtractionProposal[];
 }
 
 // =============================================================================
@@ -193,5 +207,60 @@ export async function setLastSeedById(
   const session = await loadSessionById(storyId, ctx);
   session.lastSeeds = session.lastSeeds ?? {};
   session.lastSeeds[oqId] = seed;
+  await saveSessionById(storyId, session, ctx);
+}
+
+// =============================================================================
+// Extraction Proposals
+// =============================================================================
+
+/**
+ * Set extraction proposals for a story (replaces existing).
+ */
+export async function setExtractionProposalsById(
+  storyId: string,
+  proposals: ExtractionProposal[],
+  ctx: StorageContext
+): Promise<void> {
+  const session = await loadSessionById(storyId, ctx);
+  session.extractionProposals = proposals;
+  await saveSessionById(storyId, session, ctx);
+}
+
+/**
+ * Get extraction proposals for a story.
+ */
+export async function getExtractionProposalsById(
+  storyId: string,
+  ctx: StorageContext
+): Promise<ExtractionProposal[]> {
+  const session = await loadSessionById(storyId, ctx);
+  return session.extractionProposals ?? [];
+}
+
+/**
+ * Find a specific extraction proposal.
+ */
+export async function findExtractionProposalById(
+  storyId: string,
+  proposalId: string,
+  ctx: StorageContext
+): Promise<ExtractionProposal | null> {
+  const proposals = await getExtractionProposalsById(storyId, ctx);
+  return proposals.find((p) => p.id === proposalId) ?? null;
+}
+
+/**
+ * Remove an extraction proposal.
+ */
+export async function removeExtractionProposalById(
+  storyId: string,
+  proposalId: string,
+  ctx: StorageContext
+): Promise<void> {
+  const session = await loadSessionById(storyId, ctx);
+  session.extractionProposals = (session.extractionProposals ?? []).filter(
+    (p) => p.id !== proposalId
+  );
   await saveSessionById(storyId, session, ctx);
 }

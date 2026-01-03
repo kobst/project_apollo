@@ -1,13 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { api } from '../../api/client';
 import type { NodeData, NodeRelationsData } from '../../api/types';
 import { NodeTypeFilter, type NodeTypeOption } from './NodeTypeFilter';
 import { NodeList } from './NodeList';
 import { NodeDetailPanel } from './NodeDetailPanel';
+import { NodeEditor } from './NodeEditor';
+import { PatchBuilder } from './PatchBuilder';
+import { CommitPanel } from './CommitPanel';
 import { ClusterCard } from '../clusters/ClusterCard';
 import { PatchPreview } from '../preview/PatchPreview';
 import { ValidationStatus } from '../preview/ValidationStatus';
+import { InputPanel } from '../input/InputPanel';
 import styles from './ExploreView.module.css';
 
 export function ExploreView() {
@@ -33,6 +37,11 @@ export function ExploreView() {
   const [nodesLoading, setNodesLoading] = useState(false);
   const [relationsLoading, setRelationsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editChanges, setEditChanges] = useState<Record<string, unknown>>({});
+  const [committing, setCommitting] = useState(false);
 
   // Fetch nodes when story or type changes
   const fetchNodes = useCallback(async () => {
@@ -92,6 +101,54 @@ export function ExploreView() {
     void acceptMove();
   }, [acceptMove]);
 
+  // Handle entering edit mode
+  const handleStartEdit = useCallback(() => {
+    setIsEditing(true);
+    setEditChanges({});
+  }, []);
+
+  // Handle canceling edit mode
+  const handleCancelEdit = useCallback(() => {
+    setIsEditing(false);
+    setEditChanges({});
+  }, []);
+
+  // Handle saving node changes
+  const handleSaveChanges = useCallback((changes: Record<string, unknown>) => {
+    setEditChanges(changes);
+  }, []);
+
+  // Handle committing changes
+  const handleCommit = useCallback(async () => {
+    if (!currentStoryId || !selectedNodeId || Object.keys(editChanges).length === 0) {
+      return;
+    }
+
+    setCommitting(true);
+    try {
+      await api.updateNode(currentStoryId, selectedNodeId, editChanges);
+      // Refresh the node data
+      const data = await api.getNodeRelations(currentStoryId, selectedNodeId);
+      setNodeRelations(data);
+      // Exit edit mode
+      setIsEditing(false);
+      setEditChanges({});
+      // Refresh node list to show updated label
+      void fetchNodes();
+    } catch (err) {
+      console.error('Failed to commit changes:', err);
+      throw err; // Let CommitPanel handle the error
+    } finally {
+      setCommitting(false);
+    }
+  }, [currentStoryId, selectedNodeId, editChanges, fetchNodes]);
+
+  // Get selected node data for editor
+  const selectedNode = useMemo(() => {
+    if (!nodeRelations) return null;
+    return nodeRelations.node;
+  }, [nodeRelations]);
+
   // Check if we have a cluster for the current selected node
   const hasClusterForNode = cluster && scopedNodeId === selectedNodeId;
   const canAccept = selectedMoveId && preview?.validation.valid;
@@ -137,14 +194,41 @@ export function ExploreView() {
           )}
         </div>
 
-        {/* Center: Node Details + Actions */}
+        {/* Center: Node Details + Actions OR Edit Mode */}
         <div className={styles.detailPane}>
-          {selectedNodeId && nodeRelations ? (
+          {isEditing && selectedNode ? (
+            <div className={styles.editMode}>
+              <NodeEditor
+                node={selectedNode}
+                onSave={handleSaveChanges}
+                onCancel={handleCancelEdit}
+                saving={committing}
+              />
+              {Object.keys(editChanges).length > 0 && (
+                <>
+                  <PatchBuilder
+                    nodeId={selectedNode.id}
+                    nodeType={selectedNode.type}
+                    changes={editChanges}
+                    originalData={selectedNode.data}
+                  />
+                  <CommitPanel
+                    nodeType={selectedNode.type}
+                    changes={editChanges}
+                    onCommit={handleCommit}
+                    onCancel={handleCancelEdit}
+                    committing={committing}
+                  />
+                </>
+              )}
+            </div>
+          ) : selectedNodeId && nodeRelations ? (
             <NodeDetailPanel
               relations={nodeRelations}
               loading={relationsLoading}
               onGenerate={handleGenerate}
               generating={clusterLoading}
+              onEdit={handleStartEdit}
             />
           ) : (
             <div className={styles.noSelection}>
@@ -153,8 +237,12 @@ export function ExploreView() {
           )}
         </div>
 
-        {/* Right: Cluster + Preview (when available) */}
+        {/* Right: Input Panel + Cluster + Preview */}
         <div className={styles.clusterPane}>
+          {/* Input Panel for freeform extraction */}
+          <InputPanel />
+
+          {/* Cluster results when available */}
           {hasClusterForNode ? (
             <div className={styles.clusterContent}>
               <div className={styles.clusterHeader}>
@@ -188,11 +276,7 @@ export function ExploreView() {
             </div>
           ) : clusterLoading ? (
             <div className={styles.loading}>Generating moves...</div>
-          ) : (
-            <div className={styles.noCluster}>
-              <p>Select a node and click "Generate Moves" to create proposals</p>
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

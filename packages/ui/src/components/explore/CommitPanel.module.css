@@ -1,0 +1,144 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #1a1a2e;
+  border-radius: 8px;
+  border: 1px solid #2a2a4a;
+  padding: 12px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #888;
+  margin: 0;
+}
+
+.statusValid {
+  font-size: 11px;
+  color: #81c784;
+  background: rgba(129, 199, 132, 0.15);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.statusInvalid {
+  font-size: 11px;
+  color: #e57373;
+  background: rgba(229, 115, 115, 0.15);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.issues {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.error,
+.warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.error {
+  background: rgba(229, 115, 115, 0.1);
+  border: 1px solid rgba(229, 115, 115, 0.3);
+  color: #e57373;
+}
+
+.warning {
+  background: rgba(255, 183, 77, 0.1);
+  border: 1px solid rgba(255, 183, 77, 0.3);
+  color: #ffb74d;
+}
+
+.issueIcon {
+  flex-shrink: 0;
+  font-weight: bold;
+}
+
+.issueText {
+  flex: 1;
+}
+
+.allGood {
+  font-size: 13px;
+  color: #81c784;
+  text-align: center;
+  padding: 12px;
+  background: rgba(129, 199, 132, 0.05);
+  border-radius: 4px;
+}
+
+.commitError {
+  font-size: 12px;
+  padding: 8px 12px;
+  background: rgba(229, 115, 115, 0.1);
+  border: 1px solid rgba(229, 115, 115, 0.3);
+  border-radius: 4px;
+  color: #e57373;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 10px;
+  border-top: 1px solid #2a2a4a;
+}
+
+.cancelBtn {
+  padding: 8px 16px;
+  border: 1px solid #4a4a6a;
+  border-radius: 4px;
+  background: transparent;
+  color: #888;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: #2a2a4a;
+  color: #ccc;
+}
+
+.cancelBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.commitBtn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 4px;
+  background: #4a7c59;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.commitBtn:hover:not(:disabled) {
+  background: #5a8c69;
+}
+
+.commitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

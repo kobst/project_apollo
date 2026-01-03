@@ -18,6 +18,12 @@ import type {
   NodesListData,
   NodeData,
   NodeRelationsData,
+  UpdateNodeData,
+  OutlineData,
+  ExtractData,
+  ExtractRequest,
+  ExtractPreviewData,
+  ExtractAcceptData,
 } from './types';
 
 const API_BASE = '/api';
@@ -33,7 +39,7 @@ class ApiError extends Error {
 }
 
 async function request<T>(
-  method: 'GET' | 'POST',
+  method: 'GET' | 'POST' | 'PATCH',
   path: string,
   body?: unknown
 ): Promise<T> {
@@ -65,6 +71,10 @@ function GET<T>(path: string): Promise<T> {
 
 function POST<T>(path: string, body?: unknown): Promise<T> {
   return request<T>('POST', path, body);
+}
+
+function PATCH<T>(path: string, body?: unknown): Promise<T> {
+  return request<T>('PATCH', path, body);
 }
 
 export const api = {
@@ -100,7 +110,7 @@ export const api = {
     return GET<LogData>(`/stories/${id}/log${query}`);
   },
 
-  // Node browsing
+  // Node browsing and editing
   listNodes: (id: string, type?: string, limit?: number, offset?: number) => {
     const params = new URLSearchParams();
     if (type) params.set('type', type);
@@ -113,6 +123,19 @@ export const api = {
     GET<NodeData>(`/stories/${storyId}/nodes/${nodeId}`),
   getNodeRelations: (storyId: string, nodeId: string) =>
     GET<NodeRelationsData>(`/stories/${storyId}/nodes/${nodeId}/relations`),
+  updateNode: (storyId: string, nodeId: string, changes: Record<string, unknown>) =>
+    PATCH<UpdateNodeData>(`/stories/${storyId}/nodes/${nodeId}`, { changes }),
+
+  // Outline
+  getOutline: (id: string) => GET<OutlineData>(`/stories/${id}/outline`),
+
+  // Extraction
+  extract: (id: string, data: ExtractRequest) =>
+    POST<ExtractData>(`/stories/${id}/extract`, data),
+  previewExtract: (storyId: string, proposalId: string) =>
+    GET<ExtractPreviewData>(`/stories/${storyId}/extract/${proposalId}/preview`),
+  acceptExtract: (storyId: string, proposalId: string) =>
+    POST<ExtractAcceptData>(`/stories/${storyId}/extract/${proposalId}/accept`),
 };
 
 export { ApiError };

@@ -12,11 +12,12 @@ import {
   getAllNodes,
   getEdgesFrom,
   getEdgesTo,
+  applyPatch,
 } from '@apollo/core';
-import type { KGNode } from '@apollo/core';
+import type { KGNode, Patch, PatchOp } from '@apollo/core';
 import type { StorageContext } from '../config.js';
-import { loadVersionedStateById, deserializeGraph } from '../storage.js';
-import { NotFoundError } from '../middleware/error.js';
+import { loadVersionedStateById, saveVersionedStateById, deserializeGraph, serializeGraph } from '../storage.js';
+import { NotFoundError, BadRequestError } from '../middleware/error.js';
 import type { APIResponse, NodeData, NodesListData, NodeRelationsData } from '../types.js';
 
 /**
@@ -240,4 +241,116 @@ function sanitizeNodeData(node: KGNode): Record<string, unknown> {
   const nodeRecord = node as unknown as Record<string, unknown>;
   const { id, type, ...rest } = nodeRecord;
   return rest;
+}
+
+/**
+ * Update node response type
+ */
+interface UpdateNodeData {
+  node: NodeData;
+  newVersionId: string;
+  fieldsUpdated: string[];
+}
+
+/**
+ * PATCH /stories/:id/nodes/:nodeId
+ * Update a node's fields
+ */
+export function createUpdateNodeHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string; nodeId: string }, unknown, { changes: Record<string, unknown> }>,
+    res: Response<APIResponse<UpdateNodeData>>,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { id, nodeId } = req.params;
+      const { changes } = req.body;
+
+      if (!changes || Object.keys(changes).length === 0) {
+        throw new BadRequestError('No changes provided');
+      }
+
+      const state = await loadVersionedStateById(id, ctx);
+      if (!state) {
+        throw new NotFoundError(
+          `Story "${id}"`,
+          'Use POST /stories/init to create a story'
+        );
+      }
+
+      const currentVersionId = state.history.currentVersionId;
+      const currentVersion = state.history.versions[currentVersionId];
+      if (!currentVersion) {
+        throw new NotFoundError('Current version');
+      }
+
+      const graph = deserializeGraph(currentVersion.graph);
+      const node = getNode(graph, nodeId);
+
+      if (!node) {
+        throw new NotFoundError(`Node "${nodeId}"`);
+      }
+
+      // Build UPDATE_NODE patch op
+      const timestamp = new Date().toISOString();
+      const patchId = `patch_update_${Date.now()}`;
+      const newVersionId = `ver_${Date.now()}`;
+
+      const updateOp: PatchOp = {
+        op: 'UPDATE_NODE',
+        id: nodeId,
+        set: changes,
+      };
+
+      const patch: Patch = {
+        type: 'Patch',
+        id: patchId,
+        base_story_version_id: currentVersionId,
+        created_at: timestamp,
+        ops: [updateOp],
+        metadata: {
+          source: 'nodeEditor',
+          action: 'updateNode',
+        },
+      };
+
+      // Apply patch
+      const updatedGraph = applyPatch(graph, patch);
+
+      // Get updated node
+      const updatedNode = getNode(updatedGraph, nodeId);
+      if (!updatedNode) {
+        throw new Error('Failed to update node');
+      }
+
+      // Create new version
+      state.history.versions[newVersionId] = {
+        id: newVersionId,
+        parent_id: currentVersionId,
+        label: `Updated ${node.type}: ${getNodeLabel(node)}`,
+        created_at: timestamp,
+        graph: serializeGraph(updatedGraph),
+      };
+      state.history.currentVersionId = newVersionId;
+
+      // Save state
+      await saveVersionedStateById(id, state, ctx);
+
+      res.json({
+        success: true,
+        data: {
+          node: {
+            id: updatedNode.id,
+            type: updatedNode.type,
+            label: getNodeLabel(updatedNode),
+            data: sanitizeNodeData(updatedNode),
+          },
+          newVersionId,
+          fieldsUpdated: Object.keys(changes),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 }

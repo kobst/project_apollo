@@ -271,3 +271,44 @@ export interface NodeRelationsData {
   incoming: EdgeData[];
   relatedNodes: NodeData[];
 }
+
+// =============================================================================
+// Outline Response
+// =============================================================================
+
+export interface OutlineScene {
+  id: string;
+  heading: string;
+  overview: string;
+  orderIndex: number;
+  intExt: string | undefined;
+  timeOfDay: string | undefined;
+  mood: string | undefined;
+  status: string | undefined;
+}
+
+export interface OutlineBeat {
+  id: string;
+  beatType: string;
+  act: number;
+  positionIndex: number;
+  guidance: string | undefined;
+  status: string | undefined;
+  notes: string | undefined;
+  scenes: OutlineScene[];
+}
+
+export interface OutlineAct {
+  act: number;
+  beats: OutlineBeat[];
+}
+
+export interface OutlineData {
+  storyId: string;
+  acts: OutlineAct[];
+  summary: {
+    totalBeats: number;
+    totalScenes: number;
+    emptyBeats: number;
+  };
+}
