@@ -15,11 +15,12 @@ A comprehensive guide to using the Apollo Contract UI for screenplay development
 7. [Accepting or Rejecting Moves](#accepting-or-rejecting-moves)
 8. [Understanding Diffs](#understanding-diffs)
 9. [Explore View](#explore-view)
-10. [Outline View](#outline-view)
-11. [Input Panel & Extraction](#input-panel--extraction)
-12. [Node Editing](#node-editing)
-13. [Feature Catalog](#feature-catalog)
-14. [Troubleshooting](#troubleshooting)
+10. [Edge Editing](#edge-editing)
+11. [Outline View](#outline-view)
+12. [Input Panel & Extraction](#input-panel--extraction)
+13. [Node Editing](#node-editing)
+14. [Feature Catalog](#feature-catalog)
+15. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -425,6 +426,120 @@ When a node is selected, shows:
 
 ---
 
+## Edge Editing
+
+The **Relations** section in the Node Detail Panel supports interactive edge editing, allowing you to create, modify, and delete relationships between nodes.
+
+### Relations Section
+
+When viewing a node, the Relations section shows:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ RELATIONS                                    [+ Add]    │
+├─────────────────────────────────────────────────────────┤
+│ OUTGOING (2)                                            │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ FULFILLS → beat_Catalyst  Beat     [✎] [×]         │ │
+│ │ LOCATED_AT → loc_primary  Location [✎] [×]         │ │
+│ └─────────────────────────────────────────────────────┘ │
+│                                                         │
+│ INCOMING (1)                                            │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ Central Conflict  Conflict → INVOLVES  [✎] [×]     │ │
+│ └─────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Edge Actions
+
+| Button | Action |
+|--------|--------|
+| **+ Add** | Open the Add Relation modal to create a new edge |
+| **✎ (Edit)** | Open the Edit Edge modal to modify properties/status |
+| **× (Delete)** | Add edge deletion to pending changes |
+
+### Adding a New Relation
+
+Click **+ Add** to open the Add Relation modal with a guided 3-step flow:
+
+#### Step 1: Select Edge Type
+
+Choose the relationship type based on the current node:
+
+| Edge Type | Source → Target |
+|-----------|-----------------|
+| **FULFILLS** | Scene → Beat |
+| **HAS_CHARACTER** | Scene → Character |
+| **LOCATED_AT** | Scene → Location |
+| **INVOLVES** | Conflict → Character |
+| **MANIFESTS_IN** | Conflict → Scene |
+| **EXPRESSED_IN** | Theme → Scene/Beat |
+| **APPEARS_IN** | Motif → Scene |
+| **FEATURES_OBJECT** | Scene → Object |
+
+*Only valid edge types for the current node type are shown.*
+
+#### Step 2: Select Target Node
+
+- Use the searchable dropdown to find the target node
+- Filtered by allowed target types for the selected edge type
+- Shows node label and type badge
+
+#### Step 3: Configure Properties
+
+Set optional properties based on the edge type:
+
+| Property | Description | Edge Types |
+|----------|-------------|------------|
+| **Order** | Sequence number (≥1) | FULFILLS, HAS_CHARACTER, MANIFESTS_IN, APPEARS_IN |
+| **Weight** | Strength of relation (0-1) | INVOLVES, MANIFESTS_IN, EXPRESSED_IN |
+| **Confidence** | AI confidence score (0-1) | EXPRESSED_IN |
+| **Notes** | Human-readable annotation | All types |
+
+### Editing an Existing Edge
+
+Click the **✎** button on any edge to open the Edit Edge modal:
+
+- **Read-only fields**: Type, From, To (cannot be changed)
+- **Editable fields**: Properties and Status
+- **Status options**: Proposed, Approved, Rejected
+
+### Edge Status
+
+| Status | Meaning |
+|--------|---------|
+| **Proposed** | AI-suggested, awaiting human review |
+| **Approved** | Confirmed by human (default for manual edits) |
+| **Rejected** | Marked as invalid |
+
+### Pending Edge Changes
+
+Edge operations are batched before committing. The **Edge Patch Builder** shows pending changes:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Pending Edge Changes (2)                                │
+├─────────────────────────────────────────────────────────┤
+│ 1. ADD_EDGE                                             │
+│    HAS_CHARACTER: scene_001 → char_new                  │
+│                                                         │
+│ 2. UPDATE_EDGE                                          │
+│    edge_abc123                                          │
+│    set: { order: 5 }                                    │
+├─────────────────────────────────────────────────────────┤
+│ [Discard All]                              [Commit All] │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Edge Editing Workflow
+
+1. **Make changes**: Add, edit, or delete edges
+2. **Review pending**: Check the Edge Patch Builder
+3. **Commit or discard**: Apply all changes atomically or cancel
+
+---
+
 ## Outline View
 
 The **Outline** tab displays the story structure as a beat-by-beat grid.
@@ -640,10 +755,15 @@ Click **Cancel** to:
 | **NodeList** | Left pane | List of nodes of selected type |
 | **NodeCard** | Left pane | Individual node in list |
 | **NodeDetailPanel** | Center pane | Full node properties and relations |
-| **NodeRelations** | Center pane | Incoming/outgoing edges display |
+| **NodeRelations** | Center pane | Incoming/outgoing edges with edit/delete buttons |
 | **NodeEditor** | Center pane | Edit form for node fields |
 | **PatchBuilder** | Center pane | Preview of pending UPDATE_NODE ops |
 | **CommitPanel** | Center pane | Validation and commit button |
+| **AddRelationModal** | Modal | 3-step guided form for creating edges |
+| **EditEdgeModal** | Modal | Form for editing edge properties/status |
+| **EdgePropertiesForm** | Modal | Schema-aware property inputs per edge type |
+| **NodePicker** | Modal | Searchable dropdown for target node selection |
+| **EdgePatchBuilder** | Center pane | Preview of pending edge operations |
 | **InputPanel** | Right pane | Freeform text extraction |
 | **ProposalCard** | Right pane | Extraction proposal display |
 
@@ -687,6 +807,15 @@ Click **Cancel** to:
 | Modify field | NodeEditor form | Updates pending changes |
 | Commit changes | CommitPanel button | Applies edits, creates version |
 | Cancel edit | CommitPanel button | Discards changes, exits edit mode |
+| Add relation | NodeRelations "+ Add" button | Opens AddRelationModal |
+| Edit edge | NodeRelations "✎" button | Opens EditEdgeModal |
+| Delete edge | NodeRelations "×" button | Adds deletion to pending changes |
+| Select edge type | AddRelationModal step 1 | Filters available target nodes |
+| Select target node | AddRelationModal step 2 | Sets edge destination |
+| Set edge properties | AddRelationModal step 3 | Configures order/weight/notes |
+| Save edge edits | EditEdgeModal button | Adds update to pending changes |
+| Commit edge changes | EdgePatchBuilder button | Applies all pending edge ops |
+| Discard edge changes | EdgePatchBuilder button | Clears pending edge ops |
 | Enter text | InputPanel textarea | Prepares text for extraction |
 | Select target | InputPanel dropdown | Sets extraction target type |
 | Select beat | InputPanel dropdown | Sets beat for scene linking |
