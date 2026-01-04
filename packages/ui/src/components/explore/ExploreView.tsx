@@ -16,6 +16,9 @@ import { EditEdgeModal } from './EditEdgeModal';
 import { AddRelationModal } from './AddRelationModal';
 import { EdgePatchBuilder, PendingEdgeOp } from './EdgePatchBuilder';
 import { InteractiveEdgeData } from './NodeRelations';
+import { useLint } from '../../hooks/useLint';
+import { LintPanel } from '../lint/LintPanel';
+import { PreCommitModal } from '../lint/PreCommitModal';
 import styles from './ExploreView.module.css';
 
 export function ExploreView() {
@@ -31,6 +34,7 @@ export function ExploreView() {
     acceptMove,
     rejectAll,
     loading,
+    refreshStatus,
   } = useStory();
 
   // Local explore state
@@ -54,6 +58,13 @@ export function ExploreView() {
   const [edgeCommitting, setEdgeCommitting] = useState(false);
   const [fullEdges, setFullEdges] = useState<EdgeData[]>([]);
   const [allNodes, setAllNodes] = useState<NodeData[]>([]);
+
+  // Lint state
+  const [showPreCommitModal, setShowPreCommitModal] = useState(false);
+  const lint = useLint({
+    storyId: currentStoryId ?? '',
+    autoLintEnabled: isEditing,
+  });
 
   // Fetch nodes when story or type changes
   const fetchNodes = useCallback(async () => {
@@ -175,10 +186,14 @@ export function ExploreView() {
   // Handle saving node changes
   const handleSaveChanges = useCallback((changes: Record<string, unknown>) => {
     setEditChanges(changes);
-  }, []);
+    // Mark the node as touched for lint
+    if (selectedNodeId) {
+      lint.markNodeTouched(selectedNodeId);
+    }
+  }, [selectedNodeId, lint]);
 
-  // Handle committing changes
-  const handleCommit = useCallback(async () => {
+  // Perform the actual commit (called after pre-commit check passes)
+  const doCommit = useCallback(async () => {
     if (!currentStoryId || !selectedNodeId || Object.keys(editChanges).length === 0) {
       return;
     }
@@ -192,15 +207,38 @@ export function ExploreView() {
       // Exit edit mode
       setIsEditing(false);
       setEditChanges({});
+      lint.clearTouchedScope();
       // Refresh node list to show updated label
       void fetchNodes();
+      // Refresh status to update stats in tabs
+      void refreshStatus();
     } catch (err) {
       console.error('Failed to commit changes:', err);
       throw err; // Let CommitPanel handle the error
     } finally {
       setCommitting(false);
     }
-  }, [currentStoryId, selectedNodeId, editChanges, fetchNodes]);
+  }, [currentStoryId, selectedNodeId, editChanges, fetchNodes, lint, refreshStatus]);
+
+  // Handle committing changes (with pre-commit lint check)
+  const handleCommit = useCallback(async () => {
+    if (!currentStoryId || !selectedNodeId || Object.keys(editChanges).length === 0) {
+      return;
+    }
+
+    // Run pre-commit lint check
+    const result = await lint.checkPreCommit();
+    if (result) {
+      // Show modal if there are blocking errors OR warnings
+      if (!result.canCommit || result.warningCount > 0) {
+        setShowPreCommitModal(true);
+        return;
+      }
+    }
+
+    // No violations at all, proceed with commit
+    await doCommit();
+  }, [currentStoryId, selectedNodeId, editChanges, lint, doCommit]);
 
   // Edge editing handlers
   const handleEditEdge = useCallback((edge: EdgeData) => {
@@ -299,12 +337,14 @@ export function ExploreView() {
       if (selectedNodeId) {
         void selectNode(selectedNodeId);
       }
+      // Refresh status to update edge count in stats
+      void refreshStatus();
     } catch (err) {
       console.error('Failed to commit edge changes:', err);
     } finally {
       setEdgeCommitting(false);
     }
-  }, [currentStoryId, pendingEdgeOps, selectedNodeId, selectNode]);
+  }, [currentStoryId, pendingEdgeOps, selectedNodeId, selectNode, refreshStatus]);
 
   // Get selected node data for editor
   const selectedNode = useMemo(() => {
@@ -411,6 +451,18 @@ export function ExploreView() {
                     nodeType={selectedNode.type}
                     changes={editChanges}
                     originalData={selectedNode.data}
+                  />
+                  <LintPanel
+                    violations={lint.violations}
+                    fixes={lint.fixes}
+                    errorCount={lint.errorCount}
+                    warningCount={lint.warningCount}
+                    isLinting={lint.isLinting}
+                    lastCheckedAt={lint.lastCheckedAt}
+                    scopeTruncated={lint.scopeTruncated}
+                    onApplyFix={lint.applyFix}
+                    onApplyAll={lint.applyAllFixes}
+                    onRunFullLint={lint.runFullLint}
                   />
                   <CommitPanel
                     nodeType={selectedNode.type}
@@ -520,6 +572,19 @@ export function ExploreView() {
           saving={edgeCommitting}
         />
       )}
+
+      {/* Pre-commit lint modal */}
+      <PreCommitModal
+        isOpen={showPreCommitModal}
+        violations={lint.violations}
+        fixes={lint.fixes}
+        errorCount={lint.errorCount}
+        applying={lint.isLinting}
+        onApplyFix={lint.applyFix}
+        onApplyAll={lint.applyAllFixes}
+        onClose={() => setShowPreCommitModal(false)}
+        onProceed={!lint.hasBlockingErrors ? () => { void doCommit(); } : undefined}
+      />
     </div>
   );
 }

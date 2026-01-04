@@ -33,6 +33,11 @@ import type {
   CreateEdgeRequest,
   UpdateEdgeRequest,
   BatchEdgeRequest,
+  LintData,
+  LintRequest,
+  ApplyFixData,
+  ApplyFixRequest,
+  PreCommitLintData,
 } from './types';
 
 const API_BASE = '/api';
@@ -172,6 +177,14 @@ export const api = {
     POST<BatchEdgeResult>(`/stories/${storyId}/edges:batch`, data),
   upsertEdge: (storyId: string, data: CreateEdgeRequest) =>
     POST<UpsertEdgeResult>(`/stories/${storyId}/edges:upsert`, data),
+
+  // Lint (Rule Engine - Milestone 1)
+  lint: (storyId: string, data?: LintRequest) =>
+    POST<LintData>(`/stories/${storyId}/lint`, data ?? { scope: 'full' }),
+  applyFix: (storyId: string, data: ApplyFixRequest) =>
+    POST<ApplyFixData>(`/stories/${storyId}/lint/apply`, data),
+  preCommitLint: (storyId: string) =>
+    GET<PreCommitLintData>(`/stories/${storyId}/lint/precommit`),
 };
 
 export { ApiError };

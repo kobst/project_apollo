@@ -450,3 +450,77 @@ export interface BatchEdgeRequest {
   }>;
   deletes?: string[];
 }
+
+// =============================================================================
+// Lint Types (Rule Engine - Milestone 1)
+// =============================================================================
+
+export type RuleSeverity = 'hard' | 'soft';
+export type RuleCategory = 'structure' | 'act_boundary' | 'stc_ordering' | 'completeness' | 'orphan';
+
+export interface LintViolationData {
+  id: string;
+  ruleId: string;
+  severity: RuleSeverity;
+  category: string;
+  message: string;
+  nodeId?: string;
+  nodeType?: string;
+  relatedNodeIds?: string[];
+}
+
+export interface LintFixData {
+  id: string;
+  violationId: string;
+  ruleId: string;
+  label: string;
+  description: string;
+  affectedNodeIds: string[];
+  operationCount: number;
+}
+
+export interface LintSummary {
+  errorCount: number;
+  warningCount: number;
+  hasBlockingErrors: boolean;
+  scopeTruncated?: boolean;
+}
+
+export interface LintData {
+  violations: LintViolationData[];
+  fixes: LintFixData[];
+  summary: LintSummary;
+  lastCheckedAt: string;
+}
+
+export interface LintRequest {
+  scope?: 'full' | 'touched';
+  touchedNodeIds?: string[];
+  touchedEdgeIds?: string[];
+}
+
+export interface ApplyFixRequest {
+  fixIds?: string[];
+  applyAll?: boolean;
+  categories?: RuleCategory[];
+}
+
+export interface ApplyFixData {
+  applied: string[];
+  skipped: string[];
+  skipReasons: Record<string, string>;
+  newVersionId: string;
+  revalidation: {
+    errorCount: number;
+    warningCount: number;
+    hasBlockingErrors: boolean;
+  };
+}
+
+export interface PreCommitLintData {
+  canCommit: boolean;
+  violations: LintViolationData[];
+  fixes: LintFixData[];
+  errorCount: number;
+  warningCount: number;
+}

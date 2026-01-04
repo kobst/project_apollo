@@ -1,0 +1,112 @@
+.item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.error {
+  background: rgba(229, 115, 115, 0.1);
+  border: 1px solid rgba(229, 115, 115, 0.3);
+}
+
+.warning {
+  background: rgba(255, 183, 77, 0.1);
+  border: 1px solid rgba(255, 183, 77, 0.3);
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon {
+  flex-shrink: 0;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.error .icon {
+  color: #e57373;
+}
+
+.warning .icon {
+  color: #ffb74d;
+}
+
+.ruleId {
+  font-family: monospace;
+  font-size: 10px;
+  padding: 1px 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  color: #888;
+}
+
+.severity {
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.error .severity {
+  color: #e57373;
+}
+
+.warning .severity {
+  color: #ffb74d;
+}
+
+.message {
+  margin: 0;
+  color: #ccc;
+  line-height: 1.4;
+}
+
+.nodeInfo {
+  font-size: 10px;
+  color: #666;
+}
+
+.nodeInfo code {
+  font-family: monospace;
+  color: #888;
+}
+
+.fixSection {
+  flex-shrink: 0;
+}
+
+.fixBtn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  background: #3a5a7c;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.fixBtn:hover:not(:disabled) {
+  background: #4a6a8c;
+}
+
+.fixBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

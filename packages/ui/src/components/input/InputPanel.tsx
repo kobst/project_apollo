@@ -34,7 +34,7 @@ const BEAT_OPTIONS = [
 ];
 
 export function InputPanel() {
-  const { currentStoryId } = useStory();
+  const { currentStoryId, refreshStatus } = useStory();
   const [input, setInput] = useState('');
   const [targetType, setTargetType] = useState('');
   const [selectedBeat, setSelectedBeat] = useState('');
@@ -96,12 +96,14 @@ export function InputPanel() {
       if (proposals.length === 1) {
         setInput('');
       }
+      // Refresh status to update node counts in tabs
+      await refreshStatus();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Accept failed');
     } finally {
       setLoading(false);
     }
-  }, [currentStoryId, proposals.length]);
+  }, [currentStoryId, proposals.length, refreshStatus]);
 
   const handleClear = useCallback(() => {
     setInput('');

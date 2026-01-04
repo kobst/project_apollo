@@ -35,3 +35,8 @@ export {
   createBatchEdgesHandler,
   createUpsertEdgeHandler,
 } from './edges.js';
+export {
+  createLintHandler,
+  createApplyFixHandler,
+  createPreCommitLintHandler,
+} from './lint.js';

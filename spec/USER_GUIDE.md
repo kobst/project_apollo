@@ -19,8 +19,9 @@ A comprehensive guide to using the Apollo Contract UI for screenplay development
 11. [Outline View](#outline-view)
 12. [Input Panel & Extraction](#input-panel--extraction)
 13. [Node Editing](#node-editing)
-14. [Feature Catalog](#feature-catalog)
-15. [Troubleshooting](#troubleshooting)
+14. [Lint Panel & Pre-Commit Validation](#lint-panel--pre-commit-validation)
+15. [Feature Catalog](#feature-catalog)
+16. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -717,6 +718,158 @@ Click **Cancel** to:
 
 ---
 
+## Lint Panel & Pre-Commit Validation
+
+The **Lint Panel** validates your story graph for structural integrity and completeness, appearing in edit mode below the pending changes preview.
+
+### Understanding Lint Rules
+
+The lint system has two types of rules:
+
+| Type | Severity | Commit Behavior |
+|------|----------|-----------------|
+| **Hard Rules** | Error (red) | Block commit until fixed |
+| **Soft Rules** | Warning (orange) | Allow commit with confirmation |
+
+### Hard Rules (Errors)
+
+Hard rules protect structural integrity. Violations must be fixed before committing.
+
+| Rule | Description | Auto-Fix |
+|------|-------------|----------|
+| **Scene Order Unique** | Two scenes in same beat cannot share the same order | Re-indexes scenes sequentially (1, 2, 3...) |
+| **Scene-Act Boundary** | Scene's beat must have the correct act for its beat type | Corrects the beat's act field |
+| **STC Beat Ordering** | Beat's position must match Save The Cat canonical order | Corrects the position index |
+
+### Soft Rules (Warnings)
+
+Soft rules check completeness. They warn but don't block commits.
+
+| Rule | Description |
+|------|-------------|
+| **Scene Has Character** | Scene should have at least one character assigned |
+| **Scene Has Location** | Scene should have a location assigned |
+| **Theme Not Orphaned** | Theme should be expressed in at least one scene or beat |
+| **Motif Not Orphaned** | Motif should appear in at least one scene |
+
+### Lint Panel Display
+
+When in edit mode, the Lint Panel shows:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ LINT                                    [All Clear] ✓       │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│ No violations found                                         │
+│                                                             │
+│                                [Run Full Lint]              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Or with violations:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ LINT                           [1 Error] [2 Warnings]       │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│ ! Scene order conflict in beat_Catalyst                     │
+│   2 scenes have order_index 1                               │
+│                          [Re-index 2 scenes in beat...]     │
+│                                                             │
+│ ^ Scene "INT. CAFE - DAY" has no characters assigned        │
+│                                                             │
+│ ^ Scene "INT. CAFE - DAY" has no location assigned          │
+│                                                             │
+│ [Apply All Fixes (1)]                  [Run Full Lint]      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Lint Badge Colors
+
+| Badge | Meaning |
+|-------|---------|
+| **All Clear** (green) | No violations |
+| **N Errors** (red) | Hard rule violations that block commit |
+| **N Warnings** (orange) | Soft rule violations (informational) |
+
+### Auto-Lint Behavior
+
+- Lint runs automatically ~600ms after you stop editing
+- Only checks the edited node and related nodes (touched scope)
+- Use "Run Full Lint" for a complete graph check
+
+### Applying Fixes
+
+For violations with auto-fixes:
+
+1. Click the blue **fix button** on the violation to apply that fix
+2. Or click **Apply All Fixes** to fix all fixable violations at once
+3. The panel updates to show remaining violations
+
+### Pre-Commit Modal
+
+When you click **Commit Changes**, the system checks for violations:
+
+#### Scenario 1: Hard Errors Present
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Commit Blocked                                        [x]   │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│ There is 1 error that must be fixed before committing.      │
+│                                                             │
+│ Errors (1)                                                  │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ ! Scene order conflict in beat_Catalyst                 │ │
+│ │                        [Re-index 2 scenes in beat...]   │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│            [Cancel]                    [Apply All Fixes]    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+- **Cannot proceed** until errors are fixed
+- Use fix buttons or "Apply All Fixes"
+- After fixing, the modal updates and allows commit
+
+#### Scenario 2: Warnings Only
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Review Before Commit                                  [x]   │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│ Warnings (2)                                                │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ ^ Scene "INT. CAFE - DAY" has no characters assigned    │ │
+│ │ ^ Scene "INT. CAFE - DAY" has no location assigned      │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│   [Cancel]                         [Proceed with Warnings]  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+- Warnings are shown for awareness
+- Click **Proceed with Warnings** to commit anyway
+- Or click **Cancel** to go back and address them
+
+#### Scenario 3: No Violations
+
+- No modal appears
+- Commit proceeds immediately
+
+### Lint Workflow Summary
+
+1. **Edit a node** → Auto-lint runs after you stop typing
+2. **Review violations** → See errors (red) and warnings (orange)
+3. **Apply fixes** → Click fix buttons for auto-fixable issues
+4. **Commit** → If errors exist, fix them first; warnings can be bypassed
+
+---
+
 ## Feature Catalog
 
 ### Complete Component List
@@ -766,6 +919,9 @@ Click **Cancel** to:
 | **EdgePatchBuilder** | Center pane | Preview of pending edge operations |
 | **InputPanel** | Right pane | Freeform text extraction |
 | **ProposalCard** | Right pane | Extraction proposal display |
+| **LintPanel** | Center pane | Lint violations and fix buttons |
+| **ViolationItem** | Center pane | Single violation with fix button |
+| **PreCommitModal** | Modal | Blocking modal for commit validation |
 
 #### Outline View Components
 
@@ -821,6 +977,11 @@ Click **Cancel** to:
 | Select beat | InputPanel dropdown | Sets beat for scene linking |
 | Extract | InputPanel button | Generates proposals from text |
 | Accept proposal | ProposalCard button | Applies proposal to graph |
+| Run full lint | LintPanel button | Checks entire graph for violations |
+| Apply single fix | ViolationItem button | Applies fix for one violation |
+| Apply all fixes | LintPanel button | Applies all available fixes |
+| Proceed with warnings | PreCommitModal button | Commits despite soft rule warnings |
+| Fix from modal | PreCommitModal button | Applies fixes before committing |
 
 #### Outline View
 

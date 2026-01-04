@@ -33,6 +33,9 @@ import {
   createDeleteEdgeHandler,
   createBatchEdgesHandler,
   createUpsertEdgeHandler,
+  createLintHandler,
+  createApplyFixHandler,
+  createPreCommitLintHandler,
 } from '../handlers/index.js';
 
 export function createStoriesRouter(ctx: StorageContext): Router {
@@ -80,6 +83,11 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   // Note: Using regex to match :batch and :upsert as sub-resources
   router.post('/:id/edges\\:batch', createBatchEdgesHandler(ctx));
   router.post('/:id/edges\\:upsert', createUpsertEdgeHandler(ctx));
+
+  // Lint endpoints
+  router.post('/:id/lint', createLintHandler(ctx));
+  router.post('/:id/lint/apply', createApplyFixHandler(ctx));
+  router.get('/:id/lint/precommit', createPreCommitLintHandler(ctx));
 
   return router;
 }

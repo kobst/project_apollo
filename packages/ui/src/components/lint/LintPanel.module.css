@@ -1,0 +1,179 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #1a1a2e;
+  border-radius: 8px;
+  border: 1px solid #2a2a4a;
+  padding: 12px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #888;
+  margin: 0;
+}
+
+.spinner {
+  font-size: 11px;
+  color: #5ba0d0;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.lastCheck {
+  font-size: 10px;
+  color: #666;
+}
+
+.summary {
+  display: flex;
+  gap: 8px;
+}
+
+.errorBadge {
+  font-size: 11px;
+  color: #e57373;
+  background: rgba(229, 115, 115, 0.15);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.warningBadge {
+  font-size: 11px;
+  color: #ffb74d;
+  background: rgba(255, 183, 77, 0.15);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.allClear {
+  font-size: 11px;
+  color: #81c784;
+  background: rgba(129, 199, 132, 0.15);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.truncatedBanner {
+  font-size: 11px;
+  padding: 8px 12px;
+  background: rgba(255, 183, 77, 0.1);
+  border: 1px solid rgba(255, 183, 77, 0.3);
+  border-radius: 4px;
+  color: #ffb74d;
+}
+
+.inlineBtn {
+  background: none;
+  border: none;
+  color: #5ba0d0;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  text-decoration: underline;
+}
+
+.inlineBtn:hover:not(:disabled) {
+  color: #7bb8e0;
+}
+
+.inlineBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.violations {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #666;
+  margin: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #2a2a4a;
+}
+
+.lintBtn {
+  padding: 8px 16px;
+  border: 1px solid #4a4a6a;
+  border-radius: 4px;
+  background: transparent;
+  color: #aaa;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lintBtn:hover:not(:disabled) {
+  background: #2a2a4a;
+  color: #ccc;
+}
+
+.lintBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.applyAllBtn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background: #3a5a7c;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.applyAllBtn:hover:not(:disabled) {
+  background: #4a6a8c;
+}
+
+.applyAllBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

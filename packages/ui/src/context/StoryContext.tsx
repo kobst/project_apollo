@@ -50,6 +50,7 @@ interface StoryContextValue {
 
   // Actions
   refreshStories: () => Promise<void>;
+  refreshStatus: () => Promise<void>;
   selectStory: (id: string) => Promise<void>;
   createStory: (name: string, logline: string) => Promise<void>;
   selectOQ: (oq: OpenQuestionData | null) => void;
@@ -114,6 +115,21 @@ export function StoryProvider({ children }: StoryProviderProps) {
       console.error('Failed to list stories:', err);
     }
   }, []);
+
+  // Refresh status for current story (updates stats, etc.)
+  const refreshStatus = useCallback(async () => {
+    if (!currentStoryId) return;
+    try {
+      const [statusData, oqData] = await Promise.all([
+        api.getStatus(currentStoryId),
+        api.getOpenQuestions(currentStoryId),
+      ]);
+      setStatus(statusData);
+      setOpenQuestions(oqData.questions);
+    } catch (err) {
+      console.error('Failed to refresh status:', err);
+    }
+  }, [currentStoryId]);
 
   // Load stories on mount
   useEffect(() => {
@@ -306,6 +322,7 @@ export function StoryProvider({ children }: StoryProviderProps) {
     previewLoading,
     diff,
     refreshStories,
+    refreshStatus,
     selectStory,
     createStory,
     selectOQ,

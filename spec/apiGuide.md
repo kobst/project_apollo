@@ -673,6 +673,169 @@ curl http://localhost:3000/stories/my-story/branches
 
 ---
 
+## Lint & Rule Engine
+
+The lint system validates story graph integrity with hard rules (block commit) and soft rules (warnings).
+
+### Run Lint
+
+```
+POST /stories/:id/lint
+```
+
+Runs lint rules against the story graph.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `scope` | string | No | `full` (default) or `touched` |
+| `touchedNodeIds` | string[] | No | Node IDs to check (for touched scope) |
+| `touchedEdgeIds` | string[] | No | Edge IDs to check (for touched scope) |
+
+```bash
+# Full lint
+curl -X POST http://localhost:3000/stories/my-story/lint \
+  -H 'Content-Type: application/json' \
+  -d '{"scope": "full"}'
+
+# Touched scope (faster, for edit-time linting)
+curl -X POST http://localhost:3000/stories/my-story/lint \
+  -H 'Content-Type: application/json' \
+  -d '{"scope": "touched", "touchedNodeIds": ["scene_001"]}'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "violations": [
+      {
+        "id": "v_abc123",
+        "ruleId": "SCENE_HAS_CHARACTER",
+        "severity": "soft",
+        "category": "completeness",
+        "message": "Scene 'INT. CAFE - DAY' has no characters assigned",
+        "nodeId": "scene_001"
+      }
+    ],
+    "fixes": [
+      {
+        "id": "fix_abc123",
+        "violationId": "v_abc123",
+        "label": "Re-index 3 scenes in beat_Catalyst",
+        "affectedNodeIds": ["scene_001", "scene_002", "scene_003"]
+      }
+    ],
+    "summary": {
+      "errorCount": 0,
+      "warningCount": 1,
+      "hasBlockingErrors": false
+    },
+    "lastCheckedAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+---
+
+### Apply Fixes
+
+```
+POST /stories/:id/lint/apply
+```
+
+Applies one or more lint fixes to the story graph.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `fixIds` | string[] | No* | Specific fix IDs to apply |
+| `applyAll` | boolean | No* | Apply all available fixes |
+| `categories` | string[] | No | Filter by category when using applyAll |
+
+*One of `fixIds` or `applyAll` is required.
+
+```bash
+# Apply specific fixes
+curl -X POST http://localhost:3000/stories/my-story/lint/apply \
+  -H 'Content-Type: application/json' \
+  -d '{"fixIds": ["fix_abc123", "fix_def456"]}'
+
+# Apply all fixes
+curl -X POST http://localhost:3000/stories/my-story/lint/apply \
+  -H 'Content-Type: application/json' \
+  -d '{"applyAll": true}'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "applied": ["fix_abc123"],
+    "skipped": [],
+    "newVersionId": "sv_1234567893",
+    "revalidation": {
+      "errorCount": 0,
+      "warningCount": 0,
+      "hasBlockingErrors": false
+    }
+  }
+}
+```
+
+---
+
+### Pre-Commit Check
+
+```
+GET /stories/:id/lint/precommit
+```
+
+Runs a full lint and returns whether commit is allowed.
+
+```bash
+curl http://localhost:3000/stories/my-story/lint/precommit
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "canCommit": true,
+    "errorCount": 0,
+    "warningCount": 2,
+    "violations": [...],
+    "fixes": [...]
+  }
+}
+```
+
+---
+
+### Lint Rules Reference
+
+#### Hard Rules (Block Commit)
+
+| Rule ID | Description | Auto-Fix |
+|---------|-------------|----------|
+| `SCENE_ORDER_UNIQUE` | Two scenes in same beat cannot share order_index | Re-index scenes sequentially |
+| `SCENE_ACT_BOUNDARY` | Scene's beat must have correct act for its beat_type | Correct beat's act field |
+| `STC_BEAT_ORDERING` | Beat's position_index must match STC canonical order | Correct position_index |
+
+#### Soft Rules (Warnings)
+
+| Rule ID | Description | Auto-Fix |
+|---------|-------------|----------|
+| `SCENE_HAS_CHARACTER` | Scene should have ≥1 character assigned | None (manual) |
+| `SCENE_HAS_LOCATION` | Scene should have a location assigned | None (manual) |
+| `THEME_NOT_ORPHANED` | Theme should be expressed in ≥1 scene/beat | None (manual) |
+| `MOTIF_NOT_ORPHANED` | Motif should appear in ≥1 scene | None (manual) |
+
+---
+
 ## CLI Interoperability
 
 The API shares storage with the CLI by default (`~/.apollo`). You can:
