@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { api } from '../../api/client';
-import type { NodeData, NodeRelationsData, EdgeData, CreateEdgeRequest, EdgeProperties, EdgeStatus } from '../../api/types';
+import type { NodeData, NodeRelationsData, EdgeData, CreateEdgeRequest, EdgeProperties, EdgeStatus, EdgeType } from '../../api/types';
 import { NodeTypeFilter, type NodeTypeOption } from './NodeTypeFilter';
 import { NodeList } from './NodeList';
 import { NodeDetailPanel } from './NodeDetailPanel';
@@ -15,11 +15,20 @@ import { InputPanel } from '../input/InputPanel';
 import { EditEdgeModal } from './EditEdgeModal';
 import { AddRelationModal } from './AddRelationModal';
 import { EdgePatchBuilder, PendingEdgeOp } from './EdgePatchBuilder';
-import { InteractiveEdgeData } from './NodeRelations';
+import { InteractiveEdgeData, BulkAttachConfig } from './NodeRelations';
 import { useLint } from '../../hooks/useLint';
+import { useBulkAttach } from '../../hooks/useBulkAttach';
 import { LintPanel } from '../lint/LintPanel';
 import { PreCommitModal } from '../lint/PreCommitModal';
+import { BulkAttachModal } from '../bulk-attach';
+import { EDGE_TEMPLATES } from '../../config/edgeTemplates';
 import styles from './ExploreView.module.css';
+
+// Determine if an edge type uses ordering
+function isOrderedEdgeType(edgeType: EdgeType): boolean {
+  const template = EDGE_TEMPLATES[edgeType];
+  return !!template.properties.order;
+}
 
 export function ExploreView() {
   const {
@@ -64,6 +73,18 @@ export function ExploreView() {
   const lint = useLint({
     storyId: currentStoryId ?? '',
     autoLintEnabled: isEditing,
+  });
+
+  // Bulk attach state
+  const bulkAttach = useBulkAttach({
+    storyId: currentStoryId ?? '',
+    onSuccess: () => {
+      // Refresh current node after bulk attach
+      if (selectedNodeId) {
+        void selectNode(selectedNodeId);
+      }
+      void refreshStatus();
+    },
   });
 
   // Fetch nodes when story or type changes
@@ -293,6 +314,25 @@ export function ExploreView() {
     setAddEdgeDirection(null);
   }, []);
 
+  // Bulk attach handler
+  const handleBulkAttach = useCallback((config: BulkAttachConfig) => {
+    if (!selectedNodeId) return;
+
+    // Determine if this is ordered (only FULFILLS for now)
+    const ordered = isOrderedEdgeType(config.edgeType);
+
+    // Determine single-select mode (LOCATED_AT is single)
+    const singleSelect = config.edgeType === 'LOCATED_AT';
+
+    bulkAttach.openModal({
+      parentId: selectedNodeId,
+      edgeType: config.edgeType,
+      ordered,
+      singleSelect,
+      existingEdges: config.existingEdges,
+    });
+  }, [selectedNodeId, bulkAttach]);
+
   const handleRemoveEdgeOp = useCallback((index: number) => {
     setPendingEdgeOps(prev => prev.filter((_, i) => i !== index));
   }, []);
@@ -485,6 +525,7 @@ export function ExploreView() {
                 onEditEdge={handleEditEdge}
                 onDeleteEdge={handleDeleteEdge}
                 onAddEdge={handleAddEdge}
+                onBulkAttach={handleBulkAttach}
                 fullEdges={interactiveEdges}
               />
               {/* Edge pending changes preview */}
@@ -584,6 +625,22 @@ export function ExploreView() {
         onApplyAll={lint.applyAllFixes}
         onClose={() => setShowPreCommitModal(false)}
         onProceed={!lint.hasBlockingErrors ? () => { void doCommit(); } : undefined}
+      />
+
+      {/* Bulk attach modal */}
+      <BulkAttachModal
+        isOpen={bulkAttach.isOpen}
+        config={bulkAttach.config}
+        storyId={currentStoryId ?? ''}
+        selectedTargets={bulkAttach.selectedTargets}
+        changes={bulkAttach.changes}
+        isSaving={bulkAttach.isSaving}
+        error={bulkAttach.error}
+        onAddTarget={bulkAttach.addTarget}
+        onRemoveTarget={bulkAttach.removeTarget}
+        onReorderTargets={bulkAttach.reorderTargets}
+        onSave={bulkAttach.save}
+        onClose={bulkAttach.closeModal}
       />
     </div>
   );

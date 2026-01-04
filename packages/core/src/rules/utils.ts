@@ -7,8 +7,119 @@ import type { GraphState } from '../core/graph.js';
 import { getNode, getNodesByType, getEdgesFrom, getEdgesTo } from '../core/graph.js';
 import type { Beat, Scene } from '../types/nodes.js';
 import { BEAT_ACT_MAP, BEAT_POSITION_MAP } from '../types/nodes.js';
+import type { Edge, EdgeType } from '../types/edges.js';
 import type { LintScope, RuleViolation } from './types.js';
 import { SCOPE_EXPANSION_LIMIT } from './types.js';
+
+// =============================================================================
+// Edge Ordering Helpers
+// =============================================================================
+
+/**
+ * Edge types where the parent (container) is the TARGET of the edge.
+ * For these types, ordering is relative to the target node.
+ *
+ * - FULFILLS: Scene → Beat (Beat is the container holding ordered scenes)
+ * - EXPRESSED_IN: Theme → Scene|Beat (Scene/Beat is where themes are expressed)
+ * - APPEARS_IN: Motif → Scene (Scene is where motifs appear)
+ */
+export const PARENT_IS_TARGET_EDGE_TYPES: EdgeType[] = [
+  'FULFILLS',
+  'EXPRESSED_IN',
+  'APPEARS_IN',
+];
+
+/**
+ * Get the parent node ID for an edge (the node that "contains" the ordered items).
+ * For FULFILLS/EXPRESSED_IN/APPEARS_IN: parent is `to` (target)
+ * For all others: parent is `from` (source)
+ */
+export function getEdgeParentId(edge: Edge): string {
+  if (PARENT_IS_TARGET_EDGE_TYPES.includes(edge.type)) {
+    return edge.to;
+  }
+  return edge.from;
+}
+
+/**
+ * Get the child node ID for an edge (the node being attached to the parent).
+ */
+export function getEdgeChildId(edge: Edge): string {
+  if (PARENT_IS_TARGET_EDGE_TYPES.includes(edge.type)) {
+    return edge.from;
+  }
+  return edge.to;
+}
+
+/**
+ * Check if a parent node is the source or target for a given edge type.
+ */
+export function isParentSource(edgeType: EdgeType): boolean {
+  return !PARENT_IS_TARGET_EDGE_TYPES.includes(edgeType);
+}
+
+/**
+ * Get all edges of a given type grouped by parent node.
+ * Returns Map<parentId, Edge[]> where edges are from the same parent.
+ */
+export function getEdgesGroupedByParent(
+  graph: GraphState,
+  edgeType: EdgeType
+): Map<string, Edge[]> {
+  const grouped = new Map<string, Edge[]>();
+
+  for (const edge of graph.edges) {
+    if (edge.type !== edgeType) continue;
+
+    const parentId = getEdgeParentId(edge);
+    const existing = grouped.get(parentId) ?? [];
+    existing.push(edge);
+    grouped.set(parentId, existing);
+  }
+
+  return grouped;
+}
+
+/**
+ * Get all edges of a given type for a specific parent node.
+ */
+export function getEdgesForParent(
+  graph: GraphState,
+  edgeType: EdgeType,
+  parentId: string
+): Edge[] {
+  const parentIsSource = isParentSource(edgeType);
+
+  return graph.edges.filter((edge) => {
+    if (edge.type !== edgeType) return false;
+    const edgeParentId = parentIsSource ? edge.from : edge.to;
+    return edgeParentId === parentId;
+  });
+}
+
+/**
+ * Sort edges for reindexing by (order ?? +∞, createdAt, id).
+ * Same canonical order as sortScenesForReindex.
+ */
+export function sortEdgesForReindex(edges: Edge[]): Edge[] {
+  return [...edges].sort((a, b) => {
+    // Primary: order (undefined treated as +∞)
+    const orderA = a.properties?.order ?? Number.MAX_SAFE_INTEGER;
+    const orderB = b.properties?.order ?? Number.MAX_SAFE_INTEGER;
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+
+    // Secondary: createdAt (if available)
+    if (a.createdAt && b.createdAt) {
+      const timeCompare = a.createdAt.localeCompare(b.createdAt);
+      if (timeCompare !== 0) return timeCompare;
+    }
+
+    // Tertiary: id as tiebreaker
+    return a.id.localeCompare(b.id);
+  });
+}
 
 // =============================================================================
 // Stable ID Generation

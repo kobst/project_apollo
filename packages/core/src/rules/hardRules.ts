@@ -16,9 +16,14 @@ import {
   createViolation,
   sortScenesForReindex,
   generateFixId,
+  getEdgesGroupedByParent,
+  sortEdgesForReindex,
+  isNodeInScope,
 } from './utils.js';
 import { createPatch, generateInversePatch, registerRule } from './engine.js';
-import type { UpdateNodeOp } from '../types/patch.js';
+import type { UpdateNodeOp, UpdateEdgeOp } from '../types/patch.js';
+import type { Edge, EdgeType } from '../types/edges.js';
+import { EDGE_TYPES } from '../types/edges.js';
 
 // =============================================================================
 // SCENE_ORDER_UNIQUE
@@ -306,6 +311,152 @@ export const STC_BEAT_ORDERING: Rule = {
 };
 
 // =============================================================================
+// EDGE_ORDER_UNIQUE
+// =============================================================================
+
+/**
+ * Edges of the same type from the same parent must have unique order values.
+ * Uniqueness key: (parentId, edgeType)
+ * Fix: Auto-reindex edges (1, 2, 3...) maintaining relative order.
+ */
+export const EDGE_ORDER_UNIQUE: Rule = {
+  id: 'EDGE_ORDER_UNIQUE',
+  name: 'Edge Order Must Be Unique Per Parent',
+  severity: 'hard',
+  category: 'structure',
+  description: 'Two edges of the same type from the same parent cannot share the same order',
+
+  evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
+    const violations: RuleViolation[] = [];
+
+    // Check all edge types for order uniqueness
+    for (const edgeType of EDGE_TYPES) {
+      const grouped = getEdgesGroupedByParent(graph, edgeType);
+
+      for (const [parentId, edges] of grouped) {
+        // Skip if parent not in scope (for touched mode)
+        if (scope.mode === 'touched' && !isNodeInScope(scope, parentId)) {
+          continue;
+        }
+
+        // Only check edges that have an order property
+        const orderedEdges = edges.filter((e) => e.properties?.order !== undefined);
+        if (orderedEdges.length <= 1) continue;
+
+        // Group edges by order value
+        const orderMap = new Map<number, Edge[]>();
+        for (const edge of orderedEdges) {
+          const order = edge.properties!.order!;
+          const existing = orderMap.get(order) ?? [];
+          existing.push(edge);
+          orderMap.set(order, existing);
+        }
+
+        // Find duplicates
+        for (const [orderValue, duplicates] of orderMap) {
+          if (duplicates.length > 1) {
+            const parentNode = graph.nodes.get(parentId);
+            const parentLabel = parentNode
+              ? `${parentNode.type} "${(parentNode as Beat).beat_type || parentNode.id}"`
+              : parentId;
+
+            const violationOptions: {
+              nodeId: string;
+              nodeType?: string;
+              field: string;
+              relatedNodeIds: string[];
+              context: Record<string, unknown>;
+            } = {
+              nodeId: parentId,
+              field: 'properties.order',
+              relatedNodeIds: duplicates.map((e) => e.id),
+              context: {
+                edgeType,
+                parentId,
+                orderValue,
+                duplicateCount: duplicates.length,
+                edgeIds: duplicates.map((e) => e.id),
+              },
+            };
+            if (parentNode?.type) {
+              violationOptions.nodeType = parentNode.type;
+            }
+
+            violations.push(
+              createViolation(
+                'EDGE_ORDER_UNIQUE',
+                'hard',
+                'structure',
+                `${edgeType} edges on ${parentLabel} have ${duplicates.length} edges with order ${orderValue}`,
+                violationOptions
+              )
+            );
+          }
+        }
+      }
+    }
+
+    return violations;
+  },
+
+  suggestFix: (graph: GraphState, violation: RuleViolation): Fix | null => {
+    const context = violation.context as {
+      edgeType?: EdgeType;
+      parentId?: string;
+    } | undefined;
+
+    if (!context?.edgeType || !context?.parentId) return null;
+
+    const { edgeType, parentId } = context;
+
+    // Get all edges of this type for this parent
+    const grouped = getEdgesGroupedByParent(graph, edgeType);
+    const edges = grouped.get(parentId);
+    if (!edges || edges.length === 0) return null;
+
+    // Only include edges that have order defined
+    const orderedEdges = edges.filter((e) => e.properties?.order !== undefined);
+    if (orderedEdges.length === 0) return null;
+
+    // Sort edges for reindexing
+    const sortedEdges = sortEdgesForReindex(orderedEdges);
+
+    // Generate UPDATE_EDGE ops to assign sequential order values
+    const ops: UpdateEdgeOp[] = sortedEdges.map((edge, idx) => ({
+      op: 'UPDATE_EDGE' as const,
+      id: edge.id,
+      set: { order: idx + 1 },
+    }));
+
+    // Create the fix patch
+    const patch = createPatch('', ops, {
+      source: 'fix',
+      ruleId: 'EDGE_ORDER_UNIQUE',
+    });
+
+    // Generate inverse patch for undo
+    const inversePatch = generateInversePatch(graph, patch);
+
+    const parentNode = graph.nodes.get(parentId);
+    const parentLabel = parentNode
+      ? `${parentNode.type} "${(parentNode as Beat).beat_type || parentNode.id}"`
+      : parentId;
+
+    return {
+      id: generateFixId(violation.id, 'reindex'),
+      violationId: violation.id,
+      violationRuleId: 'EDGE_ORDER_UNIQUE',
+      label: `Re-index ${sortedEdges.length} ${edgeType} edges on ${parentLabel}`,
+      description: `Assign sequential order values (1, 2, 3...) to ${edgeType} edges`,
+      patch,
+      inversePatch,
+      affectedNodeIds: sortedEdges.map((e) => e.id),
+      operationCount: ops.length,
+    };
+  },
+};
+
+// =============================================================================
 // Exports
 // =============================================================================
 
@@ -316,6 +467,7 @@ export const HARD_RULES: Rule[] = [
   SCENE_ORDER_UNIQUE,
   SCENE_ACT_BOUNDARY,
   STC_BEAT_ORDERING,
+  EDGE_ORDER_UNIQUE,
 ];
 
 /**

@@ -38,6 +38,8 @@ import type {
   ApplyFixData,
   ApplyFixRequest,
   PreCommitLintData,
+  BulkAttachRequest,
+  BulkAttachData,
 } from './types';
 
 const API_BASE = '/api';
@@ -185,6 +187,10 @@ export const api = {
     POST<ApplyFixData>(`/stories/${storyId}/lint/apply`, data),
   preCommitLint: (storyId: string) =>
     GET<PreCommitLintData>(`/stories/${storyId}/lint/precommit`),
+
+  // Bulk Attach (Milestone 2)
+  bulkAttach: (storyId: string, data: BulkAttachRequest) =>
+    POST<BulkAttachData>(`/stories/${storyId}/relations/bulk-attach`, data),
 };
 
 export { ApiError };

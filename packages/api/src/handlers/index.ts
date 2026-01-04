@@ -40,3 +40,4 @@ export {
   createApplyFixHandler,
   createPreCommitLintHandler,
 } from './lint.js';
+export { createBulkAttachHandler } from './bulkAttach.js';

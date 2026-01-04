@@ -36,6 +36,7 @@ import {
   createLintHandler,
   createApplyFixHandler,
   createPreCommitLintHandler,
+  createBulkAttachHandler,
 } from '../handlers/index.js';
 
 export function createStoriesRouter(ctx: StorageContext): Router {
@@ -83,6 +84,9 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   // Note: Using regex to match :batch and :upsert as sub-resources
   router.post('/:id/edges\\:batch', createBatchEdgesHandler(ctx));
   router.post('/:id/edges\\:upsert', createUpsertEdgeHandler(ctx));
+
+  // Bulk attach endpoint
+  router.post('/:id/relations/bulk-attach', createBulkAttachHandler(ctx));
 
   // Lint endpoints
   router.post('/:id/lint', createLintHandler(ctx));

@@ -37,6 +37,14 @@ export {
   getScenesInScope,
   sortScenesForReindex,
   createViolation,
+  // Edge ordering helpers
+  PARENT_IS_TARGET_EDGE_TYPES,
+  getEdgeParentId,
+  getEdgeChildId,
+  isParentSource,
+  getEdgesGroupedByParent,
+  getEdgesForParent,
+  sortEdgesForReindex,
 } from './utils.js';
 
 // Engine
@@ -58,6 +66,7 @@ export {
   SCENE_ORDER_UNIQUE,
   SCENE_ACT_BOUNDARY,
   STC_BEAT_ORDERING,
+  EDGE_ORDER_UNIQUE,
   HARD_RULES,
   registerHardRules,
 } from './hardRules.js';

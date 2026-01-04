@@ -524,3 +524,34 @@ export interface PreCommitLintData {
   errorCount: number;
   warningCount: number;
 }
+
+// =============================================================================
+// Bulk Attach Types (Milestone 2)
+// =============================================================================
+
+export interface BulkAttachTarget {
+  id: string;
+  order?: number | undefined;
+  properties?: Partial<EdgeProperties> | undefined;
+}
+
+export interface BulkAttachRequest {
+  parentId: string;
+  edgeType: EdgeType;
+  targets: BulkAttachTarget[];
+  detachOthers?: boolean | undefined;
+  ordered?: boolean | undefined;
+}
+
+export interface BulkAttachData {
+  added: number;
+  updated: number;
+  removed: number;
+  edges: EdgeData[];
+  newVersionId: string;
+  lintResult?: {
+    errorCount: number;
+    warningCount: number;
+    hasBlockingErrors: boolean;
+  };
+}

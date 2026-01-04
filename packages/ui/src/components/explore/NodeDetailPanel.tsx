@@ -1,5 +1,5 @@
 import type { NodeRelationsData, EdgeData } from '../../api/types';
-import { NodeRelations, InteractiveEdgeData } from './NodeRelations';
+import { NodeRelations, InteractiveEdgeData, BulkAttachConfig } from './NodeRelations';
 import styles from './NodeDetailPanel.module.css';
 
 interface NodeDetailPanelProps {
@@ -12,6 +12,7 @@ interface NodeDetailPanelProps {
   onEditEdge?: ((edge: EdgeData) => void) | undefined;
   onDeleteEdge?: ((edgeId: string) => void) | undefined;
   onAddEdge?: ((direction: 'outgoing' | 'incoming') => void) | undefined;
+  onBulkAttach?: ((config: BulkAttachConfig) => void) | undefined;
   // Full edge data for interactive mode (includes edge IDs)
   fullEdges?: {
     outgoing: InteractiveEdgeData[];
@@ -28,6 +29,7 @@ export function NodeDetailPanel({
   onEditEdge,
   onDeleteEdge,
   onAddEdge,
+  onBulkAttach,
   fullEdges,
 }: NodeDetailPanelProps) {
   if (loading) {
@@ -80,9 +82,11 @@ export function NodeDetailPanel({
         incoming={incomingEdges}
         relatedNodes={relatedNodes}
         currentNodeType={node.type}
+        currentNodeId={node.id}
         onEdit={onEditEdge}
         onDelete={onDeleteEdge}
         onAdd={onAddEdge}
+        onBulkAttach={onBulkAttach}
         interactive={isInteractive}
       />
 

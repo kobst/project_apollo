@@ -15,12 +15,15 @@ import {
   SCENE_ORDER_UNIQUE,
   SCENE_ACT_BOUNDARY,
   STC_BEAT_ORDERING,
+  EDGE_ORDER_UNIQUE,
 } from '../../src/rules/hardRules.js';
 import { applyPatch } from '../../src/core/applyPatch.js';
 import {
   createGraphWith15Beats,
   createScene,
+  createCharacter,
   resetIdCounter,
+  createEdge,
 } from '../helpers/index.js';
 
 describe('Hard Rules', () => {
@@ -251,6 +254,198 @@ describe('Hard Rules', () => {
 
       // Verify no more violations
       const newViolations = STC_BEAT_ORDERING.evaluate(newGraph, { mode: 'full' });
+      expect(newViolations).toHaveLength(0);
+    });
+  });
+
+  // ===========================================================================
+  // EDGE_ORDER_UNIQUE
+  // ===========================================================================
+
+  describe('EDGE_ORDER_UNIQUE', () => {
+    it('should detect duplicate order on edges of same type from same parent', () => {
+      const scene = createScene('beat_Catalyst', { id: 'scene_1' });
+      const char1 = createCharacter({ id: 'char_1' });
+      const char2 = createCharacter({ id: 'char_2' });
+      graph.nodes.set(scene.id, scene);
+      graph.nodes.set(char1.id, char1);
+      graph.nodes.set(char2.id, char2);
+
+      // Add two HAS_CHARACTER edges with same order
+      graph.edges.push(
+        createEdge('HAS_CHARACTER', scene.id, char1.id, {
+          id: 'edge_1',
+          properties: { order: 1 },
+        })
+      );
+      graph.edges.push(
+        createEdge('HAS_CHARACTER', scene.id, char2.id, {
+          id: 'edge_2',
+          properties: { order: 1 },
+        })
+      );
+
+      const violations = EDGE_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
+
+      expect(violations).toHaveLength(1);
+      expect(violations[0].ruleId).toBe('EDGE_ORDER_UNIQUE');
+      expect(violations[0].severity).toBe('hard');
+      expect(violations[0].message).toContain('HAS_CHARACTER');
+      expect(violations[0].message).toContain('order 1');
+    });
+
+    it('should not flag edges with unique order values', () => {
+      const scene = createScene('beat_Catalyst', { id: 'scene_1' });
+      const char1 = createCharacter({ id: 'char_1' });
+      const char2 = createCharacter({ id: 'char_2' });
+      graph.nodes.set(scene.id, scene);
+      graph.nodes.set(char1.id, char1);
+      graph.nodes.set(char2.id, char2);
+
+      graph.edges.push(
+        createEdge('HAS_CHARACTER', scene.id, char1.id, {
+          id: 'edge_1',
+          properties: { order: 1 },
+        })
+      );
+      graph.edges.push(
+        createEdge('HAS_CHARACTER', scene.id, char2.id, {
+          id: 'edge_2',
+          properties: { order: 2 },
+        })
+      );
+
+      const violations = EDGE_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
+
+      expect(violations).toHaveLength(0);
+    });
+
+    it('should not flag edges with same order from different parents', () => {
+      const scene1 = createScene('beat_Catalyst', { id: 'scene_1' });
+      const scene2 = createScene('beat_Midpoint', { id: 'scene_2' });
+      const char1 = createCharacter({ id: 'char_1' });
+      const char2 = createCharacter({ id: 'char_2' });
+      graph.nodes.set(scene1.id, scene1);
+      graph.nodes.set(scene2.id, scene2);
+      graph.nodes.set(char1.id, char1);
+      graph.nodes.set(char2.id, char2);
+
+      // Same order but different parent scenes
+      graph.edges.push(
+        createEdge('HAS_CHARACTER', scene1.id, char1.id, {
+          id: 'edge_1',
+          properties: { order: 1 },
+        })
+      );
+      graph.edges.push(
+        createEdge('HAS_CHARACTER', scene2.id, char2.id, {
+          id: 'edge_2',
+          properties: { order: 1 },
+        })
+      );
+
+      const violations = EDGE_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
+
+      expect(violations).toHaveLength(0);
+    });
+
+    it('should not flag edges without order property', () => {
+      const scene = createScene('beat_Catalyst', { id: 'scene_1' });
+      const char1 = createCharacter({ id: 'char_1' });
+      const char2 = createCharacter({ id: 'char_2' });
+      graph.nodes.set(scene.id, scene);
+      graph.nodes.set(char1.id, char1);
+      graph.nodes.set(char2.id, char2);
+
+      // Edges without order property
+      graph.edges.push(createEdge('HAS_CHARACTER', scene.id, char1.id, { id: 'edge_1' }));
+      graph.edges.push(createEdge('HAS_CHARACTER', scene.id, char2.id, { id: 'edge_2' }));
+
+      const violations = EDGE_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
+
+      expect(violations).toHaveLength(0);
+    });
+
+    it('should detect duplicates for FULFILLS edges (parent is target)', () => {
+      // FULFILLS edges go Scene → Beat, so parent (Beat) is the target
+      const scene1 = createScene('beat_Catalyst', { id: 'scene_1' });
+      const scene2 = createScene('beat_Catalyst', { id: 'scene_2' });
+      graph.nodes.set(scene1.id, scene1);
+      graph.nodes.set(scene2.id, scene2);
+
+      // Add FULFILLS edges with same order to same beat
+      graph.edges.push(
+        createEdge('FULFILLS', scene1.id, 'beat_Catalyst', {
+          id: 'edge_1',
+          properties: { order: 1 },
+        })
+      );
+      graph.edges.push(
+        createEdge('FULFILLS', scene2.id, 'beat_Catalyst', {
+          id: 'edge_2',
+          properties: { order: 1 },
+        })
+      );
+
+      const violations = EDGE_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
+
+      expect(violations).toHaveLength(1);
+      expect(violations[0].message).toContain('FULFILLS');
+      expect(violations[0].message).toContain('Catalyst');
+    });
+
+    it('should generate fix that reindexes edges sequentially', () => {
+      const scene = createScene('beat_Catalyst', { id: 'scene_1' });
+      const char1 = createCharacter({ id: 'char_1' });
+      const char2 = createCharacter({ id: 'char_2' });
+      const char3 = createCharacter({ id: 'char_3' });
+      graph.nodes.set(scene.id, scene);
+      graph.nodes.set(char1.id, char1);
+      graph.nodes.set(char2.id, char2);
+      graph.nodes.set(char3.id, char3);
+
+      // All edges with same order
+      graph.edges.push(
+        createEdge('HAS_CHARACTER', scene.id, char1.id, {
+          id: 'edge_1',
+          properties: { order: 1 },
+        })
+      );
+      graph.edges.push(
+        createEdge('HAS_CHARACTER', scene.id, char2.id, {
+          id: 'edge_2',
+          properties: { order: 1 },
+        })
+      );
+      graph.edges.push(
+        createEdge('HAS_CHARACTER', scene.id, char3.id, {
+          id: 'edge_3',
+          properties: { order: 1 },
+        })
+      );
+
+      const violations = EDGE_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
+      expect(violations).toHaveLength(1);
+
+      const fix = EDGE_ORDER_UNIQUE.suggestFix!(graph, violations[0]);
+      expect(fix).not.toBeNull();
+      expect(fix!.label).toContain('Re-index');
+      expect(fix!.label).toContain('3');
+      expect(fix!.affectedNodeIds).toHaveLength(3);
+
+      // Apply the fix
+      const newGraph = applyPatch(graph, fix!.patch);
+
+      // Verify edges now have sequential order values
+      const updatedEdges = newGraph.edges
+        .filter((e) => e.type === 'HAS_CHARACTER')
+        .sort((a, b) => (a.properties?.order ?? 0) - (b.properties?.order ?? 0));
+
+      const orderValues = updatedEdges.map((e) => e.properties?.order);
+      expect(orderValues).toEqual([1, 2, 3]);
+
+      // Verify no more violations
+      const newViolations = EDGE_ORDER_UNIQUE.evaluate(newGraph, { mode: 'full' });
       expect(newViolations).toHaveLength(0);
     });
   });
