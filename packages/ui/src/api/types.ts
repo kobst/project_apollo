@@ -22,6 +22,10 @@ export interface StoryStats {
   characters: number;
   conflicts: number;
   locations: number;
+  themes: number;
+  motifs: number;
+  objects: number;
+  plotPoints: number;
   edges: number;
 }
 
@@ -357,7 +361,6 @@ export interface UpdateNodeData {
 // =============================================================================
 
 export type EdgeType =
-  | 'FULFILLS'
   | 'HAS_CHARACTER'
   | 'LOCATED_AT'
   | 'FEATURES_OBJECT'

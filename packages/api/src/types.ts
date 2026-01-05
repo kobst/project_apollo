@@ -38,6 +38,10 @@ export interface StoryStats {
   characters: number;
   conflicts: number;
   locations: number;
+  themes: number;
+  motifs: number;
+  objects: number;
+  plotPoints: number;
   edges: number;
 }
 

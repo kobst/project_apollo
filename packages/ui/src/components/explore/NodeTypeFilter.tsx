@@ -19,15 +19,15 @@ interface NodeTypeFilterProps {
 }
 
 const NODE_TYPES: { type: NodeTypeOption; label: string; statKey?: keyof StoryStats }[] = [
+  { type: 'Theme', label: 'Themes', statKey: 'themes' },
+  { type: 'Motif', label: 'Motifs', statKey: 'motifs' },
+  { type: 'Conflict', label: 'Conflicts', statKey: 'conflicts' },
   { type: 'Beat', label: 'Beats', statKey: 'beats' },
+  { type: 'PlotPoint', label: 'Plot Points', statKey: 'plotPoints' },
   { type: 'Scene', label: 'Scenes', statKey: 'scenes' },
   { type: 'Character', label: 'Characters', statKey: 'characters' },
-  { type: 'Conflict', label: 'Conflicts', statKey: 'conflicts' },
   { type: 'Location', label: 'Locations', statKey: 'locations' },
-  { type: 'Theme', label: 'Themes' },
-  { type: 'Motif', label: 'Motifs' },
-  { type: 'Object', label: 'Props' },
-  { type: 'PlotPoint', label: 'Plot Points' },
+  { type: 'Object', label: 'Props', statKey: 'objects' },
 ];
 
 export function NodeTypeFilter({ selectedType, onTypeChange, stats }: NodeTypeFilterProps) {

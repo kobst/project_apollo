@@ -1,5 +1,8 @@
 import type { NodeRelationsData, EdgeData } from '../../api/types';
 import { NodeRelations, InteractiveEdgeData, BulkAttachConfig } from './NodeRelations';
+import { SceneFulfillmentSection } from './SceneFulfillmentSection';
+import { PlotPointDetailSection } from './PlotPointDetailSection';
+import { BeatDetailSection } from './BeatDetailSection';
 import styles from './NodeDetailPanel.module.css';
 
 interface NodeDetailPanelProps {
@@ -89,6 +92,38 @@ export function NodeDetailPanel({
         onBulkAttach={onBulkAttach}
         interactive={isInteractive}
       />
+
+      {/* Scene-specific: Fulfills Plot Points section */}
+      {node.type === 'Scene' && (
+        <SceneFulfillmentSection
+          sceneId={node.id}
+          incomingEdges={incomingEdges}
+          relatedNodes={relatedNodes}
+          onManage={onBulkAttach}
+          interactive={isInteractive}
+        />
+      )}
+
+      {/* PlotPoint-specific: Alignment, Fulfillment, Causality sections */}
+      {node.type === 'PlotPoint' && (
+        <PlotPointDetailSection
+          plotPointId={node.id}
+          outgoingEdges={outgoingEdges}
+          incomingEdges={incomingEdges}
+          relatedNodes={relatedNodes}
+          onManage={onBulkAttach}
+          interactive={isInteractive}
+        />
+      )}
+
+      {/* Beat-specific: Aligned Plot Points */}
+      {node.type === 'Beat' && (
+        <BeatDetailSection
+          beatId={node.id}
+          incomingEdges={incomingEdges}
+          relatedNodes={relatedNodes}
+        />
+      )}
 
       {/* Actions */}
       <div className={styles.actions}>

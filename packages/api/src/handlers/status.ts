@@ -55,6 +55,10 @@ export function createStatusHandler(ctx: StorageContext) {
             characters: stats.nodeCountByType.Character ?? 0,
             conflicts: stats.nodeCountByType.Conflict ?? 0,
             locations: stats.nodeCountByType.Location ?? 0,
+            themes: stats.nodeCountByType.Theme ?? 0,
+            motifs: stats.nodeCountByType.Motif ?? 0,
+            objects: stats.nodeCountByType.Object ?? 0,
+            plotPoints: stats.nodeCountByType.PlotPoint ?? 0,
             edges: stats.edgeCount,
           },
           openQuestions: {

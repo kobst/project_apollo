@@ -10,15 +10,13 @@
 
 import { useCallback, useMemo, useEffect, useState } from 'react';
 import { api } from '../../api/client';
-import type { NodeData, EdgeData, EdgeType, BulkAttachData } from '../../api/types';
+import type { NodeData, EdgeData, BulkAttachData } from '../../api/types';
 import type { SelectedTarget, BulkAttachModalConfig } from '../../hooks/useBulkAttach';
 import { EDGE_TEMPLATES } from '../../config/edgeTemplates';
 import { TargetSelector } from './TargetSelector';
 import { OrderableList } from './OrderableList';
 import styles from './BulkAttachModal.module.css';
 
-// Edge types where parent is the target (not the source)
-const PARENT_IS_TARGET_EDGE_TYPES: EdgeType[] = ['FULFILLS', 'EXPRESSED_IN', 'APPEARS_IN'];
 
 interface BulkAttachModalProps {
   isOpen: boolean;
@@ -59,14 +57,14 @@ export function BulkAttachModal({
   const [allEdges, setAllEdges] = useState<EdgeData[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Determine target types based on edge type and parent position
+  // Determine target types based on edge type and direction
+  // If direction is outgoing, parent is source, we select targets
+  // If direction is incoming, parent is target, we select sources
   const targetTypes = useMemo(() => {
     if (!config?.edgeType) return [];
     const template = EDGE_TEMPLATES[config.edgeType];
-    const parentIsTarget = PARENT_IS_TARGET_EDGE_TYPES.includes(config.edgeType);
-    // If parent is target, we're selecting sources; otherwise targets
-    return parentIsTarget ? template.sourceTypes : template.targetTypes;
-  }, [config?.edgeType]);
+    return config.direction === 'outgoing' ? template.targetTypes : template.sourceTypes;
+  }, [config?.edgeType, config?.direction]);
 
   // Fetch nodes when modal opens
   useEffect(() => {

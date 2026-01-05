@@ -9,21 +9,26 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { GraphState } from '../../src/core/graph.js';
-import type { Beat, Scene } from '../../src/types/nodes.js';
+import type { Beat, Scene, PlotPoint } from '../../src/types/nodes.js';
 import { BEAT_ACT_MAP, BEAT_POSITION_MAP } from '../../src/types/nodes.js';
 import {
   SCENE_ORDER_UNIQUE,
   SCENE_ACT_BOUNDARY,
   STC_BEAT_ORDERING,
   EDGE_ORDER_UNIQUE,
+  PP_DAG_NO_CYCLES,
+  PP_ORDER_UNIQUE,
+  PP_ACT_ALIGNMENT,
 } from '../../src/rules/hardRules.js';
 import { applyPatch } from '../../src/core/applyPatch.js';
 import {
   createGraphWith15Beats,
   createScene,
   createCharacter,
+  createPlotPoint,
   resetIdCounter,
   createEdge,
+  edges,
 } from '../helpers/index.js';
 
 describe('Hard Rules', () => {
@@ -366,34 +371,6 @@ describe('Hard Rules', () => {
       expect(violations).toHaveLength(0);
     });
 
-    it('should detect duplicates for FULFILLS edges (parent is target)', () => {
-      // FULFILLS edges go Scene → Beat, so parent (Beat) is the target
-      const scene1 = createScene('beat_Catalyst', { id: 'scene_1' });
-      const scene2 = createScene('beat_Catalyst', { id: 'scene_2' });
-      graph.nodes.set(scene1.id, scene1);
-      graph.nodes.set(scene2.id, scene2);
-
-      // Add FULFILLS edges with same order to same beat
-      graph.edges.push(
-        createEdge('FULFILLS', scene1.id, 'beat_Catalyst', {
-          id: 'edge_1',
-          properties: { order: 1 },
-        })
-      );
-      graph.edges.push(
-        createEdge('FULFILLS', scene2.id, 'beat_Catalyst', {
-          id: 'edge_2',
-          properties: { order: 1 },
-        })
-      );
-
-      const violations = EDGE_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
-
-      expect(violations).toHaveLength(1);
-      expect(violations[0].message).toContain('FULFILLS');
-      expect(violations[0].message).toContain('Catalyst');
-    });
-
     it('should generate fix that reindexes edges sequentially', () => {
       const scene = createScene('beat_Catalyst', { id: 'scene_1' });
       const char1 = createCharacter({ id: 'char_1' });
@@ -473,6 +450,304 @@ describe('Hard Rules', () => {
       // Should only find the Catalyst violation, not Midpoint
       expect(violations).toHaveLength(1);
       expect(violations[0].message).toContain('Catalyst');
+    });
+  });
+
+  // ===========================================================================
+  // PP_DAG_NO_CYCLES
+  // ===========================================================================
+
+  describe('PP_DAG_NO_CYCLES', () => {
+    it('should detect simple cycle in PRECEDES edges', () => {
+      // Create A -> B -> C -> A cycle
+      const ppA = createPlotPoint({ id: 'pp_a', title: 'Plot Point A' });
+      const ppB = createPlotPoint({ id: 'pp_b', title: 'Plot Point B' });
+      const ppC = createPlotPoint({ id: 'pp_c', title: 'Plot Point C' });
+      graph.nodes.set(ppA.id, ppA);
+      graph.nodes.set(ppB.id, ppB);
+      graph.nodes.set(ppC.id, ppC);
+
+      graph.edges.push(edges.precedes('pp_a', 'pp_b', 'edge_ab'));
+      graph.edges.push(edges.precedes('pp_b', 'pp_c', 'edge_bc'));
+      graph.edges.push(edges.precedes('pp_c', 'pp_a', 'edge_ca')); // Creates cycle
+
+      const violations = PP_DAG_NO_CYCLES.evaluate(graph, { mode: 'full' });
+
+      expect(violations.length).toBeGreaterThan(0);
+      expect(violations[0].ruleId).toBe('PP_DAG_NO_CYCLES');
+      expect(violations[0].severity).toBe('hard');
+      expect(violations[0].message).toContain('cycle');
+    });
+
+    it('should detect self-referential cycle', () => {
+      const pp = createPlotPoint({ id: 'pp_self', title: 'Self-referencing PP' });
+      graph.nodes.set(pp.id, pp);
+
+      graph.edges.push(edges.precedes('pp_self', 'pp_self', 'edge_self'));
+
+      const violations = PP_DAG_NO_CYCLES.evaluate(graph, { mode: 'full' });
+
+      expect(violations.length).toBeGreaterThan(0);
+      expect(violations[0].ruleId).toBe('PP_DAG_NO_CYCLES');
+    });
+
+    it('should not flag valid DAG (no cycles)', () => {
+      // Create A -> B -> C (linear, no cycle)
+      const ppA = createPlotPoint({ id: 'pp_a', title: 'Plot Point A' });
+      const ppB = createPlotPoint({ id: 'pp_b', title: 'Plot Point B' });
+      const ppC = createPlotPoint({ id: 'pp_c', title: 'Plot Point C' });
+      graph.nodes.set(ppA.id, ppA);
+      graph.nodes.set(ppB.id, ppB);
+      graph.nodes.set(ppC.id, ppC);
+
+      graph.edges.push(edges.precedes('pp_a', 'pp_b', 'edge_ab'));
+      graph.edges.push(edges.precedes('pp_b', 'pp_c', 'edge_bc'));
+
+      const violations = PP_DAG_NO_CYCLES.evaluate(graph, { mode: 'full' });
+
+      expect(violations).toHaveLength(0);
+    });
+
+    it('should not flag diamond DAG (convergent paths)', () => {
+      // Create diamond: A -> B, A -> C, B -> D, C -> D
+      const ppA = createPlotPoint({ id: 'pp_a', title: 'Plot Point A' });
+      const ppB = createPlotPoint({ id: 'pp_b', title: 'Plot Point B' });
+      const ppC = createPlotPoint({ id: 'pp_c', title: 'Plot Point C' });
+      const ppD = createPlotPoint({ id: 'pp_d', title: 'Plot Point D' });
+      graph.nodes.set(ppA.id, ppA);
+      graph.nodes.set(ppB.id, ppB);
+      graph.nodes.set(ppC.id, ppC);
+      graph.nodes.set(ppD.id, ppD);
+
+      graph.edges.push(edges.precedes('pp_a', 'pp_b', 'edge_ab'));
+      graph.edges.push(edges.precedes('pp_a', 'pp_c', 'edge_ac'));
+      graph.edges.push(edges.precedes('pp_b', 'pp_d', 'edge_bd'));
+      graph.edges.push(edges.precedes('pp_c', 'pp_d', 'edge_cd'));
+
+      const violations = PP_DAG_NO_CYCLES.evaluate(graph, { mode: 'full' });
+
+      expect(violations).toHaveLength(0);
+    });
+
+    it('should not provide auto-fix (user must decide)', () => {
+      const ppA = createPlotPoint({ id: 'pp_a', title: 'Plot Point A' });
+      const ppB = createPlotPoint({ id: 'pp_b', title: 'Plot Point B' });
+      graph.nodes.set(ppA.id, ppA);
+      graph.nodes.set(ppB.id, ppB);
+
+      graph.edges.push(edges.precedes('pp_a', 'pp_b', 'edge_ab'));
+      graph.edges.push(edges.precedes('pp_b', 'pp_a', 'edge_ba'));
+
+      const violations = PP_DAG_NO_CYCLES.evaluate(graph, { mode: 'full' });
+      expect(violations.length).toBeGreaterThan(0);
+
+      const fix = PP_DAG_NO_CYCLES.suggestFix!(graph, violations[0]);
+      expect(fix).toBeNull(); // No auto-fix for cycles
+    });
+  });
+
+  // ===========================================================================
+  // PP_ORDER_UNIQUE
+  // ===========================================================================
+
+  describe('PP_ORDER_UNIQUE', () => {
+    it('should detect duplicate order on SATISFIED_BY edges from same PlotPoint', () => {
+      const pp = createPlotPoint({ id: 'pp_1', title: 'Hero Discovers Truth' });
+      const scene1 = createScene('beat_Catalyst', { id: 'scene_1' });
+      const scene2 = createScene('beat_Catalyst', { id: 'scene_2' });
+      graph.nodes.set(pp.id, pp);
+      graph.nodes.set(scene1.id, scene1);
+      graph.nodes.set(scene2.id, scene2);
+
+      // Both edges have order: 1
+      graph.edges.push(edges.satisfiedBy('pp_1', 'scene_1', 1, 'edge_1'));
+      graph.edges.push(edges.satisfiedBy('pp_1', 'scene_2', 1, 'edge_2'));
+
+      const violations = PP_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
+
+      expect(violations).toHaveLength(1);
+      expect(violations[0].ruleId).toBe('PP_ORDER_UNIQUE');
+      expect(violations[0].severity).toBe('hard');
+      expect(violations[0].message).toContain('order 1');
+    });
+
+    it('should not flag unique order values', () => {
+      const pp = createPlotPoint({ id: 'pp_1', title: 'Hero Discovers Truth' });
+      const scene1 = createScene('beat_Catalyst', { id: 'scene_1' });
+      const scene2 = createScene('beat_Catalyst', { id: 'scene_2' });
+      graph.nodes.set(pp.id, pp);
+      graph.nodes.set(scene1.id, scene1);
+      graph.nodes.set(scene2.id, scene2);
+
+      graph.edges.push(edges.satisfiedBy('pp_1', 'scene_1', 1, 'edge_1'));
+      graph.edges.push(edges.satisfiedBy('pp_1', 'scene_2', 2, 'edge_2'));
+
+      const violations = PP_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
+
+      expect(violations).toHaveLength(0);
+    });
+
+    it('should not flag same order from different PlotPoints', () => {
+      const pp1 = createPlotPoint({ id: 'pp_1', title: 'Plot Point 1' });
+      const pp2 = createPlotPoint({ id: 'pp_2', title: 'Plot Point 2' });
+      const scene1 = createScene('beat_Catalyst', { id: 'scene_1' });
+      const scene2 = createScene('beat_Catalyst', { id: 'scene_2' });
+      graph.nodes.set(pp1.id, pp1);
+      graph.nodes.set(pp2.id, pp2);
+      graph.nodes.set(scene1.id, scene1);
+      graph.nodes.set(scene2.id, scene2);
+
+      // Same order but different PlotPoints
+      graph.edges.push(edges.satisfiedBy('pp_1', 'scene_1', 1, 'edge_1'));
+      graph.edges.push(edges.satisfiedBy('pp_2', 'scene_2', 1, 'edge_2'));
+
+      const violations = PP_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
+
+      expect(violations).toHaveLength(0);
+    });
+
+    it('should generate fix that reindexes edges sequentially', () => {
+      const pp = createPlotPoint({ id: 'pp_1', title: 'Hero Discovers Truth' });
+      const scene1 = createScene('beat_Catalyst', { id: 'scene_1' });
+      const scene2 = createScene('beat_Catalyst', { id: 'scene_2' });
+      const scene3 = createScene('beat_Catalyst', { id: 'scene_3' });
+      graph.nodes.set(pp.id, pp);
+      graph.nodes.set(scene1.id, scene1);
+      graph.nodes.set(scene2.id, scene2);
+      graph.nodes.set(scene3.id, scene3);
+
+      // All have order: 1
+      graph.edges.push(edges.satisfiedBy('pp_1', 'scene_1', 1, 'edge_1'));
+      graph.edges.push(edges.satisfiedBy('pp_1', 'scene_2', 1, 'edge_2'));
+      graph.edges.push(edges.satisfiedBy('pp_1', 'scene_3', 1, 'edge_3'));
+
+      const violations = PP_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
+      expect(violations).toHaveLength(1);
+
+      const fix = PP_ORDER_UNIQUE.suggestFix!(graph, violations[0]);
+      expect(fix).not.toBeNull();
+      expect(fix!.label).toContain('Re-index');
+      expect(fix!.affectedNodeIds).toHaveLength(3);
+
+      // Apply the fix
+      const newGraph = applyPatch(graph, fix!.patch);
+
+      // Verify edges now have sequential order values
+      const updatedEdges = newGraph.edges
+        .filter((e) => e.type === 'SATISFIED_BY')
+        .sort((a, b) => (a.properties?.order ?? 0) - (b.properties?.order ?? 0));
+
+      const orderValues = updatedEdges.map((e) => e.properties?.order);
+      expect(orderValues).toEqual([1, 2, 3]);
+
+      // Verify no more violations
+      const newViolations = PP_ORDER_UNIQUE.evaluate(newGraph, { mode: 'full' });
+      expect(newViolations).toHaveLength(0);
+    });
+  });
+
+  // ===========================================================================
+  // PP_ACT_ALIGNMENT
+  // ===========================================================================
+
+  describe('PP_ACT_ALIGNMENT', () => {
+    it('should detect PlotPoint act mismatch with aligned Beat', () => {
+      // Create a PlotPoint with act=1 aligned to a beat in act=3 (Midpoint)
+      const pp = createPlotPoint({
+        id: 'pp_1',
+        title: 'Midpoint Revelation',
+        act: 1, // Wrong - should match beat's act (3)
+      });
+      graph.nodes.set(pp.id, pp);
+
+      // Align to Midpoint beat (which is in Act 3)
+      graph.edges.push(edges.alignsWith('pp_1', 'beat_Midpoint', 'edge_align'));
+
+      const violations = PP_ACT_ALIGNMENT.evaluate(graph, { mode: 'full' });
+
+      expect(violations).toHaveLength(1);
+      expect(violations[0].ruleId).toBe('PP_ACT_ALIGNMENT');
+      expect(violations[0].severity).toBe('hard');
+      expect(violations[0].message).toContain('Act 1');
+      expect(violations[0].message).toContain('Act 3');
+    });
+
+    it('should not flag PlotPoint with matching act', () => {
+      // Create a PlotPoint with act=3 aligned to Midpoint (also act 3)
+      const pp = createPlotPoint({
+        id: 'pp_1',
+        title: 'Midpoint Revelation',
+        act: 3,
+      });
+      graph.nodes.set(pp.id, pp);
+
+      graph.edges.push(edges.alignsWith('pp_1', 'beat_Midpoint', 'edge_align'));
+
+      const violations = PP_ACT_ALIGNMENT.evaluate(graph, { mode: 'full' });
+
+      expect(violations).toHaveLength(0);
+    });
+
+    it('should not flag PlotPoint without act set', () => {
+      // PlotPoint without act field shouldn't trigger the rule
+      const pp = createPlotPoint({
+        id: 'pp_1',
+        title: 'Unassigned PP',
+        // No act set
+      });
+      graph.nodes.set(pp.id, pp);
+
+      graph.edges.push(edges.alignsWith('pp_1', 'beat_Midpoint', 'edge_align'));
+
+      const violations = PP_ACT_ALIGNMENT.evaluate(graph, { mode: 'full' });
+
+      expect(violations).toHaveLength(0);
+    });
+
+    it('should not flag PlotPoint without ALIGNS_WITH edge', () => {
+      // PlotPoint with act but no alignment shouldn't trigger the rule
+      const pp = createPlotPoint({
+        id: 'pp_1',
+        title: 'Unaligned PP',
+        act: 2,
+      });
+      graph.nodes.set(pp.id, pp);
+
+      // No ALIGNS_WITH edge
+
+      const violations = PP_ACT_ALIGNMENT.evaluate(graph, { mode: 'full' });
+
+      expect(violations).toHaveLength(0);
+    });
+
+    it('should generate fix that updates PlotPoint act to match Beat', () => {
+      const pp = createPlotPoint({
+        id: 'pp_1',
+        title: 'Catalyst Event',
+        act: 5, // Wrong - Catalyst is in Act 1
+      });
+      graph.nodes.set(pp.id, pp);
+
+      graph.edges.push(edges.alignsWith('pp_1', 'beat_Catalyst', 'edge_align'));
+
+      const violations = PP_ACT_ALIGNMENT.evaluate(graph, { mode: 'full' });
+      expect(violations).toHaveLength(1);
+
+      const fix = PP_ACT_ALIGNMENT.suggestFix!(graph, violations[0]);
+      expect(fix).not.toBeNull();
+      expect(fix!.label).toContain('Act 1');
+      expect(fix!.affectedNodeIds).toContain('pp_1');
+
+      // Apply the fix
+      const newGraph = applyPatch(graph, fix!.patch);
+
+      // Verify PlotPoint now has correct act
+      const updatedPP = newGraph.nodes.get('pp_1') as PlotPoint;
+      expect(updatedPP.act).toBe(1);
+
+      // Verify no more violations
+      const newViolations = PP_ACT_ALIGNMENT.evaluate(newGraph, { mode: 'full' });
+      expect(newViolations).toHaveLength(0);
     });
   });
 });

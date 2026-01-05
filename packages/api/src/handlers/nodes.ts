@@ -222,12 +222,30 @@ export function createNodeRelationsHandler(ctx: StorageContext) {
  * Get a human-readable label for a node
  */
 function getNodeLabel(node: KGNode): string {
-  // Check for common label properties
-  const labelProps = ['name', 'title', 'label', 'beatName', 'heading'];
   const nodeRecord = node as unknown as Record<string, unknown>;
+
+  // For Beat nodes, use beat_type formatted nicely (e.g., "Midpoint", "All Is Lost")
+  if (node.type === 'Beat' && typeof nodeRecord.beat_type === 'string') {
+    // Convert camelCase to Title Case with spaces (e.g., "AllIsLost" -> "All Is Lost")
+    const beatType = nodeRecord.beat_type as string;
+    const formatted = beatType
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^[\s]/, '')
+      .replace('And', '&')
+      .trim();
+    return formatted;
+  }
+
+  // Check for common label properties
+  const labelProps = ['name', 'title', 'label', 'beatName', 'heading', 'statement'];
   for (const prop of labelProps) {
     if (prop in nodeRecord && typeof nodeRecord[prop] === 'string') {
-      return nodeRecord[prop] as string;
+      const value = nodeRecord[prop] as string;
+      // Truncate long labels (e.g., theme statements)
+      if (value.length > 60) {
+        return value.slice(0, 57) + '...';
+      }
+      return value;
     }
   }
 

@@ -47,7 +47,7 @@ export function ExploreView() {
   } = useStory();
 
   // Local explore state
-  const [selectedType, setSelectedType] = useState<NodeTypeOption>('Beat');
+  const [selectedType, setSelectedType] = useState<NodeTypeOption>('Theme');
   const [nodes, setNodes] = useState<NodeData[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [nodeRelations, setNodeRelations] = useState<NodeRelationsData | null>(null);
@@ -318,15 +318,16 @@ export function ExploreView() {
   const handleBulkAttach = useCallback((config: BulkAttachConfig) => {
     if (!selectedNodeId) return;
 
-    // Determine if this is ordered (only FULFILLS for now)
+    // Determine if this is ordered (SATISFIED_BY, HAS_CHARACTER, etc.)
     const ordered = isOrderedEdgeType(config.edgeType);
 
-    // Determine single-select mode (LOCATED_AT is single)
-    const singleSelect = config.edgeType === 'LOCATED_AT';
+    // Determine single-select mode (LOCATED_AT, ALIGNS_WITH are single)
+    const singleSelect = config.edgeType === 'LOCATED_AT' || config.edgeType === 'ALIGNS_WITH';
 
     bulkAttach.openModal({
       parentId: selectedNodeId,
       edgeType: config.edgeType,
+      direction: config.direction,
       ordered,
       singleSelect,
       existingEdges: config.existingEdges,

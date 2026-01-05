@@ -33,10 +33,6 @@ export function createEdge(
  * Common edge creators with semantic names
  */
 export const edges = {
-  /** Scene fulfills Beat */
-  fulfills: (sceneId: string, beatId: string, id?: string): Edge =>
-    createEdge('FULFILLS', sceneId, beatId, { id }),
-
   /** Scene has Character */
   hasCharacter: (sceneId: string, characterId: string, id?: string): Edge =>
     createEdge('HAS_CHARACTER', sceneId, characterId, { id }),
@@ -68,4 +64,16 @@ export const edges = {
   /** Motif appears in Scene */
   appearsIn: (motifId: string, sceneId: string, id?: string): Edge =>
     createEdge('APPEARS_IN', motifId, sceneId, { id }),
+
+  /** PlotPoint aligns with Beat */
+  alignsWith: (plotPointId: string, beatId: string, id?: string): Edge =>
+    createEdge('ALIGNS_WITH', plotPointId, beatId, { id }),
+
+  /** PlotPoint satisfied by Scene (with order) */
+  satisfiedBy: (plotPointId: string, sceneId: string, order: number, id?: string): Edge =>
+    createEdge('SATISFIED_BY', plotPointId, sceneId, { id, properties: { order } }),
+
+  /** PlotPoint precedes PlotPoint (causal chain) */
+  precedes: (fromPPId: string, toPPId: string, id?: string): Edge =>
+    createEdge('PRECEDES', fromPPId, toPPId, { id }),
 };

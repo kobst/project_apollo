@@ -8,7 +8,7 @@ import type { NodeData, EdgeData, EdgeType } from '../../api/types';
 import styles from './BulkAttachModal.module.css';
 
 // Edge types where parent is the target (not the source)
-const PARENT_IS_TARGET_EDGE_TYPES: EdgeType[] = ['FULFILLS', 'EXPRESSED_IN', 'APPEARS_IN'];
+const PARENT_IS_TARGET_EDGE_TYPES: EdgeType[] = ['EXPRESSED_IN', 'APPEARS_IN'];
 
 interface TargetSelectorProps {
   nodes: NodeData[];

@@ -26,16 +26,6 @@ export interface EdgeTemplate {
 }
 
 export const EDGE_TEMPLATES: Record<EdgeType, EdgeTemplate> = {
-  FULFILLS: {
-    label: 'Fulfills Beat',
-    description: 'Scene fulfills a story beat',
-    sourceTypes: ['Scene'],
-    targetTypes: ['Beat'],
-    properties: {
-      order: { required: true, default: 1, min: 1 },
-      notes: {},
-    },
-  },
   HAS_CHARACTER: {
     label: 'Has Character',
     description: 'Scene features a character',

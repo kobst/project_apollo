@@ -64,6 +64,25 @@
   flex: 1;
 }
 
+.addPlotPointBtn {
+  margin: 4px 8px 8px;
+  padding: 6px 10px;
+  border: 1px dashed #4a4a6a;
+  border-radius: 4px;
+  background: transparent;
+  color: #666;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.addPlotPointBtn:hover {
+  border-color: #5a7ca5;
+  color: #5a7ca5;
+  background: rgba(90, 124, 165, 0.1);
+}
+
 .notes {
   padding: 6px 12px;
   background: #252540;

@@ -65,46 +65,6 @@ describe('Validator', () => {
   });
 
   describe('Invalid edge endpoint types', () => {
-    it('should reject FULFILLS edge with invalid source (not Scene)', () => {
-      const char = createCharacter({ id: 'char_1' });
-      graph.nodes.set(char.id, char);
-
-      const patch = createMinimalPatch('sv0', [
-        {
-          op: 'ADD_EDGE',
-          edge: { type: 'FULFILLS', from: 'char_1', to: 'beat_Catalyst' },
-        },
-      ]);
-
-      const result = validatePatch(graph, patch);
-
-      expect(result.success).toBe(false);
-      expect(
-        result.errors.some((e) => e.code === 'INVALID_EDGE_SOURCE')
-      ).toBe(true);
-    });
-
-    it('should reject FULFILLS edge with invalid target (not Beat)', () => {
-      const scene = createScene('beat_Catalyst', { id: 'scene_1' });
-      const char = createCharacter({ id: 'char_1' });
-      graph.nodes.set(scene.id, scene);
-      graph.nodes.set(char.id, char);
-
-      const patch = createMinimalPatch('sv0', [
-        {
-          op: 'ADD_EDGE',
-          edge: { type: 'FULFILLS', from: 'scene_1', to: 'char_1' },
-        },
-      ]);
-
-      const result = validatePatch(graph, patch);
-
-      expect(result.success).toBe(false);
-      expect(
-        result.errors.some((e) => e.code === 'INVALID_EDGE_TARGET')
-      ).toBe(true);
-    });
-
     it('should reject HAS_CHARACTER edge with wrong source type', () => {
       const char = createCharacter({ id: 'char_1' });
       graph.nodes.set(char.id, char);

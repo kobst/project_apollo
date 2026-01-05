@@ -11,6 +11,8 @@ import type {
   Motif,
   CharacterArc,
   Conflict,
+  PlotPoint,
+  PlotPointIntent,
 } from '../../src/types/nodes.js';
 
 let idCounter = 0;
@@ -181,6 +183,23 @@ export function createCharacterArc(
     start_state: 'Fearful',
     end_state: 'Courageous',
     status: 'FLOATING',
+    ...overrides,
+  };
+}
+
+/**
+ * Create a valid PlotPoint node
+ */
+export function createPlotPoint(overrides: Partial<PlotPoint> = {}): PlotPoint {
+  const now = new Date().toISOString();
+  return {
+    type: 'PlotPoint',
+    id: overrides.id ?? nextId('pp'),
+    title: overrides.title ?? 'Test Plot Point',
+    intent: overrides.intent ?? ('plot' as PlotPointIntent),
+    status: overrides.status ?? 'proposed',
+    createdAt: overrides.createdAt ?? now,
+    updatedAt: overrides.updatedAt ?? now,
     ...overrides,
   };
 }

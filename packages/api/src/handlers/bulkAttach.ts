@@ -110,7 +110,7 @@ function getChildId(edge: Edge, parentIsSource: boolean): string {
  *
  * Bulk attach targets to a parent node with support for:
  * - Multi-select attachment
- * - Ordering (for FULFILLS edges and others)
+ * - Ordering (for SATISFIED_BY and other ordered edge types)
  * - Automatic order normalization
  * - Detach others (sync mode)
  */

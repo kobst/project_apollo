@@ -355,7 +355,7 @@ export function extractFromInput(
     // Derive title from short input (under 60 chars)
     const title = input.length < 60 ? input : undefined;
 
-    // Build ops: ADD_NODE Scene, then ADD_EDGE FULFILLS Scene → Beat
+    // Build ops: ADD_NODE Scene (beat_id provides the beat relationship)
     const sceneNode: Scene = {
       type: 'Scene',
       id: sceneId,
@@ -374,15 +374,6 @@ export function extractFromInput(
       {
         op: 'ADD_NODE',
         node: sceneNode,
-      },
-      {
-        op: 'ADD_EDGE',
-        edge: {
-          id: generateEdgeId(),
-          type: 'FULFILLS',
-          from: sceneId,
-          to: beatId,
-        },
       },
     ];
 

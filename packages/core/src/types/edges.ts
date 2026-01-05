@@ -12,7 +12,6 @@ import type { NodeType } from './nodes.js';
 /**
  * All valid edge types in the knowledge graph.
  *
- * FULFILLS: Scene → Beat (implicit via Scene.beat_id, derived not created)
  * HAS_CHARACTER: Scene → Character
  * LOCATED_AT: Scene → Location
  * FEATURES_OBJECT: Scene → Object
@@ -29,9 +28,11 @@ import type { NodeType } from './nodes.js';
  * ADVANCES: PlotPoint → CharacterArc | Theme
  * SETS_UP: PlotPoint → Motif (setup relationship)
  * PAYS_OFF: PlotPoint → Motif (payoff relationship)
+ *
+ * Note: FULFILLS (Scene → Beat) was deprecated in favor of the PlotPoint model.
+ * Scenes now connect to Beats via: Scene ← SATISFIED_BY ← PlotPoint → ALIGNS_WITH → Beat
  */
 export type EdgeType =
-  | 'FULFILLS'
   | 'HAS_CHARACTER'
   | 'LOCATED_AT'
   | 'FEATURES_OBJECT'
@@ -127,12 +128,6 @@ export interface EdgeRule {
  * Edge validation rules mapping edge types to allowed source/target node types.
  */
 export const EDGE_RULES: Record<EdgeType, EdgeRule> = {
-  // Scene → Beat (implicit via beat_id, but validated as edge)
-  FULFILLS: {
-    source: ['Scene'],
-    target: ['Beat'],
-  },
-
   // Scene → Character
   HAS_CHARACTER: {
     source: ['Scene'],
@@ -222,7 +217,6 @@ export const EDGE_RULES: Record<EdgeType, EdgeRule> = {
  * List of all edge types for validation.
  */
 export const EDGE_TYPES: EdgeType[] = [
-  'FULFILLS',
   'HAS_CHARACTER',
   'LOCATED_AT',
   'FEATURES_OBJECT',

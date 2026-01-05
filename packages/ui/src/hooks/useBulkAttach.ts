@@ -31,6 +31,7 @@ export interface SelectedTarget {
 export interface BulkAttachModalConfig {
   parentId: string;
   edgeType: EdgeType;
+  direction: 'outgoing' | 'incoming';
   ordered?: boolean | undefined;
   singleSelect?: boolean | undefined;
   existingEdges?: EdgeData[] | undefined;
@@ -79,13 +80,12 @@ export interface UseBulkAttachResult {
 // =============================================================================
 
 /**
- * Get the "child" node ID from an edge based on edge type.
- * For FULFILLS/EXPRESSED_IN/APPEARS_IN: child is from (source)
- * For others: child is to (target)
+ * Get the "child" node ID from an edge based on direction.
+ * If outgoing: parent is source (from), child is target (to)
+ * If incoming: parent is target (to), child is source (from)
  */
-function getChildIdFromEdge(edge: EdgeData, edgeType: EdgeType): string {
-  const parentIsTarget = ['FULFILLS', 'EXPRESSED_IN', 'APPEARS_IN'].includes(edgeType);
-  return parentIsTarget ? edge.from : edge.to;
+function getChildIdFromEdge(edge: EdgeData, direction: 'outgoing' | 'incoming'): string {
+  return direction === 'outgoing' ? edge.to : edge.from;
 }
 
 // =============================================================================
@@ -118,7 +118,7 @@ export function useBulkAttach({
     }
 
     const originalChildIds = new Set(
-      originalEdges.map((e) => getChildIdFromEdge(e, config.edgeType))
+      originalEdges.map((e) => getChildIdFromEdge(e, config.direction))
     );
     const selectedIds = new Set(selectedTargets.map((t) => t.id));
 
@@ -126,7 +126,7 @@ export function useBulkAttach({
     const toUpdate = selectedTargets.filter((t) => {
       if (!originalChildIds.has(t.id)) return false;
       const originalEdge = originalEdges.find(
-        (e) => getChildIdFromEdge(e, config.edgeType) === t.id
+        (e) => getChildIdFromEdge(e, config.direction) === t.id
       );
       if (!originalEdge) return false;
       // Check if order changed
@@ -136,7 +136,7 @@ export function useBulkAttach({
       return false;
     });
     const toRemove = originalEdges
-      .filter((e) => !selectedIds.has(getChildIdFromEdge(e, config.edgeType)))
+      .filter((e) => !selectedIds.has(getChildIdFromEdge(e, config.direction)))
       .map((e) => e.id);
 
     return {
@@ -157,7 +157,7 @@ export function useBulkAttach({
     setOriginalEdges(existingEdges);
 
     const initialTargets: SelectedTarget[] = existingEdges.map((edge) => ({
-      id: getChildIdFromEdge(edge, newConfig.edgeType),
+      id: getChildIdFromEdge(edge, newConfig.direction),
       order: edge.properties?.order,
       properties: edge.properties,
       isNew: false,
@@ -278,7 +278,7 @@ export function useBulkAttach({
     setOriginalEdges(existingEdges);
 
     const initialTargets: SelectedTarget[] = existingEdges.map((edge) => ({
-      id: getChildIdFromEdge(edge, config.edgeType),
+      id: getChildIdFromEdge(edge, config.direction),
       order: edge.properties?.order,
       properties: edge.properties,
       isNew: false,
