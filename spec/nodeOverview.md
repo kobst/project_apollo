@@ -14,19 +14,53 @@ This document catalogs the node types used to represent narrative structure, cau
 
 ### Premise
 
-**Purpose:** Encodes the core story idea
+**Purpose:** The core story concept (one per story)
 
 **Abstraction:** Level 0 (Story Intent)
 
+**Required Fields:** logline
+
+**Optional Fields:** concept, hook, notes
+
+**Notes:**
+- Top of the pyramid - everything else serves the premise
+- Typically only one Premise node per story
+- Can optionally connect to Conflicts via DEFINES edge
+
 **Examples:** Logline, core setup
+
+### Setting
+
+**Purpose:** Generalized world/time period container
+
+**Abstraction:** Level 0-1
+
+**Required Fields:** name
+
+**Optional Fields:** description, time_period, atmosphere, notes
+
+**Notes:**
+- Can represent: "1920s Chicago", "Post-apocalyptic wasteland", "Victorian London"
+- Locations connect to Settings via PART_OF edge
+- Scenes can be SET_IN a Setting for broader context
+
+**Examples:** "Victorian London", "Near-future dystopia", "1950s suburban America"
 
 ### GenreTone
 
-**Purpose:** Declares genre and tonal expectations
+**Purpose:** Combined genre and tonal declaration
 
 **Abstraction:** Level 0
 
-**Notes:** Acts as a constraint, not content
+**Optional Fields:** genre, secondary_genre, tone, tone_description, conventions, notes
+
+**Notes:**
+- Combined node because genre and tone are deeply intertwined
+- Some stories have tone without clear genre (art films)
+- Some genres imply tone (noir → dark/cynical)
+- Typically only one GenreTone node per story
+
+**Examples:** "noir / cynical", "comedy / light", "thriller / tense"
 
 ### Theme
 
@@ -153,9 +187,14 @@ This document catalogs the node types used to represent narrative structure, cau
 
 ### Location
 
-**Purpose:** Physical setting
+**Purpose:** Physical setting / specific place
 
 **Abstraction:** Level 3–4
+
+**Notes:**
+- Can be connected to a Setting via PART_OF edge
+- Scenes are LOCATED_AT a Location
+- Supports hierarchical locations via parent_location_id
 
 ### Prop
 

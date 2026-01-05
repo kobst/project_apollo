@@ -108,11 +108,84 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ---
 
-## B. STRUCTURE (1)
+## B. CONTEXT LAYER (3)
+
+These nodes establish the "top of the pyramid" - the foundational context that everything else serves.
 
 ---
 
-### 5) `Beat`
+### 5) `Premise`
+**Purpose:** The core story concept (one per story)
+
+**Required:**
+- `id`
+- `logline` *(one sentence story summary)*
+
+**Optional:**
+- `concept` *(extended concept description)*
+- `hook` *(what makes this story unique)*
+- `notes`
+
+**Active Phase:** Outline
+
+**Notes:**
+- Top of the pyramid - everything else serves the premise
+- Typically only one Premise node per story
+- Can optionally connect to Conflicts via `DEFINES` edge
+
+---
+
+### 6) `Setting`
+**Purpose:** Generalized world/time period container
+
+**Required:**
+- `id`
+- `name`
+
+**Optional:**
+- `description` *(atmosphere, rules, feel)*
+- `time_period`
+- `atmosphere` *(visual/atmospheric keywords)*
+- `notes`
+
+**Active Phase:** Outline
+
+**Notes:**
+- Can represent: "1920s Chicago", "Post-apocalyptic wasteland", "Victorian London"
+- Locations connect to Settings via `PART_OF` edge
+- More flexible than "World" - handles both sci-fi worlds and historical periods
+
+---
+
+### 7) `GenreTone`
+**Purpose:** Combined genre and tone declaration
+
+**Required:**
+- `id`
+
+**Optional:**
+- `genre` (enum: action, comedy, drama, horror, thriller, romance, sci-fi, fantasy, noir, western, mystery, adventure, musical, documentary, other)
+- `secondary_genre` *(for hybrid genres)*
+- `tone` (enum: dark, light, gritty, whimsical, satirical, earnest, cynical, hopeful, melancholic, tense, comedic, dramatic, neutral)
+- `tone_description` *(freeform for nuanced cases)*
+- `conventions` *(genre conventions followed or subverted)*
+- `notes`
+
+**Active Phase:** Outline
+
+**Notes:**
+- Combined node because genre and tone are deeply intertwined
+- Some stories have tone without clear genre (art films)
+- Some genres imply tone (noir → dark/cynical)
+- Typically only one GenreTone node per story
+
+---
+
+## C. STRUCTURE (1)
+
+---
+
+### 8) `Beat`
 **Purpose:** Hardcoded Save-the-Cat structural beat, mapped to Film Crit Hulk 5-Act
 
 **Required:**
@@ -131,11 +204,11 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ---
 
-## C. STORY CONTENT (5)
+## D. STORY CONTENT (5)
 
 ---
 
-### 6) `Scene`
+### 9) `Scene`
 **Purpose:** Core unit of narrative realization
 
 **Required:**
@@ -161,7 +234,7 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ---
 
-### 7) `Character`
+### 10) `Character`
 **Purpose:** Human story agents
 
 **Required:**
@@ -179,7 +252,7 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ---
 
-### 8) `Location`
+### 11) `Location`
 **Purpose:** Hierarchical setting representation
 
 **Required:**
@@ -195,7 +268,7 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ---
 
-### 9) `Object`
+### 12) `Object`
 **Purpose:** Props and significant items
 
 **Required:**
@@ -212,7 +285,7 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ---
 
-### 10) `PlotPoint`
+### 13) `PlotPoint`
 **Purpose:** Writer-declared "this must happen" unit of story causality
 
 **Required:**
@@ -246,11 +319,11 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ---
 
-## D. ABSTRACT / MEANING (4)
+## E. ABSTRACT / MEANING (4)
 
 ---
 
-### 11) `Theme`
+### 14) `Theme`
 **Purpose:** Soft attractor for meaning
 
 **Required:**
@@ -266,7 +339,7 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ---
 
-### 12) `Motif`
+### 15) `Motif`
 **Purpose:** Recurring symbolic element
 
 **Required:**
@@ -281,7 +354,7 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ---
 
-### 13) `CharacterArc`
+### 16) `CharacterArc`
 **Purpose:** Trajectory of character transformation
 
 **Required:**
@@ -300,7 +373,7 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ---
 
-### 14) `Conflict`
+### 17) `Conflict`
 **Purpose:** Tension between characters, groups, or abstract forces
 
 **Required:**
@@ -331,9 +404,14 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 - `PlotPoint -[ALIGNS_WITH]-> Beat` *(PlotPoint aligns to structural beat)*
 - `PlotPoint -[SATISFIED_BY]-> Scene` *(Scene realizes the PlotPoint)*
 
+### Context Layer
+- `Premise -[DEFINES]-> Conflict` *(optional: premise defines central conflicts)*
+- `Location -[PART_OF]-> Setting` *(location belongs to a setting/world)*
+- `Scene -[SET_IN]-> Setting` *(scene takes place in a setting - broader than location)*
+
 ### Participation & Setting
 - `Scene -[HAS_CHARACTER]-> Character`
-- `Scene -[SET_IN]-> Location`
+- `Scene -[LOCATED_AT]-> Location`
 - `Scene -[FEATURES_OBJECT]-> Object`
 
 ### Meaning & Arcs
@@ -414,6 +492,12 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
   → `PP_EVENT_REALIZATION` *(Draft)*
 - **PlotPoint has no criteria_of_satisfaction**
   → `PP_HAS_CRITERIA` *(Outline)*
+
+### Context Layer (soft rules - warnings)
+- **Story has no Premise node**
+  → `STORY_HAS_PREMISE` *(Outline)*
+- **Location has no PART_OF edge to Setting**
+  → `LOCATION_HAS_SETTING` *(Outline)*
 
 ---
 

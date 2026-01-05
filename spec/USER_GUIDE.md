@@ -393,12 +393,18 @@ Click the tabs at the top to filter nodes by type:
 
 | Type | Description |
 |------|-------------|
-| **Beats** | The 15 Save the Cat beats |
-| **Scenes** | Scene nodes linked to beats |
-| **Characters** | Character nodes |
-| **Conflicts** | Conflict nodes |
-| **Locations** | Location nodes |
+| **Premise** | Story concept/logline (typically one per story) |
+| **Settings** | World/time period containers (e.g., "1920s Chicago") |
+| **Genre/Tone** | Combined genre and tonal declaration |
 | **Themes** | Theme nodes |
+| **Motifs** | Recurring symbolic elements |
+| **Conflicts** | Conflict nodes |
+| **Beats** | The 15 Save the Cat beats |
+| **Plot Points** | Story beats that must happen |
+| **Scenes** | Scene nodes linked to plot points |
+| **Characters** | Character nodes |
+| **Locations** | Location nodes (can be part of a Setting) |
+| **Props** | Significant objects/items |
 
 ### Node List
 
@@ -505,6 +511,9 @@ Choose the relationship type based on the current node:
 
 | Edge Type | Source → Target |
 |-----------|-----------------|
+| **DEFINES** | Premise → Conflict |
+| **PART_OF** | Location → Setting |
+| **SET_IN** | Scene → Setting |
 | **SATISFIED_BY** | PlotPoint → Scene |
 | **ALIGNS_WITH** | PlotPoint → Beat |
 | **HAS_CHARACTER** | Scene → Character |
@@ -515,6 +524,9 @@ Choose the relationship type based on the current node:
 | **APPEARS_IN** | Motif → Scene |
 | **FEATURES_OBJECT** | Scene → Object |
 | **PRECEDES** | PlotPoint → PlotPoint |
+| **ADVANCES** | PlotPoint → CharacterArc/Theme |
+| **SETS_UP** | PlotPoint → Motif |
+| **PAYS_OFF** | PlotPoint → Motif |
 
 *Only valid edge types for the current node type are shown.*
 
@@ -679,11 +691,17 @@ Found in the right column of the Explore view, above any cluster results.
 | Type | Result |
 |------|--------|
 | **Auto-detect** | System determines best extraction type |
+| **Premise** | Extract story premise/logline |
+| **Setting** | Extract world/time period setting |
+| **GenreTone** | Extract genre and tone |
 | **Character** | Extract character nodes |
 | **Location** | Extract location nodes |
 | **Scene** | Extract scene nodes |
 | **Conflict** | Extract conflict nodes |
 | **PlotPoint** | Extract plot point nodes |
+| **Theme** | Extract thematic elements |
+| **Motif** | Extract recurring symbols/imagery |
+| **Object** | Extract significant props/items |
 
 ### Extraction Workflow
 
@@ -727,13 +745,18 @@ The **Node Editor** allows direct modification of committed graph nodes.
 
 | Node Type | Editable Fields |
 |-----------|-----------------|
+| **Premise** | logline, concept, hook, notes |
+| **Setting** | name, description, time_period, atmosphere, notes |
+| **GenreTone** | genre, secondary_genre, tone, tone_description, conventions, notes |
 | **Beat** | guidance, notes, status |
-| **Scene** | heading, scene_overview, mood, int_ext, time_of_day, status |
+| **Scene** | title, heading, scene_overview, mood, int_ext, time_of_day, status |
 | **Character** | name, description, archetype, status |
 | **Conflict** | name, description, conflict_type, status |
 | **Location** | name, description, atmosphere |
-| **Theme** | name, description |
-| **Motif** | name, symbol, description |
+| **Theme** | statement, notes |
+| **Motif** | name, description |
+| **PlotPoint** | title, summary, intent, criteria_of_satisfaction, priority, urgency, stakes_change, status, act |
+| **Object** | name, description, significance |
 
 ### PatchBuilder Preview
 
@@ -798,10 +821,16 @@ Soft rules check completeness. They warn but don't block commits.
 
 | Rule | Description |
 |------|-------------|
+| **Story Has Premise** | Story should have a Premise node with logline |
+| **Location Has Setting** | Location should be part of a Setting |
 | **Scene Has Character** | Scene should have at least one character assigned |
 | **Scene Has Location** | Scene should have a location assigned |
+| **Scene Has PlotPoint** | Scene should be connected to a PlotPoint |
 | **Theme Not Orphaned** | Theme should be expressed in at least one scene or beat |
 | **Motif Not Orphaned** | Motif should appear in at least one scene |
+| **PlotPoint Has Intent** | PlotPoint should have intent specified |
+| **PlotPoint Event Realization** | Approved PlotPoint should have scenes satisfying it |
+| **PlotPoint Has Criteria** | PlotPoint should have satisfaction criteria |
 
 ### Lint Panel Display
 

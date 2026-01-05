@@ -27,6 +27,9 @@ export interface StoryStats {
   objects: number;
   plotPoints: number;
   edges: number;
+  premises: number;
+  settings: number;
+  genreTones: number;
 }
 
 export interface OpenQuestionSummary {
@@ -408,7 +411,10 @@ export type EdgeType =
   | 'PRECEDES'
   | 'ADVANCES'
   | 'SETS_UP'
-  | 'PAYS_OFF';
+  | 'PAYS_OFF'
+  | 'DEFINES'
+  | 'PART_OF'
+  | 'SET_IN';
 
 export type EdgeStatus = 'proposed' | 'approved' | 'rejected';
 

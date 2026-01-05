@@ -2,6 +2,9 @@ import type { StoryStats } from '../../api/types';
 import styles from './NodeTypeFilter.module.css';
 
 export type NodeTypeOption =
+  | 'Premise'
+  | 'Setting'
+  | 'GenreTone'
   | 'Beat'
   | 'Scene'
   | 'Character'
@@ -19,9 +22,15 @@ interface NodeTypeFilterProps {
 }
 
 const NODE_TYPES: { type: NodeTypeOption; label: string; statKey?: keyof StoryStats }[] = [
+  // Context Layer (top of pyramid)
+  { type: 'Premise', label: 'Premise', statKey: 'premises' },
+  { type: 'Setting', label: 'Settings', statKey: 'settings' },
+  { type: 'GenreTone', label: 'Genre/Tone', statKey: 'genreTones' },
+  // Abstract meaning
   { type: 'Theme', label: 'Themes', statKey: 'themes' },
   { type: 'Motif', label: 'Motifs', statKey: 'motifs' },
   { type: 'Conflict', label: 'Conflicts', statKey: 'conflicts' },
+  // Structure & content
   { type: 'Beat', label: 'Beats', statKey: 'beats' },
   { type: 'PlotPoint', label: 'Plot Points', statKey: 'plotPoints' },
   { type: 'Scene', label: 'Scenes', statKey: 'scenes' },

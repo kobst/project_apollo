@@ -29,6 +29,11 @@ import type { NodeType } from './nodes.js';
  * SETS_UP: PlotPoint → Motif (setup relationship)
  * PAYS_OFF: PlotPoint → Motif (payoff relationship)
  *
+ * Context layer edges:
+ * DEFINES: Premise → Conflict (premise defines central conflicts)
+ * PART_OF: Location → Setting (location is part of setting/world)
+ * SET_IN: Scene → Setting (scene takes place in setting)
+ *
  * Note: FULFILLS (Scene → Beat) was deprecated in favor of the PlotPoint model.
  * Scenes now connect to Beats via: Scene ← SATISFIED_BY ← PlotPoint → ALIGNS_WITH → Beat
  */
@@ -46,7 +51,10 @@ export type EdgeType =
   | 'PRECEDES'
   | 'ADVANCES'
   | 'SETS_UP'
-  | 'PAYS_OFF';
+  | 'PAYS_OFF'
+  | 'DEFINES'
+  | 'PART_OF'
+  | 'SET_IN';
 
 // =============================================================================
 // Edge Properties and Metadata
@@ -211,6 +219,24 @@ export const EDGE_RULES: Record<EdgeType, EdgeRule> = {
     source: ['PlotPoint'],
     target: ['Motif'],
   },
+
+  // Premise → Conflict (premise defines central conflicts)
+  DEFINES: {
+    source: ['Premise'],
+    target: ['Conflict'],
+  },
+
+  // Location → Setting (location is part of setting/world)
+  PART_OF: {
+    source: ['Location'],
+    target: ['Setting'],
+  },
+
+  // Scene → Setting (scene takes place in setting)
+  SET_IN: {
+    source: ['Scene'],
+    target: ['Setting'],
+  },
 };
 
 /**
@@ -231,6 +257,9 @@ export const EDGE_TYPES: EdgeType[] = [
   'ADVANCES',
   'SETS_UP',
   'PAYS_OFF',
+  'DEFINES',
+  'PART_OF',
+  'SET_IN',
 ];
 
 // =============================================================================

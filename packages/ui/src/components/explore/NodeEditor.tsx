@@ -11,6 +11,11 @@ interface NodeEditorProps {
 
 // Define which fields are editable per node type
 const EDITABLE_FIELDS: Record<string, string[]> = {
+  // Context layer
+  Premise: ['logline', 'concept', 'hook', 'notes'],
+  Setting: ['name', 'description', 'time_period', 'atmosphere', 'notes'],
+  GenreTone: ['genre', 'secondary_genre', 'tone', 'tone_description', 'conventions', 'notes'],
+  // Structure
   Beat: ['guidance', 'notes', 'status'],
   Scene: ['title', 'heading', 'scene_overview', 'mood', 'int_ext', 'time_of_day', 'status'],
   Character: ['name', 'description', 'archetype', 'status'],
@@ -33,6 +38,20 @@ const FIELD_TYPES: Record<string, 'text' | 'textarea' | 'select'> = {
   criteria_of_satisfaction: 'textarea',
   statement: 'textarea',
   significance: 'textarea',
+  // Premise fields
+  logline: 'textarea',
+  concept: 'textarea',
+  hook: 'textarea',
+  // Setting fields
+  time_period: 'text',
+  atmosphere: 'textarea',
+  // GenreTone fields
+  genre: 'select',
+  secondary_genre: 'select',
+  tone: 'select',
+  tone_description: 'textarea',
+  conventions: 'textarea',
+  // Select fields
   status: 'select',
   conflict_type: 'select',
   archetype: 'select',
@@ -48,7 +67,7 @@ const FIELD_TYPES: Record<string, 'text' | 'textarea' | 'select'> = {
 // Select options per field
 const SELECT_OPTIONS: Record<string, string[]> = {
   status: ['EMPTY', 'DRAFT', 'COMPLETE', 'ACTIVE', 'FLOATING', 'RESOLVED', 'ABANDONED', 'proposed', 'approved', 'deprecated'],
-  conflict_type: ['interpersonal', 'internal', 'societal', 'situational', 'cosmic', 'supernatural'],
+  conflict_type: ['interpersonal', 'internal', 'societal', 'ideological', 'systemic', 'nature', 'technological'],
   archetype: ['PROTAGONIST', 'ANTAGONIST', 'MENTOR', 'ALLY', 'LOVE_INTEREST', 'TRICKSTER', 'THRESHOLD_GUARDIAN', 'HERALD', 'SHAPESHIFTER', 'SHADOW'],
   int_ext: ['INT', 'EXT', 'INT/EXT'],
   arc_type: ['POSITIVE', 'NEGATIVE', 'FLAT', 'CORRUPTION', 'DISILLUSIONMENT'],
@@ -57,6 +76,10 @@ const SELECT_OPTIONS: Record<string, string[]> = {
   urgency: ['low', 'medium', 'high'],
   stakes_change: ['up', 'down', 'steady'],
   act: ['1', '2', '3', '4', '5'],
+  // GenreTone fields
+  genre: ['action', 'comedy', 'drama', 'horror', 'thriller', 'romance', 'sci-fi', 'fantasy', 'noir', 'western', 'mystery', 'adventure', 'musical', 'documentary', 'other'],
+  secondary_genre: ['', 'action', 'comedy', 'drama', 'horror', 'thriller', 'romance', 'sci-fi', 'fantasy', 'noir', 'western', 'mystery', 'adventure', 'musical', 'documentary', 'other'],
+  tone: ['dark', 'light', 'gritty', 'whimsical', 'satirical', 'earnest', 'cynical', 'hopeful', 'melancholic', 'tense', 'comedic', 'dramatic', 'neutral'],
 };
 
 export function NodeEditor({ node, onSave, onCancel, saving }: NodeEditorProps) {

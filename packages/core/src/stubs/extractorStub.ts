@@ -17,6 +17,11 @@ import type {
   Theme,
   Motif,
   StoryObject,
+  Premise,
+  Setting,
+  GenreTone,
+  Genre,
+  Tone,
 } from '../types/nodes.js';
 import { BEAT_ACT_MAP, BEAT_POSITION_MAP } from '../types/nodes.js';
 import { generateEdgeId } from '../types/edges.js';
@@ -566,6 +571,174 @@ export function extractFromInput(
           {
             op: 'ADD_NODE',
             node: storyObject,
+          },
+        ],
+        metadata: {
+          source: 'extractorStub',
+          action: 'extractFromInput',
+        },
+      },
+    });
+  }
+
+  if (targetType === 'Premise' || (!targetType && (lowerInput.includes('premise') || lowerInput.includes('logline') || lowerInput.includes('concept') || lowerInput.includes('this story is about')))) {
+    // Premise extraction proposal
+    const premiseId = `premise_${Date.now()}`;
+    const patchId = `patch_premise_${Date.now()}`;
+
+    const premise: Premise = {
+      type: 'Premise',
+      id: premiseId,
+      logline: input.trim(),
+    };
+
+    proposals.push({
+      id: 'prop_premise_0',
+      title: 'Create story premise',
+      description: 'Extract the core story concept and logline.',
+      confidence: 0.8,
+      extractedEntities: [{ type: 'Premise', name: 'Story Premise', id: premiseId }],
+      patch: {
+        type: 'Patch',
+        id: patchId,
+        base_story_version_id: baseVersionId,
+        created_at: timestamp,
+        ops: [
+          {
+            op: 'ADD_NODE',
+            node: premise,
+          },
+        ],
+        metadata: {
+          source: 'extractorStub',
+          action: 'extractFromInput',
+        },
+      },
+    });
+  }
+
+  if (targetType === 'Setting' || (!targetType && (lowerInput.includes('setting') || lowerInput.includes('world') || lowerInput.includes('time period') || lowerInput.includes('era') || lowerInput.includes('takes place')))) {
+    // Setting extraction proposal
+    const settingId = `setting_${Date.now()}`;
+    const patchId = `patch_setting_${Date.now()}`;
+
+    // Extract name from input
+    const name = input.length < 60 ? input : input.slice(0, 57) + '...';
+
+    const setting: Setting = {
+      type: 'Setting',
+      id: settingId,
+      name,
+      description: input.slice(0, 300),
+    };
+
+    proposals.push({
+      id: 'prop_setting_0',
+      title: `Create setting: ${name.slice(0, 30)}${name.length > 30 ? '...' : ''}`,
+      description: 'Extract the story world or time period setting.',
+      confidence: 0.75,
+      extractedEntities: [{ type: 'Setting', name, id: settingId }],
+      patch: {
+        type: 'Patch',
+        id: patchId,
+        base_story_version_id: baseVersionId,
+        created_at: timestamp,
+        ops: [
+          {
+            op: 'ADD_NODE',
+            node: setting,
+          },
+        ],
+        metadata: {
+          source: 'extractorStub',
+          action: 'extractFromInput',
+        },
+      },
+    });
+  }
+
+  if (targetType === 'GenreTone' || (!targetType && (lowerInput.includes('genre') || lowerInput.includes('tone') || lowerInput.includes('style') || lowerInput.includes('mood of the story')))) {
+    // GenreTone extraction proposal
+    const genreToneId = `genretone_${Date.now()}`;
+    const patchId = `patch_genretone_${Date.now()}`;
+
+    // Try to detect genre from keywords
+    const genreKeywords: Record<Genre, string[]> = {
+      action: ['action', 'adventure', 'explosive'],
+      comedy: ['comedy', 'funny', 'humor', 'comedic'],
+      drama: ['drama', 'dramatic', 'emotional'],
+      horror: ['horror', 'scary', 'terrifying'],
+      thriller: ['thriller', 'suspense', 'tension'],
+      romance: ['romance', 'love story', 'romantic'],
+      'sci-fi': ['sci-fi', 'science fiction', 'futuristic', 'space'],
+      fantasy: ['fantasy', 'magical', 'mythical'],
+      noir: ['noir', 'hardboiled', 'crime'],
+      western: ['western', 'frontier'],
+      mystery: ['mystery', 'whodunit', 'detective'],
+      adventure: ['adventure', 'quest', 'journey'],
+      musical: ['musical', 'singing'],
+      documentary: ['documentary', 'real story'],
+      other: [],
+    };
+
+    let detectedGenre: Genre | undefined;
+    for (const [genre, keywords] of Object.entries(genreKeywords)) {
+      if (keywords.some(kw => lowerInput.includes(kw))) {
+        detectedGenre = genre as Genre;
+        break;
+      }
+    }
+
+    // Try to detect tone from keywords
+    const toneKeywords: Record<Tone, string[]> = {
+      dark: ['dark', 'bleak', 'grim'],
+      light: ['light', 'uplifting', 'cheerful'],
+      gritty: ['gritty', 'raw', 'realistic'],
+      whimsical: ['whimsical', 'playful', 'quirky'],
+      satirical: ['satirical', 'satire', 'ironic'],
+      earnest: ['earnest', 'sincere', 'heartfelt'],
+      cynical: ['cynical', 'jaded'],
+      hopeful: ['hopeful', 'optimistic'],
+      melancholic: ['melancholic', 'sad', 'wistful'],
+      tense: ['tense', 'suspenseful'],
+      comedic: ['comedic', 'funny', 'humorous'],
+      dramatic: ['dramatic', 'intense'],
+      neutral: [],
+    };
+
+    let detectedTone: Tone | undefined;
+    for (const [tone, keywords] of Object.entries(toneKeywords)) {
+      if (keywords.some(kw => lowerInput.includes(kw))) {
+        detectedTone = tone as Tone;
+        break;
+      }
+    }
+
+    const genreTone: GenreTone = {
+      type: 'GenreTone',
+      id: genreToneId,
+      ...(detectedGenre && { genre: detectedGenre }),
+      ...(detectedTone && { tone: detectedTone }),
+      ...(!detectedTone && { tone_description: input.slice(0, 200) }),
+    };
+
+    const label = [detectedGenre, detectedTone].filter(Boolean).join(' / ') || 'Genre/Tone';
+
+    proposals.push({
+      id: 'prop_genretone_0',
+      title: `Create genre/tone: ${label}`,
+      description: 'Extract the story genre and tonal qualities.',
+      confidence: 0.7,
+      extractedEntities: [{ type: 'GenreTone', name: label, id: genreToneId }],
+      patch: {
+        type: 'Patch',
+        id: patchId,
+        base_story_version_id: baseVersionId,
+        created_at: timestamp,
+        ops: [
+          {
+            op: 'ADD_NODE',
+            node: genreTone,
           },
         ],
         metadata: {

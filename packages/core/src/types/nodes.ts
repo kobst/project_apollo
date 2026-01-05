@@ -373,6 +373,105 @@ export interface PlotPoint extends BaseNode {
 }
 
 // =============================================================================
+// 15. Premise
+// =============================================================================
+
+/**
+ * Premise - The core story concept (one per story)
+ * Top of the pyramid - everything else serves the premise
+ */
+export interface Premise extends BaseNode {
+  type: 'Premise';
+  /** The logline - one sentence story summary */
+  logline: string;
+  /** Extended concept description */
+  concept?: string;
+  /** What makes this story unique */
+  hook?: string;
+  /** Author notes about the premise */
+  notes?: string;
+}
+
+// =============================================================================
+// 16. Setting
+// =============================================================================
+
+/**
+ * Setting - Generalized world/time period container
+ * Can represent: "1920s Chicago", "Post-apocalyptic wasteland", "Victorian London"
+ * Locations are PART_OF a Setting
+ */
+export interface Setting extends BaseNode {
+  type: 'Setting';
+  /** Name of the setting/world */
+  name: string;
+  /** Description of atmosphere, rules, feel */
+  description?: string;
+  /** Time period if applicable */
+  time_period?: string;
+  /** Visual/atmospheric keywords */
+  atmosphere?: string;
+  /** Notes about the setting */
+  notes?: string;
+}
+
+// =============================================================================
+// 17. GenreTone
+// =============================================================================
+
+/**
+ * GenreTone - Combined genre and tone declaration
+ * Handles: pure genre, pure tone, or genre-with-implied-tone
+ */
+export type Genre =
+  | 'action'
+  | 'comedy'
+  | 'drama'
+  | 'horror'
+  | 'thriller'
+  | 'romance'
+  | 'sci-fi'
+  | 'fantasy'
+  | 'noir'
+  | 'western'
+  | 'mystery'
+  | 'adventure'
+  | 'musical'
+  | 'documentary'
+  | 'other';
+
+export type Tone =
+  | 'dark'
+  | 'light'
+  | 'gritty'
+  | 'whimsical'
+  | 'satirical'
+  | 'earnest'
+  | 'cynical'
+  | 'hopeful'
+  | 'melancholic'
+  | 'tense'
+  | 'comedic'
+  | 'dramatic'
+  | 'neutral';
+
+export interface GenreTone extends BaseNode {
+  type: 'GenreTone';
+  /** Primary genre (optional - some stories defy genre) */
+  genre?: Genre;
+  /** Secondary/hybrid genre */
+  secondary_genre?: Genre;
+  /** Tone description */
+  tone?: Tone;
+  /** Freeform tone description for nuanced cases */
+  tone_description?: string;
+  /** Genre conventions this story follows or subverts */
+  conventions?: string;
+  /** Notes */
+  notes?: string;
+}
+
+// =============================================================================
 // Union Types
 // =============================================================================
 
@@ -393,7 +492,10 @@ export type ContentNode =
   | Motif
   | CharacterArc
   | Conflict
-  | PlotPoint;
+  | PlotPoint
+  | Premise
+  | Setting
+  | GenreTone;
 
 /**
  * All valid node type strings
@@ -412,7 +514,10 @@ export type NodeType =
   | 'Motif'
   | 'CharacterArc'
   | 'Conflict'
-  | 'PlotPoint';
+  | 'PlotPoint'
+  | 'Premise'
+  | 'Setting'
+  | 'GenreTone';
 
 /**
  * List of all node types for validation
@@ -432,4 +537,7 @@ export const NODE_TYPES: NodeType[] = [
   'CharacterArc',
   'Conflict',
   'PlotPoint',
+  'Premise',
+  'Setting',
+  'GenreTone',
 ];

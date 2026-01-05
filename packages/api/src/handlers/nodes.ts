@@ -236,6 +236,34 @@ function getNodeLabel(node: KGNode): string {
     return formatted;
   }
 
+  // For Premise nodes, use logline truncated
+  if (node.type === 'Premise' && typeof nodeRecord.logline === 'string') {
+    const logline = nodeRecord.logline as string;
+    if (logline.length > 50) {
+      return logline.slice(0, 47) + '...';
+    }
+    return logline;
+  }
+
+  // For GenreTone nodes, combine genre and tone
+  if (node.type === 'GenreTone') {
+    const parts: string[] = [];
+    if (typeof nodeRecord.genre === 'string') {
+      parts.push(nodeRecord.genre);
+    }
+    if (typeof nodeRecord.tone === 'string') {
+      parts.push(nodeRecord.tone);
+    }
+    if (parts.length > 0) {
+      return parts.join(' / ');
+    }
+    if (typeof nodeRecord.tone_description === 'string') {
+      const desc = nodeRecord.tone_description as string;
+      return desc.length > 50 ? desc.slice(0, 47) + '...' : desc;
+    }
+    return 'Genre/Tone';
+  }
+
   // Check for common label properties
   const labelProps = ['name', 'title', 'label', 'beatName', 'heading', 'statement'];
   for (const prop of labelProps) {
