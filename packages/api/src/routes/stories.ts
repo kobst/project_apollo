@@ -22,6 +22,8 @@ import {
   createGetNodeHandler,
   createNodeRelationsHandler,
   createUpdateNodeHandler,
+  createGetConnectedNodesHandler,
+  createDeleteNodeHandler,
   createOutlineHandler,
   createExtractHandler,
   createExtractPreviewHandler,
@@ -70,7 +72,9 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.get('/:id/nodes', createListNodesHandler(ctx));
   router.get('/:id/nodes/:nodeId', createGetNodeHandler(ctx));
   router.get('/:id/nodes/:nodeId/relations', createNodeRelationsHandler(ctx));
+  router.get('/:id/nodes/:nodeId/connected', createGetConnectedNodesHandler(ctx));
   router.patch('/:id/nodes/:nodeId', createUpdateNodeHandler(ctx));
+  router.delete('/:id/nodes/:nodeId', createDeleteNodeHandler(ctx));
 
   // Outline endpoint
   router.get('/:id/outline', createOutlineHandler(ctx));

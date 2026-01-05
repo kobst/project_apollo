@@ -11,6 +11,7 @@ interface NodeDetailPanelProps {
   onGenerate: () => void;
   generating: boolean;
   onEdit: () => void;
+  onDelete: () => void;
   // Edge editing handlers (optional - enables interactive mode when provided)
   onEditEdge?: ((edge: EdgeData) => void) | undefined;
   onDeleteEdge?: ((edgeId: string) => void) | undefined;
@@ -29,6 +30,7 @@ export function NodeDetailPanel({
   onGenerate,
   generating,
   onEdit,
+  onDelete,
   onEditEdge,
   onDeleteEdge,
   onAddEdge,
@@ -141,6 +143,13 @@ export function NodeDetailPanel({
           type="button"
         >
           {generating ? 'Generating...' : 'Generate Moves'}
+        </button>
+        <button
+          className={styles.deleteBtn}
+          onClick={onDelete}
+          type="button"
+        >
+          Delete
         </button>
       </div>
     </div>

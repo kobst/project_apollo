@@ -119,9 +119,9 @@ export function validatePatch(
 function checkFKIntegrity(graph: GraphState): ValidationError[] {
   const errors: ValidationError[] = [];
 
-  // Scene.beat_id must exist
+  // Scene.beat_id must exist if defined (optional field)
   for (const scene of getNodesByType<Scene>(graph, 'Scene')) {
-    if (!getNode(graph, scene.beat_id)) {
+    if (scene.beat_id && !getNode(graph, scene.beat_id)) {
       errors.push({
         code: 'FK_INTEGRITY',
         message: `Scene "${scene.id}" references non-existent Beat "${scene.beat_id}"`,

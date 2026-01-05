@@ -82,9 +82,9 @@ export function OutlineView() {
           <span className={styles.summaryItem}>
             <strong>{outline.summary.totalScenes}</strong> scenes
           </span>
-          {outline.summary.emptyBeats > 0 && (
+          {outline.summary.unassignedSceneCount > 0 && (
             <span className={styles.summaryItemWarning}>
-              <strong>{outline.summary.emptyBeats}</strong> empty
+              <strong>{outline.summary.unassignedSceneCount}</strong> unassigned
             </span>
           )}
         </div>
@@ -98,6 +98,32 @@ export function OutlineView() {
         {outline.acts.length === 0 && (
           <div className={styles.noBeats}>
             <p>No beats in this story yet.</p>
+          </div>
+        )}
+
+        {/* Global Unassigned Scenes Section */}
+        {outline.unassignedScenes.length > 0 && (
+          <div className={styles.unassignedSection}>
+            <div className={styles.unassignedHeader}>
+              <span className={styles.unassignedIcon}>!</span>
+              <h3 className={styles.unassignedTitle}>
+                Unassigned Scenes
+                <span className={styles.unassignedCount}>
+                  {' '}({outline.unassignedScenes.length})
+                </span>
+              </h3>
+            </div>
+            <p className={styles.unassignedDescription}>
+              These scenes need to be connected to a Plot Point that is aligned to a Beat.
+            </p>
+            <div className={styles.unassignedList}>
+              {outline.unassignedScenes.map((scene) => (
+                <div key={scene.id} className={styles.unassignedScene}>
+                  <div className={styles.unassignedSceneHeading}>{scene.heading}</div>
+                  <div className={styles.unassignedSceneOverview}>{scene.overview}</div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

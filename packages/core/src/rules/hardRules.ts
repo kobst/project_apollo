@@ -152,6 +152,8 @@ export const SCENE_ACT_BOUNDARY: Rule = {
     const scenes = getScenesInScope(graph, scope);
 
     for (const scene of scenes) {
+      // Skip scenes without beat_id (they use PlotPoint edges instead)
+      if (!scene.beat_id) continue;
       const beat = graph.nodes.get(scene.beat_id) as Beat | undefined;
       if (!beat || beat.type !== 'Beat') continue;
 

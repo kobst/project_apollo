@@ -15,7 +15,6 @@ import {
   type Patch,
   generateEdgeId,
   EDGE_RULES,
-  isParentSource,
   lint,
   registerHardRules,
   registerSoftRules,
@@ -38,6 +37,8 @@ interface BulkAttachTarget {
 interface BulkAttachRequest {
   parentId: string;
   edgeType: EdgeType;
+  /** Direction relative to parentId: 'outgoing' means parent is source, 'incoming' means parent is target */
+  direction: 'outgoing' | 'incoming';
   targets: BulkAttachTarget[];
   detachOthers?: boolean;
   ordered?: boolean;
@@ -126,7 +127,7 @@ export function createBulkAttachHandler(ctx: StorageContext) {
   ): Promise<void> => {
     try {
       const { id } = req.params;
-      const { parentId, edgeType, targets, detachOthers, ordered } = req.body;
+      const { parentId, edgeType, direction, targets, detachOthers, ordered } = req.body;
 
       // Validate required fields
       if (!parentId) {
@@ -134,6 +135,9 @@ export function createBulkAttachHandler(ctx: StorageContext) {
       }
       if (!edgeType) {
         throw new BadRequestError('edgeType is required');
+      }
+      if (!direction || (direction !== 'outgoing' && direction !== 'incoming')) {
+        throw new BadRequestError('direction must be "outgoing" or "incoming"');
       }
       if (!targets || !Array.isArray(targets)) {
         throw new BadRequestError('targets must be an array');
@@ -165,8 +169,9 @@ export function createBulkAttachHandler(ctx: StorageContext) {
         throw new NotFoundError(`Parent node "${parentId}"`);
       }
 
-      // Determine edge direction
-      const parentIsSourceNode = isParentSource(edgeType);
+      // Determine edge direction based on the direction parameter
+      // 'outgoing' means parent is the source node, 'incoming' means parent is the target node
+      const parentIsSourceNode = direction === 'outgoing';
 
       // Validate parent node type matches edge rules
       if (parentIsSourceNode) {

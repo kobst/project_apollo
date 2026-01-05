@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx project-apollo:*)",
+      "Bash(curl:*)",
+      "Bash(npm run build:*)",
+      "Bash(find:*)"
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { OutlineBeat, CreatePlotPointRequest } from '../../api/types';
+import type { OutlineBeat, OutlinePlotPoint, CreatePlotPointRequest } from '../../api/types';
 import { useStory } from '../../context/StoryContext';
 import { usePlotPoints } from '../../hooks/usePlotPoints';
 import { SceneCard } from './SceneCard';
@@ -20,6 +20,31 @@ function formatBeatType(beatType: string): string {
     .trim();
 }
 
+// Render a single PlotPoint with its nested scenes
+function PlotPointContainer({ pp, beatId }: { pp: OutlinePlotPoint; beatId: string }) {
+  const hasScenes = pp.scenes.length > 0;
+
+  return (
+    <div className={styles.plotPointContainer}>
+      <div className={styles.plotPointHeader}>
+        <span className={styles.plotPointTitle}>{pp.title}</span>
+        <span className={`${styles.plotPointIntent} ${styles[pp.intent]}`}>
+          {pp.intent}
+        </span>
+      </div>
+      <div className={styles.nestedScenes}>
+        {hasScenes ? (
+          pp.scenes.map((scene) => (
+            <SceneCard key={scene.id} scene={scene} beatId={beatId} />
+          ))
+        ) : (
+          <div className={styles.emptyPlotPoint}>No scenes yet</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function BeatColumn({ beat }: BeatColumnProps) {
   const { currentStoryId, refreshStatus } = useStory();
   const { createPlotPoint, isLoading } = usePlotPoints({
@@ -28,7 +53,8 @@ export function BeatColumn({ beat }: BeatColumnProps) {
 
   const [showAddPPModal, setShowAddPPModal] = useState(false);
 
-  const hasScenes = beat.scenes.length > 0;
+  const hasContent = beat.plotPoints.length > 0;
+
   const statusClass = beat.status === 'REALIZED'
     ? styles.realized
     : beat.status === 'PLANNED'
@@ -40,7 +66,6 @@ export function BeatColumn({ beat }: BeatColumnProps) {
       const result = await createPlotPoint(data);
       if (result) {
         setShowAddPPModal(false);
-        // Refresh status to update counts
         refreshStatus?.();
       }
     },
@@ -58,12 +83,18 @@ export function BeatColumn({ beat }: BeatColumnProps) {
         )}
       </div>
 
-      <div className={styles.scenes}>
-        {hasScenes ? (
-          beat.scenes.map((scene) => (
-            <SceneCard key={scene.id} scene={scene} beatId={beat.id} />
-          ))
-        ) : (
+      <div className={styles.content}>
+        {/* Plot Points with nested scenes */}
+        {beat.plotPoints.length > 0 && (
+          <div className={styles.plotPointsSection}>
+            {beat.plotPoints.map((pp) => (
+              <PlotPointContainer key={pp.id} pp={pp} beatId={beat.id} />
+            ))}
+          </div>
+        )}
+
+        {/* Empty state when no content */}
+        {!hasContent && (
           <EmptyBeatSlot beatId={beat.id} beatType={beat.beatType} />
         )}
       </div>

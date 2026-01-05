@@ -264,6 +264,14 @@ export interface OutlineScene {
   status?: string;
 }
 
+export interface OutlinePlotPoint {
+  id: string;
+  title: string;
+  intent: string;
+  status?: string;
+  scenes: OutlineScene[];
+}
+
 export interface OutlineBeat {
   id: string;
   beatType: string;
@@ -272,7 +280,7 @@ export interface OutlineBeat {
   guidance?: string;
   status?: string;
   notes?: string;
-  scenes: OutlineScene[];
+  plotPoints: OutlinePlotPoint[];
 }
 
 export interface OutlineAct {
@@ -283,10 +291,12 @@ export interface OutlineAct {
 export interface OutlineData {
   storyId: string;
   acts: OutlineAct[];
+  /** Scenes not connected to PlotPoint, or connected to PlotPoint without Beat alignment */
+  unassignedScenes: OutlineScene[];
   summary: {
     totalBeats: number;
     totalScenes: number;
-    emptyBeats: number;
+    unassignedSceneCount: number;
   };
 }
 
@@ -354,6 +364,30 @@ export interface UpdateNodeData {
   node: NodeData;
   newVersionId: string;
   fieldsUpdated: string[];
+}
+
+export interface DeleteNodeData {
+  deletedNode: NodeData;
+  deletedEdgeCount: number;
+  newVersionId: string;
+}
+
+export interface ConnectedNodeInfo {
+  node: NodeData;
+  edgeType: string;
+  direction: 'outgoing' | 'incoming';
+  /** Total edges this connected node has (including to the node being deleted) */
+  totalConnections: number;
+  /** True if deleting the parent node will leave this node with 0 connections */
+  willBeOrphaned: boolean;
+}
+
+export interface ConnectedNodesData {
+  node: NodeData;
+  connectedNodes: ConnectedNodeInfo[];
+  edgeCount: number;
+  /** Count of nodes that will become orphaned (0 connections after deletion) */
+  orphanCount: number;
 }
 
 // =============================================================================
@@ -547,6 +581,8 @@ export interface BulkAttachTarget {
 export interface BulkAttachRequest {
   parentId: string;
   edgeType: EdgeType;
+  /** Direction relative to parentId: 'outgoing' means parent is source, 'incoming' means parent is target */
+  direction: 'outgoing' | 'incoming';
   targets: BulkAttachTarget[];
   detachOthers?: boolean | undefined;
   ordered?: boolean | undefined;

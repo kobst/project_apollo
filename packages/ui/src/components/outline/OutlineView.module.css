@@ -89,3 +89,82 @@
   color: #666;
   font-size: 14px;
 }
+
+/* Unassigned Scenes Section */
+.unassignedSection {
+  background: rgba(255, 152, 0, 0.05);
+  border: 1px solid rgba(255, 152, 0, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 8px;
+}
+
+.unassignedHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.unassignedIcon {
+  width: 22px;
+  height: 22px;
+  background: #ff9800;
+  color: #1e1e2e;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.unassignedTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffb74d;
+  margin: 0;
+}
+
+.unassignedCount {
+  font-size: 12px;
+  color: #888;
+  font-weight: normal;
+}
+
+.unassignedDescription {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 12px;
+}
+
+.unassignedList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.unassignedScene {
+  background: rgba(255, 152, 0, 0.08);
+  border: 1px solid rgba(255, 152, 0, 0.2);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.unassignedSceneHeading {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e0e0e0;
+  margin-bottom: 4px;
+}
+
+.unassignedSceneOverview {
+  font-size: 11px;
+  color: #999;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

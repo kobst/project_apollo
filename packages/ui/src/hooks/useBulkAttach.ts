@@ -248,6 +248,7 @@ export function useBulkAttach({
         const result = await api.bulkAttach(storyId, {
           parentId: config.parentId,
           edgeType: config.edgeType,
+          direction: config.direction,
           targets: selectedTargets.map((t) => ({
             id: t.id,
             order: t.order,

@@ -14,6 +14,7 @@ import { ValidationStatus } from '../preview/ValidationStatus';
 import { InputPanel } from '../input/InputPanel';
 import { EditEdgeModal } from './EditEdgeModal';
 import { AddRelationModal } from './AddRelationModal';
+import { DeleteNodeModal } from './DeleteNodeModal';
 import { EdgePatchBuilder, PendingEdgeOp } from './EdgePatchBuilder';
 import { InteractiveEdgeData, BulkAttachConfig } from './NodeRelations';
 import { useLint } from '../../hooks/useLint';
@@ -67,6 +68,9 @@ export function ExploreView() {
   const [edgeCommitting, setEdgeCommitting] = useState(false);
   const [fullEdges, setFullEdges] = useState<EdgeData[]>([]);
   const [allNodes, setAllNodes] = useState<NodeData[]>([]);
+
+  // Delete node state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Lint state
   const [showPreCommitModal, setShowPreCommitModal] = useState(false);
@@ -203,6 +207,20 @@ export function ExploreView() {
     setIsEditing(false);
     setEditChanges({});
   }, []);
+
+  // Handle delete node
+  const handleDeleteNode = useCallback(() => {
+    setShowDeleteModal(true);
+  }, []);
+
+  // Handle successful node deletion
+  const handleNodeDeleted = useCallback(() => {
+    setShowDeleteModal(false);
+    setSelectedNodeId(null);
+    setNodeRelations(null);
+    void fetchNodes();
+    void refreshStatus();
+  }, [fetchNodes, refreshStatus]);
 
   // Handle saving node changes
   const handleSaveChanges = useCallback((changes: Record<string, unknown>) => {
@@ -523,6 +541,7 @@ export function ExploreView() {
                 onGenerate={handleGenerate}
                 generating={clusterLoading}
                 onEdit={handleStartEdit}
+                onDelete={handleDeleteNode}
                 onEditEdge={handleEditEdge}
                 onDeleteEdge={handleDeleteEdge}
                 onAddEdge={handleAddEdge}
@@ -643,6 +662,16 @@ export function ExploreView() {
         onSave={bulkAttach.save}
         onClose={bulkAttach.closeModal}
       />
+
+      {/* Delete node modal */}
+      {showDeleteModal && selectedNode && currentStoryId && (
+        <DeleteNodeModal
+          storyId={currentStoryId}
+          node={selectedNode}
+          onDeleted={handleNodeDeleted}
+          onCancel={() => setShowDeleteModal(false)}
+        />
+      )}
     </div>
   );
 }

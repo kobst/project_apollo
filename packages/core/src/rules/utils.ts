@@ -4,8 +4,8 @@
  */
 
 import type { GraphState } from '../core/graph.js';
-import { getNode, getNodesByType, getEdgesFrom, getEdgesTo } from '../core/graph.js';
-import type { Beat, Scene } from '../types/nodes.js';
+import { getNode, getNodesByType, getEdgesFrom, getEdgesTo, getEdgesByType } from '../core/graph.js';
+import type { Beat, Scene, PlotPoint } from '../types/nodes.js';
 import { BEAT_ACT_MAP, BEAT_POSITION_MAP } from '../types/nodes.js';
 import type { Edge, EdgeType } from '../types/edges.js';
 import type { LintScope, RuleViolation } from './types.js';
@@ -189,19 +189,109 @@ export function getPositionForBeat(beat: Beat): number {
 }
 
 /**
- * Get all scenes linked to a beat.
+ * Get all scenes linked to a beat (includes both edge-based and beat_id-based).
+ * Scenes can be linked via: PlotPoint → SATISFIED_BY → Scene, where PlotPoint → ALIGNS_WITH → Beat
+ * Or via the deprecated beat_id field.
  */
 export function getScenesByBeat(graph: GraphState, beatId: string): Scene[] {
-  return getNodesByType<Scene>(graph, 'Scene').filter(
-    (scene) => scene.beat_id === beatId
-  );
+  const sceneIds = new Set<string>();
+
+  // 1. Get scenes via PlotPoint edge chain
+  // Find PlotPoints aligned to this beat
+  const alignsWithEdges = getEdgesByType(graph, 'ALIGNS_WITH');
+  for (const edge of alignsWithEdges) {
+    if (edge.to === beatId) {
+      // This PlotPoint aligns with our beat
+      const plotPointId = edge.from;
+      // Find scenes satisfied by this PlotPoint
+      const satisfiedByEdges = getEdgesByType(graph, 'SATISFIED_BY');
+      for (const satEdge of satisfiedByEdges) {
+        if (satEdge.from === plotPointId) {
+          sceneIds.add(satEdge.to);
+        }
+      }
+    }
+  }
+
+  // 2. Add scenes via beat_id (deprecated fallback)
+  const allScenes = getNodesByType<Scene>(graph, 'Scene');
+  for (const scene of allScenes) {
+    if (scene.beat_id === beatId) {
+      sceneIds.add(scene.id);
+    }
+  }
+
+  // Return unique scenes
+  return Array.from(sceneIds)
+    .map((id) => getNode(graph, id) as Scene | undefined)
+    .filter((s): s is Scene => s !== undefined);
 }
 
 /**
  * Get the beat for a scene.
+ * Primary: Scene ← SATISFIED_BY ← PlotPoint → ALIGNS_WITH → Beat
+ * Fallback: scene.beat_id (deprecated)
  */
 export function getBeatForScene(graph: GraphState, scene: Scene): Beat | undefined {
-  return getNode(graph, scene.beat_id) as Beat | undefined;
+  // 1. Try edge chain: find PlotPoints that satisfy this scene
+  const satisfiedByEdges = getEdgesByType(graph, 'SATISFIED_BY');
+  for (const edge of satisfiedByEdges) {
+    if (edge.to === scene.id) {
+      // Found a PlotPoint that satisfies this scene
+      const plotPointId = edge.from;
+      // Find the beat this PlotPoint aligns with
+      const alignsWithEdges = getEdgesByType(graph, 'ALIGNS_WITH');
+      for (const alignEdge of alignsWithEdges) {
+        if (alignEdge.from === plotPointId) {
+          const beat = getNode(graph, alignEdge.to);
+          if (beat?.type === 'Beat') {
+            return beat as Beat;
+          }
+        }
+      }
+    }
+  }
+
+  // 2. Fallback to beat_id (deprecated)
+  if (scene.beat_id) {
+    return getNode(graph, scene.beat_id) as Beat | undefined;
+  }
+
+  return undefined;
+}
+
+/**
+ * Get all scenes that satisfy a PlotPoint via SATISFIED_BY edges.
+ */
+export function getScenesForPlotPoint(graph: GraphState, plotPointId: string): Scene[] {
+  const satisfiedByEdges = getEdgesByType(graph, 'SATISFIED_BY');
+  const scenes: Scene[] = [];
+  for (const edge of satisfiedByEdges) {
+    if (edge.from === plotPointId) {
+      const scene = getNode(graph, edge.to);
+      if (scene?.type === 'Scene') {
+        scenes.push(scene as Scene);
+      }
+    }
+  }
+  return scenes;
+}
+
+/**
+ * Get the PlotPoints that satisfy a scene via SATISFIED_BY edges.
+ */
+export function getPlotPointsForScene(graph: GraphState, sceneId: string): PlotPoint[] {
+  const satisfiedByEdges = getEdgesByType(graph, 'SATISFIED_BY');
+  const plotPoints: PlotPoint[] = [];
+  for (const edge of satisfiedByEdges) {
+    if (edge.to === sceneId) {
+      const pp = getNode(graph, edge.from);
+      if (pp?.type === 'PlotPoint') {
+        plotPoints.push(pp as PlotPoint);
+      }
+    }
+  }
+  return plotPoints;
 }
 
 /**
@@ -213,14 +303,14 @@ export function getBeatsByAct(graph: GraphState, act: 1 | 2 | 3 | 4 | 5): Beat[]
 
 /**
  * Get all scenes in a specific act (via their beats).
+ * Uses getBeatForScene to handle both edge-based and beat_id-based lookups.
  */
 export function getScenesByAct(graph: GraphState, act: 1 | 2 | 3 | 4 | 5): Scene[] {
-  const beatIds = new Set(
-    getBeatsByAct(graph, act).map((b) => b.id)
-  );
-  return getNodesByType<Scene>(graph, 'Scene').filter(
-    (scene) => beatIds.has(scene.beat_id)
-  );
+  const scenes = getNodesByType<Scene>(graph, 'Scene');
+  return scenes.filter((scene) => {
+    const beat = getBeatForScene(graph, scene);
+    return beat && beat.act === act;
+  });
 }
 
 // =============================================================================
@@ -272,16 +362,19 @@ export function expandScope(graph: GraphState, scope: LintScope): LintScope {
     // For scenes, add the enclosing beat
     if (node.type === 'Scene') {
       const scene = node as Scene;
-      expandedNodeIds.add(scene.beat_id);
+      const beat = getBeatForScene(graph, scene);
+      if (beat) {
+        expandedNodeIds.add(beat.id);
 
-      // Also add other scenes in the same beat (for order uniqueness check)
-      const siblingScenes = getScenesByBeat(graph, scene.beat_id);
-      for (const sibling of siblingScenes) {
-        if (expandedNodeIds.size >= SCOPE_EXPANSION_LIMIT) {
-          truncated = true;
-          break;
+        // Also add other scenes in the same beat (for order uniqueness check)
+        const siblingScenes = getScenesByBeat(graph, beat.id);
+        for (const sibling of siblingScenes) {
+          if (expandedNodeIds.size >= SCOPE_EXPANSION_LIMIT) {
+            truncated = true;
+            break;
+          }
+          expandedNodeIds.add(sibling.id);
         }
-        expandedNodeIds.add(sibling.id);
       }
     }
 

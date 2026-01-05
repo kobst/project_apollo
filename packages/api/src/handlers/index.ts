@@ -19,6 +19,8 @@ export {
   createGetNodeHandler,
   createNodeRelationsHandler,
   createUpdateNodeHandler,
+  createGetConnectedNodesHandler,
+  createDeleteNodeHandler,
 } from './nodes.js';
 export { createOutlineHandler } from './outline.js';
 export {

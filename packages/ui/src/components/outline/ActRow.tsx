@@ -14,10 +14,15 @@ const ACT_NAMES: Record<number, string> = {
   5: 'Act 5 - Finale',
 };
 
+// Calculate total scenes for a beat (from all plot points)
+function getBeatSceneCount(beat: { plotPoints: { scenes: unknown[] }[] }): number {
+  return beat.plotPoints.reduce((sum, pp) => sum + pp.scenes.length, 0);
+}
+
 export function ActRow({ act }: ActRowProps) {
   const actName = ACT_NAMES[act.act] || `Act ${act.act}`;
-  const sceneCount = act.beats.reduce((sum, b) => sum + b.scenes.length, 0);
-  const emptyCount = act.beats.filter((b) => b.scenes.length === 0).length;
+  const sceneCount = act.beats.reduce((sum, b) => sum + getBeatSceneCount(b), 0);
+  const emptyCount = act.beats.filter((b) => getBeatSceneCount(b) === 0).length;
 
   return (
     <div className={styles.container}>

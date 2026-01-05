@@ -55,15 +55,142 @@
   color: #aaa;
 }
 
-.scenes {
+/* Main content area */
+.content {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 8px;
   padding: 8px;
   min-height: 80px;
   flex: 1;
 }
 
+/* Plot Points Section */
+.plotPointsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Individual PlotPoint container with nested scenes */
+.plotPointContainer {
+  display: flex;
+  flex-direction: column;
+  background: #252540;
+  border-radius: 4px;
+  border-left: 2px solid #5a7ca5;
+  overflow: hidden;
+}
+
+.plotPointHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background: #2a2a4a;
+  gap: 6px;
+}
+
+.plotPointTitle {
+  font-size: 11px;
+  color: #bbb;
+  line-height: 1.3;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plotPointIntent {
+  font-size: 9px;
+  text-transform: uppercase;
+  padding: 1px 4px;
+  border-radius: 2px;
+  background: rgba(90, 124, 165, 0.2);
+  color: #5a7ca5;
+  flex-shrink: 0;
+}
+
+.plotPointIntent.plot {
+  background: rgba(90, 124, 165, 0.2);
+  color: #5a7ca5;
+}
+
+.plotPointIntent.character {
+  background: rgba(165, 124, 90, 0.2);
+  color: #a57c5a;
+}
+
+.plotPointIntent.theme {
+  background: rgba(124, 165, 90, 0.2);
+  color: #7ca55a;
+}
+
+.plotPointIntent.tone {
+  background: rgba(165, 90, 124, 0.2);
+  color: #a55a7c;
+}
+
+/* Nested scenes under a PlotPoint */
+.nestedScenes {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px;
+}
+
+.emptyPlotPoint {
+  padding: 8px;
+  text-align: center;
+  font-size: 10px;
+  color: #555;
+  font-style: italic;
+}
+
+/* Unassigned scenes section */
+.unassignedSection {
+  display: flex;
+  flex-direction: column;
+  background: rgba(165, 90, 90, 0.1);
+  border-radius: 4px;
+  border-left: 2px solid #a55a5a;
+  overflow: hidden;
+}
+
+.unassignedLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: rgba(165, 90, 90, 0.15);
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #a55a5a;
+  font-weight: 600;
+}
+
+.warningIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #a55a5a;
+  color: #1e1e2e;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.unassignedScenes {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px;
+}
+
+/* Add Plot Point button */
 .addPlotPointBtn {
   margin: 4px 8px 8px;
   padding: 6px 10px;

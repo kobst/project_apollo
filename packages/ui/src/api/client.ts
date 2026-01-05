@@ -19,6 +19,8 @@ import type {
   NodeData,
   NodeRelationsData,
   UpdateNodeData,
+  DeleteNodeData,
+  ConnectedNodesData,
   OutlineData,
   ExtractData,
   ExtractRequest,
@@ -150,8 +152,12 @@ export const api = {
     GET<NodeData>(`/stories/${storyId}/nodes/${nodeId}`),
   getNodeRelations: (storyId: string, nodeId: string) =>
     GET<NodeRelationsData>(`/stories/${storyId}/nodes/${nodeId}/relations`),
+  getConnectedNodes: (storyId: string, nodeId: string) =>
+    GET<ConnectedNodesData>(`/stories/${storyId}/nodes/${nodeId}/connected`),
   updateNode: (storyId: string, nodeId: string, changes: Record<string, unknown>) =>
     PATCH<UpdateNodeData>(`/stories/${storyId}/nodes/${nodeId}`, { changes }),
+  deleteNode: (storyId: string, nodeId: string) =>
+    DELETE<DeleteNodeData>(`/stories/${storyId}/nodes/${nodeId}`),
 
   // Outline
   getOutline: (id: string) => GET<OutlineData>(`/stories/${id}/outline`),

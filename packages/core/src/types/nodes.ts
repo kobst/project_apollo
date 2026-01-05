@@ -194,7 +194,8 @@ export interface Scene extends BaseNode {
   heading: string;
   title?: string;
   scene_overview: string;
-  beat_id: string;
+  /** @deprecated Use SATISFIED_BY edge to PlotPoint instead */
+  beat_id?: string;
   order_index: number;
   int_ext?: IntExt;
   time_of_day?: string;

@@ -17,42 +17,14 @@ const TARGET_TYPES = [
   { value: 'Object', label: 'Prop' },
 ];
 
-// STC beats in order
-const BEAT_OPTIONS = [
-  { value: 'beat_OpeningImage', label: 'Opening Image', act: 1 },
-  { value: 'beat_ThemeStated', label: 'Theme Stated', act: 1 },
-  { value: 'beat_Setup', label: 'Setup', act: 1 },
-  { value: 'beat_Catalyst', label: 'Catalyst', act: 1 },
-  { value: 'beat_Debate', label: 'Debate', act: 1 },
-  { value: 'beat_BreakIntoTwo', label: 'Break Into Two', act: 2 },
-  { value: 'beat_BStory', label: 'B Story', act: 2 },
-  { value: 'beat_FunAndGames', label: 'Fun & Games', act: 2 },
-  { value: 'beat_Midpoint', label: 'Midpoint', act: 3 },
-  { value: 'beat_BadGuysCloseIn', label: 'Bad Guys Close In', act: 3 },
-  { value: 'beat_AllIsLost', label: 'All Is Lost', act: 4 },
-  { value: 'beat_DarkNightOfSoul', label: 'Dark Night of Soul', act: 4 },
-  { value: 'beat_BreakIntoThree', label: 'Break Into Three', act: 5 },
-  { value: 'beat_Finale', label: 'Finale', act: 5 },
-  { value: 'beat_FinalImage', label: 'Final Image', act: 5 },
-];
-
 export function InputPanel() {
   const { currentStoryId, refreshStatus } = useStory();
   const [input, setInput] = useState('');
   const [targetType, setTargetType] = useState('');
-  const [selectedBeat, setSelectedBeat] = useState('');
   const [proposals, setProposals] = useState<ExtractProposalData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
-  // Reset beat selection when target type changes
-  const handleTargetTypeChange = useCallback((newType: string) => {
-    setTargetType(newType);
-    if (newType !== 'Scene') {
-      setSelectedBeat('');
-    }
-  }, []);
 
   const handleExtract = useCallback(async () => {
     if (!currentStoryId || !input.trim()) return;
@@ -66,8 +38,6 @@ export function InputPanel() {
       const data = await api.extract(currentStoryId, {
         input: input.trim(),
         targetType: targetType || undefined,
-        // Pass the beat ID so extraction knows which beat to link the scene to
-        targetNodeId: targetType === 'Scene' && selectedBeat ? selectedBeat : undefined,
       });
       setProposals(data.proposals);
     } catch (err) {
@@ -75,7 +45,7 @@ export function InputPanel() {
     } finally {
       setLoading(false);
     }
-  }, [currentStoryId, input, targetType, selectedBeat]);
+  }, [currentStoryId, input, targetType]);
 
   const handleAccept = useCallback(async (proposalId: string) => {
     if (!currentStoryId) return;
@@ -106,7 +76,6 @@ export function InputPanel() {
     setProposals([]);
     setError(null);
     setSuccess(null);
-    setSelectedBeat('');
   }, []);
 
   if (!currentStoryId) {
@@ -137,7 +106,7 @@ export function InputPanel() {
             <select
               className={styles.targetSelect}
               value={targetType}
-              onChange={(e) => handleTargetTypeChange(e.target.value)}
+              onChange={(e) => setTargetType(e.target.value)}
               disabled={loading}
             >
               {TARGET_TYPES.map((t) => (
@@ -146,22 +115,6 @@ export function InputPanel() {
                 </option>
               ))}
             </select>
-
-            {targetType === 'Scene' && (
-              <select
-                className={styles.beatSelect}
-                value={selectedBeat}
-                onChange={(e) => setSelectedBeat(e.target.value)}
-                disabled={loading}
-              >
-                <option value="">Link to beat (optional)</option>
-                {BEAT_OPTIONS.map((b) => (
-                  <option key={b.value} value={b.value}>
-                    Act {b.act}: {b.label}
-                  </option>
-                ))}
-              </select>
-            )}
           </div>
 
           <div className={styles.buttons}>

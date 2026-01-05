@@ -367,6 +367,55 @@ export const PP_HAS_CRITERIA: Rule = {
 };
 
 // =============================================================================
+// SCENE_HAS_PLOTPOINT
+// =============================================================================
+
+/**
+ * Scene should be satisfied by at least one PlotPoint (via SATISFIED_BY edge).
+ * This ensures scenes are connected to the story's causality chain.
+ */
+export const SCENE_HAS_PLOTPOINT: Rule = {
+  id: 'SCENE_HAS_PLOTPOINT',
+  name: 'Scene Should Have PlotPoint',
+  severity: 'soft',
+  category: 'completeness',
+  description: 'Scenes should be satisfied by at least one PlotPoint',
+
+  evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
+    const violations: RuleViolation[] = [];
+    const scenes = getScenesInScope(graph, scope);
+
+    for (const scene of scenes) {
+      // Check for incoming SATISFIED_BY edges (PlotPoint → Scene)
+      const satisfiedByEdges = graph.edges.filter(
+        (e) => e.type === 'SATISFIED_BY' && e.to === scene.id
+      );
+
+      if (satisfiedByEdges.length === 0) {
+        violations.push(
+          createViolation(
+            'SCENE_HAS_PLOTPOINT',
+            'soft',
+            'completeness',
+            `Scene "${scene.heading}" is not connected to any PlotPoint`,
+            {
+              nodeId: scene.id,
+              nodeType: 'Scene',
+              context: {
+                sceneHeading: scene.heading,
+                beatId: scene.beat_id,
+              },
+            }
+          )
+        );
+      }
+    }
+
+    return violations;
+  },
+};
+
+// =============================================================================
 // Exports
 // =============================================================================
 
@@ -376,6 +425,7 @@ export const PP_HAS_CRITERIA: Rule = {
 export const SOFT_RULES: Rule[] = [
   SCENE_HAS_CHARACTER,
   SCENE_HAS_LOCATION,
+  SCENE_HAS_PLOTPOINT,
   THEME_NOT_ORPHANED,
   MOTIF_NOT_ORPHANED,
   PP_HAS_INTENT,
