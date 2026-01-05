@@ -7,11 +7,17 @@ import styles from './InputPanel.module.css';
 
 const TARGET_TYPES = [
   { value: '', label: 'Auto-detect' },
+  // Context layer
+  { value: 'Premise', label: 'Premise' },
+  { value: 'Setting', label: 'Setting' },
+  { value: 'GenreTone', label: 'Genre/Tone' },
+  // Story content
   { value: 'Character', label: 'Character' },
   { value: 'Location', label: 'Location' },
   { value: 'Scene', label: 'Scene' },
   { value: 'Conflict', label: 'Conflict' },
   { value: 'PlotPoint', label: 'Plot Point' },
+  // Abstract/meaning
   { value: 'Theme', label: 'Theme' },
   { value: 'Motif', label: 'Motif' },
   { value: 'Object', label: 'Prop' },
