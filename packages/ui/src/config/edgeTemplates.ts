@@ -115,6 +115,62 @@ export const EDGE_TEMPLATES: Record<EdgeType, EdgeTemplate> = {
       notes: {},
     },
   },
+  ALIGNS_WITH: {
+    label: 'Aligns With',
+    description: 'Plot point aligns with a story beat',
+    sourceTypes: ['PlotPoint'],
+    targetTypes: ['Beat'],
+    properties: {
+      notes: {},
+    },
+  },
+  SATISFIED_BY: {
+    label: 'Satisfied By',
+    description: 'Plot point is satisfied by a scene',
+    sourceTypes: ['PlotPoint'],
+    targetTypes: ['Scene'],
+    properties: {
+      order: { required: true, default: 1, min: 1 },
+      notes: {},
+    },
+  },
+  PRECEDES: {
+    label: 'Precedes',
+    description: 'Plot point causally precedes another plot point',
+    sourceTypes: ['PlotPoint'],
+    targetTypes: ['PlotPoint'],
+    properties: {
+      notes: {},
+    },
+  },
+  ADVANCES: {
+    label: 'Advances',
+    description: 'Plot point advances a character arc or theme',
+    sourceTypes: ['PlotPoint'],
+    targetTypes: ['CharacterArc', 'Theme'],
+    properties: {
+      weight: { min: 0, max: 1 },
+      notes: {},
+    },
+  },
+  SETS_UP: {
+    label: 'Sets Up',
+    description: 'Plot point sets up a motif',
+    sourceTypes: ['PlotPoint'],
+    targetTypes: ['Motif'],
+    properties: {
+      notes: {},
+    },
+  },
+  PAYS_OFF: {
+    label: 'Pays Off',
+    description: 'Plot point pays off a motif',
+    sourceTypes: ['PlotPoint'],
+    targetTypes: ['Motif'],
+    properties: {
+      notes: {},
+    },
+  },
 };
 
 /**

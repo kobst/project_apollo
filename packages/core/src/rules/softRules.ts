@@ -6,7 +6,7 @@
 
 import type { GraphState } from '../core/graph.js';
 import { getNodesByType } from '../core/graph.js';
-import type { Theme, Motif } from '../types/nodes.js';
+import type { Theme, Motif, PlotPoint } from '../types/nodes.js';
 import type { Rule, RuleViolation, LintScope } from './types.js';
 import { getScenesInScope, isNodeInScope, createViolation } from './utils.js';
 import { registerRule } from './engine.js';
@@ -214,6 +214,159 @@ export const MOTIF_NOT_ORPHANED: Rule = {
 };
 
 // =============================================================================
+// PP_HAS_INTENT
+// =============================================================================
+
+/**
+ * PlotPoint should have an intent set.
+ * The intent field helps categorize the plot point's primary purpose.
+ */
+export const PP_HAS_INTENT: Rule = {
+  id: 'PP_HAS_INTENT',
+  name: 'PlotPoint Should Have Intent',
+  severity: 'soft',
+  category: 'completeness',
+  description: 'Plot points should have their intent (plot/character/theme/tone) specified',
+
+  evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
+    const violations: RuleViolation[] = [];
+    const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
+
+    for (const pp of plotPoints) {
+      // Skip if not in scope
+      if (!isNodeInScope(scope, pp.id)) continue;
+
+      // Check if intent is missing or empty
+      if (!pp.intent) {
+        violations.push(
+          createViolation(
+            'PP_HAS_INTENT',
+            'soft',
+            'completeness',
+            `PlotPoint "${pp.title}" has no intent specified`,
+            {
+              nodeId: pp.id,
+              nodeType: 'PlotPoint',
+              field: 'intent',
+              context: {
+                plotPointTitle: pp.title,
+                plotPointStatus: pp.status,
+              },
+            }
+          )
+        );
+      }
+    }
+
+    return violations;
+  },
+};
+
+// =============================================================================
+// PP_EVENT_REALIZATION
+// =============================================================================
+
+/**
+ * Approved PlotPoints should have at least one SATISFIED_BY edge to a scene.
+ * This ensures that approved plot points are realized in the narrative.
+ */
+export const PP_EVENT_REALIZATION: Rule = {
+  id: 'PP_EVENT_REALIZATION',
+  name: 'Approved PlotPoint Should Have Scene',
+  severity: 'soft',
+  category: 'completeness',
+  description: 'Approved plot points should be satisfied by at least one scene',
+
+  evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
+    const violations: RuleViolation[] = [];
+    const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
+
+    for (const pp of plotPoints) {
+      // Skip if not in scope
+      if (!isNodeInScope(scope, pp.id)) continue;
+
+      // Only check approved plot points
+      if (pp.status !== 'approved') continue;
+
+      // Check for SATISFIED_BY edges from this plot point
+      const satisfiedByEdges = graph.edges.filter(
+        (e) => e.type === 'SATISFIED_BY' && e.from === pp.id
+      );
+
+      if (satisfiedByEdges.length === 0) {
+        violations.push(
+          createViolation(
+            'PP_EVENT_REALIZATION',
+            'soft',
+            'completeness',
+            `Approved PlotPoint "${pp.title}" has no scenes satisfying it`,
+            {
+              nodeId: pp.id,
+              nodeType: 'PlotPoint',
+              context: {
+                plotPointTitle: pp.title,
+                plotPointStatus: pp.status,
+              },
+            }
+          )
+        );
+      }
+    }
+
+    return violations;
+  },
+};
+
+// =============================================================================
+// PP_HAS_CRITERIA
+// =============================================================================
+
+/**
+ * PlotPoint should have criteria_of_satisfaction set.
+ * Clear criteria help determine when a plot point is properly fulfilled.
+ */
+export const PP_HAS_CRITERIA: Rule = {
+  id: 'PP_HAS_CRITERIA',
+  name: 'PlotPoint Should Have Satisfaction Criteria',
+  severity: 'soft',
+  category: 'completeness',
+  description: 'Plot points should define what must be true to count as fulfilled',
+
+  evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
+    const violations: RuleViolation[] = [];
+    const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
+
+    for (const pp of plotPoints) {
+      // Skip if not in scope
+      if (!isNodeInScope(scope, pp.id)) continue;
+
+      // Check if criteria_of_satisfaction is missing or empty
+      if (!pp.criteria_of_satisfaction || pp.criteria_of_satisfaction.trim() === '') {
+        violations.push(
+          createViolation(
+            'PP_HAS_CRITERIA',
+            'soft',
+            'completeness',
+            `PlotPoint "${pp.title}" has no satisfaction criteria defined`,
+            {
+              nodeId: pp.id,
+              nodeType: 'PlotPoint',
+              field: 'criteria_of_satisfaction',
+              context: {
+                plotPointTitle: pp.title,
+                plotPointStatus: pp.status,
+              },
+            }
+          )
+        );
+      }
+    }
+
+    return violations;
+  },
+};
+
+// =============================================================================
 // Exports
 // =============================================================================
 
@@ -225,6 +378,9 @@ export const SOFT_RULES: Rule[] = [
   SCENE_HAS_LOCATION,
   THEME_NOT_ORPHANED,
   MOTIF_NOT_ORPHANED,
+  PP_HAS_INTENT,
+  PP_EVENT_REALIZATION,
+  PP_HAS_CRITERIA,
 ];
 
 /**

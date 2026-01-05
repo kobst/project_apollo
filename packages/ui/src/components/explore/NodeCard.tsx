@@ -30,6 +30,18 @@ export function NodeCard({ node, isSelected, onClick }: NodeCardProps) {
 function getNodeSummary(node: NodeData): string | null {
   const data = node.data;
 
+  // For Scene: show heading in summary if the label is different (i.e., title is being used)
+  if (node.type === 'Scene' && typeof data.heading === 'string') {
+    if (node.label !== data.heading) {
+      // Label is title or overview, show heading
+      return data.heading;
+    }
+    // Label is heading, show scene_overview excerpt
+    if (typeof data.scene_overview === 'string') {
+      return truncate(data.scene_overview, 80);
+    }
+  }
+
   // Try various common fields
   if (typeof data.description === 'string') {
     return truncate(data.description, 80);

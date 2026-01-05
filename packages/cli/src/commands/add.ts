@@ -7,6 +7,7 @@ import { createInterface } from 'readline';
 import {
   applyPatch,
   validatePatch,
+  generateEdgeId,
   type Patch,
   type Character,
   type Location,
@@ -314,6 +315,7 @@ async function addScene(options: AddSceneOptions): Promise<void> {
       ops.push({
         op: 'ADD_EDGE',
         edge: {
+          id: generateEdgeId(),
           type: 'HAS_CHARACTER',
           from: id,
           to: charId.startsWith('char_') ? charId : `char_${charId}`,
@@ -329,7 +331,7 @@ async function addScene(options: AddSceneOptions): Promise<void> {
       : `loc_${options.location}`;
     ops.push({
       op: 'ADD_EDGE',
-      edge: { type: 'LOCATED_AT', from: id, to: locId },
+      edge: { id: generateEdgeId(), type: 'LOCATED_AT', from: id, to: locId },
     });
   }
 

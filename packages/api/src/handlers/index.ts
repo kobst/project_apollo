@@ -41,3 +41,10 @@ export {
   createPreCommitLintHandler,
 } from './lint.js';
 export { createBulkAttachHandler } from './bulkAttach.js';
+export {
+  createPlotPointHandler,
+  listPlotPointsHandler,
+  getPlotPointHandler,
+  updatePlotPointHandler,
+  deletePlotPointHandler,
+} from './plotPoints.js';

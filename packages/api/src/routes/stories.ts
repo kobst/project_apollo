@@ -37,6 +37,11 @@ import {
   createApplyFixHandler,
   createPreCommitLintHandler,
   createBulkAttachHandler,
+  createPlotPointHandler,
+  listPlotPointsHandler,
+  getPlotPointHandler,
+  updatePlotPointHandler,
+  deletePlotPointHandler,
 } from '../handlers/index.js';
 
 export function createStoriesRouter(ctx: StorageContext): Router {
@@ -92,6 +97,13 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.post('/:id/lint', createLintHandler(ctx));
   router.post('/:id/lint/apply', createApplyFixHandler(ctx));
   router.get('/:id/lint/precommit', createPreCommitLintHandler(ctx));
+
+  // PlotPoint endpoints
+  router.post('/:id/plot-points', createPlotPointHandler(ctx));
+  router.get('/:id/plot-points', listPlotPointsHandler(ctx));
+  router.get('/:id/plot-points/:ppId', getPlotPointHandler(ctx));
+  router.patch('/:id/plot-points/:ppId', updatePlotPointHandler(ctx));
+  router.delete('/:id/plot-points/:ppId', deletePlotPointHandler(ctx));
 
   return router;
 }

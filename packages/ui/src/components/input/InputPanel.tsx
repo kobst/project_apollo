@@ -11,7 +11,10 @@ const TARGET_TYPES = [
   { value: 'Location', label: 'Location' },
   { value: 'Scene', label: 'Scene' },
   { value: 'Conflict', label: 'Conflict' },
-  { value: 'Beat', label: 'Beat (create scene for beat)' },
+  { value: 'PlotPoint', label: 'Plot Point' },
+  { value: 'Theme', label: 'Theme' },
+  { value: 'Motif', label: 'Motif' },
+  { value: 'Object', label: 'Prop' },
 ];
 
 // STC beats in order
@@ -46,19 +49,13 @@ export function InputPanel() {
   // Reset beat selection when target type changes
   const handleTargetTypeChange = useCallback((newType: string) => {
     setTargetType(newType);
-    if (newType !== 'Beat') {
+    if (newType !== 'Scene') {
       setSelectedBeat('');
     }
   }, []);
 
   const handleExtract = useCallback(async () => {
     if (!currentStoryId || !input.trim()) return;
-
-    // For Beat target, require a beat selection
-    if (targetType === 'Beat' && !selectedBeat) {
-      setError('Please select a beat');
-      return;
-    }
 
     setLoading(true);
     setError(null);
@@ -68,10 +65,9 @@ export function InputPanel() {
     try {
       const data = await api.extract(currentStoryId, {
         input: input.trim(),
-        // When targeting a Beat, we want to create a Scene for that beat
-        targetType: targetType === 'Beat' ? 'Scene' : (targetType || undefined),
-        // Pass the beat ID so extraction knows which beat to link to
-        targetNodeId: targetType === 'Beat' ? selectedBeat : undefined,
+        targetType: targetType || undefined,
+        // Pass the beat ID so extraction knows which beat to link the scene to
+        targetNodeId: targetType === 'Scene' && selectedBeat ? selectedBeat : undefined,
       });
       setProposals(data.proposals);
     } catch (err) {
@@ -151,14 +147,14 @@ export function InputPanel() {
               ))}
             </select>
 
-            {targetType === 'Beat' && (
+            {targetType === 'Scene' && (
               <select
                 className={styles.beatSelect}
                 value={selectedBeat}
                 onChange={(e) => setSelectedBeat(e.target.value)}
                 disabled={loading}
               >
-                <option value="">Select beat...</option>
+                <option value="">Link to beat (optional)</option>
                 {BEAT_OPTIONS.map((b) => (
                   <option key={b.value} value={b.value}>
                     Act {b.act}: {b.label}

@@ -230,6 +230,15 @@ function getNodeLabel(node: KGNode): string {
       return nodeRecord[prop] as string;
     }
   }
+
+  // For Scene nodes, try scene_overview truncated as fallback
+  if (node.type === 'Scene' && 'scene_overview' in nodeRecord) {
+    const overview = nodeRecord.scene_overview as string;
+    if (overview) {
+      return overview.slice(0, 50) + (overview.length > 50 ? '...' : '');
+    }
+  }
+
   // Fallback to type + id
   return `${node.type}:${node.id.slice(0, 8)}`;
 }

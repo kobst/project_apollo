@@ -8,7 +8,9 @@ export type NodeTypeOption =
   | 'Conflict'
   | 'Location'
   | 'Theme'
-  | 'Motif';
+  | 'Motif'
+  | 'Object'
+  | 'PlotPoint';
 
 interface NodeTypeFilterProps {
   selectedType: NodeTypeOption;
@@ -24,6 +26,8 @@ const NODE_TYPES: { type: NodeTypeOption; label: string; statKey?: keyof StorySt
   { type: 'Location', label: 'Locations', statKey: 'locations' },
   { type: 'Theme', label: 'Themes' },
   { type: 'Motif', label: 'Motifs' },
+  { type: 'Object', label: 'Props' },
+  { type: 'PlotPoint', label: 'Plot Points' },
 ];
 
 export function NodeTypeFilter({ selectedType, onTypeChange, stats }: NodeTypeFilterProps) {

@@ -365,7 +365,13 @@ export type EdgeType =
   | 'MANIFESTS_IN'
   | 'HAS_ARC'
   | 'EXPRESSED_IN'
-  | 'APPEARS_IN';
+  | 'APPEARS_IN'
+  | 'ALIGNS_WITH'
+  | 'SATISFIED_BY'
+  | 'PRECEDES'
+  | 'ADVANCES'
+  | 'SETS_UP'
+  | 'PAYS_OFF';
 
 export type EdgeStatus = 'proposed' | 'approved' | 'rejected';
 
@@ -554,4 +560,61 @@ export interface BulkAttachData {
     warningCount: number;
     hasBlockingErrors: boolean;
   };
+}
+
+// =============================================================================
+// PlotPoint Types
+// =============================================================================
+
+export type PlotPointIntent = 'plot' | 'character' | 'theme' | 'tone';
+export type PlotPointPriority = 'low' | 'medium' | 'high';
+export type PlotPointUrgency = 'low' | 'medium' | 'high';
+export type PlotPointStakesChange = 'up' | 'down' | 'steady';
+export type PlotPointStatus = 'proposed' | 'approved' | 'deprecated';
+
+export interface PlotPointData extends NodeData {
+  fulfillmentCount: number;
+  alignedBeatId?: string;
+}
+
+export interface PlotPointsListData {
+  plotPoints: PlotPointData[];
+  totalCount: number;
+  limit: number;
+  offset: number;
+}
+
+export interface CreatePlotPointRequest {
+  title: string;
+  intent: PlotPointIntent;
+  summary?: string;
+  criteria_of_satisfaction?: string;
+  priority?: PlotPointPriority;
+  urgency?: PlotPointUrgency;
+  stakes_change?: PlotPointStakesChange;
+  act?: 1 | 2 | 3 | 4 | 5;
+  alignToBeatId?: string;
+}
+
+export interface CreatePlotPointData {
+  plotPoint: PlotPointData;
+  newVersionId: string;
+}
+
+export interface UpdatePlotPointData {
+  plotPoint: PlotPointData;
+  newVersionId: string;
+  fieldsUpdated: string[];
+}
+
+export interface DeletePlotPointData {
+  deleted: true;
+  newVersionId: string;
+}
+
+export interface PlotPointFilters {
+  status?: PlotPointStatus;
+  act?: 1 | 2 | 3 | 4 | 5;
+  intent?: PlotPointIntent;
+  unfulfilled?: boolean;
 }

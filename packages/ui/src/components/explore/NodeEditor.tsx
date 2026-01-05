@@ -12,14 +12,15 @@ interface NodeEditorProps {
 // Define which fields are editable per node type
 const EDITABLE_FIELDS: Record<string, string[]> = {
   Beat: ['guidance', 'notes', 'status'],
-  Scene: ['heading', 'scene_overview', 'mood', 'int_ext', 'time_of_day', 'status'],
+  Scene: ['title', 'heading', 'scene_overview', 'mood', 'int_ext', 'time_of_day', 'status'],
   Character: ['name', 'description', 'archetype', 'status'],
   Conflict: ['name', 'description', 'conflict_type', 'status'],
   Location: ['name', 'description', 'atmosphere'],
-  Theme: ['name', 'description'],
-  Motif: ['name', 'symbol', 'description'],
+  Theme: ['statement', 'notes'],
+  Motif: ['name', 'description'],
   CharacterArc: ['arc_type', 'description', 'status'],
-  Object: ['name', 'description', 'symbolic_meaning'],
+  Object: ['name', 'description', 'significance'],
+  PlotPoint: ['title', 'summary', 'intent', 'criteria_of_satisfaction', 'priority', 'urgency', 'stakes_change', 'status', 'act'],
 };
 
 // Field types for rendering appropriate inputs
@@ -28,20 +29,34 @@ const FIELD_TYPES: Record<string, 'text' | 'textarea' | 'select'> = {
   scene_overview: 'textarea',
   guidance: 'textarea',
   notes: 'textarea',
+  summary: 'textarea',
+  criteria_of_satisfaction: 'textarea',
+  statement: 'textarea',
+  significance: 'textarea',
   status: 'select',
   conflict_type: 'select',
   archetype: 'select',
   int_ext: 'select',
   arc_type: 'select',
+  intent: 'select',
+  priority: 'select',
+  urgency: 'select',
+  stakes_change: 'select',
+  act: 'select',
 };
 
 // Select options per field
 const SELECT_OPTIONS: Record<string, string[]> = {
-  status: ['EMPTY', 'DRAFT', 'COMPLETE', 'ACTIVE', 'FLOATING', 'RESOLVED', 'ABANDONED'],
+  status: ['EMPTY', 'DRAFT', 'COMPLETE', 'ACTIVE', 'FLOATING', 'RESOLVED', 'ABANDONED', 'proposed', 'approved', 'deprecated'],
   conflict_type: ['interpersonal', 'internal', 'societal', 'situational', 'cosmic', 'supernatural'],
   archetype: ['PROTAGONIST', 'ANTAGONIST', 'MENTOR', 'ALLY', 'LOVE_INTEREST', 'TRICKSTER', 'THRESHOLD_GUARDIAN', 'HERALD', 'SHAPESHIFTER', 'SHADOW'],
   int_ext: ['INT', 'EXT', 'INT/EXT'],
   arc_type: ['POSITIVE', 'NEGATIVE', 'FLAT', 'CORRUPTION', 'DISILLUSIONMENT'],
+  intent: ['plot', 'character', 'theme', 'tone'],
+  priority: ['low', 'medium', 'high'],
+  urgency: ['low', 'medium', 'high'],
+  stakes_change: ['up', 'down', 'steady'],
+  act: ['1', '2', '3', '4', '5'],
 };
 
 export function NodeEditor({ node, onSave, onCancel, saving }: NodeEditorProps) {

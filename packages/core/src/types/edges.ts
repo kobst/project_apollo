@@ -21,6 +21,14 @@ import type { NodeType } from './nodes.js';
  * HAS_ARC: Character → CharacterArc
  * EXPRESSED_IN: Theme → Scene | Beat
  * APPEARS_IN: Motif → Scene
+ *
+ * PlotPoint edges:
+ * ALIGNS_WITH: PlotPoint → Beat (optional alignment to STC beat)
+ * SATISFIED_BY: PlotPoint → Scene (with properties.order for sequencing)
+ * PRECEDES: PlotPoint → PlotPoint (causal/temporal chain, DAG)
+ * ADVANCES: PlotPoint → CharacterArc | Theme
+ * SETS_UP: PlotPoint → Motif (setup relationship)
+ * PAYS_OFF: PlotPoint → Motif (payoff relationship)
  */
 export type EdgeType =
   | 'FULFILLS'
@@ -31,7 +39,13 @@ export type EdgeType =
   | 'MANIFESTS_IN'
   | 'HAS_ARC'
   | 'EXPRESSED_IN'
-  | 'APPEARS_IN';
+  | 'APPEARS_IN'
+  | 'ALIGNS_WITH'
+  | 'SATISFIED_BY'
+  | 'PRECEDES'
+  | 'ADVANCES'
+  | 'SETS_UP'
+  | 'PAYS_OFF';
 
 // =============================================================================
 // Edge Properties and Metadata
@@ -166,6 +180,42 @@ export const EDGE_RULES: Record<EdgeType, EdgeRule> = {
     source: ['Motif'],
     target: ['Scene'],
   },
+
+  // PlotPoint → Beat (optional alignment to STC beat)
+  ALIGNS_WITH: {
+    source: ['PlotPoint'],
+    target: ['Beat'],
+  },
+
+  // PlotPoint → Scene (with properties.order for sequencing)
+  SATISFIED_BY: {
+    source: ['PlotPoint'],
+    target: ['Scene'],
+  },
+
+  // PlotPoint → PlotPoint (causal/temporal chain, must be DAG)
+  PRECEDES: {
+    source: ['PlotPoint'],
+    target: ['PlotPoint'],
+  },
+
+  // PlotPoint → CharacterArc | Theme
+  ADVANCES: {
+    source: ['PlotPoint'],
+    target: ['CharacterArc', 'Theme'],
+  },
+
+  // PlotPoint → Motif (setup relationship)
+  SETS_UP: {
+    source: ['PlotPoint'],
+    target: ['Motif'],
+  },
+
+  // PlotPoint → Motif (payoff relationship)
+  PAYS_OFF: {
+    source: ['PlotPoint'],
+    target: ['Motif'],
+  },
 };
 
 /**
@@ -181,6 +231,12 @@ export const EDGE_TYPES: EdgeType[] = [
   'HAS_ARC',
   'EXPRESSED_IN',
   'APPEARS_IN',
+  'ALIGNS_WITH',
+  'SATISFIED_BY',
+  'PRECEDES',
+  'ADVANCES',
+  'SETS_UP',
+  'PAYS_OFF',
 ];
 
 // =============================================================================

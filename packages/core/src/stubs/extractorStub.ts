@@ -13,6 +13,10 @@ import type {
   Beat,
   BeatType,
   Scene,
+  PlotPoint,
+  Theme,
+  Motif,
+  StoryObject,
 } from '../types/nodes.js';
 import { BEAT_ACT_MAP, BEAT_POSITION_MAP } from '../types/nodes.js';
 import { generateEdgeId } from '../types/edges.js';
@@ -348,20 +352,28 @@ export function extractFromInput(
     const beatId = targetNodeId || 'beat_Setup';
     const beatLabel = beatId.replace('beat_', '').replace(/([A-Z])/g, ' $1').trim();
 
+    // Derive title from short input (under 60 chars)
+    const title = input.length < 60 ? input : undefined;
+
     // Build ops: ADD_NODE Scene, then ADD_EDGE FULFILLS Scene → Beat
+    const sceneNode: Scene = {
+      type: 'Scene',
+      id: sceneId,
+      heading,
+      scene_overview: input.slice(0, 500),
+      beat_id: beatId,
+      order_index: 1,
+      status: 'DRAFT',
+      source_provenance: 'USER',
+    };
+    if (title) {
+      sceneNode.title = title;
+    }
+
     const ops: Patch['ops'] = [
       {
         op: 'ADD_NODE',
-        node: {
-          type: 'Scene',
-          id: sceneId,
-          heading,
-          scene_overview: input.slice(0, 500),
-          beat_id: beatId,
-          order_index: 1,
-          status: 'DRAFT',
-          source_provenance: 'USER',
-        } as Scene,
+        node: sceneNode,
       },
       {
         op: 'ADD_EDGE',
@@ -394,6 +406,180 @@ export function extractFromInput(
           source: 'extractorStub',
           action: 'extractFromInput',
           targetBeat: targetNodeId || undefined,
+        },
+      },
+    });
+  }
+
+  if (targetType === 'PlotPoint' || (!targetType && (lowerInput.includes('must') || lowerInput.includes('need') || lowerInput.includes('should')))) {
+    // PlotPoint extraction proposal
+    const plotPointId = `pp_extracted_${Date.now()}`;
+    const patchId = `patch_pp_${Date.now()}`;
+    const timestamp = new Date().toISOString();
+
+    // Try to extract a title from the input
+    const title = input.length < 60 ? input : input.slice(0, 57) + '...';
+
+    // Determine intent based on keywords
+    let intent: 'plot' | 'character' | 'theme' | 'tone' = 'plot';
+    if (lowerInput.includes('feel') || lowerInput.includes('emotion') || lowerInput.includes('mood')) {
+      intent = 'tone';
+    } else if (lowerInput.includes('theme') || lowerInput.includes('meaning') || lowerInput.includes('message')) {
+      intent = 'theme';
+    } else if (lowerInput.includes('character') || lowerInput.includes('protagonist') || lowerInput.includes('arc')) {
+      intent = 'character';
+    }
+
+    const plotPoint: PlotPoint = {
+      type: 'PlotPoint',
+      id: plotPointId,
+      title,
+      summary: input.slice(0, 300),
+      intent,
+      status: 'proposed',
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    proposals.push({
+      id: 'prop_plotpoint_0',
+      title: `Create plot point: ${title.slice(0, 40)}${title.length > 40 ? '...' : ''}`,
+      description: 'Extract a new plot point representing a story beat that must happen.',
+      confidence: 0.7,
+      extractedEntities: [{ type: 'PlotPoint', name: title, id: plotPointId }],
+      patch: {
+        type: 'Patch',
+        id: patchId,
+        base_story_version_id: baseVersionId,
+        created_at: timestamp,
+        ops: [
+          {
+            op: 'ADD_NODE',
+            node: plotPoint,
+          },
+        ],
+        metadata: {
+          source: 'extractorStub',
+          action: 'extractFromInput',
+        },
+      },
+    });
+  }
+
+  if (targetType === 'Theme' || (!targetType && (lowerInput.includes('theme') || lowerInput.includes('meaning') || lowerInput.includes('message') || lowerInput.includes('explores')))) {
+    // Theme extraction proposal
+    const themeId = `theme_extracted_${Date.now()}`;
+    const patchId = `patch_theme_${Date.now()}`;
+
+    // Extract statement from input
+    const statement = input.length < 100 ? input : input.slice(0, 97) + '...';
+
+    const theme: Theme = {
+      type: 'Theme',
+      id: themeId,
+      statement,
+    };
+
+    proposals.push({
+      id: 'prop_theme_0',
+      title: `Create theme: ${statement.slice(0, 30)}${statement.length > 30 ? '...' : ''}`,
+      description: 'Extract a thematic element that runs through the story.',
+      confidence: 0.7,
+      extractedEntities: [{ type: 'Theme', name: statement, id: themeId }],
+      patch: {
+        type: 'Patch',
+        id: patchId,
+        base_story_version_id: baseVersionId,
+        created_at: timestamp,
+        ops: [
+          {
+            op: 'ADD_NODE',
+            node: theme,
+          },
+        ],
+        metadata: {
+          source: 'extractorStub',
+          action: 'extractFromInput',
+        },
+      },
+    });
+  }
+
+  if (targetType === 'Motif' || (!targetType && (lowerInput.includes('motif') || lowerInput.includes('symbol') || lowerInput.includes('recurring') || lowerInput.includes('imagery')))) {
+    // Motif extraction proposal
+    const motifId = `motif_extracted_${Date.now()}`;
+    const patchId = `patch_motif_${Date.now()}`;
+
+    // Extract name from input
+    const name = input.length < 40 ? input : input.slice(0, 37) + '...';
+
+    const motif: Motif = {
+      type: 'Motif',
+      id: motifId,
+      name,
+      description: input.slice(0, 300),
+    };
+
+    proposals.push({
+      id: 'prop_motif_0',
+      title: `Create motif: ${name.slice(0, 30)}${name.length > 30 ? '...' : ''}`,
+      description: 'Extract a recurring symbol or imagery pattern.',
+      confidence: 0.7,
+      extractedEntities: [{ type: 'Motif', name, id: motifId }],
+      patch: {
+        type: 'Patch',
+        id: patchId,
+        base_story_version_id: baseVersionId,
+        created_at: timestamp,
+        ops: [
+          {
+            op: 'ADD_NODE',
+            node: motif,
+          },
+        ],
+        metadata: {
+          source: 'extractorStub',
+          action: 'extractFromInput',
+        },
+      },
+    });
+  }
+
+  if (targetType === 'Object' || (!targetType && (lowerInput.includes('object') || lowerInput.includes('prop') || lowerInput.includes('item') || lowerInput.includes('artifact')))) {
+    // Object extraction proposal
+    const objectId = `obj_extracted_${Date.now()}`;
+    const patchId = `patch_obj_${Date.now()}`;
+
+    // Extract name from input
+    const name = input.length < 40 ? input : input.slice(0, 37) + '...';
+
+    const storyObject: StoryObject = {
+      type: 'Object',
+      id: objectId,
+      name,
+      description: input.slice(0, 300),
+    };
+
+    proposals.push({
+      id: 'prop_object_0',
+      title: `Create prop: ${name.slice(0, 30)}${name.length > 30 ? '...' : ''}`,
+      description: 'Extract a significant prop or item in the story.',
+      confidence: 0.7,
+      extractedEntities: [{ type: 'Object', name, id: objectId }],
+      patch: {
+        type: 'Patch',
+        id: patchId,
+        base_story_version_id: baseVersionId,
+        created_at: timestamp,
+        ops: [
+          {
+            op: 'ADD_NODE',
+            node: storyObject,
+          },
+        ],
+        metadata: {
+          source: 'extractorStub',
+          action: 'extractFromInput',
         },
       },
     });

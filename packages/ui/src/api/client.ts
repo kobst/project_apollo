@@ -40,6 +40,13 @@ import type {
   PreCommitLintData,
   BulkAttachRequest,
   BulkAttachData,
+  PlotPointData,
+  PlotPointsListData,
+  CreatePlotPointRequest,
+  CreatePlotPointData,
+  UpdatePlotPointData,
+  DeletePlotPointData,
+  PlotPointFilters,
 } from './types';
 
 const API_BASE = '/api';
@@ -191,6 +198,27 @@ export const api = {
   // Bulk Attach (Milestone 2)
   bulkAttach: (storyId: string, data: BulkAttachRequest) =>
     POST<BulkAttachData>(`/stories/${storyId}/relations/bulk-attach`, data),
+
+  // Plot Points
+  listPlotPoints: (storyId: string, filters?: PlotPointFilters, limit?: number, offset?: number) => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.set('status', filters.status);
+    if (filters?.act) params.set('act', filters.act.toString());
+    if (filters?.intent) params.set('intent', filters.intent);
+    if (filters?.unfulfilled !== undefined) params.set('unfulfilled', filters.unfulfilled.toString());
+    if (limit) params.set('limit', limit.toString());
+    if (offset) params.set('offset', offset.toString());
+    const query = params.toString();
+    return GET<PlotPointsListData>(`/stories/${storyId}/plot-points${query ? `?${query}` : ''}`);
+  },
+  getPlotPoint: (storyId: string, ppId: string) =>
+    GET<PlotPointData>(`/stories/${storyId}/plot-points/${ppId}`),
+  createPlotPoint: (storyId: string, data: CreatePlotPointRequest) =>
+    POST<CreatePlotPointData>(`/stories/${storyId}/plot-points`, data),
+  updatePlotPoint: (storyId: string, ppId: string, changes: Record<string, unknown>) =>
+    PATCH<UpdatePlotPointData>(`/stories/${storyId}/plot-points/${ppId}`, { changes }),
+  deletePlotPoint: (storyId: string, ppId: string) =>
+    DELETE<DeletePlotPointData>(`/stories/${storyId}/plot-points/${ppId}`),
 };
 
 export { ApiError };

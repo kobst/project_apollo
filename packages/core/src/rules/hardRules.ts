@@ -5,13 +5,15 @@
  */
 
 import type { GraphState } from '../core/graph.js';
-import type { Beat, Scene } from '../types/nodes.js';
+import { getNodesByType } from '../core/graph.js';
+import type { Beat, Scene, PlotPoint } from '../types/nodes.js';
 import type { Rule, RuleViolation, Fix, LintScope } from './types.js';
 import {
   getScenesByBeat,
   getBeatsInScope,
   getScenesInScope,
   getActForBeat,
+  getActForBeatId,
   getPositionForBeat,
   createViolation,
   sortScenesForReindex,
@@ -457,6 +459,361 @@ export const EDGE_ORDER_UNIQUE: Rule = {
 };
 
 // =============================================================================
+// PP_DAG_NO_CYCLES
+// =============================================================================
+
+/**
+ * PRECEDES edges between PlotPoints must not create cycles.
+ * The PRECEDES relationship forms a DAG (Directed Acyclic Graph).
+ * No auto-fix available - user must decide which edge to remove.
+ */
+export const PP_DAG_NO_CYCLES: Rule = {
+  id: 'PP_DAG_NO_CYCLES',
+  name: 'PlotPoint PRECEDES Must Be Acyclic',
+  severity: 'hard',
+  category: 'structure',
+  description: 'PRECEDES edges between plot points must not create cycles',
+
+  evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
+    const violations: RuleViolation[] = [];
+
+    // Get all PRECEDES edges
+    const precedesEdges = graph.edges.filter((e) => e.type === 'PRECEDES');
+    if (precedesEdges.length === 0) return violations;
+
+    // Build adjacency list
+    const adjacency = new Map<string, string[]>();
+    for (const edge of precedesEdges) {
+      const existing = adjacency.get(edge.from) ?? [];
+      existing.push(edge.to);
+      adjacency.set(edge.from, existing);
+    }
+
+    // DFS cycle detection
+    const visited = new Set<string>();
+    const recursionStack = new Set<string>();
+    const cycleNodes = new Set<string>();
+
+    function dfs(nodeId: string, path: string[]): boolean {
+      if (recursionStack.has(nodeId)) {
+        // Found a cycle - mark all nodes in the cycle
+        const cycleStart = path.indexOf(nodeId);
+        for (let i = cycleStart; i < path.length; i++) {
+          const cycleNode = path[i];
+          if (cycleNode !== undefined) {
+            cycleNodes.add(cycleNode);
+          }
+        }
+        cycleNodes.add(nodeId);
+        return true;
+      }
+
+      if (visited.has(nodeId)) {
+        return false;
+      }
+
+      visited.add(nodeId);
+      recursionStack.add(nodeId);
+      path.push(nodeId);
+
+      const neighbors = adjacency.get(nodeId) ?? [];
+      for (const neighbor of neighbors) {
+        if (dfs(neighbor, path)) {
+          // Continue to find all cycle nodes
+        }
+      }
+
+      path.pop();
+      recursionStack.delete(nodeId);
+      return false;
+    }
+
+    // Run DFS from all nodes with outgoing PRECEDES edges
+    for (const nodeId of adjacency.keys()) {
+      if (!visited.has(nodeId)) {
+        dfs(nodeId, []);
+      }
+    }
+
+    // Create violations for cycle nodes in scope
+    for (const nodeId of cycleNodes) {
+      if (!isNodeInScope(scope, nodeId)) continue;
+
+      const plotPoint = graph.nodes.get(nodeId) as PlotPoint | undefined;
+      if (!plotPoint || plotPoint.type !== 'PlotPoint') continue;
+
+      violations.push(
+        createViolation(
+          'PP_DAG_NO_CYCLES',
+          'hard',
+          'structure',
+          `PlotPoint "${plotPoint.title}" is part of a cycle in PRECEDES edges`,
+          {
+            nodeId: plotPoint.id,
+            nodeType: 'PlotPoint',
+            relatedNodeIds: [...cycleNodes].filter((id) => id !== nodeId),
+            context: {
+              plotPointTitle: plotPoint.title,
+              cycleNodeIds: [...cycleNodes],
+            },
+          }
+        )
+      );
+    }
+
+    return violations;
+  },
+
+  // No auto-fix for cycle breaking - user must choose which edge to remove
+  suggestFix: (): Fix | null => null,
+};
+
+// =============================================================================
+// PP_ORDER_UNIQUE
+// =============================================================================
+
+/**
+ * SATISFIED_BY edges from the same PlotPoint must have unique order values.
+ * Fix: Auto-reindex edges (1, 2, 3...) maintaining relative order.
+ */
+export const PP_ORDER_UNIQUE: Rule = {
+  id: 'PP_ORDER_UNIQUE',
+  name: 'PlotPoint SATISFIED_BY Order Must Be Unique',
+  severity: 'hard',
+  category: 'structure',
+  description: 'SATISFIED_BY edges from the same plot point cannot share the same order',
+
+  evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
+    const violations: RuleViolation[] = [];
+
+    // Get SATISFIED_BY edges grouped by parent (PlotPoint)
+    const grouped = getEdgesGroupedByParent(graph, 'SATISFIED_BY');
+
+    for (const [parentId, edges] of grouped) {
+      // Skip if parent not in scope
+      if (scope.mode === 'touched' && !isNodeInScope(scope, parentId)) {
+        continue;
+      }
+
+      // Only check edges that have an order property
+      const orderedEdges = edges.filter((e) => e.properties?.order !== undefined);
+      if (orderedEdges.length <= 1) continue;
+
+      // Group edges by order value
+      const orderMap = new Map<number, Edge[]>();
+      for (const edge of orderedEdges) {
+        const order = edge.properties!.order!;
+        const existing = orderMap.get(order) ?? [];
+        existing.push(edge);
+        orderMap.set(order, existing);
+      }
+
+      // Find duplicates
+      for (const [orderValue, duplicates] of orderMap) {
+        if (duplicates.length > 1) {
+          const plotPoint = graph.nodes.get(parentId) as PlotPoint | undefined;
+          const parentLabel = plotPoint
+            ? `PlotPoint "${plotPoint.title}"`
+            : parentId;
+
+          violations.push(
+            createViolation(
+              'PP_ORDER_UNIQUE',
+              'hard',
+              'structure',
+              `${parentLabel} has ${duplicates.length} SATISFIED_BY edges with order ${orderValue}`,
+              {
+                nodeId: parentId,
+                nodeType: 'PlotPoint',
+                field: 'properties.order',
+                relatedNodeIds: duplicates.map((e) => e.id),
+                context: {
+                  plotPointId: parentId,
+                  plotPointTitle: plotPoint?.title,
+                  orderValue,
+                  duplicateCount: duplicates.length,
+                  edgeIds: duplicates.map((e) => e.id),
+                },
+              }
+            )
+          );
+        }
+      }
+    }
+
+    return violations;
+  },
+
+  suggestFix: (graph: GraphState, violation: RuleViolation): Fix | null => {
+    const context = violation.context as {
+      plotPointId?: string;
+      plotPointTitle?: string;
+    } | undefined;
+
+    if (!context?.plotPointId) return null;
+
+    const { plotPointId } = context;
+
+    // Get all SATISFIED_BY edges for this PlotPoint
+    const grouped = getEdgesGroupedByParent(graph, 'SATISFIED_BY');
+    const edges = grouped.get(plotPointId);
+    if (!edges || edges.length === 0) return null;
+
+    // Only include edges that have order defined
+    const orderedEdges = edges.filter((e) => e.properties?.order !== undefined);
+    if (orderedEdges.length === 0) return null;
+
+    // Sort edges for reindexing
+    const sortedEdges = sortEdgesForReindex(orderedEdges);
+
+    // Generate UPDATE_EDGE ops to assign sequential order values
+    const ops: UpdateEdgeOp[] = sortedEdges.map((edge, idx) => ({
+      op: 'UPDATE_EDGE' as const,
+      id: edge.id,
+      set: { order: idx + 1 },
+    }));
+
+    // Create the fix patch
+    const patch = createPatch('', ops, {
+      source: 'fix',
+      ruleId: 'PP_ORDER_UNIQUE',
+    });
+
+    // Generate inverse patch for undo
+    const inversePatch = generateInversePatch(graph, patch);
+
+    const plotPoint = graph.nodes.get(plotPointId) as PlotPoint | undefined;
+    const label = plotPoint
+      ? `Re-index ${sortedEdges.length} scenes for "${plotPoint.title}"`
+      : `Re-index ${sortedEdges.length} SATISFIED_BY edges`;
+
+    return {
+      id: generateFixId(violation.id, 'reindex'),
+      violationId: violation.id,
+      violationRuleId: 'PP_ORDER_UNIQUE',
+      label,
+      description: `Assign sequential order values (1, 2, 3...) to SATISFIED_BY edges`,
+      patch,
+      inversePatch,
+      affectedNodeIds: sortedEdges.map((e) => e.id),
+      operationCount: ops.length,
+    };
+  },
+};
+
+// =============================================================================
+// PP_ACT_ALIGNMENT
+// =============================================================================
+
+/**
+ * If a PlotPoint has both an act field and an ALIGNS_WITH edge to a Beat,
+ * the PlotPoint's act must match the Beat's act.
+ * Fix: Update PlotPoint's act to match the aligned Beat.
+ */
+export const PP_ACT_ALIGNMENT: Rule = {
+  id: 'PP_ACT_ALIGNMENT',
+  name: 'PlotPoint Act Must Match Aligned Beat',
+  severity: 'hard',
+  category: 'act_boundary',
+  description: 'If a plot point aligns with a beat, their act values must match',
+
+  evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
+    const violations: RuleViolation[] = [];
+    const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
+
+    for (const pp of plotPoints) {
+      // Skip if not in scope
+      if (!isNodeInScope(scope, pp.id)) continue;
+
+      // Skip if no act is set on PlotPoint
+      if (pp.act === undefined) continue;
+
+      // Find ALIGNS_WITH edge from this PlotPoint
+      const alignsWithEdge = graph.edges.find(
+        (e) => e.type === 'ALIGNS_WITH' && e.from === pp.id
+      );
+
+      if (!alignsWithEdge) continue;
+
+      // Get the aligned beat's act
+      const beatAct = getActForBeatId(graph, alignsWithEdge.to);
+      if (beatAct === undefined) continue;
+
+      // Check if acts match
+      if (pp.act !== beatAct) {
+        const beat = graph.nodes.get(alignsWithEdge.to) as Beat | undefined;
+        violations.push(
+          createViolation(
+            'PP_ACT_ALIGNMENT',
+            'hard',
+            'act_boundary',
+            `PlotPoint "${pp.title}" is in Act ${pp.act} but aligns with Beat "${beat?.beat_type}" in Act ${beatAct}`,
+            {
+              nodeId: pp.id,
+              nodeType: 'PlotPoint',
+              field: 'act',
+              relatedNodeIds: [alignsWithEdge.to],
+              context: {
+                plotPointId: pp.id,
+                plotPointTitle: pp.title,
+                plotPointAct: pp.act,
+                beatId: alignsWithEdge.to,
+                beatType: beat?.beat_type,
+                beatAct,
+              },
+            }
+          )
+        );
+      }
+    }
+
+    return violations;
+  },
+
+  suggestFix: (graph: GraphState, violation: RuleViolation): Fix | null => {
+    const context = violation.context as {
+      plotPointId?: string;
+      plotPointTitle?: string;
+      beatAct?: 1 | 2 | 3 | 4 | 5;
+    } | undefined;
+
+    if (!context?.plotPointId || !context?.beatAct) return null;
+
+    const { plotPointId, beatAct } = context;
+
+    const plotPoint = graph.nodes.get(plotPointId) as PlotPoint | undefined;
+    if (!plotPoint || plotPoint.type !== 'PlotPoint') return null;
+
+    const ops: UpdateNodeOp[] = [
+      {
+        op: 'UPDATE_NODE' as const,
+        id: plotPointId,
+        set: { act: beatAct },
+      },
+    ];
+
+    const patch = createPatch('', ops, {
+      source: 'fix',
+      ruleId: 'PP_ACT_ALIGNMENT',
+    });
+
+    const inversePatch = generateInversePatch(graph, patch);
+
+    return {
+      id: generateFixId(violation.id, 'align_act'),
+      violationId: violation.id,
+      violationRuleId: 'PP_ACT_ALIGNMENT',
+      label: `Set "${plotPoint.title}" to Act ${beatAct}`,
+      description: `Update the plot point's act to match the aligned beat`,
+      patch,
+      inversePatch,
+      affectedNodeIds: [plotPointId],
+      operationCount: 1,
+    };
+  },
+};
+
+// =============================================================================
 // Exports
 // =============================================================================
 
@@ -468,6 +825,9 @@ export const HARD_RULES: Rule[] = [
   SCENE_ACT_BOUNDARY,
   STC_BEAT_ORDERING,
   EDGE_ORDER_UNIQUE,
+  PP_DAG_NO_CYCLES,
+  PP_ORDER_UNIQUE,
+  PP_ACT_ALIGNMENT,
 ];
 
 /**

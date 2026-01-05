@@ -249,7 +249,12 @@ export function formatPatchOp(op: PatchOp, index: number): string {
     case 'DELETE_EDGE': {
       const deleteEdgeOp = op as DeleteEdgeOp;
       const edge = deleteEdgeOp.edge;
-      return `${num} ${pc.bold('DELETE_EDGE')} ${pc.red(edge.type)}\n   ${edge.from} ${pc.dim('→')} ${edge.to}`;
+      // DELETE_EDGE can have { id } or { type, from, to }
+      if ('type' in edge && 'from' in edge && 'to' in edge) {
+        return `${num} ${pc.bold('DELETE_EDGE')} ${pc.red(edge.type)}\n   ${edge.from} ${pc.dim('→')} ${edge.to}`;
+      }
+      // ID-based deletion
+      return `${num} ${pc.bold('DELETE_EDGE')} ${pc.red((edge as { id: string }).id)}`;
     }
 
     default:

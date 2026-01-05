@@ -192,6 +192,7 @@ export type SourceProvenance = 'USER' | 'AI' | 'MIXED';
 export interface Scene extends BaseNode {
   type: 'Scene';
   heading: string;
+  title?: string;
   scene_overview: string;
   beat_id: string;
   order_index: number;
@@ -327,6 +328,50 @@ export interface Conflict extends BaseNode {
 }
 
 // =============================================================================
+// 14. PlotPoint
+// =============================================================================
+
+export type PlotPointIntent = 'plot' | 'character' | 'theme' | 'tone';
+export type PlotPointPriority = 'low' | 'medium' | 'high';
+export type PlotPointUrgency = 'low' | 'medium' | 'high';
+export type PlotPointStakesChange = 'up' | 'down' | 'steady';
+export type PlotPointStatus = 'proposed' | 'approved' | 'deprecated';
+
+export interface PlotPoint extends BaseNode {
+  type: 'PlotPoint';
+  /** Short, imperative title (e.g., "Begin revenge tour") */
+  title: string;
+  /** 1-3 sentences describing the intended event */
+  summary?: string;
+  /** Primary purpose of this plot point */
+  intent: PlotPointIntent;
+  /** What must be true for this to count as fulfilled */
+  criteria_of_satisfaction?: string;
+  /** Importance level */
+  priority?: PlotPointPriority;
+  /** How soon this needs to be addressed */
+  urgency?: PlotPointUrgency;
+  /** How stakes change at this point */
+  stakes_change?: PlotPointStakesChange;
+  /** Lifecycle status (defaults to 'proposed') */
+  status?: PlotPointStatus;
+  /** Which act this belongs to */
+  act?: 1 | 2 | 3 | 4 | 5;
+  /** Importance in overall plan (0-1) */
+  weight?: number;
+  /** Planning confidence (0-1) */
+  confidence?: number;
+  /** Categorical tags */
+  tags?: string[];
+  /** FK to Character or user who owns this */
+  ownerId?: string;
+  /** ISO timestamp of creation */
+  createdAt: string;
+  /** ISO timestamp of last update */
+  updatedAt: string;
+}
+
+// =============================================================================
 // Union Types
 // =============================================================================
 
@@ -346,7 +391,8 @@ export type ContentNode =
   | Theme
   | Motif
   | CharacterArc
-  | Conflict;
+  | Conflict
+  | PlotPoint;
 
 /**
  * All valid node type strings
@@ -364,7 +410,8 @@ export type NodeType =
   | 'Theme'
   | 'Motif'
   | 'CharacterArc'
-  | 'Conflict';
+  | 'Conflict'
+  | 'PlotPoint';
 
 /**
  * List of all node types for validation
@@ -383,4 +430,5 @@ export const NODE_TYPES: NodeType[] = [
   'Motif',
   'CharacterArc',
   'Conflict',
+  'PlotPoint',
 ];
