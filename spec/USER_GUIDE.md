@@ -424,6 +424,41 @@ When a node is selected, shows:
 |--------|--------|
 | **Edit Node** | Enter edit mode to modify node properties |
 | **Generate Moves** | Generate cluster moves scoped to this node |
+| **Delete** | Open deletion confirmation modal |
+
+---
+
+## Node Deletion
+
+The **Delete** button in the Node Detail Panel allows you to remove nodes from the graph.
+
+### Delete Confirmation Modal
+
+When you click Delete, a modal appears showing:
+
+1. **Node Info**: The type and label of the node being deleted
+2. **Connection Summary**: Number of edges that will be removed
+3. **Orphan Warning**: Nodes that will become orphaned (lose all connections)
+4. **Connected Nodes**: List of nodes that will lose their connection to this node
+
+### Orphan Detection
+
+The modal distinguishes between:
+
+| Category | Description |
+|----------|-------------|
+| **Will be orphaned** | Nodes whose only connection is to the node being deleted |
+| **Connections to remove** | Nodes with other connections that will remain connected to the graph |
+
+### Deletion Workflow
+
+1. Click **Delete** on a node
+2. Review the deletion impact in the modal
+3. Check which nodes (if any) will become orphaned
+4. Click **Delete** to confirm or **Cancel** to abort
+5. A new version is created with the node and its edges removed
+
+**Note:** Deleting a node removes all its incident edges but does not delete connected nodes. Connected nodes that lose all their connections will appear as orphans.
 
 ---
 
@@ -470,7 +505,8 @@ Choose the relationship type based on the current node:
 
 | Edge Type | Source → Target |
 |-----------|-----------------|
-| **FULFILLS** | Scene → Beat |
+| **SATISFIED_BY** | PlotPoint → Scene |
+| **ALIGNS_WITH** | PlotPoint → Beat |
 | **HAS_CHARACTER** | Scene → Character |
 | **LOCATED_AT** | Scene → Location |
 | **INVOLVES** | Conflict → Character |
@@ -478,6 +514,7 @@ Choose the relationship type based on the current node:
 | **EXPRESSED_IN** | Theme → Scene/Beat |
 | **APPEARS_IN** | Motif → Scene |
 | **FEATURES_OBJECT** | Scene → Object |
+| **PRECEDES** | PlotPoint → PlotPoint |
 
 *Only valid edge types for the current node type are shown.*
 
@@ -493,9 +530,9 @@ Set optional properties based on the edge type:
 
 | Property | Description | Edge Types |
 |----------|-------------|------------|
-| **Order** | Sequence number (≥1) | FULFILLS, HAS_CHARACTER, MANIFESTS_IN, APPEARS_IN |
+| **Order** | Sequence number (≥1) | SATISFIED_BY, HAS_CHARACTER, MANIFESTS_IN, APPEARS_IN |
 | **Weight** | Strength of relation (0-1) | INVOLVES, MANIFESTS_IN, EXPRESSED_IN |
-| **Confidence** | AI confidence score (0-1) | EXPRESSED_IN |
+| **Confidence** | AI confidence score (0-1) | EXPRESSED_IN, ALIGNS_WITH |
 | **Notes** | Human-readable annotation | All types |
 
 ### Editing an Existing Edge
@@ -543,29 +580,42 @@ Edge operations are batched before committing. The **Edge Patch Builder** shows 
 
 ## Outline View
 
-The **Outline** tab displays the story structure as a beat-by-beat grid.
+The **Outline** tab displays the story structure as a beat-by-beat grid with scenes nested under PlotPoints.
+
+### Hierarchy
+
+The Outline enforces the **Beat → PlotPoint → Scene** hierarchy:
+- **Beats** are structural templates (Save the Cat)
+- **PlotPoints** align to Beats and represent "what must happen"
+- **Scenes** are connected to PlotPoints via SATISFIED_BY edges
 
 ### Layout
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  ACT 1                                                                  │
-│  ┌──────────┬──────────┬──────────┬──────────┬──────────┐              │
-│  │ Opening  │ Theme    │ Setup    │ Catalyst │ Debate   │              │
-│  │ Image    │ Stated   │          │          │          │              │
-│  ├──────────┼──────────┼──────────┼──────────┼──────────┤              │
-│  │ Scene 1  │ Scene 3  │ Scene 4  │ Scene 8  │ Scene 10 │              │
-│  │ "Dawn"   │ "Mentor" │ "Home"   │ "Call"   │ "Doubt"  │              │
-│  ├──────────┼──────────┼──────────┼──────────┼──────────┤              │
-│  │          │          │ Scene 5  │          │ Scene 11 │              │
-│  │ (empty)  │ (empty)  │ "Work"   │ (empty)  │ "Fear"   │              │
-│  └──────────┴──────────┴──────────┴──────────┴──────────┘              │
+│  ┌──────────────┬──────────────┬──────────────┐                        │
+│  │ Opening      │ Theme Stated │ Setup        │                        │
+│  │ Image      ? │            ? │            ? │                        │
+│  ├──────────────┼──────────────┼──────────────┤                        │
+│  │              │              │ ▼ Hero's     │                        │
+│  │   + (empty)  │   + (empty)  │   call  PLOT │                        │
+│  │              │              │ ┌──────────┐ │                        │
+│  │              │              │ │INT. DINER│ │                        │
+│  │              │              │ │Dawn scene│ │                        │
+│  │              │              │ └──────────┘ │                        │
+│  │              │              │              │                        │
+│  │ + Plot Point │ + Plot Point │ + Plot Point │                        │
+│  └──────────────┴──────────────┴──────────────┘                        │
 │                                                                         │
-│  ACT 2                                                                  │
-│  ┌──────────┬──────────┬──────────┐                                    │
-│  │ Break    │ B Story  │ Fun &    │                                    │
-│  │ Into Two │          │ Games    │                                    │
-│  └──────────┴──────────┴──────────┘                                    │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ ⚠ UNASSIGNED SCENES (2)                                         │   │
+│  │ These scenes need to be connected to a PlotPoint aligned to Beat│   │
+│  │ ┌─────────────┐ ┌─────────────┐                                 │   │
+│  │ │INT. CAFE    │ │EXT. PARK    │                                 │   │
+│  │ │No plot point│ │Orphaned     │                                 │   │
+│  │ └─────────────┘ └─────────────┘                                 │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -573,27 +623,38 @@ The **Outline** tab displays the story structure as a beat-by-beat grid.
 
 - **Acts**: Horizontal sections grouping related beats
 - **Beats**: Columns within each act showing the beat type
-- **Scenes**: Cards within each beat column showing linked scenes
-- **Empty Slots**: Visual indicators for beats with no scenes
+- **PlotPoints**: Collapsible containers within beats showing aligned plot points
+- **Scenes**: Cards nested under their PlotPoints
+- **Empty Slots**: Visual indicators for beats with no PlotPoints
+- **Unassigned Section**: Global section at bottom for orphaned scenes
 
 ### Beat Information
 
 Each beat column header shows:
 - Beat type name (e.g., "Catalyst", "Midpoint")
-- Number of scenes linked to that beat
+- Guidance tooltip (?)
+
+### PlotPoint Containers
+
+Each PlotPoint container shows:
+- PlotPoint title
+- Intent badge (PLOT, CHARACTER, THEME, TONE)
+- Nested scene cards that satisfy this PlotPoint
 
 ### Scene Cards
 
 Each scene card displays:
 - Scene heading (e.g., "INT. CAFE - DAY")
 - Brief overview excerpt
-- Status indicator
+- Optional mood/time badges
 
-### Empty Beat Slots
+### Unassigned Scenes Section
 
-When a beat has no scenes, an empty slot is shown with:
-- "No scenes" message
-- Visual indicator that content is needed
+A global section at the bottom shows scenes that are not properly connected:
+- Scenes with no SATISFIED_BY edge to a PlotPoint
+- Scenes connected to a PlotPoint that has no ALIGNS_WITH edge to a Beat
+
+These scenes should be connected to PlotPoints to appear in the beat structure.
 
 ---
 
@@ -611,7 +672,6 @@ Found in the right column of the Explore view, above any cluster results.
 |---------|---------|
 | **Textarea** | Enter freeform text (character descriptions, scene ideas, etc.) |
 | **Target Type** | Dropdown to specify extraction type |
-| **Beat Selector** | (Shown when "Beat" is selected) Choose which beat to link scenes to |
 | **Extract Button** | Process input and generate proposals |
 
 ### Target Types
@@ -623,26 +683,17 @@ Found in the right column of the Explore view, above any cluster results.
 | **Location** | Extract location nodes |
 | **Scene** | Extract scene nodes |
 | **Conflict** | Extract conflict nodes |
-| **Beat** | Create a scene linked to a specific beat |
-
-### Beat Targeting
-
-When "Beat" is selected as the target type:
-
-1. A second dropdown appears with all 15 STC beats
-2. Select which beat the scene should fulfill
-3. Extraction creates a Scene with:
-   - `beat_id` field set to the selected beat
-   - `FULFILLS` edge from Scene → Beat
+| **PlotPoint** | Extract plot point nodes |
 
 ### Extraction Workflow
 
 1. Enter text describing a story element
 2. Select target type (or use auto-detect)
-3. If targeting a beat, select the specific beat
-4. Click **Extract**
-5. Review generated proposals
-6. Click **Accept** on proposals you want to apply
+3. Click **Extract**
+4. Review generated proposals
+5. Click **Accept** on proposals you want to apply
+
+**Note:** Extracted scenes will appear in the "Unassigned" section of the Outline view until they are connected to a PlotPoint via SATISFIED_BY edge.
 
 ### Proposal Cards
 
@@ -922,6 +973,7 @@ When you click **Commit Changes**, the system checks for violations:
 | **LintPanel** | Center pane | Lint violations and fix buttons |
 | **ViolationItem** | Center pane | Single violation with fix button |
 | **PreCommitModal** | Modal | Blocking modal for commit validation |
+| **DeleteNodeModal** | Modal | Confirmation dialog for node deletion with orphan detection |
 
 #### Outline View Components
 
@@ -930,8 +982,10 @@ When you click **Commit Changes**, the system checks for violations:
 | **OutlineView** | Main | Container for outline grid |
 | **ActRow** | Main | Horizontal row for each act |
 | **BeatColumn** | Within ActRow | Column for each beat |
-| **SceneCard** | Within BeatColumn | Scene display within beat |
-| **EmptyBeatSlot** | Within BeatColumn | Visual indicator for missing scenes |
+| **PlotPointContainer** | Within BeatColumn | Collapsible container for a PlotPoint with nested scenes |
+| **SceneCard** | Within PlotPointContainer | Scene display within PlotPoint |
+| **EmptyBeatSlot** | Within BeatColumn | Visual indicator for beats with no PlotPoints |
+| **UnassignedSection** | Bottom of OutlineView | Global section for unconnected scenes |
 
 ### All User Interactions
 
@@ -959,6 +1013,7 @@ When you click **Commit Changes**, the system checks for violations:
 | Filter by type | NodeTypeFilter tabs | Shows nodes of selected type |
 | Select node | NodeCard click | Shows node details in center pane |
 | Edit node | NodeDetailPanel button | Enters edit mode |
+| Delete node | NodeDetailPanel button | Opens DeleteNodeModal |
 | Generate moves | NodeDetailPanel button | Creates cluster scoped to node |
 | Modify field | NodeEditor form | Updates pending changes |
 | Commit changes | CommitPanel button | Applies edits, creates version |
@@ -974,8 +1029,8 @@ When you click **Commit Changes**, the system checks for violations:
 | Discard edge changes | EdgePatchBuilder button | Clears pending edge ops |
 | Enter text | InputPanel textarea | Prepares text for extraction |
 | Select target | InputPanel dropdown | Sets extraction target type |
-| Select beat | InputPanel dropdown | Sets beat for scene linking |
 | Extract | InputPanel button | Generates proposals from text |
+| Confirm delete | DeleteNodeModal button | Deletes node and creates new version |
 | Accept proposal | ProposalCard button | Applies proposal to graph |
 | Run full lint | LintPanel button | Checks entire graph for violations |
 | Apply single fix | ViolationItem button | Applies fix for one violation |

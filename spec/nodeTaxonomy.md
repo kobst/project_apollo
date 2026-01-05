@@ -142,8 +142,10 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 - `id`
 - `heading`
 - `scene_overview`
-- `beat_id`
 - `order_index`
+
+**Deprecated:**
+- `beat_id` *(use SATISFIED_BY edge to PlotPoint instead)*
 
 **Optional:**
 - `int_ext`
@@ -322,8 +324,12 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 ## 3. Relationships (Edges)
 
 ### Structure & Realization
-- `Scene -[FULFILLS]-> Beat`
-- `Beat -[REALIZED_BY]-> Scene` *(derived)*
+- `Scene -[FULFILLS]-> Beat` *(deprecated - use PlotPoint edges instead)*
+- `Beat -[REALIZED_BY]-> Scene` *(derived, deprecated)*
+
+**Preferred hierarchy (v1.1+):**
+- `PlotPoint -[ALIGNS_WITH]-> Beat` *(PlotPoint aligns to structural beat)*
+- `PlotPoint -[SATISFIED_BY]-> Scene` *(Scene realizes the PlotPoint)*
 
 ### Participation & Setting
 - `Scene -[HAS_CHARACTER]-> Character`
