@@ -131,7 +131,7 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ---
 
-## C. STORY CONTENT (4)
+## C. STORY CONTENT (5)
 
 ---
 
@@ -210,11 +210,45 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ---
 
+### 10) `PlotPoint`
+**Purpose:** Writer-declared "this must happen" unit of story causality
+
+**Required:**
+- `id`
+- `title`
+- `intent` (enum: `plot`, `character`, `theme`, `tone`)
+- `createdAt`
+- `updatedAt`
+
+**Optional:**
+- `summary`
+- `criteria_of_satisfaction`
+- `priority` (enum: `low`, `medium`, `high`)
+- `urgency` (enum: `low`, `medium`, `high`)
+- `stakes_change` (enum: `up`, `down`, `steady`)
+- `status` (enum: `proposed`, `approved`, `deprecated`)
+- `act` (1–5)
+- `weight` (0–1)
+- `confidence` (0–1)
+- `tags[]`
+- `ownerId`
+
+**Active Phase:** Outline → Draft
+
+**Notes:**
+- Plot points can exist before scenes are created
+- They represent narrative promises that must be fulfilled
+- Can align to STC beats via `ALIGNS_WITH` edge
+- Fulfilled by one or more scenes via `SATISFIED_BY` edge
+- Form causal chains via `PRECEDES` edge (must be DAG)
+
+---
+
 ## D. ABSTRACT / MEANING (4)
 
 ---
 
-### 10) `Theme`
+### 11) `Theme`
 **Purpose:** Soft attractor for meaning
 
 **Required:**
@@ -230,7 +264,7 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ---
 
-### 11) `Motif`
+### 12) `Motif`
 **Purpose:** Recurring symbolic element
 
 **Required:**
@@ -245,7 +279,7 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ---
 
-### 12) `CharacterArc`
+### 13) `CharacterArc`
 **Purpose:** Trajectory of character transformation
 
 **Required:**
@@ -264,7 +298,7 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ---
 
-### 13) `Conflict`
+### 14) `Conflict`
 **Purpose:** Tension between characters, groups, or abstract forces
 
 **Required:**
@@ -308,6 +342,14 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 - `Conflict -[MANIFESTS_IN]-> Scene`
 - `Conflict -[SPANS_BEATS]-> Beat`
 
+### PlotPoint
+- `PlotPoint -[ALIGNS_WITH]-> Beat` *(optional alignment to STC beat)*
+- `PlotPoint -[SATISFIED_BY]-> Scene` *(with order property)*
+- `PlotPoint -[PRECEDES]-> PlotPoint` *(causal chain, must be DAG)*
+- `PlotPoint -[ADVANCES]-> CharacterArc | Theme`
+- `PlotPoint -[SETS_UP]-> Motif`
+- `PlotPoint -[PAYS_OFF]-> Motif`
+
 ### Workflow
 - `StoryVersion -[HAS]-> Beat/Scene/Character/...`
 - `MoveCluster -[BASED_ON]-> StoryVersion`
@@ -346,17 +388,34 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
   → `MotifUngrounded(motif_id)` *(Revision)*
 
 ### Conflict
-- **Conflict exists, no INVOLVES relationships**  
+- **Conflict exists, no INVOLVES relationships**
   → `ConflictNeedsParties(conflict_id)` *(Draft)*
-- **Conflict exists, no MANIFESTS_IN scenes**  
+- **Conflict exists, no MANIFESTS_IN scenes**
   → `ConflictNeedsManifestation(conflict_id)` *(Draft/Revision)*
+
+### PlotPoint (hard rules - block commit)
+- **PRECEDES edges form a cycle**
+  → `PP_DAG_NO_CYCLES` *(no auto-fix)*
+- **Multiple SATISFIED_BY edges have same order**
+  → `PP_ORDER_UNIQUE` *(auto-fix: reindex)*
+- **PlotPoint.act mismatches aligned Beat.act**
+  → `PP_ACT_ALIGNMENT` *(auto-fix: update act)*
+
+### PlotPoint (soft rules - warnings)
+- **PlotPoint has no intent set**
+  → `PP_HAS_INTENT` *(Outline)*
+- **Approved PlotPoint has no SATISFIED_BY scenes**
+  → `PP_EVENT_REALIZATION` *(Draft)*
+- **PlotPoint has no criteria_of_satisfaction**
+  → `PP_HAS_CRITERIA` *(Outline)*
 
 ---
 
 ## 5. Notes & Known v1 Limitations
 
 - No explicit `StateChange` node (deferred to v2)
-- Causality inferred via `scene_overview`, `scene_tags`, and beat position
+- Causality captured via `PlotPoint` nodes and `PRECEDES` edges
+- PlotPoints represent writer intent; scenes realize that intent via `SATISFIED_BY`
 - DialogueLine deferred; notable dialogue stored on Scene
 - Abstract meaning nodes allowed to float intentionally
 - Structure is enforced as an attractor, not a gate

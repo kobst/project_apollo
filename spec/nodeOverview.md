@@ -118,6 +118,22 @@ This document catalogs the node types used to represent narrative structure, cau
 
 ## 5. Causality Nodes (Critical)
 
+### PlotPoint
+
+**Purpose:** Writer-declared "this must happen" unit of story causality
+
+**Abstraction:** Level 1–3
+
+**Examples:**
+- "Hero must discover the truth about their father"
+- "The romance must reach a breaking point"
+- "Theme of redemption must be paid off"
+
+**Notes:**
+- Exists before scenes; scenes fulfill plot points
+- Forms causal DAG via PRECEDES edges
+- Can align to STC beats for structural grounding
+
 ### StateChange (formerly "Outcome")
 
 **Purpose:** Encodes what is now true that wasn't before
@@ -131,7 +147,7 @@ This document catalogs the node types used to represent narrative structure, cau
 - Relationship altered
 - Stakes escalated
 
-**Notes:** Core causal primitive of the system
+**Notes:** Core causal primitive of the system (deferred to v2)
 
 ## 6. World & Evidence Nodes
 
