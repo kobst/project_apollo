@@ -9,6 +9,7 @@ import { RightColumn } from './components/layout/RightColumn';
 import { Footer } from './components/layout/Footer';
 import { ExploreView } from './components/explore/ExploreView';
 import { OutlineView } from './components/outline/OutlineView';
+import { CoverageView } from './components/coverage/CoverageView';
 
 export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('contract');
@@ -30,13 +31,11 @@ export default function App() {
           </>
         )}
 
-        {viewMode === 'explore' && (
-          <ExploreView />
-        )}
+        {viewMode === 'coverage' && <CoverageView />}
 
-        {viewMode === 'outline' && (
-          <OutlineView />
-        )}
+        {viewMode === 'explore' && <ExploreView />}
+
+        {viewMode === 'outline' && <OutlineView />}
       </div>
     </StoryProvider>
   );

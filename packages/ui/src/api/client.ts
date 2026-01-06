@@ -49,6 +49,7 @@ import type {
   UpdatePlotPointData,
   DeletePlotPointData,
   PlotPointFilters,
+  CoverageData,
 } from './types';
 
 const API_BASE = '/api';
@@ -225,6 +226,10 @@ export const api = {
     PATCH<UpdatePlotPointData>(`/stories/${storyId}/plot-points/${ppId}`, { changes }),
   deletePlotPoint: (storyId: string, ppId: string) =>
     DELETE<DeletePlotPointData>(`/stories/${storyId}/plot-points/${ppId}`),
+
+  // Coverage
+  getCoverage: (storyId: string) =>
+    GET<CoverageData>(`/stories/${storyId}/coverage`),
 };
 
 export { ApiError };

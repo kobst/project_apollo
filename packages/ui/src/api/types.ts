@@ -663,3 +663,38 @@ export interface PlotPointFilters {
   intent?: PlotPointIntent;
   unfulfilled?: boolean;
 }
+
+// =============================================================================
+// Coverage Types
+// =============================================================================
+
+export type GapType = 'structural' | 'completeness' | 'creative';
+export type GapTier = 'premise' | 'foundations' | 'structure' | 'plotPoints' | 'scenes';
+export type GapSeverity = 'blocker' | 'warn' | 'info';
+export type GapSource = 'rule-engine' | 'derived' | 'user';
+export type GapStatus = 'open' | 'resolved';
+
+export interface GapData {
+  id: string;
+  type: GapType;
+  tier: GapTier;
+  severity: GapSeverity;
+  title: string;
+  message: string;
+  nodeRefs: { nodeIds?: string[]; edgeIds?: string[] };
+  source: GapSource;
+  status: GapStatus;
+}
+
+export interface TierSummaryData {
+  tier: GapTier;
+  label: string;
+  covered: number;
+  total: number;
+  percent: number;
+}
+
+export interface CoverageData {
+  summary: TierSummaryData[];
+  gaps: GapData[];
+}

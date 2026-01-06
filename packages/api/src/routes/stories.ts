@@ -44,6 +44,7 @@ import {
   getPlotPointHandler,
   updatePlotPointHandler,
   deletePlotPointHandler,
+  createCoverageHandler,
 } from '../handlers/index.js';
 
 export function createStoriesRouter(ctx: StorageContext): Router {
@@ -101,6 +102,9 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.post('/:id/lint', createLintHandler(ctx));
   router.post('/:id/lint/apply', createApplyFixHandler(ctx));
   router.get('/:id/lint/precommit', createPreCommitLintHandler(ctx));
+
+  // Coverage endpoint
+  router.get('/:id/coverage', createCoverageHandler(ctx));
 
   // PlotPoint endpoints
   router.post('/:id/plot-points', createPlotPointHandler(ctx));

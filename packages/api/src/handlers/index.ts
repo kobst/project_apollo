@@ -50,3 +50,4 @@ export {
   updatePlotPointHandler,
   deletePlotPointHandler,
 } from './plotPoints.js';
+export { createCoverageHandler } from './coverage.js';

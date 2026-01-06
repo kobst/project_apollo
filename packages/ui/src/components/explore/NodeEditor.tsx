@@ -17,7 +17,7 @@ const EDITABLE_FIELDS: Record<string, string[]> = {
   GenreTone: ['genre', 'secondary_genre', 'tone', 'tone_description', 'conventions', 'notes'],
   // Structure
   Beat: ['guidance', 'notes', 'status'],
-  Scene: ['title', 'heading', 'scene_overview', 'mood', 'int_ext', 'time_of_day', 'status'],
+  Scene: ['title', 'heading', 'scene_overview', 'order_index', 'mood', 'int_ext', 'time_of_day', 'status'],
   Character: ['name', 'description', 'archetype', 'status'],
   Conflict: ['name', 'description', 'conflict_type', 'status'],
   Location: ['name', 'description', 'atmosphere'],
@@ -29,7 +29,8 @@ const EDITABLE_FIELDS: Record<string, string[]> = {
 };
 
 // Field types for rendering appropriate inputs
-const FIELD_TYPES: Record<string, 'text' | 'textarea' | 'select'> = {
+const FIELD_TYPES: Record<string, 'text' | 'textarea' | 'select' | 'number'> = {
+  order_index: 'number',
   description: 'textarea',
   scene_overview: 'textarea',
   guidance: 'textarea',
@@ -158,6 +159,23 @@ export function NodeEditor({ node, onSave, onCancel, saving }: NodeEditorProps) 
               </option>
             ))}
           </select>
+        </div>
+      );
+    }
+
+    if (fieldType === 'number') {
+      const numValue = formData[field] as number | undefined;
+      return (
+        <div key={field} className={styles.field}>
+          <label className={styles.label}>{label}</label>
+          <input
+            type="number"
+            className={styles.input}
+            value={numValue ?? ''}
+            onChange={(e) => handleFieldChange(field, e.target.value ? parseInt(e.target.value, 10) : '')}
+            min={1}
+            disabled={saving}
+          />
         </div>
       );
     }
