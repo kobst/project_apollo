@@ -17,3 +17,6 @@ export * from './deriveOpenQuestions.js';
 
 // Graph diff
 export * from './diff.js';
+
+// Auto-computed ordering
+export * from './computeOrder.js';

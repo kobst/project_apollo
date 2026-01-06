@@ -18,6 +18,8 @@ import {
   lint,
   registerHardRules,
   registerSoftRules,
+  computeOrder,
+  applyOrderUpdates,
 } from '@apollo/core';
 import type { StorageContext } from '../config.js';
 import { loadVersionedStateById, saveVersionedStateById, deserializeGraph, serializeGraph } from '../storage.js';
@@ -376,6 +378,14 @@ export function createBulkAttachHandler(ctx: StorageContext) {
           };
 
           finalGraph = applyPatch(finalGraph, reindexPatch);
+        }
+      }
+
+      // Auto-compute order_index for PlotPoints and Scenes when attachment edges change
+      if (edgeType === 'ALIGNS_WITH' || edgeType === 'SATISFIED_BY') {
+        const orderResult = computeOrder(finalGraph);
+        if (orderResult.ops.length > 0) {
+          finalGraph = applyOrderUpdates(finalGraph, orderResult);
         }
       }
 

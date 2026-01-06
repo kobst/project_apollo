@@ -17,7 +17,7 @@ const EDITABLE_FIELDS: Record<string, string[]> = {
   GenreTone: ['genre', 'secondary_genre', 'tone', 'tone_description', 'conventions', 'notes'],
   // Structure
   Beat: ['guidance', 'notes', 'status'],
-  Scene: ['title', 'heading', 'scene_overview', 'order_index', 'mood', 'int_ext', 'time_of_day', 'status'],
+  Scene: ['title', 'heading', 'scene_overview', 'mood', 'int_ext', 'time_of_day', 'status'],
   Character: ['name', 'description', 'archetype', 'status'],
   Conflict: ['name', 'description', 'conflict_type', 'status'],
   Location: ['name', 'description', 'atmosphere'],
@@ -30,7 +30,6 @@ const EDITABLE_FIELDS: Record<string, string[]> = {
 
 // Field types for rendering appropriate inputs
 const FIELD_TYPES: Record<string, 'text' | 'textarea' | 'select' | 'number'> = {
-  order_index: 'number',
   description: 'textarea',
   scene_overview: 'textarea',
   guidance: 'textarea',

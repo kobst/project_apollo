@@ -21,6 +21,8 @@ import {
   type Patch,
   type PatchOp,
   generateEdgeId,
+  computeOrder,
+  applyOrderUpdates,
 } from '@apollo/core';
 import type { StorageContext } from '../config.js';
 import { loadVersionedStateById, saveVersionedStateById, deserializeGraph, serializeGraph } from '../storage.js';
@@ -78,6 +80,19 @@ function edgeToData(edge: Edge): EdgeData {
     createdAt: edge.createdAt,
     updatedAt: edge.updatedAt,
   };
+}
+
+/**
+ * Check if edge type affects ordering and recompute if needed.
+ */
+function recomputeOrderIfNeeded(graph: ReturnType<typeof deserializeGraph>, edgeType: EdgeType): ReturnType<typeof deserializeGraph> {
+  if (edgeType === 'ALIGNS_WITH' || edgeType === 'SATISFIED_BY') {
+    const orderResult = computeOrder(graph);
+    if (orderResult.ops.length > 0) {
+      return applyOrderUpdates(graph, orderResult);
+    }
+  }
+  return graph;
 }
 
 // =============================================================================
@@ -248,7 +263,10 @@ export function createAddEdgeHandler(ctx: StorageContext) {
         metadata: { source: 'edgeAPI', action: 'addEdge' },
       };
 
-      const updatedGraph = applyPatch(graph, patch);
+      let updatedGraph = applyPatch(graph, patch);
+
+      // Recompute order_index if this edge type affects ordering
+      updatedGraph = recomputeOrderIfNeeded(updatedGraph, type);
 
       // Create new version
       state.history.versions[newVersionId] = {
@@ -415,7 +433,10 @@ export function createDeleteEdgeHandler(ctx: StorageContext) {
         metadata: { source: 'edgeAPI', action: 'deleteEdge' },
       };
 
-      const updatedGraph = applyPatch(graph, patch);
+      let updatedGraph = applyPatch(graph, patch);
+
+      // Recompute order_index if this edge type affects ordering
+      updatedGraph = recomputeOrderIfNeeded(updatedGraph, existingEdge.type);
 
       // Create new version
       state.history.versions[newVersionId] = {
@@ -523,7 +544,20 @@ export function createBatchEdgesHandler(ctx: StorageContext) {
         metadata: { source: 'edgeAPI', action: 'batchEdge' },
       };
 
-      const updatedGraph = applyPatch(graph, patch);
+      let updatedGraph = applyPatch(graph, patch);
+
+      // Recompute order_index if any edges affect ordering
+      const hasOrderingEdges = edgesToAdd.some(e => e.type === 'ALIGNS_WITH' || e.type === 'SATISFIED_BY') ||
+        deletes?.some(id => {
+          const edge = graph.edges.find(e => e.id === id);
+          return edge && (edge.type === 'ALIGNS_WITH' || edge.type === 'SATISFIED_BY');
+        });
+      if (hasOrderingEdges) {
+        const orderResult = computeOrder(updatedGraph);
+        if (orderResult.ops.length > 0) {
+          updatedGraph = applyOrderUpdates(updatedGraph, orderResult);
+        }
+      }
 
       // Create new version
       state.history.versions[newVersionId] = {
@@ -621,7 +655,11 @@ export function createUpsertEdgeHandler(ctx: StorageContext) {
         metadata: { source: 'edgeAPI', action: 'upsertEdge' },
       };
 
-      const updatedGraph = applyPatch(graph, patch);
+      let updatedGraph = applyPatch(graph, patch);
+
+      // Recompute order_index if this edge type affects ordering
+      updatedGraph = recomputeOrderIfNeeded(updatedGraph, type);
+
       const resultEdge = updatedGraph.edges.find(
         (e) => e.type === type && e.from === from && e.to === to
       );

@@ -12,12 +12,10 @@ import type { GraphState } from '../../src/core/graph.js';
 import type { Beat, Scene, PlotPoint } from '../../src/types/nodes.js';
 import { BEAT_ACT_MAP, BEAT_POSITION_MAP } from '../../src/types/nodes.js';
 import {
-  SCENE_ORDER_UNIQUE,
   SCENE_ACT_BOUNDARY,
   STC_BEAT_ORDERING,
   EDGE_ORDER_UNIQUE,
   PP_DAG_NO_CYCLES,
-  PP_ORDER_UNIQUE,
   PP_ACT_ALIGNMENT,
 } from '../../src/rules/hardRules.js';
 import { applyPatch } from '../../src/core/applyPatch.js';
@@ -37,97 +35,6 @@ describe('Hard Rules', () => {
   beforeEach(() => {
     resetIdCounter();
     graph = createGraphWith15Beats();
-  });
-
-  // ===========================================================================
-  // SCENE_ORDER_UNIQUE
-  // ===========================================================================
-
-  describe('SCENE_ORDER_UNIQUE', () => {
-    it('should detect duplicate order_index on scenes in same beat', () => {
-      // Add two scenes with same order_index to the same beat
-      const scene1 = createScene('beat_Catalyst', { id: 'scene_1', order_index: 1 });
-      const scene2 = createScene('beat_Catalyst', { id: 'scene_2', order_index: 1 });
-      graph.nodes.set(scene1.id, scene1);
-      graph.nodes.set(scene2.id, scene2);
-
-      const violations = SCENE_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
-
-      expect(violations).toHaveLength(1);
-      expect(violations[0].ruleId).toBe('SCENE_ORDER_UNIQUE');
-      expect(violations[0].severity).toBe('hard');
-      expect(violations[0].message).toContain('Catalyst');
-      expect(violations[0].message).toContain('2 scenes');
-      expect(violations[0].message).toContain('order_index 1');
-    });
-
-    it('should not flag scenes with unique order_index in same beat', () => {
-      const scene1 = createScene('beat_Catalyst', { id: 'scene_1', order_index: 1 });
-      const scene2 = createScene('beat_Catalyst', { id: 'scene_2', order_index: 2 });
-      graph.nodes.set(scene1.id, scene1);
-      graph.nodes.set(scene2.id, scene2);
-
-      const violations = SCENE_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
-
-      expect(violations).toHaveLength(0);
-    });
-
-    it('should not flag scenes with same order_index in different beats', () => {
-      const scene1 = createScene('beat_Catalyst', { id: 'scene_1', order_index: 1 });
-      const scene2 = createScene('beat_Midpoint', { id: 'scene_2', order_index: 1 });
-      graph.nodes.set(scene1.id, scene1);
-      graph.nodes.set(scene2.id, scene2);
-
-      const violations = SCENE_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
-
-      expect(violations).toHaveLength(0);
-    });
-
-    it('should detect multiple groups of duplicates', () => {
-      // Two duplicates in Catalyst
-      graph.nodes.set('s1', createScene('beat_Catalyst', { id: 's1', order_index: 1 }));
-      graph.nodes.set('s2', createScene('beat_Catalyst', { id: 's2', order_index: 1 }));
-      // Two duplicates in Midpoint
-      graph.nodes.set('s3', createScene('beat_Midpoint', { id: 's3', order_index: 2 }));
-      graph.nodes.set('s4', createScene('beat_Midpoint', { id: 's4', order_index: 2 }));
-
-      const violations = SCENE_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
-
-      expect(violations).toHaveLength(2);
-    });
-
-    it('should generate a fix that reindexes scenes sequentially', () => {
-      const scene1 = createScene('beat_Catalyst', { id: 'scene_1', order_index: 1 });
-      const scene2 = createScene('beat_Catalyst', { id: 'scene_2', order_index: 1 });
-      const scene3 = createScene('beat_Catalyst', { id: 'scene_3', order_index: 1 });
-      graph.nodes.set(scene1.id, scene1);
-      graph.nodes.set(scene2.id, scene2);
-      graph.nodes.set(scene3.id, scene3);
-
-      const violations = SCENE_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
-      expect(violations).toHaveLength(1);
-
-      const fix = SCENE_ORDER_UNIQUE.suggestFix!(graph, violations[0]);
-      expect(fix).not.toBeNull();
-      expect(fix!.label).toContain('Re-index');
-      expect(fix!.label).toContain('3 scenes');
-      expect(fix!.affectedNodeIds).toHaveLength(3);
-
-      // Apply the fix
-      const newGraph = applyPatch(graph, fix!.patch);
-
-      // Verify scenes now have sequential order_index
-      const updatedScenes = Array.from(newGraph.nodes.values())
-        .filter((n): n is Scene => n.type === 'Scene')
-        .sort((a, b) => a.order_index - b.order_index);
-
-      const orderIndices = updatedScenes.map((s) => s.order_index);
-      expect(orderIndices).toEqual([1, 2, 3]);
-
-      // Verify no more violations
-      const newViolations = SCENE_ORDER_UNIQUE.evaluate(newGraph, { mode: 'full' });
-      expect(newViolations).toHaveLength(0);
-    });
   });
 
   // ===========================================================================
@@ -428,32 +335,6 @@ describe('Hard Rules', () => {
   });
 
   // ===========================================================================
-  // Scoped lint tests
-  // ===========================================================================
-
-  describe('Scoped linting', () => {
-    it('should only check nodes in scope for SCENE_ORDER_UNIQUE', () => {
-      // Add duplicates in Catalyst (in scope)
-      graph.nodes.set('s1', createScene('beat_Catalyst', { id: 's1', order_index: 1 }));
-      graph.nodes.set('s2', createScene('beat_Catalyst', { id: 's2', order_index: 1 }));
-      // Add duplicates in Midpoint (out of scope)
-      graph.nodes.set('s3', createScene('beat_Midpoint', { id: 's3', order_index: 1 }));
-      graph.nodes.set('s4', createScene('beat_Midpoint', { id: 's4', order_index: 1 }));
-
-      // Only scope to Catalyst beat
-      const violations = SCENE_ORDER_UNIQUE.evaluate(graph, {
-        mode: 'touched',
-        touchedNodeIds: ['beat_Catalyst'],
-        expandedNodeIds: ['beat_Catalyst', 's1', 's2'],
-      });
-
-      // Should only find the Catalyst violation, not Midpoint
-      expect(violations).toHaveLength(1);
-      expect(violations[0].message).toContain('Catalyst');
-    });
-  });
-
-  // ===========================================================================
   // PP_DAG_NO_CYCLES
   // ===========================================================================
 
@@ -543,106 +424,6 @@ describe('Hard Rules', () => {
 
       const fix = PP_DAG_NO_CYCLES.suggestFix!(graph, violations[0]);
       expect(fix).toBeNull(); // No auto-fix for cycles
-    });
-  });
-
-  // ===========================================================================
-  // PP_ORDER_UNIQUE
-  // ===========================================================================
-
-  describe('PP_ORDER_UNIQUE', () => {
-    it('should detect duplicate order on SATISFIED_BY edges from same PlotPoint', () => {
-      const pp = createPlotPoint({ id: 'pp_1', title: 'Hero Discovers Truth' });
-      const scene1 = createScene('beat_Catalyst', { id: 'scene_1' });
-      const scene2 = createScene('beat_Catalyst', { id: 'scene_2' });
-      graph.nodes.set(pp.id, pp);
-      graph.nodes.set(scene1.id, scene1);
-      graph.nodes.set(scene2.id, scene2);
-
-      // Both edges have order: 1
-      graph.edges.push(edges.satisfiedBy('pp_1', 'scene_1', 1, 'edge_1'));
-      graph.edges.push(edges.satisfiedBy('pp_1', 'scene_2', 1, 'edge_2'));
-
-      const violations = PP_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
-
-      expect(violations).toHaveLength(1);
-      expect(violations[0].ruleId).toBe('PP_ORDER_UNIQUE');
-      expect(violations[0].severity).toBe('hard');
-      expect(violations[0].message).toContain('order 1');
-    });
-
-    it('should not flag unique order values', () => {
-      const pp = createPlotPoint({ id: 'pp_1', title: 'Hero Discovers Truth' });
-      const scene1 = createScene('beat_Catalyst', { id: 'scene_1' });
-      const scene2 = createScene('beat_Catalyst', { id: 'scene_2' });
-      graph.nodes.set(pp.id, pp);
-      graph.nodes.set(scene1.id, scene1);
-      graph.nodes.set(scene2.id, scene2);
-
-      graph.edges.push(edges.satisfiedBy('pp_1', 'scene_1', 1, 'edge_1'));
-      graph.edges.push(edges.satisfiedBy('pp_1', 'scene_2', 2, 'edge_2'));
-
-      const violations = PP_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
-
-      expect(violations).toHaveLength(0);
-    });
-
-    it('should not flag same order from different PlotPoints', () => {
-      const pp1 = createPlotPoint({ id: 'pp_1', title: 'Plot Point 1' });
-      const pp2 = createPlotPoint({ id: 'pp_2', title: 'Plot Point 2' });
-      const scene1 = createScene('beat_Catalyst', { id: 'scene_1' });
-      const scene2 = createScene('beat_Catalyst', { id: 'scene_2' });
-      graph.nodes.set(pp1.id, pp1);
-      graph.nodes.set(pp2.id, pp2);
-      graph.nodes.set(scene1.id, scene1);
-      graph.nodes.set(scene2.id, scene2);
-
-      // Same order but different PlotPoints
-      graph.edges.push(edges.satisfiedBy('pp_1', 'scene_1', 1, 'edge_1'));
-      graph.edges.push(edges.satisfiedBy('pp_2', 'scene_2', 1, 'edge_2'));
-
-      const violations = PP_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
-
-      expect(violations).toHaveLength(0);
-    });
-
-    it('should generate fix that reindexes edges sequentially', () => {
-      const pp = createPlotPoint({ id: 'pp_1', title: 'Hero Discovers Truth' });
-      const scene1 = createScene('beat_Catalyst', { id: 'scene_1' });
-      const scene2 = createScene('beat_Catalyst', { id: 'scene_2' });
-      const scene3 = createScene('beat_Catalyst', { id: 'scene_3' });
-      graph.nodes.set(pp.id, pp);
-      graph.nodes.set(scene1.id, scene1);
-      graph.nodes.set(scene2.id, scene2);
-      graph.nodes.set(scene3.id, scene3);
-
-      // All have order: 1
-      graph.edges.push(edges.satisfiedBy('pp_1', 'scene_1', 1, 'edge_1'));
-      graph.edges.push(edges.satisfiedBy('pp_1', 'scene_2', 1, 'edge_2'));
-      graph.edges.push(edges.satisfiedBy('pp_1', 'scene_3', 1, 'edge_3'));
-
-      const violations = PP_ORDER_UNIQUE.evaluate(graph, { mode: 'full' });
-      expect(violations).toHaveLength(1);
-
-      const fix = PP_ORDER_UNIQUE.suggestFix!(graph, violations[0]);
-      expect(fix).not.toBeNull();
-      expect(fix!.label).toContain('Re-index');
-      expect(fix!.affectedNodeIds).toHaveLength(3);
-
-      // Apply the fix
-      const newGraph = applyPatch(graph, fix!.patch);
-
-      // Verify edges now have sequential order values
-      const updatedEdges = newGraph.edges
-        .filter((e) => e.type === 'SATISFIED_BY')
-        .sort((a, b) => (a.properties?.order ?? 0) - (b.properties?.order ?? 0));
-
-      const orderValues = updatedEdges.map((e) => e.properties?.order);
-      expect(orderValues).toEqual([1, 2, 3]);
-
-      // Verify no more violations
-      const newViolations = PP_ORDER_UNIQUE.evaluate(newGraph, { mode: 'full' });
-      expect(newViolations).toHaveLength(0);
     });
   });
 

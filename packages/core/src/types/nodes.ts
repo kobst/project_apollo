@@ -196,7 +196,8 @@ export interface Scene extends BaseNode {
   scene_overview: string;
   /** @deprecated Use SATISFIED_BY edge to PlotPoint instead */
   beat_id?: string;
-  order_index: number;
+  /** Auto-computed order based on PlotPoint attachment. Undefined if unattached. */
+  order_index?: number;
   int_ext?: IntExt;
   time_of_day?: string;
   mood?: string;
@@ -346,6 +347,8 @@ export interface PlotPoint extends BaseNode {
   summary?: string;
   /** Primary purpose of this plot point */
   intent: PlotPointIntent;
+  /** Auto-computed order based on Beat alignment. Undefined if unaligned. */
+  order_index?: number;
   /** What must be true for this to count as fulfilled */
   criteria_of_satisfaction?: string;
   /** Importance level */

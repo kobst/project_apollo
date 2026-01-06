@@ -20,7 +20,7 @@ interface OutlineScene {
   id: string;
   heading: string;
   overview: string;
-  orderIndex: number;
+  orderIndex: number | undefined;
   intExt: string | undefined;
   timeOfDay: string | undefined;
   mood: string | undefined;
@@ -128,9 +128,13 @@ export function createOutlineHandler(ctx: StorageContext) {
         }
       }
 
-      // Sort scenes within each plot point by order_index
+      // Sort scenes within each plot point by order_index (undefined treated as last)
       for (const [ppId, ppScenes] of scenesByPlotPoint) {
-        ppScenes.sort((a, b) => a.order_index - b.order_index);
+        ppScenes.sort((a, b) => {
+          const orderA = a.order_index ?? Number.MAX_SAFE_INTEGER;
+          const orderB = b.order_index ?? Number.MAX_SAFE_INTEGER;
+          return orderA - orderB;
+        });
         scenesByPlotPoint.set(ppId, ppScenes);
       }
 
@@ -163,8 +167,12 @@ export function createOutlineHandler(ctx: StorageContext) {
           unassignedScenes.push(scene);
         }
       }
-      // Sort by order_index
-      unassignedScenes.sort((a, b) => a.order_index - b.order_index);
+      // Sort by order_index (undefined treated as last)
+      unassignedScenes.sort((a, b) => {
+        const orderA = a.order_index ?? Number.MAX_SAFE_INTEGER;
+        const orderB = b.order_index ?? Number.MAX_SAFE_INTEGER;
+        return orderA - orderB;
+      });
 
       // Build outline beats with nested structure
       const outlineBeats: OutlineBeat[] = beats.map((beat) => {

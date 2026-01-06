@@ -45,6 +45,7 @@ import {
   updatePlotPointHandler,
   deletePlotPointHandler,
   createCoverageHandler,
+  createRecomputeOrderHandler,
 } from '../handlers/index.js';
 
 export function createStoriesRouter(ctx: StorageContext): Router {
@@ -105,6 +106,9 @@ export function createStoriesRouter(ctx: StorageContext): Router {
 
   // Coverage endpoint
   router.get('/:id/coverage', createCoverageHandler(ctx));
+
+  // Recompute order endpoint (migration/sync)
+  router.post('/:id/recompute-order', createRecomputeOrderHandler(ctx));
 
   // PlotPoint endpoints
   router.post('/:id/plot-points', createPlotPointHandler(ctx));

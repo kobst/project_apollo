@@ -396,7 +396,8 @@ function checkNodeRules(graph: GraphState): ValidationError[] {
         field: 'scene_overview',
       });
     }
-    if (scene.order_index < 1) {
+    // order_index is optional (undefined for unattached scenes), but if defined must be >= 1
+    if (scene.order_index !== undefined && scene.order_index < 1) {
       errors.push({
         code: 'OUT_OF_RANGE',
         message: `Scene "${scene.id}" has invalid order_index: ${scene.order_index} (must be >= 1)`,

@@ -63,7 +63,6 @@ export {
 
 // Hard Rules
 export {
-  SCENE_ORDER_UNIQUE,
   SCENE_ACT_BOUNDARY,
   STC_BEAT_ORDERING,
   EDGE_ORDER_UNIQUE,

@@ -45,7 +45,7 @@ Edges are unique by (type, from, to). Duplicate edges with identical type/from/t
 
 ---
 
-# 1) Node Definitions (13)
+# 1) Node Definitions (14)
 
 For each node:
 - **Fields:** name, type, required/optional, description
@@ -295,8 +295,8 @@ For each node:
 | id | string | ✅ | Scene id |
 | heading | string | ✅ | Raw scene heading |
 | scene_overview | string | ✅ | Narrative summary (v1 causal carrier) |
-| beat_id | string | ✅ | Beat anchor (exactly one) |
-| order_index | integer (>=1) | ✅ | Order in screenplay |
+| beat_id | string | ⚠️ | **DEPRECATED** - Use PlotPoint attachment instead |
+| order_index | integer (>=1) | ❌ | Auto-computed screenplay order (see Ordering) |
 | int_ext | string (enum) | ❌ | INT/EXT/OTHER |
 | time_of_day | string | ❌ | DAY/NIGHT/UNKNOWN/freeform |
 | mood | string | ❌ | Mood |
@@ -313,12 +313,20 @@ For each node:
 - `source_provenance`: USER, AI, MIXED
 
 ### Constraints
-- `beat_id` must reference an existing Beat.
-- `order_index` integer ≥ 1.
+- `beat_id` (**deprecated**): Previously required to reference a Beat. Now optional; prefer using PlotPoint attachment via SATISFIED_BY edge.
+- `order_index`: Optional integer ≥ 1. Auto-computed when Scene is attached to a PlotPoint via SATISFIED_BY edge. Undefined for unattached scenes.
 - `scene_overview` length 20–2000 (recommended).
 
-### Note on FULFILLS Edge
-The `beat_id` field implicitly creates the FULFILLS relationship. You do NOT need to create a separate FULFILLS edge via Patch ops—it is derived from Scene.beat_id during graph construction.
+### Scene Ordering (Auto-computed)
+Scenes get their `order_index` automatically based on their PlotPoint attachment:
+1. Scene is attached to PlotPoint via `SATISFIED_BY` edge
+2. PlotPoint is attached to Beat via `ALIGNS_WITH` edge
+3. Order is computed: Beat position → PlotPoint order → Scene order within PlotPoint
+4. Unattached scenes have `order_index = undefined`
+
+### Note on FULFILLS Edge (Deprecated)
+The `beat_id` field implicitly creates the FULFILLS relationship. This approach is **deprecated**.
+New implementations should use PlotPoints with SATISFIED_BY edges instead.
 
 ### Example
 ```json
@@ -588,6 +596,48 @@ The `beat_id` field implicitly creates the FULFILLS relationship. You do NOT nee
 
 ---
 
+## 1.14 PlotPoint
+
+PlotPoints are intermediate narrative units that bridge Beats and Scenes. They represent specific story points or events that must be satisfied by one or more Scenes.
+
+### Fields
+| Field | Type | Req? | Description |
+|---|---|:---:|---|
+| id | string | ✅ | PlotPoint id |
+| title | string | ✅ | Short descriptive title |
+| description | string | ❌ | Detailed description of the plot point |
+| order_index | integer (>=1) | ❌ | Auto-computed based on Beat attachment |
+| status | string (enum) | ❌ | UNSATISFIED/SATISFIED |
+| notes | string | ❌ | Notes |
+
+### Enums
+- `status`: UNSATISFIED, SATISFIED
+
+### Constraints
+- `title` length 1–120.
+- `order_index`: Optional integer ≥ 1. Auto-computed when attached to a Beat via ALIGNS_WITH edge. Undefined for unattached PlotPoints.
+
+### PlotPoint Ordering (Auto-computed)
+PlotPoints get their `order_index` automatically based on Beat attachment:
+1. PlotPoint is attached to Beat via `ALIGNS_WITH` edge
+2. Order is determined by Beat's `position_index` (1-15 for STC beats)
+3. Multiple PlotPoints on the same Beat are ordered by: edge createdAt → PlotPoint createdAt → ID
+4. Unattached PlotPoints have `order_index = undefined`
+
+### Example
+```json
+{
+  "type": "PlotPoint",
+  "id": "pp_01J0PP001",
+  "title": "President collapses",
+  "description": "The president suddenly collapses during the flight, creating the inciting incident.",
+  "order_index": 4,
+  "status": "SATISFIED"
+}
+```
+
+---
+
 # 2) Edge Type Vocabulary (MVP)
 
 ### Edge Object Schema
@@ -603,19 +653,44 @@ The `beat_id` field implicitly creates the FULFILLS relationship. You do NOT nee
 
 ---
 
-## 2.1 FULFILLS
+## 2.1 FULFILLS (Deprecated)
 | Property | Value |
 |---|---|
 | Source → Target | Scene → Beat |
 | Cardinality | many-to-one |
-| Required | ✅ Implicit via Scene.beat_id |
+| Required | ⚠️ Deprecated - use PlotPoint hierarchy instead |
 | Meaning | Scene is assigned to and realizes that Beat |
 
-**Note:** This edge is *derived* from Scene.beat_id. Do not create explicitly via ADD_EDGE.
+**Note:** This edge is *derived* from Scene.beat_id. This approach is **deprecated**.
+New implementations should use PlotPoints with ALIGNS_WITH and SATISFIED_BY edges.
 
 ---
 
-## 2.2 HAS_CHARACTER
+## 2.2 ALIGNS_WITH
+| Property | Value |
+|---|---|
+| Source → Target | PlotPoint → Beat |
+| Cardinality | many-to-one |
+| Required | ❌ Optional (PlotPoints may be unattached) |
+| Meaning | PlotPoint aligns with this Beat in the story structure |
+
+**Note:** When a PlotPoint has an ALIGNS_WITH edge to a Beat, its `order_index` is auto-computed based on the Beat's `position_index`.
+
+---
+
+## 2.3 SATISFIED_BY
+| Property | Value |
+|---|---|
+| Source → Target | PlotPoint → Scene |
+| Cardinality | one-to-many |
+| Required | ❌ Optional |
+| Meaning | Scene satisfies/realizes this PlotPoint |
+
+**Note:** When a Scene is attached via SATISFIED_BY, its `order_index` is auto-computed based on the PlotPoint's order and position within the PlotPoint.
+
+---
+
+## 2.5 HAS_CHARACTER
 | Property | Value |
 |---|---|
 | Source → Target | Scene → Character |
@@ -625,7 +700,7 @@ The `beat_id` field implicitly creates the FULFILLS relationship. You do NOT nee
 
 ---
 
-## 2.3 LOCATED_AT
+## 2.6 LOCATED_AT
 | Property | Value |
 |---|---|
 | Source → Target | Scene → Location |
@@ -635,7 +710,7 @@ The `beat_id` field implicitly creates the FULFILLS relationship. You do NOT nee
 
 ---
 
-## 2.4 FEATURES_OBJECT
+## 2.7 FEATURES_OBJECT
 | Property | Value |
 |---|---|
 | Source → Target | Scene → Object |
@@ -645,7 +720,7 @@ The `beat_id` field implicitly creates the FULFILLS relationship. You do NOT nee
 
 ---
 
-## 2.5 INVOLVES
+## 2.8 INVOLVES
 | Property | Value |
 |---|---|
 | Source → Target | Conflict → Character |
@@ -655,7 +730,7 @@ The `beat_id` field implicitly creates the FULFILLS relationship. You do NOT nee
 
 ---
 
-## 2.6 MANIFESTS_IN
+## 2.9 MANIFESTS_IN
 | Property | Value |
 |---|---|
 | Source → Target | Conflict → Scene |
@@ -665,7 +740,7 @@ The `beat_id` field implicitly creates the FULFILLS relationship. You do NOT nee
 
 ---
 
-## 2.7 HAS_ARC
+## 2.10 HAS_ARC
 | Property | Value |
 |---|---|
 | Source → Target | Character → CharacterArc |
@@ -675,7 +750,7 @@ The `beat_id` field implicitly creates the FULFILLS relationship. You do NOT nee
 
 ---
 
-## 2.8 EXPRESSED_IN
+## 2.11 EXPRESSED_IN
 | Property | Value |
 |---|---|
 | Source → Target | Theme → Scene OR Theme → Beat |
@@ -685,7 +760,7 @@ The `beat_id` field implicitly creates the FULFILLS relationship. You do NOT nee
 
 ---
 
-## 2.9 APPEARS_IN
+## 2.12 APPEARS_IN
 | Property | Value |
 |---|---|
 | Source → Target | Motif → Scene |

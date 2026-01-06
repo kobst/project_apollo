@@ -95,7 +95,7 @@ export interface Beat extends BaseNode {
 }
 
 // Scene
-export type SceneTag = 
+export type SceneTag =
   | 'SETUP' | 'PAYOFF' | 'REVEAL' | 'REVERSAL' | 'DECISION'
   | 'ESCALATION' | 'LOSS' | 'VICTORY' | 'INTRO_CHARACTER'
   | 'INTRO_OBJECT' | 'TURNING_POINT';
@@ -104,8 +104,8 @@ export interface Scene extends BaseNode {
   type: 'Scene';
   heading: string;
   scene_overview: string;
-  beat_id: string;
-  order_index: number;
+  beat_id?: string; // DEPRECATED: Use PlotPoint attachment via SATISFIED_BY edge
+  order_index?: number; // Auto-computed when attached to PlotPoint
   int_ext?: 'INT' | 'EXT' | 'OTHER';
   time_of_day?: string;
   mood?: string;
@@ -114,6 +114,16 @@ export interface Scene extends BaseNode {
   scene_tags?: SceneTag[];
   status?: 'DRAFT' | 'REVISED';
   source_provenance?: 'USER' | 'AI' | 'MIXED';
+}
+
+// PlotPoint - bridges Beats and Scenes
+export interface PlotPoint extends BaseNode {
+  type: 'PlotPoint';
+  title: string;
+  description?: string;
+  order_index?: number; // Auto-computed when attached to Beat via ALIGNS_WITH
+  status?: 'UNSATISFIED' | 'SATISFIED';
+  notes?: string;
 }
 
 // Character
@@ -240,16 +250,18 @@ export interface NarrativeMove extends BaseNode {
 // Patch (see patch.ts)
 
 // Union type for all nodes
-export type KGNode = 
+export type KGNode =
   | StoryVersion | MoveCluster | NarrativeMove | Patch
-  | Beat | Scene | Character | Location | StoryObject
+  | Beat | Scene | PlotPoint | Character | Location | StoryObject
   | Theme | Motif | CharacterArc | Conflict;
 ```
 
 ### 2.2 `src/types/edges.ts`
 ```typescript
-export type EdgeType = 
-  | 'FULFILLS'        // Scene → Beat (implicit via beat_id)
+export type EdgeType =
+  | 'FULFILLS'        // Scene → Beat (DEPRECATED: use PlotPoint hierarchy)
+  | 'ALIGNS_WITH'     // PlotPoint → Beat (triggers order computation)
+  | 'SATISFIED_BY'    // PlotPoint → Scene (triggers order computation)
   | 'HAS_CHARACTER'   // Scene → Character
   | 'LOCATED_AT'      // Scene → Location
   | 'FEATURES_OBJECT' // Scene → Object
@@ -263,11 +275,14 @@ export interface Edge {
   type: EdgeType;
   from: string;
   to: string;
+  createdAt?: string; // Used for ordering tie-breaking
 }
 
 // Edge validation rules
 export const EDGE_RULES: Record<EdgeType, { source: string[]; target: string[] }> = {
-  FULFILLS: { source: ['Scene'], target: ['Beat'] },
+  FULFILLS: { source: ['Scene'], target: ['Beat'] }, // DEPRECATED
+  ALIGNS_WITH: { source: ['PlotPoint'], target: ['Beat'] },
+  SATISFIED_BY: { source: ['PlotPoint'], target: ['Scene'] },
   HAS_CHARACTER: { source: ['Scene'], target: ['Character'] },
   LOCATED_AT: { source: ['Scene'], target: ['Location'] },
   FEATURES_OBJECT: { source: ['Scene'], target: ['Object'] },
@@ -961,6 +976,158 @@ function deriveThemeMotifQuestions(graph: GraphState): OpenQuestion[] {
   }
   
   return questions;
+}
+```
+
+### 3.5 `src/core/computeOrder.ts` — Auto-computed Ordering
+
+This module computes `order_index` for PlotPoints and Scenes based on their edge relationships.
+
+```typescript
+import { GraphState, getNodesByType, getNode } from './graph';
+import { Beat, PlotPoint, Scene } from '../types/nodes';
+import { Edge } from '../types/edges';
+import { UpdateNodeOp } from '../types/patch';
+
+export interface ComputeOrderResult {
+  plotPointOrders: Map<string, number | undefined>;
+  sceneOrders: Map<string, number | undefined>;
+  ops: UpdateNodeOp[]; // Patches to apply for changed orders
+}
+
+/**
+ * Computes order_index for PlotPoints and Scenes based on edge relationships:
+ * - PlotPoints get order from ALIGNS_WITH edges to Beats (Beat.position_index)
+ * - Scenes get order from SATISFIED_BY edges to PlotPoints
+ * - Unattached items have order_index = undefined
+ */
+export function computeOrder(graph: GraphState): ComputeOrderResult {
+  const plotPointOrders = new Map<string, number | undefined>();
+  const sceneOrders = new Map<string, number | undefined>();
+  const ops: UpdateNodeOp[] = [];
+
+  // Get beats sorted by position_index
+  const beats = getNodesByType<Beat>(graph, 'Beat')
+    .sort((a, b) => a.position_index - b.position_index);
+
+  // Get all ALIGNS_WITH edges (PlotPoint → Beat)
+  const alignsWithEdges = graph.edges.filter(e => e.type === 'ALIGNS_WITH');
+
+  // Get all SATISFIED_BY edges (PlotPoint → Scene)
+  const satisfiedByEdges = graph.edges.filter(e => e.type === 'SATISFIED_BY');
+
+  let ppOrderCounter = 0;
+  let sceneOrderCounter = 0;
+
+  // Process each beat in order
+  for (const beat of beats) {
+    // Get PlotPoints aligned to this beat
+    const ppEdges = alignsWithEdges.filter(e => e.to === beat.id);
+
+    // Sort by edge createdAt, then by PlotPoint ID for tie-breaking
+    const sortedPPEdges = ppEdges.sort((a, b) => {
+      if (a.createdAt && b.createdAt) {
+        return a.createdAt.localeCompare(b.createdAt);
+      }
+      return a.from.localeCompare(b.from);
+    });
+
+    for (const ppEdge of sortedPPEdges) {
+      ppOrderCounter++;
+      const ppId = ppEdge.from;
+      plotPointOrders.set(ppId, ppOrderCounter);
+
+      // Get scenes attached to this PlotPoint
+      const sceneEdges = satisfiedByEdges.filter(e => e.from === ppId);
+
+      // Sort scenes by edge createdAt, then by Scene ID
+      const sortedSceneEdges = sceneEdges.sort((a, b) => {
+        if (a.createdAt && b.createdAt) {
+          return a.createdAt.localeCompare(b.createdAt);
+        }
+        return a.to.localeCompare(b.to);
+      });
+
+      for (const sceneEdge of sortedSceneEdges) {
+        sceneOrderCounter++;
+        sceneOrders.set(sceneEdge.to, sceneOrderCounter);
+      }
+    }
+  }
+
+  // Set undefined for unattached PlotPoints
+  for (const pp of getNodesByType<PlotPoint>(graph, 'PlotPoint')) {
+    if (!plotPointOrders.has(pp.id)) {
+      plotPointOrders.set(pp.id, undefined);
+    }
+    // Generate update op if order changed
+    const newOrder = plotPointOrders.get(pp.id);
+    if (pp.order_index !== newOrder) {
+      ops.push({
+        op: 'UPDATE_NODE',
+        id: pp.id,
+        set: newOrder !== undefined ? { order_index: newOrder } : {},
+        unset: newOrder === undefined ? ['order_index'] : [],
+      });
+    }
+  }
+
+  // Set undefined for unattached Scenes
+  for (const scene of getNodesByType<Scene>(graph, 'Scene')) {
+    if (!sceneOrders.has(scene.id)) {
+      sceneOrders.set(scene.id, undefined);
+    }
+    // Generate update op if order changed
+    const newOrder = sceneOrders.get(scene.id);
+    if (scene.order_index !== newOrder) {
+      ops.push({
+        op: 'UPDATE_NODE',
+        id: scene.id,
+        set: newOrder !== undefined ? { order_index: newOrder } : {},
+        unset: newOrder === undefined ? ['order_index'] : [],
+      });
+    }
+  }
+
+  return { plotPointOrders, sceneOrders, ops };
+}
+
+/**
+ * Applies computed order updates to the graph
+ */
+export function applyOrderUpdates(
+  graph: GraphState,
+  result: ComputeOrderResult
+): GraphState {
+  // Apply each update op to the graph
+  for (const op of result.ops) {
+    const node = graph.nodes.get(op.id);
+    if (node) {
+      const updated = { ...node, ...op.set };
+      if (op.unset) {
+        for (const field of op.unset) {
+          delete (updated as Record<string, unknown>)[field];
+        }
+      }
+      graph.nodes.set(op.id, updated);
+    }
+  }
+  return graph;
+}
+```
+
+**Usage in API handlers:**
+
+When ALIGNS_WITH or SATISFIED_BY edges are added, updated, or deleted, call `computeOrder()` and apply the resulting updates:
+
+```typescript
+// In edges.ts or bulkAttach.ts handlers:
+import { computeOrder, applyOrderUpdates } from '@apollo/core';
+
+// After edge changes:
+const orderResult = computeOrder(graph);
+if (orderResult.ops.length > 0) {
+  graph = applyOrderUpdates(graph, orderResult);
 }
 ```
 
