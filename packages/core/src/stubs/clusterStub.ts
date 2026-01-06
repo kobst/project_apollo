@@ -1,8 +1,11 @@
 /**
- * Stub cluster generator that creates MoveCluster proposals from OpenQuestions.
+ * Stub cluster generator that creates MoveCluster proposals from Gaps.
  * In production, this would be an LLM call.
  *
  * This stub provides deterministic cluster generation for testing purposes.
+ *
+ * Supports both the new unified Gap model and the legacy OpenQuestion model
+ * for backwards compatibility.
  */
 
 import type { Patch, PatchOp } from '../types/patch.js';
@@ -10,10 +13,13 @@ import type {
   MoveCluster,
   NarrativeMove,
   Scene,
+  PlotPoint,
   ScopeBudget,
   ClusterType,
 } from '../types/nodes.js';
 import type { OpenQuestion, OQPhase } from '../types/openQuestion.js';
+import type { Edge } from '../types/edges.js';
+import type { Gap, GapPhase } from '../coverage/types.js';
 
 // =============================================================================
 // Cluster Generation
@@ -288,8 +294,64 @@ interface MoveVariant {
   ops: PatchOp[];
 }
 
+/**
+ * Create ops to attach a scene to a beat through the PlotPoint hierarchy.
+ * Creates: PlotPoint, ALIGNS_WITH edge, Scene, SATISFIED_BY edge
+ */
+function createSceneWithPlotPoint(
+  beatId: string,
+  sceneId: string,
+  plotPointId: string,
+  plotPointTitle: string,
+  scene: Omit<Scene, 'type' | 'id'>
+): PatchOp[] {
+  const timestamp = new Date().toISOString();
+
+  const plotPoint: PlotPoint = {
+    type: 'PlotPoint',
+    id: plotPointId,
+    title: plotPointTitle,
+    intent: 'plot',
+    status: 'proposed',
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+
+  const sceneNode: Scene = {
+    type: 'Scene',
+    id: sceneId,
+    ...scene,
+  };
+
+  const alignsWithEdge: Edge = {
+    id: `edge_${plotPointId}_aligns`,
+    type: 'ALIGNS_WITH',
+    from: plotPointId,
+    to: beatId,
+    status: 'approved',
+    createdAt: timestamp,
+  };
+
+  const satisfiedByEdge: Edge = {
+    id: `edge_${plotPointId}_satisfied`,
+    type: 'SATISFIED_BY',
+    from: plotPointId,
+    to: sceneId,
+    status: 'approved',
+    createdAt: timestamp,
+    properties: { order: 1 },
+  };
+
+  return [
+    { op: 'ADD_NODE', node: plotPoint },
+    { op: 'ADD_EDGE', edge: alignsWithEdge },
+    { op: 'ADD_NODE', node: sceneNode },
+    { op: 'ADD_EDGE', edge: satisfiedByEdge },
+  ];
+}
+
 function getMoveVariants(oq: OpenQuestion): MoveVariant[] {
-  // For BeatUnrealized, generate scene options
+  // For BeatUnrealized, generate scene options with PlotPoint hierarchy
   if (oq.type === 'BeatUnrealized' && oq.target_node_id) {
     const beatId = oq.target_node_id;
     const beatType = beatId.replace('beat_', '');
@@ -300,66 +362,57 @@ function getMoveVariants(oq: OpenQuestion): MoveVariant[] {
         rationale: 'A high-tension scene that delivers the beat through conflict.',
         style: 'dramatic',
         tags: ['dramatic', 'confrontation', 'high-stakes'],
-        ops: [
+        ops: createSceneWithPlotPoint(
+          beatId,
+          `scene_${beatType}_dramatic`,
+          `pp_${beatType}_dramatic`,
+          `${beatType} - Dramatic Confrontation`,
           {
-            op: 'ADD_NODE',
-            node: {
-              type: 'Scene',
-              id: `scene_${beatType}_dramatic`,
-              heading: `INT. LOCATION - ${beatType.toUpperCase()} - DAY`,
-              scene_overview: `A dramatic confrontation unfolds as the protagonist faces a crucial moment in the ${beatType} beat. Stakes are raised and decisions must be made.`,
-              beat_id: beatId,
-              order_index: 1,
-              scene_tags: ['ESCALATION', 'DECISION'],
-              status: 'DRAFT',
-              source_provenance: 'AI',
-            } as Scene,
-          },
-        ],
+            heading: `INT. LOCATION - ${beatType.toUpperCase()} - DAY`,
+            scene_overview: `A dramatic confrontation unfolds as the protagonist faces a crucial moment in the ${beatType} beat. Stakes are raised and decisions must be made.`,
+            scene_tags: ['ESCALATION', 'DECISION'],
+            status: 'DRAFT',
+            source_provenance: 'AI',
+          }
+        ),
       },
       {
         title: `${beatType}: Quiet revelation`,
         rationale: 'A contemplative scene that delivers the beat through internal discovery.',
         style: 'quiet',
         tags: ['quiet', 'revelation', 'internal'],
-        ops: [
+        ops: createSceneWithPlotPoint(
+          beatId,
+          `scene_${beatType}_quiet`,
+          `pp_${beatType}_quiet`,
+          `${beatType} - Quiet Revelation`,
           {
-            op: 'ADD_NODE',
-            node: {
-              type: 'Scene',
-              id: `scene_${beatType}_quiet`,
-              heading: `INT. LOCATION - ${beatType.toUpperCase()} - NIGHT`,
-              scene_overview: `In a quiet moment of reflection, the protagonist experiences a revelation that fulfills the ${beatType} beat. The scene builds through subtext and small gestures.`,
-              beat_id: beatId,
-              order_index: 1,
-              scene_tags: ['REVEAL'],
-              status: 'DRAFT',
-              source_provenance: 'AI',
-            } as Scene,
-          },
-        ],
+            heading: `INT. LOCATION - ${beatType.toUpperCase()} - NIGHT`,
+            scene_overview: `In a quiet moment of reflection, the protagonist experiences a revelation that fulfills the ${beatType} beat. The scene builds through subtext and small gestures.`,
+            scene_tags: ['REVEAL'],
+            status: 'DRAFT',
+            source_provenance: 'AI',
+          }
+        ),
       },
       {
         title: `${beatType}: Action sequence`,
         rationale: 'A kinetic scene that delivers the beat through physical action.',
         style: 'action',
         tags: ['action', 'kinetic', 'physical'],
-        ops: [
+        ops: createSceneWithPlotPoint(
+          beatId,
+          `scene_${beatType}_action`,
+          `pp_${beatType}_action`,
+          `${beatType} - Action Sequence`,
           {
-            op: 'ADD_NODE',
-            node: {
-              type: 'Scene',
-              id: `scene_${beatType}_action`,
-              heading: `EXT. LOCATION - ${beatType.toUpperCase()} - DAY`,
-              scene_overview: `An action-packed sequence propels the story forward through the ${beatType} beat. Physical stakes mirror emotional ones as the protagonist is pushed to their limits.`,
-              beat_id: beatId,
-              order_index: 1,
-              scene_tags: ['ESCALATION', 'TURNING_POINT'],
-              status: 'DRAFT',
-              source_provenance: 'AI',
-            } as Scene,
-          },
-        ],
+            heading: `EXT. LOCATION - ${beatType.toUpperCase()} - DAY`,
+            scene_overview: `An action-packed sequence propels the story forward through the ${beatType} beat. Physical stakes mirror emotional ones as the protagonist is pushed to their limits.`,
+            scene_tags: ['ESCALATION', 'TURNING_POINT'],
+            status: 'DRAFT',
+            source_provenance: 'AI',
+          }
+        ),
       },
     ];
   }
@@ -530,4 +583,124 @@ function generateMovesForClusterWithSeed(
   }
 
   return moves;
+}
+
+// =============================================================================
+// Gap-based Cluster Generation (Unified Model)
+// =============================================================================
+
+/**
+ * Convert a Gap to an OpenQuestion for internal processing.
+ * This bridges the new unified Gap model with existing cluster generation logic.
+ */
+function gapToOpenQuestion(gap: Gap): OpenQuestion {
+  // Extract OQ type from gap ID (gap IDs follow pattern: gap_beat_xxx, gap_scene_cast_xxx, etc.)
+  const oqType = extractOQTypeFromGap(gap);
+  const targetNodeId = gap.scopeRefs.nodeIds?.[0];
+
+  const oq: OpenQuestion = {
+    id: gap.id,
+    type: oqType,
+    domain: gap.domain ?? 'STRUCTURE',
+    severity: mapGapSeverityToOQ(gap.severity),
+    phase: gap.phase ?? 'OUTLINE',
+    group_key: gap.groupKey ?? `${gap.domain ?? 'STRUCTURE'}:${gap.tier}:${gap.id}`,
+    message: gap.description,
+  };
+
+  // Only include target_node_id if defined
+  if (targetNodeId !== undefined) {
+    oq.target_node_id = targetNodeId;
+  }
+
+  return oq;
+}
+
+/**
+ * Extract OpenQuestion type from Gap ID pattern.
+ */
+function extractOQTypeFromGap(gap: Gap): OpenQuestion['type'] {
+  const id = gap.id;
+
+  if (id.includes('beat_')) return 'BeatUnrealized';
+  if (id.includes('act_')) return 'ActImbalance';
+  if (id.includes('scene_cast_')) return 'SceneHasNoCast';
+  if (id.includes('scene_loc_')) return 'SceneNeedsLocation';
+  if (id.includes('char_desc_')) return 'CharacterUnderspecified';
+  if (id.includes('char_arc_')) return 'MissingCharacterArc';
+  if (id.includes('arc_ungrounded_')) return 'ArcUngrounded';
+  if (id.includes('conf_parties_')) return 'ConflictNeedsParties';
+  if (id.includes('conf_manifest_')) return 'ConflictNeedsManifestation';
+  if (id.includes('theme_')) return 'ThemeUngrounded';
+  if (id.includes('motif_')) return 'MotifUngrounded';
+
+  // Default based on domain
+  switch (gap.domain) {
+    case 'STRUCTURE':
+      return 'BeatUnrealized';
+    case 'SCENE':
+      return 'SceneHasNoCast';
+    case 'CHARACTER':
+      return 'CharacterUnderspecified';
+    case 'CONFLICT':
+      return 'ConflictNeedsParties';
+    case 'THEME_MOTIF':
+      return 'ThemeUngrounded';
+    default:
+      return 'BeatUnrealized';
+  }
+}
+
+/**
+ * Map Gap severity to OQ severity.
+ */
+function mapGapSeverityToOQ(severity: Gap['severity']): OpenQuestion['severity'] {
+  switch (severity) {
+    case 'blocker':
+      return 'BLOCKING';
+    case 'warn':
+      return 'IMPORTANT';
+    case 'info':
+      return 'SOFT';
+    default:
+      return 'IMPORTANT';
+  }
+}
+
+/**
+ * Generate a MoveCluster for a unified Gap.
+ *
+ * This is the preferred entry point for cluster generation with the new
+ * unified Gap model. For narrative gaps, it generates creative suggestions.
+ * For structural gaps, it generates patch-based fixes.
+ */
+export function generateClusterForGap(
+  gap: Gap,
+  baseVersionId: string,
+  phase: GapPhase = 'OUTLINE',
+  options: ClusterGenerationOptions = {}
+): ClusterResult {
+  // Convert Gap to OpenQuestion for internal processing
+  const oq = gapToOpenQuestion(gap);
+
+  // Use the existing OQ-based generation (maintains all the variant logic)
+  return generateClusterForQuestion(oq, baseVersionId, phase as OQPhase, options);
+}
+
+/**
+ * Generate MoveClusters from an array of Gaps.
+ *
+ * Groups gaps by groupKey and generates clusters for each group.
+ */
+export function generateClustersForGaps(
+  gaps: Gap[],
+  baseVersionId: string,
+  phase: GapPhase = 'OUTLINE'
+): ClusterResult[] {
+  // Filter to narrative gaps (structural gaps don't need cluster generation)
+  const narrativeGaps = gaps.filter((g) => g.type === 'narrative');
+
+  // Convert to OQs and use existing cluster generation
+  const oqs = narrativeGaps.map(gapToOpenQuestion);
+  return generateClusters(oqs, baseVersionId, phase as OQPhase);
 }

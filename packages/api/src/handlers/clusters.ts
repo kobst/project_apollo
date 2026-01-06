@@ -1,13 +1,19 @@
 /**
  * POST /stories/:id/clusters - Generate move cluster
+ *
  * Can be triggered by:
- * - oqId: Generate cluster for a specific open question
- * - scopeNodeId: Generate cluster for OQs targeting a specific node
+ * - gapId: Generate cluster for a specific Gap (preferred)
+ * - oqId: Generate cluster for a specific open question (deprecated, use gapId)
+ * - scopeNodeId: Generate cluster for gaps targeting a specific node
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { deriveOpenQuestions, generateClusterForQuestion, getNode } from '@apollo/core';
-import type { OQPhase } from '@apollo/core';
+import {
+  computeCoverage,
+  generateClusterForGap,
+  getNode,
+} from '@apollo/core';
+import type { GapPhase, Gap } from '@apollo/core';
 import type { StorageContext } from '../config.js';
 import { loadVersionedStateById, deserializeGraph } from '../storage.js';
 import {
@@ -27,11 +33,11 @@ export function createClustersHandler(ctx: StorageContext) {
   ): Promise<void> => {
     try {
       const { id } = req.params;
-      const { oqId, scopeNodeId, count = 4, seed: requestedSeed } = req.body;
+      const { gapId, oqId, scopeNodeId, count = 4, seed: requestedSeed } = req.body;
 
-      // Require either oqId or scopeNodeId
-      if (!oqId && !scopeNodeId) {
-        throw new BadRequestError('Either oqId or scopeNodeId is required');
+      // Require at least one selector
+      if (!gapId && !oqId && !scopeNodeId) {
+        throw new BadRequestError('One of gapId, oqId, or scopeNodeId is required');
       }
 
       if (count < 1 || count > 12) {
@@ -52,25 +58,39 @@ export function createClustersHandler(ctx: StorageContext) {
       }
 
       const graph = deserializeGraph(currentVersion.graph);
-      const phase: OQPhase = state.metadata?.phase ?? 'OUTLINE';
-      const questions = deriveOpenQuestions(graph, phase);
+      const phase: GapPhase = state.metadata?.phase ?? 'OUTLINE';
 
-      // Find the question to use
-      let oq: typeof questions[number] | undefined;
+      // Compute coverage to get unified gaps
+      const coverage = computeCoverage(graph, phase);
+      // Filter to narrative gaps (only these need cluster generation)
+      const narrativeGaps = coverage.gaps.filter((g) => g.type === 'narrative');
+
+      // Find the gap to use
+      let gap: Gap | undefined;
       let seedKey: string = '';
 
-      if (oqId) {
-        // Direct OQ selection
-        oq = questions.find((q) => q.id === oqId);
-        if (!oq) {
+      if (gapId) {
+        // Direct Gap selection (new unified model)
+        gap = narrativeGaps.find((g) => g.id === gapId);
+        if (!gap) {
           throw new NotFoundError(
-            `Open question "${oqId}"`,
-            'Use GET /stories/:id/open-questions to see available questions'
+            `Gap "${gapId}"`,
+            'Use GET /stories/:id/gaps to see available gaps'
+          );
+        }
+        seedKey = gapId;
+      } else if (oqId) {
+        // Legacy OQ selection - find matching gap by ID
+        gap = narrativeGaps.find((g) => g.id === oqId);
+        if (!gap) {
+          throw new NotFoundError(
+            `Gap/OQ "${oqId}"`,
+            'Use GET /stories/:id/gaps to see available gaps (oqId is deprecated)'
           );
         }
         seedKey = oqId;
       } else if (scopeNodeId) {
-        // Scoped generation - find OQs targeting this node
+        // Scoped generation - find gaps targeting this node
         const node = getNode(graph, scopeNodeId);
         if (!node) {
           throw new NotFoundError(
@@ -79,34 +99,34 @@ export function createClustersHandler(ctx: StorageContext) {
           );
         }
 
-        // Find questions that target this node
-        const scopedQuestions = questions.filter(
-          (q) => q.target_node_id === scopeNodeId
+        // Find gaps that target this node
+        const scopedGaps = narrativeGaps.filter((g) =>
+          g.scopeRefs.nodeIds?.includes(scopeNodeId)
         );
 
-        if (scopedQuestions.length === 0) {
+        if (scopedGaps.length === 0) {
           throw new BadRequestError(
-            `No open questions target node "${scopeNodeId}". ` +
-            'Try selecting a different node or use Contract view to work with general OQs.'
+            `No narrative gaps target node "${scopeNodeId}". ` +
+              'Try selecting a different node or use GET /stories/:id/gaps to see all gaps.'
           );
         }
 
-        // Use the highest priority question (BLOCKING > IMPORTANT > SOFT)
-        const priorityOrder = ['BLOCKING', 'IMPORTANT', 'SOFT'];
-        scopedQuestions.sort(
+        // Use the highest priority gap (blocker > warn > info)
+        const priorityOrder = ['blocker', 'warn', 'info'];
+        scopedGaps.sort(
           (a, b) =>
             priorityOrder.indexOf(a.severity) - priorityOrder.indexOf(b.severity)
         );
-        oq = scopedQuestions[0];
+        gap = scopedGaps[0];
         seedKey = `scope_${scopeNodeId}`;
       } else {
         // This shouldn't happen due to earlier check
-        throw new BadRequestError('Either oqId or scopeNodeId is required');
+        throw new BadRequestError('One of gapId, oqId, or scopeNodeId is required');
       }
 
-      // Type guard - oq should be defined after the above logic
-      if (!oq) {
-        throw new BadRequestError('Failed to find a valid open question');
+      // Type guard - gap should be defined after the above logic
+      if (!gap) {
+        throw new BadRequestError('Failed to find a valid gap');
       }
 
       // Determine seed
@@ -122,9 +142,9 @@ export function createClustersHandler(ctx: StorageContext) {
       // Clear existing clusters (implicit rejection)
       await clearClustersById(id, ctx);
 
-      // Generate cluster
-      const clusterResult = generateClusterForQuestion(
-        oq,
+      // Generate cluster using Gap-based generation
+      const clusterResult = generateClusterForGap(
+        gap,
         state.history.currentVersionId,
         phase,
         { count, seed }

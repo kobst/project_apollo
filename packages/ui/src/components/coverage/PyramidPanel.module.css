@@ -1,0 +1,100 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  margin: 0 0 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #aaa;
+  text-align: center;
+}
+
+.pyramid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.tierRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  background: #2a2a4a;
+  border: 1px solid #3a3a5a;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tierRow:hover {
+  background: #3a3a5a;
+  border-color: #4a4a6a;
+}
+
+.tierRow.selected {
+  background: #3a3a6a;
+  border-color: #6a6aaa;
+  box-shadow: 0 0 0 2px rgba(100, 100, 200, 0.3);
+}
+
+.tierRow:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(100, 100, 200, 0.5);
+}
+
+.tierHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tierLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #fff;
+}
+
+.tierStats {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.progressBar {
+  height: 6px;
+  background: #1a1a2e;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.percent {
+  font-size: 0.75rem;
+  color: #888;
+  text-align: right;
+}
+
+.clearFilter {
+  margin-top: 16px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid #4a4a6a;
+  border-radius: 4px;
+  color: #aaa;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clearFilter:hover {
+  background: #2a2a4a;
+  color: #fff;
+}

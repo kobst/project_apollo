@@ -1,5 +1,9 @@
 /**
  * GET /stories/:id/open-questions - List open questions
+ *
+ * @deprecated Use GET /stories/:id/gaps instead, which provides a unified
+ * Gap model combining structural gaps (from rule violations) and narrative
+ * gaps (from this endpoint). Filter by `type=narrative` to get equivalent data.
  */
 
 import type { Request, Response, NextFunction } from 'express';

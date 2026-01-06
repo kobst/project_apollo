@@ -1,6 +1,17 @@
 /**
  * OpenQuestion derivation from graph state.
  * Derives OpenQuestions based on schema rules and current phase.
+ *
+ * @deprecated This module is deprecated. Use `computeCoverage()` from the
+ * `coverage` module instead, which provides a unified Gap model that includes
+ * both structural gaps (from rule violations) and narrative gaps (from this module).
+ *
+ * Migration path:
+ * - Replace `deriveOpenQuestions(graph, phase)` with `computeCoverage(graph, phase).gaps`
+ * - Filter by `gap.type === 'narrative'` to get equivalent narrative gaps
+ * - The unified Gap model has additional fields like `domain`, `phase`, `groupKey`
+ *
+ * This module will be removed in a future version.
  */
 
 import type { GraphState } from './graph.js';
@@ -25,6 +36,9 @@ import type {
 
 /**
  * Derive all OpenQuestions from the current graph state.
+ *
+ * @deprecated Use `computeCoverage(graph, phase).gaps.filter(g => g.type === 'narrative')`
+ * from the coverage module instead.
  *
  * @param graph - The current graph state
  * @param phase - The current phase (OUTLINE, DRAFT, REVISION)
@@ -67,16 +81,38 @@ export function deriveOpenQuestions(
 
 /**
  * Derive BeatUnrealized questions.
- * Triggered when a Beat has no Scenes assigned to it.
+ * Triggered when a Beat has no Scenes reachable through PlotPoints.
+ *
+ * New hierarchy: Beat ← ALIGNS_WITH ← PlotPoint ← SATISFIED_BY ← Scene
+ * A Beat is "realized" when it has at least one Scene attached through this chain.
  */
 function deriveBeatUnrealized(graph: GraphState): OpenQuestion[] {
   const questions: OpenQuestion[] = [];
   const beats = getNodesByType<Beat>(graph, 'Beat');
-  const scenes = getNodesByType<Scene>(graph, 'Scene');
+
+  // Get all ALIGNS_WITH edges (PlotPoint → Beat)
+  const alignsWithEdges = graph.edges.filter((e) => e.type === 'ALIGNS_WITH');
+  // Get all SATISFIED_BY edges (PlotPoint → Scene)
+  const satisfiedByEdges = graph.edges.filter((e) => e.type === 'SATISFIED_BY');
 
   for (const beat of beats) {
-    const scenesForBeat = scenes.filter((s) => s.beat_id === beat.id);
-    if (scenesForBeat.length === 0) {
+    // Find PlotPoints aligned to this Beat
+    const plotPointIds = alignsWithEdges
+      .filter((e) => e.to === beat.id)
+      .map((e) => e.from);
+
+    // Find Scenes attached to those PlotPoints
+    const sceneCount = satisfiedByEdges.filter((e) =>
+      plotPointIds.includes(e.from)
+    ).length;
+
+    if (sceneCount === 0) {
+      // Check if there are PlotPoints but no Scenes (different message)
+      const hasPlotPoints = plotPointIds.length > 0;
+      const message = hasPlotPoints
+        ? `Beat "${beat.beat_type}" has PlotPoints but no Scenes attached`
+        : `Beat "${beat.beat_type}" has no PlotPoints or Scenes`;
+
       questions.push({
         id: `oq_beat_${beat.id}`,
         type: 'BeatUnrealized',
@@ -85,7 +121,7 @@ function deriveBeatUnrealized(graph: GraphState): OpenQuestion[] {
         phase: 'OUTLINE',
         group_key: `STRUCTURE:BEAT:${beat.beat_type}`,
         target_node_id: beat.id,
-        message: `Beat "${beat.beat_type}" has no scenes assigned`,
+        message,
       });
     }
   }
@@ -96,20 +132,33 @@ function deriveBeatUnrealized(graph: GraphState): OpenQuestion[] {
 /**
  * Derive ActImbalance questions.
  * Triggered when an act has no scenes while neighboring acts have content.
+ *
+ * Uses new hierarchy: Beat ← ALIGNS_WITH ← PlotPoint ← SATISFIED_BY ← Scene
  */
 function deriveActImbalance(graph: GraphState): OpenQuestion[] {
   const questions: OpenQuestion[] = [];
-  const scenes = getNodesByType<Scene>(graph, 'Scene');
   const beats = getNodesByType<Beat>(graph, 'Beat');
 
-  // Count scenes per act
+  // Get all ALIGNS_WITH edges (PlotPoint → Beat)
+  const alignsWithEdges = graph.edges.filter((e) => e.type === 'ALIGNS_WITH');
+  // Get all SATISFIED_BY edges (PlotPoint → Scene)
+  const satisfiedByEdges = graph.edges.filter((e) => e.type === 'SATISFIED_BY');
+
+  // Count scenes per act by traversing Beat → PlotPoint → Scene
   const scenesPerAct: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
 
-  for (const scene of scenes) {
-    const beat = beats.find((b) => b.id === scene.beat_id);
-    if (beat) {
-      scenesPerAct[beat.act] = (scenesPerAct[beat.act] ?? 0) + 1;
-    }
+  for (const beat of beats) {
+    // Find PlotPoints aligned to this Beat
+    const plotPointIds = alignsWithEdges
+      .filter((e) => e.to === beat.id)
+      .map((e) => e.from);
+
+    // Count Scenes attached to those PlotPoints
+    const sceneCount = satisfiedByEdges.filter((e) =>
+      plotPointIds.includes(e.from)
+    ).length;
+
+    scenesPerAct[beat.act] = (scenesPerAct[beat.act] ?? 0) + sceneCount;
   }
 
   // Check for imbalance

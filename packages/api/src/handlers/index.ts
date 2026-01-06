@@ -51,4 +51,5 @@ export {
   deletePlotPointHandler,
 } from './plotPoints.js';
 export { createCoverageHandler } from './coverage.js';
+export { createGapsHandler } from './gaps.js';
 export { createRecomputeOrderHandler } from './recomputeOrder.js';

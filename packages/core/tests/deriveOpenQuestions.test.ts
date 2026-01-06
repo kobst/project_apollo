@@ -16,9 +16,27 @@ import {
   createTheme,
   createMotif,
   createCharacterArc,
+  createPlotPoint,
   resetIdCounter,
 } from './helpers/index.js';
 import { edges } from './helpers/index.js';
+
+/**
+ * Helper to connect a scene to a beat through the PlotPoint hierarchy.
+ * Creates PlotPoint → ALIGNS_WITH → Beat and PlotPoint → SATISFIED_BY → Scene
+ */
+function attachSceneToBeat(
+  graph: GraphState,
+  sceneId: string,
+  beatId: string,
+  plotPointId?: string
+): void {
+  const ppId = plotPointId ?? `pp_for_${sceneId}`;
+  const pp = createPlotPoint({ id: ppId, title: `PP for ${sceneId}` });
+  graph.nodes.set(pp.id, pp);
+  graph.edges.push(edges.alignsWith(ppId, beatId));
+  graph.edges.push(edges.satisfiedBy(ppId, sceneId, 1));
+}
 import { fixtures } from './fixtures/index.js';
 
 describe('deriveOpenQuestions', () => {
@@ -59,10 +77,12 @@ describe('deriveOpenQuestions', () => {
     });
   });
 
-  describe('After adding Catalyst scene', () => {
-    it('should remove BeatUnrealized for Catalyst after scene added', () => {
+  describe('After adding Catalyst scene (via PlotPoint)', () => {
+    it('should remove BeatUnrealized for Catalyst after scene added via PlotPoint', () => {
       const scene = createScene('beat_Catalyst', { id: 'scene_catalyst' });
       graph.nodes.set(scene.id, scene);
+      // Connect scene to beat through PlotPoint hierarchy
+      attachSceneToBeat(graph, 'scene_catalyst', 'beat_Catalyst');
 
       const questions = deriveOpenQuestions(graph, 'OUTLINE');
 
@@ -75,6 +95,7 @@ describe('deriveOpenQuestions', () => {
     it('should still have BeatUnrealized for Debate and BreakIntoTwo', () => {
       const scene = createScene('beat_Catalyst', { id: 'scene_catalyst' });
       graph.nodes.set(scene.id, scene);
+      attachSceneToBeat(graph, 'scene_catalyst', 'beat_Catalyst');
 
       const questions = deriveOpenQuestions(graph, 'OUTLINE');
 
@@ -89,9 +110,10 @@ describe('deriveOpenQuestions', () => {
       expect(breakIntoTwoOQ).toBeDefined();
     });
 
-    it('should have 14 BeatUnrealized after adding one scene', () => {
+    it('should have 14 BeatUnrealized after adding one scene via PlotPoint', () => {
       const scene = createScene('beat_Catalyst', { id: 'scene_catalyst' });
       graph.nodes.set(scene.id, scene);
+      attachSceneToBeat(graph, 'scene_catalyst', 'beat_Catalyst');
 
       const questions = deriveOpenQuestions(graph, 'OUTLINE');
       const beatUnrealized = questions.filter((q) => q.type === 'BeatUnrealized');
@@ -238,11 +260,11 @@ describe('deriveOpenQuestions', () => {
 
   describe('ActImbalance', () => {
     it('should detect act imbalance when one act is empty while neighbors have content', () => {
-      // Add scenes to Act 1 beats (positions 1-5)
+      // Add scenes to Act 1 beats (positions 1-5) via PlotPoints
       const scene1 = createScene('beat_OpeningImage', { id: 'scene_1' });
       const scene2 = createScene('beat_Setup', { id: 'scene_2' });
       // Skip Act 2 entirely (positions 6-8)
-      // Add scenes to Act 3 (positions 9-10)
+      // Add scenes to Act 3 (positions 9-10) via PlotPoints
       const scene3 = createScene('beat_Midpoint', { id: 'scene_3' });
       const scene4 = createScene('beat_BadGuysCloseIn', { id: 'scene_4' });
 
@@ -250,6 +272,12 @@ describe('deriveOpenQuestions', () => {
       graph.nodes.set(scene2.id, scene2);
       graph.nodes.set(scene3.id, scene3);
       graph.nodes.set(scene4.id, scene4);
+
+      // Connect scenes to beats through PlotPoints
+      attachSceneToBeat(graph, 'scene_1', 'beat_OpeningImage');
+      attachSceneToBeat(graph, 'scene_2', 'beat_Setup');
+      attachSceneToBeat(graph, 'scene_3', 'beat_Midpoint');
+      attachSceneToBeat(graph, 'scene_4', 'beat_BadGuysCloseIn');
 
       const questions = deriveOpenQuestions(graph, 'OUTLINE');
 

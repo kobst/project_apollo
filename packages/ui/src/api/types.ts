@@ -193,6 +193,9 @@ export interface InitRequest {
 }
 
 export interface ClusterRequest {
+  /** Gap ID (new unified model) - preferred */
+  gapId?: string;
+  /** @deprecated Use gapId instead */
   oqId?: string;
   scopeNodeId?: string;
   count?: number;
@@ -665,25 +668,37 @@ export interface PlotPointFilters {
 }
 
 // =============================================================================
-// Coverage Types
+// Coverage / Gap Types (Unified Model)
 // =============================================================================
 
-export type GapType = 'structural' | 'completeness' | 'creative';
+export type GapType = 'structural' | 'narrative';
 export type GapTier = 'premise' | 'foundations' | 'structure' | 'plotPoints' | 'scenes';
 export type GapSeverity = 'blocker' | 'warn' | 'info';
-export type GapSource = 'rule-engine' | 'derived' | 'user';
-export type GapStatus = 'open' | 'resolved';
+export type GapSource = 'rule-engine' | 'derived' | 'user' | 'extractor' | 'import';
+export type GapStatus = 'open' | 'in_progress' | 'resolved';
+export type GapPhase = 'OUTLINE' | 'DRAFT' | 'REVISION';
+export type GapDomain = 'STRUCTURE' | 'SCENE' | 'CHARACTER' | 'CONFLICT' | 'THEME_MOTIF';
 
 export interface GapData {
   id: string;
   type: GapType;
   tier: GapTier;
-  severity: GapSeverity;
   title: string;
-  message: string;
-  nodeRefs: { nodeIds?: string[]; edgeIds?: string[] };
+  description: string;
+  scopeRefs: { nodeIds?: string[]; edgeIds?: string[] };
+  severity: GapSeverity;
   source: GapSource;
   status: GapStatus;
+  // Optional fields for narrative gaps
+  phase?: GapPhase;
+  domain?: GapDomain;
+  groupKey?: string;
+  dependencies?: string[];
+  resolvedBy?: {
+    versionId: string;
+    patchId?: string;
+    timestamp: string;
+  };
 }
 
 export interface TierSummaryData {
@@ -697,4 +712,10 @@ export interface TierSummaryData {
 export interface CoverageData {
   summary: TierSummaryData[];
   gaps: GapData[];
+}
+
+export interface GapsData {
+  summary: TierSummaryData[];
+  gaps: GapData[];
+  phase: GapPhase;
 }

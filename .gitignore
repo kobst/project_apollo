@@ -20,8 +20,8 @@ Thumbs.db
 npm-debug.log*
 pnpm-debug.log*
 
-# Test coverage
-coverage/
+# Test coverage (root level only, not UI components)
+/coverage/
 
 # Environment
 .env

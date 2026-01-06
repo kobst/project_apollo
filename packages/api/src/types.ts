@@ -229,6 +229,9 @@ export interface InputRequest {
 }
 
 export interface ClusterRequest {
+  /** Gap ID (new unified model) - preferred */
+  gapId?: string;
+  /** @deprecated Use gapId instead */
   oqId?: string;
   scopeNodeId?: string;
   count?: number;

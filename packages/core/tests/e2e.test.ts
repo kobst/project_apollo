@@ -317,13 +317,32 @@ describe('End-to-end loop', () => {
       const seedPatch = fixtures.seedPatch();
       graph = applyPatch(graph, seedPatch);
 
-      // Add scene to Catalyst
+      // Add scene to Catalyst via PlotPoint hierarchy
       const sceneForCatalyst: Patch = {
         type: 'Patch',
         id: 'patch_catalyst_scene',
         base_story_version_id: 'sv0',
         created_at: new Date().toISOString(),
         ops: [
+          // Create PlotPoint
+          {
+            op: 'ADD_NODE',
+            node: {
+              type: 'PlotPoint',
+              id: 'pp_catalyst_001',
+              title: 'Dam Discovery',
+              intent: 'plot',
+              status: 'proposed',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          },
+          // Align PlotPoint with Beat
+          {
+            op: 'ADD_EDGE',
+            edge: edges.alignsWith('pp_catalyst_001', 'beat_Catalyst'),
+          },
+          // Create Scene
           {
             op: 'ADD_NODE',
             node: {
@@ -332,10 +351,13 @@ describe('End-to-end loop', () => {
               heading: 'EXT. PINE VALLEY DAM - DAY',
               scene_overview:
                 "Alex discovers the dam is about to fail, triggering the story's central conflict and forcing them to take action.",
-              beat_id: 'beat_Catalyst',
-              order_index: 1,
               status: 'DRAFT',
             },
+          },
+          // Attach Scene to PlotPoint
+          {
+            op: 'ADD_EDGE',
+            edge: edges.satisfiedBy('pp_catalyst_001', 'scene_catalyst_001', 1),
           },
           {
             op: 'ADD_EDGE',
@@ -365,6 +387,9 @@ describe('End-to-end loop', () => {
       // Check scene exists
       expect(graph.nodes.has('scene_catalyst_001')).toBe(true);
 
+      // Check PlotPoint exists (new hierarchy)
+      expect(graph.nodes.has('pp_catalyst_001')).toBe(true);
+
       // Check beat status updated
       const catalystBeat = graph.nodes.get('beat_Catalyst') as Record<
         string,
@@ -372,10 +397,16 @@ describe('End-to-end loop', () => {
       >;
       expect(catalystBeat.status).toBe('REALIZED');
 
-      // Check edges exist
-      expect(graph.edges.length).toBe(4);
+      // Check edges exist (6 total: 1 from seed_patch + 5 from sceneForCatalyst)
+      // seed_patch: INVOLVES
+      // sceneForCatalyst: ALIGNS_WITH, SATISFIED_BY, HAS_CHARACTER, LOCATED_AT, MANIFESTS_IN
+      expect(graph.edges.length).toBe(6);
 
-      // Derive OQs - should have 14 BeatUnrealized (not 15)
+      // Check PlotPoint hierarchy edges exist
+      expect(graph.edges.some((e) => e.type === 'ALIGNS_WITH' && e.from === 'pp_catalyst_001')).toBe(true);
+      expect(graph.edges.some((e) => e.type === 'SATISFIED_BY' && e.from === 'pp_catalyst_001')).toBe(true);
+
+      // Derive OQs - should have 14 BeatUnrealized (not 15) because Catalyst has scene via PlotPoint
       const questions = deriveOpenQuestions(graph, 'OUTLINE');
       const beatOQs = questions.filter((q) => q.type === 'BeatUnrealized');
       expect(beatOQs.length).toBe(14);

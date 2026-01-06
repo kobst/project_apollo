@@ -50,6 +50,12 @@ import type {
   DeletePlotPointData,
   PlotPointFilters,
   CoverageData,
+  GapsData,
+  GapTier,
+  GapSeverity,
+  GapDomain,
+  GapPhase,
+  GapType,
 } from './types';
 
 const API_BASE = '/api';
@@ -227,9 +233,30 @@ export const api = {
   deletePlotPoint: (storyId: string, ppId: string) =>
     DELETE<DeletePlotPointData>(`/stories/${storyId}/plot-points/${ppId}`),
 
-  // Coverage
+  // Coverage (deprecated - use getGaps)
   getCoverage: (storyId: string) =>
     GET<CoverageData>(`/stories/${storyId}/coverage`),
+
+  // Unified Gaps (preferred)
+  getGaps: (
+    storyId: string,
+    filters?: {
+      phase?: GapPhase;
+      tier?: GapTier;
+      severity?: GapSeverity;
+      domain?: GapDomain;
+      type?: GapType;
+    }
+  ) => {
+    const params = new URLSearchParams();
+    if (filters?.phase) params.set('phase', filters.phase);
+    if (filters?.tier) params.set('tier', filters.tier);
+    if (filters?.severity) params.set('severity', filters.severity);
+    if (filters?.domain) params.set('domain', filters.domain);
+    if (filters?.type) params.set('type', filters.type);
+    const query = params.toString();
+    return GET<GapsData>(`/stories/${storyId}/gaps${query ? `?${query}` : ''}`);
+  },
 };
 
 export { ApiError };

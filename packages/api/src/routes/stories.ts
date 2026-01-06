@@ -45,6 +45,7 @@ import {
   updatePlotPointHandler,
   deletePlotPointHandler,
   createCoverageHandler,
+  createGapsHandler,
   createRecomputeOrderHandler,
 } from '../handlers/index.js';
 
@@ -104,8 +105,11 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.post('/:id/lint/apply', createApplyFixHandler(ctx));
   router.get('/:id/lint/precommit', createPreCommitLintHandler(ctx));
 
-  // Coverage endpoint
+  // Coverage endpoint (deprecated - use /gaps instead)
   router.get('/:id/coverage', createCoverageHandler(ctx));
+
+  // Unified gaps endpoint (replaces /coverage and /open-questions)
+  router.get('/:id/gaps', createGapsHandler(ctx));
 
   // Recompute order endpoint (migration/sync)
   router.post('/:id/recompute-order', createRecomputeOrderHandler(ctx));

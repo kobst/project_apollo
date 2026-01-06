@@ -1,5 +1,5 @@
 {
-  "description": "Graph state after first Scene is added to Catalyst beat",
+  "description": "Graph state after first Scene is added to Catalyst beat (via PlotPoint)",
   "storyVersion": {
     "type": "StoryVersion",
     "id": "sv1",
@@ -45,11 +45,20 @@
       "description": "A small mountain town threatened by flooding."
     },
     {
+      "type": "PlotPoint",
+      "id": "pp_catalyst_001",
+      "title": "Dam Discovery",
+      "intent": "plot",
+      "status": "satisfied",
+      "order_index": 1,
+      "createdAt": "2025-01-01T00:04:00.000Z",
+      "updatedAt": "2025-01-01T00:04:00.000Z"
+    },
+    {
       "type": "Scene",
       "id": "scene_catalyst_001",
       "heading": "EXT. PINE VALLEY DAM - DAY",
       "scene_overview": "Alex discovers the dam is about to fail, triggering the story's central conflict and forcing them to take action.",
-      "beat_id": "beat_Catalyst",
       "order_index": 1,
       "int_ext": "EXT",
       "time_of_day": "DAY",
@@ -59,9 +68,11 @@
     }
   ],
   "edges": [
-    { "id": "edge_acc_001", "type": "INVOLVES", "from": "conf_central", "to": "char_protagonist" },
-    { "id": "edge_acc_002", "type": "HAS_CHARACTER", "from": "scene_catalyst_001", "to": "char_protagonist" },
-    { "id": "edge_acc_003", "type": "LOCATED_AT", "from": "scene_catalyst_001", "to": "loc_hometown" },
-    { "id": "edge_acc_004", "type": "MANIFESTS_IN", "from": "conf_central", "to": "scene_catalyst_001" }
+    { "id": "edge_acc_001", "type": "INVOLVES", "from": "conf_central", "to": "char_protagonist", "status": "approved", "createdAt": "2025-01-01T00:04:30.000Z" },
+    { "id": "edge_acc_002", "type": "HAS_CHARACTER", "from": "scene_catalyst_001", "to": "char_protagonist", "status": "approved", "createdAt": "2025-01-01T00:04:30.000Z" },
+    { "id": "edge_acc_003", "type": "LOCATED_AT", "from": "scene_catalyst_001", "to": "loc_hometown", "status": "approved", "createdAt": "2025-01-01T00:04:30.000Z" },
+    { "id": "edge_acc_004", "type": "MANIFESTS_IN", "from": "conf_central", "to": "scene_catalyst_001", "status": "approved", "createdAt": "2025-01-01T00:04:30.000Z" },
+    { "id": "edge_acc_005", "type": "ALIGNS_WITH", "from": "pp_catalyst_001", "to": "beat_Catalyst", "status": "approved", "createdAt": "2025-01-01T00:04:00.000Z" },
+    { "id": "edge_acc_006", "type": "SATISFIED_BY", "from": "pp_catalyst_001", "to": "scene_catalyst_001", "status": "approved", "createdAt": "2025-01-01T00:04:30.000Z", "properties": { "order": 1 } }
   ]
 }
