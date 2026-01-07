@@ -1,0 +1,46 @@
+.card {
+  background: #2a2a4a;
+  border: 1px solid #3a3a5a;
+  border-radius: 8px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.card:hover {
+  background: #3a3a5a;
+  border-color: #4a6fa5;
+}
+
+.card:focus {
+  outline: none;
+  border-color: #4a6fa5;
+  box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.3);
+}
+
+.card.selected {
+  border-color: #4a6fa5;
+  background: #2a3a5a;
+}
+
+.name {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #e0e0e0;
+  margin-bottom: 8px;
+  word-break: break-word;
+}
+
+.meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  background: #3a3a5a;
+  border-radius: 4px;
+  color: #888;
+}

@@ -1,0 +1,201 @@
+.container {
+  display: flex;
+  height: 100%;
+  background: #1a1a2e;
+  color: #e0e0e0;
+}
+
+/* Left panel - Story list */
+.storyList {
+  width: 320px;
+  flex-shrink: 0;
+  padding: 20px;
+  background: #16162a;
+  border-right: 1px solid #2a2a4a;
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #fff;
+}
+
+.newBtn {
+  padding: 6px 12px;
+  background: #4a6fa5;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.newBtn:hover {
+  background: #5a8fc5;
+}
+
+.createForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: #2a2a4a;
+  border-radius: 8px;
+}
+
+.input,
+.textarea {
+  padding: 10px 12px;
+  background: #1a1a2e;
+  border: 1px solid #3a3a5a;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #4a6fa5;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.createBtn {
+  padding: 10px 16px;
+  background: #4a6fa5;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.createBtn:hover:not(:disabled) {
+  background: #5a8fc5;
+}
+
+.createBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error {
+  padding: 12px;
+  margin-bottom: 16px;
+  background: #4a1a1a;
+  border-radius: 4px;
+  color: #ff6b6b;
+  font-size: 0.9rem;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty {
+  padding: 24px;
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* Right panel - Story details */
+.storyDetail {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.storyHeader {
+  padding-bottom: 20px;
+  border-bottom: 1px solid #2a2a4a;
+  margin-bottom: 20px;
+}
+
+.storyName {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.logline {
+  margin: 0 0 16px;
+  font-size: 0.95rem;
+  color: #aaa;
+  line-height: 1.5;
+}
+
+.stats {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 12px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.statLabel {
+  font-size: 0.7rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.phaseBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #3a3a5a;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+.noStory {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+}
+
+.noStory h3 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  color: #888;
+}
+
+.noStory p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}

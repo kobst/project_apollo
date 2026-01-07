@@ -206,6 +206,33 @@ export interface AcceptRequest {
   moveIds: string[];
 }
 
+export interface BranchRequest {
+  name: string;
+  description?: string;
+}
+
+export interface CheckoutRequest {
+  target: string; // Version ID or branch name
+}
+
+// Branch responses
+export interface BranchResponseData {
+  name: string;
+  headVersionId: string;
+  createdAt: string;
+  description?: string;
+}
+
+export interface BranchesListData {
+  branches: BranchData[];
+}
+
+export interface CheckoutData {
+  currentVersionId: string;
+  currentBranch: string | null;
+  detached: boolean;
+}
+
 // Init response
 export interface InitData {
   storyId: string;

@@ -1,6 +1,6 @@
 import styles from './ViewTabs.module.css';
 
-export type ViewMode = 'contract' | 'coverage' | 'explore' | 'outline';
+export type ViewMode = 'stories' | 'coverage' | 'explore' | 'outline';
 
 interface ViewTabsProps {
   activeView: ViewMode;
@@ -11,11 +11,11 @@ export function ViewTabs({ activeView, onViewChange }: ViewTabsProps) {
   return (
     <div className={styles.container}>
       <button
-        className={`${styles.tab} ${activeView === 'contract' ? styles.active : ''}`}
-        onClick={() => onViewChange('contract')}
+        className={`${styles.tab} ${activeView === 'stories' ? styles.active : ''}`}
+        onClick={() => onViewChange('stories')}
         type="button"
       >
-        Contract
+        Stories
       </button>
       <button
         className={`${styles.tab} ${activeView === 'coverage' ? styles.active : ''}`}

@@ -56,6 +56,10 @@ import type {
   GapDomain,
   GapPhase,
   GapType,
+  BranchRequest,
+  BranchResponseData,
+  BranchesListData,
+  CheckoutData,
 } from './types';
 
 const API_BASE = '/api';
@@ -145,6 +149,14 @@ export const api = {
     const query = limit ? `?limit=${limit}` : '';
     return GET<LogData>(`/stories/${id}/log${query}`);
   },
+
+  // Branches
+  listBranches: (storyId: string) =>
+    GET<BranchesListData>(`/stories/${storyId}/branches`),
+  createBranch: (storyId: string, data: BranchRequest) =>
+    POST<BranchResponseData>(`/stories/${storyId}/branch`, data),
+  checkout: (storyId: string, target: string) =>
+    POST<CheckoutData>(`/stories/${storyId}/checkout`, { target }),
 
   // Node browsing and editing
   listNodes: (id: string, type?: string, limit?: number, offset?: number) => {

@@ -1,0 +1,160 @@
+.container {
+  padding: 16px 0;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.refreshBtn {
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  background: transparent;
+  border: 1px solid #3a3a5a;
+  border-radius: 4px;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.refreshBtn:hover:not(:disabled) {
+  background: #3a3a5a;
+  color: #e0e0e0;
+}
+
+.refreshBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  display: flex;
+  gap: 12px;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #3a3a5a;
+  border: 2px solid #4a4a6a;
+  flex-shrink: 0;
+}
+
+.dot.currentDot {
+  background: #4a6fa5;
+  border-color: #5a8fc5;
+}
+
+.line {
+  width: 2px;
+  flex: 1;
+  background: #3a3a5a;
+  min-height: 20px;
+}
+
+.content {
+  flex: 1;
+  padding-bottom: 16px;
+}
+
+.versionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+.time {
+  font-size: 0.7rem;
+  color: #666;
+}
+
+.versionId {
+  font-size: 0.7rem;
+  font-family: monospace;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.restoreBtn {
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  background: #3a3a5a;
+  border: 1px solid #4a4a6a;
+  border-radius: 4px;
+  color: #aaa;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.restoreBtn:hover:not(:disabled) {
+  background: #4a6fa5;
+  border-color: #5a8fc5;
+  color: #fff;
+}
+
+.restoreBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.currentBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  background: #2e5a4a;
+  border-radius: 4px;
+  color: #8fc;
+}
+
+.item.current .label {
+  color: #8fc;
+}
+
+.loading,
+.empty {
+  padding: 24px;
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.error {
+  padding: 8px;
+  margin-bottom: 12px;
+  background: #4a1a1a;
+  border-radius: 4px;
+  color: #ff6b6b;
+  font-size: 0.8rem;
+}
