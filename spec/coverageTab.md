@@ -1,18 +1,23 @@
-# Coverage Tab Specification
+# Coverage / Gap System Specification
 
-**Version:** 1.0.0
-**Date:** 2026-01-05
-**Status:** Implemented
+**Version:** 2.0.0
+**Date:** 2026-01-06
+**Status:** Implemented (Unified into Workspace)
 
 ## Overview
 
-The Coverage Tab provides a visual progress indicator showing story completeness across five hierarchical tiers. It serves as an informational dashboard that aggregates rule violations and derived checks into a unified "Gap" model.
+The Coverage system provides visual progress indicators showing story completeness across multiple categories. It has been **unified into the Workspace tab** as the **Story Map** navigation panel.
 
 **Key Characteristics:**
-- Purely informational (no fix actions in V1)
-- Unifies lint rule violations with derived coverage checks
-- Visual pyramid representation of story completeness
-- Expandable gap details for investigation
+- Integrated into the Story Map left navigation
+- Progress indicators per category (not just tiers)
+- Gap severity badges on categories with issues
+- Gaps filtered by selected category in FoundationsPanel
+
+**UI Location:**
+- Story Map (left nav in Workspace tab) shows progress bars per category
+- Gaps are displayed below the node list when a category is selected
+- The unified `/gaps` API endpoint powers both features
 
 ---
 
@@ -214,37 +219,41 @@ interface TierSummary {
 
 ## 5) UI Components
 
-### 5.1 CoverageView
+### 5.1 StoryMap (New - Unified)
 
-Main container component with:
-- Header showing story name and Refresh button
-- Two-column layout: PyramidPanel (left) + GapList (right)
-- State management for coverage data and tier filtering
+Left navigation panel in Workspace showing all categories:
 
-### 5.2 PyramidPanel
+**Foundations Section:**
+- Premise, Genre/Tone, Setting, Characters, Conflicts, Themes/Motifs
 
-Visual pyramid showing five tiers:
-- Each tier displays: label, covered/total, progress bar
-- Progress bar color based on percentage:
-  - Green: >= 80%
-  - Orange: >= 50%
-  - Red: < 50%
-- Click tier to filter gaps (toggle selection)
-- Selected tier highlighted with accent color
+**Outline Section:**
+- Structure Board (beat view), Plot Points, Scenes
 
-### 5.3 GapList
+Each category row displays:
+- Label
+- Progress bar (color based on completion %)
+- Count (covered/total)
+- Severity badge (!, ?, i) if gaps exist
 
-List of gaps grouped by severity:
-- Sections: BLOCKERS, WARNINGS, INFO
-- Empty state: "No gaps found - great work!"
-- Respects tier filter from PyramidPanel
+### 5.2 FoundationsPanel
 
-### 5.4 GapItem
+Three-column layout for category content:
+- **Left**: Node list + filtered GapList below
+- **Center**: Node detail panel with edit/delete
+- **Right**: Input panel for extraction
 
-Expandable gap row:
-- Collapsed: title, type badge, tier badge
-- Expanded: message, related node IDs, source
-- Severity indicated by left border color
+### 5.3 GapList (Integrated)
+
+Displayed below node list in FoundationsPanel:
+- Filtered to selected category
+- Grouped by severity: BLOCKERS, WARNINGS, INFO
+- Collapsible via toggle button
+
+### 5.4 Legacy Components (Deprecated)
+
+The following components are still available but deprecated:
+- **CoverageView**: Standalone coverage tab (replaced by Workspace)
+- **PyramidPanel**: Visual pyramid (replaced by StoryMap)
 
 ---
 
@@ -258,28 +267,32 @@ packages/core/src/coverage/
 └── index.ts       # Module exports
 
 packages/api/src/handlers/
-└── coverage.ts    # GET /stories/:id/coverage handler
+├── gaps.ts        # GET /stories/:id/gaps (unified endpoint)
+└── coverage.ts    # GET /stories/:id/coverage (legacy)
 
-packages/ui/src/components/coverage/
+packages/ui/src/components/workspace/
+├── WorkspaceView.tsx      # Main workspace container
+├── StoryMap.tsx           # Left nav with progress indicators
+├── StoryMap.module.css
+├── FoundationsPanel.tsx   # List+editor+gaps layout
+└── FoundationsPanel.module.css
+
+packages/ui/src/components/coverage/  (legacy)
 ├── CoverageView.tsx
-├── CoverageView.module.css
 ├── PyramidPanel.tsx
-├── PyramidPanel.module.css
 ├── GapList.tsx
-├── GapList.module.css
-├── GapItem.tsx
-└── GapItem.module.css
+└── GapItem.tsx
 ```
 
 ---
 
 ## 7) Usage
 
-1. Navigate to the Coverage tab in the UI
-2. View the pyramid to see overall story completeness
-3. Click a tier to filter gaps to that tier
-4. Expand gaps to see details and related nodes
-5. Use the Refresh button to re-fetch coverage after making changes
+1. Navigate to the **Workspace** tab in the UI
+2. View the **Story Map** on the left to see category progress
+3. Click a category to see its nodes and filtered gaps
+4. Gaps appear below the node list with severity indicators
+5. Progress updates automatically when you make changes
 
 ---
 

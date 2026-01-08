@@ -3,10 +3,8 @@ import { StoryProvider } from './context/StoryContext';
 import styles from './App.module.css';
 import { Header } from './components/layout/Header';
 import { ViewTabs, type ViewMode } from './components/layout/ViewTabs';
-import { ExploreView } from './components/explore/ExploreView';
-import { OutlineView } from './components/outline/OutlineView';
-import { CoverageView } from './components/coverage/CoverageView';
 import { StoriesView } from './components/stories/StoriesView';
+import { WorkspaceView } from './components/workspace';
 
 export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('stories');
@@ -19,11 +17,7 @@ export default function App() {
 
         {viewMode === 'stories' && <StoriesView />}
 
-        {viewMode === 'coverage' && <CoverageView />}
-
-        {viewMode === 'explore' && <ExploreView />}
-
-        {viewMode === 'outline' && <OutlineView />}
+        {viewMode === 'workspace' && <WorkspaceView />}
       </div>
     </StoryProvider>
   );
