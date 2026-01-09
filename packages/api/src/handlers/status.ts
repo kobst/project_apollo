@@ -49,6 +49,7 @@ export function createStatusHandler(ctx: StorageContext) {
           currentVersionId: state.history.currentVersionId,
           currentBranch: state.history.currentBranch,
           updatedAt: state.updatedAt,
+          hasStoryContext: !!state.metadata?.storyContext,
           stats: {
             scenes: stats.nodeCountByType.Scene ?? 0,
             beats: stats.nodeCountByType.Beat ?? 0,
@@ -60,7 +61,7 @@ export function createStatusHandler(ctx: StorageContext) {
             objects: stats.nodeCountByType.Object ?? 0,
             plotPoints: stats.nodeCountByType.PlotPoint ?? 0,
             edges: stats.edgeCount,
-            premises: stats.nodeCountByType.Premise ?? 0,
+            loglines: stats.nodeCountByType.Logline ?? 0,
             settings: stats.nodeCountByType.Setting ?? 0,
             genreTones: stats.nodeCountByType.GenreTone ?? 0,
           },

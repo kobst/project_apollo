@@ -17,7 +17,7 @@ import type {
   Theme,
   Motif,
   StoryObject,
-  Premise,
+  Logline,
   Setting,
   GenreTone,
   Genre,
@@ -581,23 +581,23 @@ export function extractFromInput(
     });
   }
 
-  if (targetType === 'Premise' || (!targetType && (lowerInput.includes('premise') || lowerInput.includes('logline') || lowerInput.includes('concept') || lowerInput.includes('this story is about')))) {
-    // Premise extraction proposal
-    const premiseId = `premise_${Date.now()}`;
-    const patchId = `patch_premise_${Date.now()}`;
+  if (targetType === 'Logline' || (!targetType && (lowerInput.includes('logline') || lowerInput.includes('this story is about')))) {
+    // Logline extraction proposal
+    const loglineId = `logline_${Date.now()}`;
+    const patchId = `patch_logline_${Date.now()}`;
 
-    const premise: Premise = {
-      type: 'Premise',
-      id: premiseId,
-      logline: input.trim(),
+    const logline: Logline = {
+      type: 'Logline',
+      id: loglineId,
+      text: input.trim(),
     };
 
     proposals.push({
-      id: 'prop_premise_0',
-      title: 'Create story premise',
-      description: 'Extract the core story concept and logline.',
+      id: 'prop_logline_0',
+      title: 'Create story logline',
+      description: 'Extract the one-sentence story summary.',
       confidence: 0.8,
-      extractedEntities: [{ type: 'Premise', name: 'Story Premise', id: premiseId }],
+      extractedEntities: [{ type: 'Logline', name: 'Story Logline', id: loglineId }],
       patch: {
         type: 'Patch',
         id: patchId,
@@ -606,7 +606,7 @@ export function extractFromInput(
         ops: [
           {
             op: 'ADD_NODE',
-            node: premise,
+            node: logline,
           },
         ],
         metadata: {

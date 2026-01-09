@@ -163,8 +163,8 @@ export const EDGE_TEMPLATES: Record<EdgeType, EdgeTemplate> = {
   },
   DEFINES: {
     label: 'Defines',
-    description: 'Premise defines a central conflict',
-    sourceTypes: ['Premise'],
+    description: 'Logline defines a central conflict',
+    sourceTypes: ['Logline'],
     targetTypes: ['Conflict'],
     properties: {
       notes: {},

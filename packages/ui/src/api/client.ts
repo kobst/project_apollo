@@ -67,6 +67,8 @@ import type {
   BranchResponseData,
   BranchesListData,
   CheckoutData,
+  StoryContextData,
+  UpdateContextData,
 } from './types';
 
 const API_BASE = '/api';
@@ -294,6 +296,12 @@ export const api = {
     const query = params.toString();
     return GET<GapsData>(`/stories/${storyId}/gaps${query ? `?${query}` : ''}`);
   },
+
+  // Story Context
+  getContext: (storyId: string) =>
+    GET<StoryContextData>(`/stories/${storyId}/context`),
+  updateContext: (storyId: string, context: string) =>
+    PATCH<UpdateContextData>(`/stories/${storyId}/context`, { context }),
 };
 
 export { ApiError };

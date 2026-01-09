@@ -30,7 +30,7 @@ import type { NodeType } from './nodes.js';
  * PAYS_OFF: PlotPoint → Motif (payoff relationship)
  *
  * Context layer edges:
- * DEFINES: Premise → Conflict (premise defines central conflicts)
+ * DEFINES: Logline → Conflict (logline defines central conflicts)
  * PART_OF: Location → Setting (location is part of setting/world)
  * SET_IN: Scene → Setting (scene takes place in setting)
  *
@@ -220,9 +220,9 @@ export const EDGE_RULES: Record<EdgeType, EdgeRule> = {
     target: ['Motif'],
   },
 
-  // Premise → Conflict (premise defines central conflicts)
+  // Logline → Conflict (logline defines central conflicts)
   DEFINES: {
-    source: ['Premise'],
+    source: ['Logline'],
     target: ['Conflict'],
   },
 

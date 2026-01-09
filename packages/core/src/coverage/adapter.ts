@@ -17,7 +17,7 @@ import type { Gap, GapTier, GapSeverity, GapType } from './types.js';
  */
 const RULE_TO_TIER: Record<string, GapTier> = {
   // Premise tier
-  STORY_HAS_PREMISE: 'premise',
+  STORY_HAS_LOGLINE: 'premise',
 
   // Foundations tier
   THEME_NOT_ORPHANED: 'foundations',
@@ -45,7 +45,7 @@ const RULE_TO_TIER: Record<string, GapTier> = {
  * Used as fallback when rule mapping doesn't exist.
  */
 const NODE_TYPE_TO_TIER: Record<string, GapTier> = {
-  Premise: 'premise',
+  Logline: 'premise',
   Setting: 'foundations',
   GenreTone: 'foundations',
   Conflict: 'foundations',
@@ -65,7 +65,7 @@ const NODE_TYPE_TO_TIER: Record<string, GapTier> = {
  */
 const RULE_LABELS: Record<string, string> = {
   // Premise
-  STORY_HAS_PREMISE: 'Missing Premise',
+  STORY_HAS_LOGLINE: 'Missing Logline',
 
   // Foundations
   THEME_NOT_ORPHANED: 'Orphaned Theme',

@@ -6,7 +6,7 @@
 
 import type { GraphState } from '../core/graph.js';
 import { getNodesByType } from '../core/graph.js';
-import type { Theme, Motif, PlotPoint, Premise, Location } from '../types/nodes.js';
+import type { Theme, Motif, PlotPoint, Logline, Location } from '../types/nodes.js';
 import type { Rule, RuleViolation, LintScope } from './types.js';
 import { getScenesInScope, isNodeInScope, createViolation } from './utils.js';
 import { registerRule } from './engine.js';
@@ -316,30 +316,30 @@ export const SCENE_HAS_PLOTPOINT: Rule = {
 };
 
 // =============================================================================
-// STORY_HAS_PREMISE
+// STORY_HAS_LOGLINE
 // =============================================================================
 
 /**
- * Story should have a Premise node defined.
- * The premise provides the core concept/logline for the story.
+ * Story should have a Logline node defined.
+ * The logline provides the one-sentence summary of the story.
  */
-export const STORY_HAS_PREMISE: Rule = {
-  id: 'STORY_HAS_PREMISE',
-  name: 'Story Should Have Premise',
+export const STORY_HAS_LOGLINE: Rule = {
+  id: 'STORY_HAS_LOGLINE',
+  name: 'Story Should Have Logline',
   severity: 'soft',
   category: 'completeness',
-  description: 'Stories should define a premise/logline',
+  description: 'Stories should define a logline',
 
   evaluate: (graph: GraphState, _scope: LintScope): RuleViolation[] => {
-    const premises = getNodesByType<Premise>(graph, 'Premise');
+    const loglines = getNodesByType<Logline>(graph, 'Logline');
 
-    if (premises.length === 0) {
+    if (loglines.length === 0) {
       return [
         createViolation(
-          'STORY_HAS_PREMISE',
+          'STORY_HAS_LOGLINE',
           'soft',
           'completeness',
-          'Story has no premise defined. Consider adding a logline to establish the core concept.',
+          'Story has no logline defined. Consider adding a logline to establish the core concept.',
           {}
         ),
       ];
@@ -416,7 +416,7 @@ export const SOFT_RULES: Rule[] = [
   THEME_NOT_ORPHANED,
   MOTIF_NOT_ORPHANED,
   PP_EVENT_REALIZATION,
-  STORY_HAS_PREMISE,
+  STORY_HAS_LOGLINE,
   LOCATION_HAS_SETTING,
 ];
 

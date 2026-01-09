@@ -74,7 +74,7 @@ export function FoundationsPanel({ category, nodeType, includeMotifs }: Foundati
   const fetchAllNodes = useCallback(async () => {
     if (!currentStoryId) return;
     try {
-      const types = ['Beat', 'Scene', 'Character', 'Conflict', 'Location', 'Theme', 'Motif', 'CharacterArc', 'Object', 'PlotPoint', 'Premise', 'Setting', 'GenreTone'];
+      const types = ['Beat', 'Scene', 'Character', 'Conflict', 'Location', 'Theme', 'Motif', 'CharacterArc', 'Object', 'PlotPoint', 'Logline', 'Setting', 'GenreTone'];
       const results = await Promise.all(
         types.map(type => api.listNodes(currentStoryId, type).catch(() => ({ nodes: [] })))
       );
@@ -104,9 +104,11 @@ export function FoundationsPanel({ category, nodeType, includeMotifs }: Foundati
       if (includeMotifs && titleLower.includes('motif')) return true;
 
       // Match by tier for some categories
-      if (category === 'premise' && gap.tier === 'premise') return true;
+      if (category === 'logline' && gap.tier === 'premise') return true;
       if (category === 'characters' && gap.tier === 'foundations' && gap.domain === 'CHARACTER') return true;
       if (category === 'conflicts' && gap.tier === 'foundations' && gap.domain === 'CONFLICT') return true;
+      if (category === 'locations' && gap.tier === 'foundations') return true;
+      if (category === 'objects' && gap.tier === 'foundations') return true;
       if (category === 'plotPoints' && gap.tier === 'plotPoints') return true;
       if (category === 'scenes' && gap.tier === 'scenes') return true;
 
@@ -145,15 +147,19 @@ export function FoundationsPanel({ category, nodeType, includeMotifs }: Foundati
 
   const getCategoryLabel = () => {
     const labels: Record<StoryMapCategory, string> = {
-      premise: 'Premise',
+      storyContext: 'Story Context',
+      logline: 'Logline',
       genreTone: 'Genre/Tone',
       setting: 'Setting',
       characters: 'Characters',
       conflicts: 'Conflicts',
       themes: 'Themes & Motifs',
+      locations: 'Locations',
+      objects: 'Objects',
       board: 'Structure Board',
       plotPoints: 'Plot Points',
       scenes: 'Scenes',
+      unassigned: 'Unassigned',
     };
     return labels[category];
   };

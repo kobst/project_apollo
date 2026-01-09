@@ -52,6 +52,8 @@ import {
   getSceneHandler,
   updateSceneHandler,
   deleteSceneHandler,
+  createGetContextHandler,
+  createUpdateContextHandler,
 } from '../handlers/index.js';
 
 export function createStoriesRouter(ctx: StorageContext): Router {
@@ -132,6 +134,10 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.get('/:id/scenes/:sceneId', getSceneHandler(ctx));
   router.patch('/:id/scenes/:sceneId', updateSceneHandler(ctx));
   router.delete('/:id/scenes/:sceneId', deleteSceneHandler(ctx));
+
+  // Story Context endpoints
+  router.get('/:id/context', createGetContextHandler(ctx));
+  router.patch('/:id/context', createUpdateContextHandler(ctx));
 
   return router;
 }

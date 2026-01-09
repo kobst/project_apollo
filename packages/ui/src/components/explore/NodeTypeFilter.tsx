@@ -2,7 +2,7 @@ import type { StoryStats } from '../../api/types';
 import styles from './NodeTypeFilter.module.css';
 
 export type NodeTypeOption =
-  | 'Premise'
+  | 'Logline'
   | 'Setting'
   | 'GenreTone'
   | 'Beat'
@@ -23,7 +23,7 @@ interface NodeTypeFilterProps {
 
 const NODE_TYPES: { type: NodeTypeOption; label: string; statKey?: keyof StoryStats }[] = [
   // Context Layer (top of pyramid)
-  { type: 'Premise', label: 'Premise', statKey: 'premises' },
+  { type: 'Logline', label: 'Logline', statKey: 'loglines' },
   { type: 'Setting', label: 'Settings', statKey: 'settings' },
   { type: 'GenreTone', label: 'Genre/Tone', statKey: 'genreTones' },
   // Abstract meaning

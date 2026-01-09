@@ -27,7 +27,7 @@ export interface StoryStats {
   objects: number;
   plotPoints: number;
   edges: number;
-  premises: number;
+  loglines: number;
   settings: number;
   genreTones: number;
 }
@@ -47,6 +47,7 @@ export interface StatusData {
   currentVersionId: string;
   currentBranch: string | null;
   updatedAt: string;
+  hasStoryContext: boolean;
   stats: StoryStats;
   openQuestions: OpenQuestionSummary;
 }
@@ -796,4 +797,19 @@ export interface GapsData {
   summary: TierSummaryData[];
   gaps: GapData[];
   phase: GapPhase;
+}
+
+// =============================================================================
+// Story Context Types
+// =============================================================================
+
+export interface StoryContextData {
+  context: string | null;
+  modifiedAt: string | null;
+}
+
+export interface UpdateContextData {
+  context: string;
+  modifiedAt: string;
+  newVersionId: string;
 }

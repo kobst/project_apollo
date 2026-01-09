@@ -5,17 +5,22 @@ import type { GapsData, GapTier, GapSeverity } from '../../api/types';
 import styles from './StoryMap.module.css';
 
 export type StoryMapCategory =
-  // Foundations
-  | 'premise'
+  // Premise (umbrella)
+  | 'storyContext'
+  | 'logline'
   | 'genreTone'
   | 'setting'
+  // Story Elements
   | 'characters'
   | 'conflicts'
   | 'themes'
+  | 'locations'
+  | 'objects'
   // Outline
   | 'board'
   | 'plotPoints'
-  | 'scenes';
+  | 'scenes'
+  | 'unassigned';
 
 interface CategoryConfig {
   id: StoryMapCategory;
@@ -23,21 +28,29 @@ interface CategoryConfig {
   tier?: GapTier;
   statKey?: string;
   expectedCount?: number;
+  special?: boolean; // For non-node categories like storyContext
 }
 
-const FOUNDATIONS_CATEGORIES: CategoryConfig[] = [
-  { id: 'premise', label: 'Premise', tier: 'premise', statKey: 'premises', expectedCount: 1 },
+const PREMISE_CATEGORIES: CategoryConfig[] = [
+  { id: 'storyContext', label: 'Story Context', tier: 'premise', special: true },
+  { id: 'logline', label: 'Logline', tier: 'premise', statKey: 'loglines', expectedCount: 1 },
   { id: 'genreTone', label: 'Genre/Tone', statKey: 'genreTones', expectedCount: 1 },
   { id: 'setting', label: 'Setting', statKey: 'settings', expectedCount: 1 },
+];
+
+const STORY_ELEMENTS_CATEGORIES: CategoryConfig[] = [
   { id: 'characters', label: 'Characters', tier: 'foundations', statKey: 'characters' },
   { id: 'conflicts', label: 'Conflicts', tier: 'foundations', statKey: 'conflicts' },
   { id: 'themes', label: 'Themes/Motifs', statKey: 'themes' },
+  { id: 'locations', label: 'Locations', tier: 'foundations', statKey: 'locations' },
+  { id: 'objects', label: 'Objects', tier: 'foundations', statKey: 'objects' },
 ];
 
 const OUTLINE_CATEGORIES: CategoryConfig[] = [
   { id: 'board', label: 'Structure Board', tier: 'structure' },
   { id: 'plotPoints', label: 'Plot Points', tier: 'plotPoints', statKey: 'plotPoints' },
   { id: 'scenes', label: 'Scenes', tier: 'scenes', statKey: 'scenes' },
+  { id: 'unassigned', label: 'Unassigned', tier: 'scenes', special: true },
 ];
 
 interface CategoryRowData {
@@ -103,8 +116,11 @@ export function StoryMap({ selectedCategory, onSelectCategory }: StoryMapProps) 
         // Match gaps to categories by checking title content
         const titleLower = gap.title.toLowerCase();
         switch (config.id) {
-          case 'premise':
-            return gap.tier === 'premise' || titleLower.includes('premise');
+          case 'storyContext':
+            // Story Context is special - has no gaps tracking (for now)
+            return false;
+          case 'logline':
+            return gap.tier === 'premise' || titleLower.includes('logline') || titleLower.includes('premise');
           case 'genreTone':
             return titleLower.includes('genretone') || titleLower.includes('genre');
           case 'setting':
@@ -115,12 +131,19 @@ export function StoryMap({ selectedCategory, onSelectCategory }: StoryMapProps) 
             return titleLower.includes('conflict') || gap.domain === 'CONFLICT';
           case 'themes':
             return titleLower.includes('theme') || titleLower.includes('motif') || gap.domain === 'THEME_MOTIF';
+          case 'locations':
+            return titleLower.includes('location');
+          case 'objects':
+            return titleLower.includes('object') || titleLower.includes('prop');
           case 'board':
             return gap.tier === 'structure' || titleLower.includes('beat');
           case 'plotPoints':
             return gap.tier === 'plotPoints' || titleLower.includes('plotpoint') || titleLower.includes('plot point');
           case 'scenes':
             return gap.tier === 'scenes' || titleLower.includes('scene');
+          case 'unassigned':
+            // Unassigned is special - no gaps tracking
+            return false;
           default:
             return false;
         }
@@ -199,7 +222,8 @@ export function StoryMap({ selectedCategory, onSelectCategory }: StoryMapProps) 
     };
   };
 
-  const foundationsData = FOUNDATIONS_CATEGORIES.map(buildCategoryData);
+  const premiseData = PREMISE_CATEGORIES.map(buildCategoryData);
+  const storyElementsData = STORY_ELEMENTS_CATEGORIES.map(buildCategoryData);
   const outlineData = OUTLINE_CATEGORIES.map(buildCategoryData);
 
   if (!currentStoryId) {
@@ -213,9 +237,23 @@ export function StoryMap({ selectedCategory, onSelectCategory }: StoryMapProps) 
   return (
     <div className={styles.container}>
       <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>Foundations</h3>
+        <h3 className={styles.sectionTitle}>Premise</h3>
         <div className={styles.categoryList}>
-          {foundationsData.map(row => (
+          {premiseData.map(row => (
+            <CategoryRow
+              key={row.id}
+              data={row}
+              isSelected={selectedCategory === row.id}
+              onClick={() => onSelectCategory(row.id)}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className={styles.section}>
+        <h3 className={styles.sectionTitle}>Story Elements</h3>
+        <div className={styles.categoryList}>
+          {storyElementsData.map(row => (
             <CategoryRow
               key={row.id}
               data={row}

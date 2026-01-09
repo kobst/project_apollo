@@ -8,7 +8,7 @@ import styles from './InputPanel.module.css';
 const TARGET_TYPES = [
   { value: '', label: 'Auto-detect' },
   // Context layer
-  { value: 'Premise', label: 'Premise' },
+  { value: 'Logline', label: 'Logline' },
   { value: 'Setting', label: 'Setting' },
   { value: 'GenreTone', label: 'Genre/Tone' },
   // Story content

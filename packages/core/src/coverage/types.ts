@@ -197,7 +197,7 @@ export interface TierConfig {
  * Tier configuration lookup.
  */
 export const TIER_CONFIG: Record<GapTier, TierConfig> = {
-  premise: { label: 'Premise', order: 1 },
+  premise: { label: 'Logline', order: 1 },
   foundations: { label: 'Foundations', order: 2 },
   structure: { label: 'Structure', order: 3 },
   plotPoints: { label: 'Plot Points', order: 4 },

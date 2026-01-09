@@ -22,6 +22,8 @@ export interface StoryMetadata {
   name?: string;
   logline?: string;
   phase?: OQPhase;
+  storyContext?: string;           // Markdown content for creative guidance
+  storyContextModifiedAt?: string; // ISO timestamp for version tracking
 }
 
 export interface StoredVersion {

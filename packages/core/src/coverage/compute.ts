@@ -115,17 +115,17 @@ function computeTierSummaries(graph: GraphState, gaps: Gap[]): TierSummary[] {
 
 /**
  * Compute Premise tier summary.
- * Coverage: 1 if Premise node exists, 0 otherwise.
+ * Coverage: 1 if Logline node exists, 0 otherwise.
  */
 function computePremiseTier(graph: GraphState): TierSummary {
-  const hasPremise = getNodeCountByType(graph, 'Premise') > 0;
+  const hasLogline = getNodeCountByType(graph, 'Logline') > 0;
 
   return {
     tier: 'premise',
-    label: 'Premise',
-    covered: hasPremise ? 1 : 0,
+    label: 'Logline',
+    covered: hasLogline ? 1 : 0,
     total: 1,
-    percent: hasPremise ? 100 : 0,
+    percent: hasLogline ? 100 : 0,
   };
 }
 

@@ -367,23 +367,20 @@ export interface PlotPoint extends BaseNode {
 }
 
 // =============================================================================
-// 15. Premise
+// 15. Logline
 // =============================================================================
 
 /**
- * Premise - The core story concept (one per story)
- * Top of the pyramid - everything else serves the premise
+ * Logline - The one-sentence story summary (one per story)
+ * Top of the pyramid - everything else serves the logline
+ *
+ * Note: Replaces the old Premise node. Extended concept/hook/notes
+ * are now stored in Story Context (StoryMetadata.storyContext).
  */
-export interface Premise extends BaseNode {
-  type: 'Premise';
-  /** The logline - one sentence story summary */
-  logline: string;
-  /** Extended concept description */
-  concept?: string;
-  /** What makes this story unique */
-  hook?: string;
-  /** Author notes about the premise */
-  notes?: string;
+export interface Logline extends BaseNode {
+  type: 'Logline';
+  /** The logline text - one sentence story summary */
+  text: string;
 }
 
 // =============================================================================
@@ -487,7 +484,7 @@ export type ContentNode =
   | CharacterArc
   | Conflict
   | PlotPoint
-  | Premise
+  | Logline
   | Setting
   | GenreTone;
 
@@ -509,7 +506,7 @@ export type NodeType =
   | 'CharacterArc'
   | 'Conflict'
   | 'PlotPoint'
-  | 'Premise'
+  | 'Logline'
   | 'Setting'
   | 'GenreTone';
 
@@ -531,7 +528,7 @@ export const NODE_TYPES: NodeType[] = [
   'CharacterArc',
   'Conflict',
   'PlotPoint',
-  'Premise',
+  'Logline',
   'Setting',
   'GenreTone',
 ];

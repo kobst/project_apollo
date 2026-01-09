@@ -1,0 +1,138 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.compact {
+  padding: 1rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.compact .header {
+  padding: 0 0 0.75rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.status {
+  font-size: 0.75rem;
+}
+
+.saving {
+  color: var(--accent-color, #0ea5e9);
+}
+
+.unsaved {
+  color: var(--warning-color, #f59e0b);
+}
+
+.saved {
+  color: var(--success-color, #22c55e);
+}
+
+.error {
+  padding: 0.75rem 1.5rem;
+  background: var(--error-bg, rgba(239, 68, 68, 0.1));
+  color: var(--error-color, #ef4444);
+  font-size: 0.875rem;
+}
+
+.compact .error {
+  padding: 0.5rem 0;
+}
+
+.description {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.compact .description {
+  padding: 0.5rem 0;
+}
+
+.editorWrapper {
+  flex: 1;
+  display: flex;
+  padding: 0 1.5rem;
+  min-height: 0;
+}
+
+.compact .editorWrapper {
+  padding: 0;
+}
+
+.editor {
+  flex: 1;
+  width: 100%;
+  padding: 1rem;
+  background: var(--bg-secondary, #1e1e1e);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+}
+
+.editor:focus {
+  border-color: var(--accent-color, #0ea5e9);
+  box-shadow: 0 0 0 2px var(--accent-color-alpha, rgba(14, 165, 233, 0.2));
+}
+
+.editor::placeholder {
+  color: var(--text-tertiary, #666);
+}
+
+.editor:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border-color);
+}
+
+.compact .footer {
+  padding: 0.75rem 0 0;
+}
+
+.stats {
+  font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+}
+
+.lastSaved {
+  opacity: 0.7;
+}
+
+.loading,
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+}

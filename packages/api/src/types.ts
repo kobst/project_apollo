@@ -43,7 +43,7 @@ export interface StoryStats {
   objects: number;
   plotPoints: number;
   edges: number;
-  premises: number;
+  loglines: number;
   settings: number;
   genreTones: number;
 }
@@ -63,6 +63,7 @@ export interface StatusData {
   currentVersionId: string;
   currentBranch: string | null;
   updatedAt: string;
+  hasStoryContext: boolean;
   stats: StoryStats;
   openQuestions: OpenQuestionSummary;
 }
@@ -321,4 +322,23 @@ export interface OutlineData {
     totalScenes: number;
     emptyBeats: number;
   };
+}
+
+// =============================================================================
+// Story Context Response
+// =============================================================================
+
+export interface StoryContextData {
+  context: string | null;
+  modifiedAt: string | null;
+}
+
+export interface UpdateContextData {
+  context: string;
+  modifiedAt: string;
+  newVersionId: string;
+}
+
+export interface UpdateContextRequest {
+  context: string;
 }

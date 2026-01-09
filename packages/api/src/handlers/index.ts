@@ -60,3 +60,7 @@ export {
   updateSceneHandler,
   deleteSceneHandler,
 } from './scenes.js';
+export {
+  createGetContextHandler,
+  createUpdateContextHandler,
+} from './context.js';

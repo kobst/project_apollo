@@ -12,7 +12,7 @@ interface NodeEditorProps {
 // Define which fields are editable per node type
 const EDITABLE_FIELDS: Record<string, string[]> = {
   // Context layer
-  Premise: ['logline', 'concept', 'hook', 'notes'],
+  Logline: ['text'],
   Setting: ['name', 'description', 'time_period', 'atmosphere', 'notes'],
   GenreTone: ['genre', 'secondary_genre', 'tone', 'tone_description', 'conventions', 'notes'],
   // Structure
@@ -38,10 +38,8 @@ const FIELD_TYPES: Record<string, 'text' | 'textarea' | 'select' | 'number'> = {
   criteria_of_satisfaction: 'textarea',
   statement: 'textarea',
   significance: 'textarea',
-  // Premise fields
-  logline: 'textarea',
-  concept: 'textarea',
-  hook: 'textarea',
+  // Logline fields
+  text: 'textarea',
   // Setting fields
   time_period: 'text',
   atmosphere: 'textarea',

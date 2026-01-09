@@ -236,13 +236,13 @@ function getNodeLabel(node: KGNode): string {
     return formatted;
   }
 
-  // For Premise nodes, use logline truncated
-  if (node.type === 'Premise' && typeof nodeRecord.logline === 'string') {
-    const logline = nodeRecord.logline as string;
-    if (logline.length > 50) {
-      return logline.slice(0, 47) + '...';
+  // For Logline nodes, use text truncated
+  if (node.type === 'Logline' && typeof nodeRecord.text === 'string') {
+    const text = nodeRecord.text as string;
+    if (text.length > 50) {
+      return text.slice(0, 47) + '...';
     }
-    return logline;
+    return text;
   }
 
   // For GenreTone nodes, combine genre and tone

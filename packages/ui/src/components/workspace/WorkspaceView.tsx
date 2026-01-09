@@ -3,24 +3,30 @@ import { useStory } from '../../context/StoryContext';
 import { StoryMap, type StoryMapCategory } from './StoryMap';
 import { FoundationsPanel } from './FoundationsPanel';
 import { OutlineView } from '../outline/OutlineView';
+import { StoryContextEditor } from '../context/StoryContextEditor';
 import styles from './WorkspaceView.module.css';
 
 // Map StoryMapCategory to node types for the foundations panel
-const CATEGORY_TO_NODE_TYPE: Record<StoryMapCategory, string> = {
-  premise: 'Premise',
+// null values indicate special categories that don't use FoundationsPanel
+const CATEGORY_TO_NODE_TYPE: Record<StoryMapCategory, string | null> = {
+  storyContext: null, // Special: uses StoryContextEditor
+  logline: 'Logline',
   genreTone: 'GenreTone',
   setting: 'Setting',
   characters: 'Character',
   conflicts: 'Conflict',
   themes: 'Theme', // Will also include Motif
-  board: 'Beat', // Not used directly, board uses OutlineView
+  locations: 'Location',
+  objects: 'Object',
+  board: null, // Special: uses OutlineView
   plotPoints: 'PlotPoint',
   scenes: 'Scene',
+  unassigned: null, // Special: staging area (will use OutlineView)
 };
 
 export function WorkspaceView() {
   const { currentStoryId, status } = useStory();
-  const [selectedCategory, setSelectedCategory] = useState<StoryMapCategory>('premise');
+  const [selectedCategory, setSelectedCategory] = useState<StoryMapCategory>('logline');
 
   if (!currentStoryId) {
     return (
@@ -35,13 +41,22 @@ export function WorkspaceView() {
 
   // Determine what to render in the main panel
   const renderMainPanel = () => {
-    // Board view uses the existing OutlineView
-    if (selectedCategory === 'board') {
+    // Story Context uses a dedicated editor
+    if (selectedCategory === 'storyContext') {
+      return <StoryContextEditor />;
+    }
+
+    // Board and Unassigned use the OutlineView
+    if (selectedCategory === 'board' || selectedCategory === 'unassigned') {
       return <OutlineView />;
     }
 
     // All other categories use the FoundationsPanel (list + editor)
     const nodeType = CATEGORY_TO_NODE_TYPE[selectedCategory];
+    if (!nodeType) {
+      return <div>Unknown category</div>;
+    }
+
     const includeMotifs = selectedCategory === 'themes';
 
     return (
