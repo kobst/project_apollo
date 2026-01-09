@@ -409,14 +409,6 @@ function checkNodeRules(graph: GraphState): ValidationError[] {
 
   // Conflict validation
   for (const conflict of getNodesByType<Conflict>(graph, 'Conflict')) {
-    if (conflict.intensity !== undefined && (conflict.intensity < 1 || conflict.intensity > 5)) {
-      errors.push({
-        code: 'OUT_OF_RANGE',
-        message: `Conflict "${conflict.id}" has invalid intensity: ${conflict.intensity} (must be 1-5)`,
-        node_id: conflict.id,
-        field: 'intensity',
-      });
-    }
     if (!conflict.description || conflict.description.length < 20) {
       errors.push({
         code: 'CONSTRAINT_VIOLATION',

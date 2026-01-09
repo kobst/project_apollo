@@ -297,7 +297,7 @@ The beat-by-beat structure view (same as previous Outline tab).
 
 List view of all plot points.
 
-- **Fields**: title, summary, intent, criteria_of_satisfaction, priority, urgency
+- **Fields**: title, summary, intent (optional), priority, urgency
 - **Intent Types**: PLOT, CHARACTER, THEME, TONE
 - **Progress**: Based on SATISFIED_BY edges from scenes
 
@@ -344,8 +344,8 @@ The **Node Editor** allows direct modification of committed graph nodes within t
 | **Location** | name, description, atmosphere |
 | **Theme** | statement, notes |
 | **Motif** | name, description |
-| **PlotPoint** | title, summary, intent, criteria_of_satisfaction, priority, urgency, stakes_change, status, act |
-| **Object** | name, description, significance |
+| **PlotPoint** | title, summary, intent, priority, urgency, stakes_change, status, act |
+| **Object** | name, description |
 
 ### PatchBuilder Preview
 

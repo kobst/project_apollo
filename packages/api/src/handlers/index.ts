@@ -53,3 +53,10 @@ export {
 export { createCoverageHandler } from './coverage.js';
 export { createGapsHandler } from './gaps.js';
 export { createRecomputeOrderHandler } from './recomputeOrder.js';
+export {
+  createSceneHandler,
+  listScenesHandler,
+  getSceneHandler,
+  updateSceneHandler,
+  deleteSceneHandler,
+} from './scenes.js';

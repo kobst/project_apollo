@@ -324,11 +324,15 @@ export interface OutlineAct {
 export interface OutlineData {
   storyId: string;
   acts: OutlineAct[];
-  /** Scenes not connected to PlotPoint, or connected to PlotPoint without Beat alignment */
+  /** PlotPoints not aligned to any Beat (no ALIGNS_WITH edge) */
+  unassignedPlotPoints: OutlinePlotPoint[];
+  /** Scenes not connected to any PlotPoint */
   unassignedScenes: OutlineScene[];
   summary: {
     totalBeats: number;
     totalScenes: number;
+    totalPlotPoints: number;
+    unassignedPlotPointCount: number;
     unassignedSceneCount: number;
   };
 }
@@ -692,6 +696,53 @@ export interface PlotPointFilters {
   act?: 1 | 2 | 3 | 4 | 5;
   intent?: PlotPointIntent;
   unfulfilled?: boolean;
+}
+
+// =============================================================================
+// Scene Types
+// =============================================================================
+
+export type IntExt = 'INT' | 'EXT' | 'OTHER';
+
+export interface SceneData extends NodeData {
+  connectedPlotPointId?: string | undefined;
+}
+
+export interface ScenesListData {
+  scenes: SceneData[];
+  totalCount: number;
+  limit: number;
+  offset: number;
+}
+
+export interface CreateSceneRequest {
+  heading: string;
+  scene_overview?: string;
+  int_ext?: IntExt;
+  time_of_day?: string;
+  mood?: string;
+  /** Optional: immediately attach to a PlotPoint */
+  attachToPlotPointId?: string;
+}
+
+export interface CreateSceneData {
+  scene: SceneData;
+  newVersionId: string;
+}
+
+export interface UpdateSceneData {
+  scene: SceneData;
+  newVersionId: string;
+  fieldsUpdated: string[];
+}
+
+export interface DeleteSceneData {
+  deleted: true;
+  newVersionId: string;
+}
+
+export interface SceneFilters {
+  unassigned?: boolean;
 }
 
 // =============================================================================

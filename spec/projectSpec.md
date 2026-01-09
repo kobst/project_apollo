@@ -804,11 +804,11 @@ New implementations should use PlotPoints with ALIGNS_WITH and SATISFIED_BY edge
   - Multiple scenes (allowed)
 
 ## 3.4 Floating Nodes (Theme / Motif)
-- Themes and Motifs may exist unattached (`status=FLOATING`).
-- Grounding edges are optional:
-  - Theme → EXPRESSED_IN → Scene/Beat
-  - Motif → APPEARS_IN → Scene
-- Validation does **not** fail due to unattached Theme/Motif.
+- Themes and Motifs may exist without grounding edges.
+- Grounding status is determined by edge presence (not a status field):
+  - Theme is "grounded" if it has EXPRESSED_IN → Scene/Beat edges
+  - Motif is "grounded" if it has APPEARS_IN → Scene edges
+- Validation does **not** fail due to ungrounded Theme/Motif.
 
 ---
 
@@ -1181,7 +1181,7 @@ Each type includes:
 ### ThemeUngrounded
 | Property | Value |
 |---|---|
-| Trigger | Theme has status FLOATING and 0 EXPRESSED_IN edges |
+| Trigger | Theme has 0 EXPRESSED_IN edges |
 | Severity | SOFT |
 | Phase | REVISION |
 | Group key | `THEME:GROUND:<theme_id>` |
@@ -1189,7 +1189,7 @@ Each type includes:
 ### MotifUngrounded
 | Property | Value |
 |---|---|
-| Trigger | Motif has status FLOATING and 0 APPEARS_IN edges |
+| Trigger | Motif has 0 APPEARS_IN edges |
 | Severity | SOFT |
 | Phase | REVISION |
 | Group key | `MOTIF:GROUND:<motif_id>` |

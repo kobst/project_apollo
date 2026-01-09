@@ -143,8 +143,6 @@ Lint rule violations are mapped to coverage tiers:
 ### Plot Points Tier
 | Rule ID | Label |
 |---------|-------|
-| `PP_HAS_INTENT` | PlotPoint Missing Intent |
-| `PP_HAS_CRITERIA` | PlotPoint Missing Criteria |
 | `PP_EVENT_REALIZATION` | Unrealized PlotPoint |
 | `PP_DAG_NO_CYCLES` | PlotPoint Cycle Detected |
 | `PP_ORDER_UNIQUE` | Duplicate PlotPoint Order |

@@ -107,8 +107,8 @@ Conflict conf_001 (“Save the president during a coup”)
 Location loc_001 (“Air Force One”)
 
 Optional (MVP-Plus)
-6. Theme theme_001 (“Redemption through duty under pressure”) status=FLOATING
-7. CharacterArc arc_001 linked to protagonist (redemption) status=FLOATING
+6. Theme theme_001 ("Redemption through duty under pressure") — ungrounded (no EXPRESSED_IN edges yet)
+7. CharacterArc arc_001 linked to protagonist (redemption) — ungrounded (no turn_refs yet)
 
 4.3 Example extraction patch (MVP-Strict)
 json

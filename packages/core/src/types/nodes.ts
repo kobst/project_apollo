@@ -244,7 +244,6 @@ export interface StoryObject extends BaseNode {
   type: 'Object';
   name: string;
   description?: string;
-  significance?: string;
   introduced_in_scene_id?: string;
   tags?: string[];
 }
@@ -254,14 +253,12 @@ export interface StoryObject extends BaseNode {
 // =============================================================================
 
 export type ThemePriority = 'HIGH' | 'MED' | 'LOW';
-export type ThemeStatus = 'FLOATING' | 'GROUNDED';
 
 export interface Theme extends BaseNode {
   type: 'Theme';
   statement: string;
   notes?: string;
   priority?: ThemePriority;
-  status?: ThemeStatus;
 }
 
 // =============================================================================
@@ -269,14 +266,12 @@ export interface Theme extends BaseNode {
 // =============================================================================
 
 export type MotifType = 'PATTERN' | 'IMAGE' | 'SYMBOL';
-export type MotifStatus = 'FLOATING' | 'GROUNDED';
 
 export interface Motif extends BaseNode {
   type: 'Motif';
   name: string;
   description?: string;
   motif_type?: MotifType;
-  status?: MotifStatus;
 }
 
 // =============================================================================
@@ -321,8 +316,6 @@ export interface Conflict extends BaseNode {
   name: string;
   conflict_type: ConflictType;
   description: string;
-  stakes?: string;
-  intensity?: 1 | 2 | 3 | 4 | 5;
   status?: ConflictStatus;
   start_beat_id?: string;
   end_beat_id?: string;
@@ -346,11 +339,9 @@ export interface PlotPoint extends BaseNode {
   /** 1-3 sentences describing the intended event */
   summary?: string;
   /** Primary purpose of this plot point */
-  intent: PlotPointIntent;
+  intent?: PlotPointIntent;
   /** Auto-computed order based on Beat alignment. Undefined if unaligned. */
   order_index?: number;
-  /** What must be true for this to count as fulfilled */
-  criteria_of_satisfaction?: string;
   /** Importance level */
   priority?: PlotPointPriority;
   /** How soon this needs to be addressed */

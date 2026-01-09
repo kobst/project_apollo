@@ -157,11 +157,6 @@ export function createInputHandler(ctx: StorageContext) {
           }
 
           nodeId = generateId('conflict', name);
-          const stakes = rest.stakes as string | undefined;
-          const rawIntensity = rest.intensity as number | undefined;
-          const intensity = rawIntensity
-            ? Math.min(5, Math.max(1, Number(rawIntensity))) as 1 | 2 | 3 | 4 | 5
-            : undefined;
 
           const conflict: Conflict = {
             type: 'Conflict',
@@ -171,8 +166,6 @@ export function createInputHandler(ctx: StorageContext) {
             description,
             status: 'FLOATING',
           };
-          if (stakes) conflict.stakes = stakes;
-          if (intensity) conflict.intensity = intensity;
 
           patch = {
             type: 'Patch',

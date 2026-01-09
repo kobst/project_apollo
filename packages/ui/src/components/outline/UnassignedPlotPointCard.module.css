@@ -1,0 +1,84 @@
+.container {
+  background: rgba(255, 152, 0, 0.08);
+  border: 1px solid rgba(255, 152, 0, 0.2);
+  border-radius: 6px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.container:hover {
+  background: rgba(255, 152, 0, 0.12);
+  border-color: rgba(255, 152, 0, 0.35);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.dragHandle {
+  color: #666;
+  font-size: 12px;
+  cursor: grab;
+  padding: 2px;
+  transition: color 0.15s ease;
+}
+
+.dragHandle:hover {
+  color: #ffb74d;
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e0e0e0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.badge {
+  font-size: 9px;
+  color: #888;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.intent_plot {
+  color: #64b5f6;
+  background: rgba(100, 181, 246, 0.1);
+}
+
+.intent_character {
+  color: #ba68c8;
+  background: rgba(186, 104, 200, 0.1);
+}
+
+.intent_theme {
+  color: #81c784;
+  background: rgba(129, 199, 132, 0.1);
+}
+
+.intent_tone {
+  color: #ffb74d;
+  background: rgba(255, 183, 77, 0.1);
+}
+
+.scenesInfo {
+  font-size: 10px;
+  color: #888;
+  margin-top: 4px;
+}

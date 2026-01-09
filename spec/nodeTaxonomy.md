@@ -277,11 +277,13 @@ These nodes establish the "top of the pyramid" - the foundational context that e
 
 **Optional:**
 - `description`
-- `significance`
 - `introduced_in_scene_id`
 - `tags[]`
 
 **Active Phase:** Draft (earlier if user-provided)
+
+**Notes:**
+- Significance is inferred by AI from narrative context and `FEATURES_OBJECT` edges
 
 ---
 
@@ -291,13 +293,12 @@ These nodes establish the "top of the pyramid" - the foundational context that e
 **Required:**
 - `id`
 - `title`
-- `intent` (enum: `plot`, `character`, `theme`, `tone`)
 - `createdAt`
 - `updatedAt`
 
 **Optional:**
 - `summary`
-- `criteria_of_satisfaction`
+- `intent` (enum: `plot`, `character`, `theme`, `tone`) – *AI can infer from context*
 - `priority` (enum: `low`, `medium`, `high`)
 - `urgency` (enum: `low`, `medium`, `high`)
 - `stakes_change` (enum: `up`, `down`, `steady`)
@@ -332,10 +333,13 @@ These nodes establish the "top of the pyramid" - the foundational context that e
 
 **Optional:**
 - `notes`
-- `priority`
-- `status` (`FLOATING`, `GROUNDED`)
+- `priority` (enum: `HIGH`, `MED`, `LOW`)
 
 **Active Phase:** Outline
+
+**Notes:**
+- Grounding determined by presence of `EXPRESSED_IN` edges (not a status field)
+- AI derives grounding status from graph relationships
 
 ---
 
@@ -348,9 +352,13 @@ These nodes establish the "top of the pyramid" - the foundational context that e
 
 **Optional:**
 - `description`
-- `status` (`FLOATING`, `GROUNDED`)
+- `motif_type` (enum: `PATTERN`, `IMAGE`, `SYMBOL`)
 
 **Active Phase:** Outline
+
+**Notes:**
+- Grounding determined by presence of `APPEARS_IN` edges (not a status field)
+- AI derives grounding status from graph relationships
 
 ---
 
@@ -379,18 +387,20 @@ These nodes establish the "top of the pyramid" - the foundational context that e
 **Required:**
 - `id`
 - `name`
-- `conflict_type`
+- `conflict_type` (enum: `interpersonal`, `internal`, `societal`, `ideological`, `systemic`, `nature`, `technological`)
 - `description`
 
 **Optional:**
-- `stakes`
-- `intensity`
 - `status` (`FLOATING`, `ACTIVE`, `RESOLVED`)
 - `start_beat_id`
 - `end_beat_id`
 - `notes`
 
 **Active Phase:** Outline → Draft
+
+**Notes:**
+- Stakes and intensity are inferred by AI from narrative context rather than stored as fields
+- Grounding determined by `INVOLVES` and `MANIFESTS_IN` edges
 
 ---
 
@@ -486,12 +496,8 @@ These nodes establish the "top of the pyramid" - the foundational context that e
   → `PP_ACT_ALIGNMENT` *(auto-fix: update act)*
 
 ### PlotPoint (soft rules - warnings)
-- **PlotPoint has no intent set**
-  → `PP_HAS_INTENT` *(Outline)*
 - **Approved PlotPoint has no SATISFIED_BY scenes**
   → `PP_EVENT_REALIZATION` *(Draft)*
-- **PlotPoint has no criteria_of_satisfaction**
-  → `PP_HAS_CRITERIA` *(Outline)*
 
 ### Context Layer (soft rules - warnings)
 - **Story has no Premise node**

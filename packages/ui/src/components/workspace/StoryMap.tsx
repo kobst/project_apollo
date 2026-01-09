@@ -96,57 +96,102 @@ export function StoryMap({ selectedCategory, onSelectCategory }: StoryMapProps) 
       count = stats.themes + stats.motifs;
     }
 
-    // Expected count for progress calculation
-    let total = config.expectedCount ?? 0;
-
-    // For categories without fixed expected count, use gaps data or estimate
-    if (!config.expectedCount && gapsData) {
-      const tierData = gapsData.summary.find(t => t.tier === config.tier);
-      if (tierData) {
-        total = tierData.total;
-      }
+    // Find gaps for this category
+    let categoryGaps: GapsData['gaps'] = [];
+    if (gapsData) {
+      categoryGaps = gapsData.gaps.filter(gap => {
+        // Match gaps to categories by checking title content
+        const titleLower = gap.title.toLowerCase();
+        switch (config.id) {
+          case 'premise':
+            return gap.tier === 'premise' || titleLower.includes('premise');
+          case 'genreTone':
+            return titleLower.includes('genretone') || titleLower.includes('genre');
+          case 'setting':
+            return titleLower.includes('setting');
+          case 'characters':
+            return titleLower.includes('character') || gap.domain === 'CHARACTER';
+          case 'conflicts':
+            return titleLower.includes('conflict') || gap.domain === 'CONFLICT';
+          case 'themes':
+            return titleLower.includes('theme') || titleLower.includes('motif') || gap.domain === 'THEME_MOTIF';
+          case 'board':
+            return gap.tier === 'structure' || titleLower.includes('beat');
+          case 'plotPoints':
+            return gap.tier === 'plotPoints' || titleLower.includes('plotpoint') || titleLower.includes('plot point');
+          case 'scenes':
+            return gap.tier === 'scenes' || titleLower.includes('scene');
+          default:
+            return false;
+        }
+      });
     }
 
-    // Special case for board - use beats
-    if (config.id === 'board' && stats) {
-      count = stats.beats;
+    // Calculate total and covered based on category type
+    let total: number;
+    let covered: number;
+
+    if (config.id === 'board') {
+      // Board: use coverage tier data (beats)
       total = 15; // Save the Cat has 15 beats
+      covered = stats?.beats ?? 0;
+    } else if (config.id === 'plotPoints' || config.id === 'scenes') {
+      // Plot Points and Scenes: use coverage tier data
+      if (gapsData) {
+        const tierData = gapsData.summary.find(t => t.tier === config.tier);
+        if (tierData) {
+          total = tierData.total;
+          covered = tierData.covered;
+        } else {
+          total = Math.max(1, count);
+          covered = count;
+        }
+      } else {
+        total = Math.max(1, count);
+        covered = count;
+      }
+    } else {
+      // Foundation categories (premise, genreTone, setting, characters, conflicts, themes):
+      // - total = at least 1 expected, or count if more exist
+      // - covered = items without gaps
+      total = Math.max(1, count);
+
+      // Count unique nodes that have gaps
+      const nodesWithGaps = new Set<string>();
+      for (const gap of categoryGaps) {
+        const nodeIds = gap.scopeRefs?.nodeIds ?? [];
+        nodeIds.forEach(id => nodesWithGaps.add(id));
+      }
+
+      // Covered = total items minus items with gaps
+      // But we need to be careful: if count is 0, covered is 0
+      if (count === 0) {
+        covered = 0;
+      } else {
+        // Items without gaps = count - nodes with gaps (but at least 0)
+        covered = Math.max(0, count - nodesWithGaps.size);
+      }
     }
 
     // Calculate percent
-    const percent = total > 0 ? Math.round((count / total) * 100) : (count > 0 ? 100 : 0);
+    const percent = total > 0 ? Math.round((covered / total) * 100) : 0;
 
-    // Find gaps for this category to determine severity
+    // Determine severity from gaps
     let severity: GapSeverity | null = null;
-    let gapCount = 0;
+    const gapCount = categoryGaps.length;
 
-    if (gapsData) {
-      const categoryGaps = gapsData.gaps.filter(gap => {
-        // Match gaps to categories
-        if (config.tier && gap.tier === config.tier) return true;
-        // Special matching for non-tier categories
-        if (config.id === 'genreTone' && gap.title.toLowerCase().includes('genretone')) return true;
-        if (config.id === 'setting' && gap.title.toLowerCase().includes('setting')) return true;
-        if (config.id === 'themes' && (gap.title.toLowerCase().includes('theme') || gap.title.toLowerCase().includes('motif'))) return true;
-        return false;
-      });
-
-      gapCount = categoryGaps.length;
-
-      // Determine highest severity
-      if (categoryGaps.some(g => g.severity === 'blocker')) {
-        severity = 'blocker';
-      } else if (categoryGaps.some(g => g.severity === 'warn')) {
-        severity = 'warn';
-      } else if (categoryGaps.length > 0) {
-        severity = 'info';
-      }
+    if (categoryGaps.some(g => g.severity === 'blocker')) {
+      severity = 'blocker';
+    } else if (categoryGaps.some(g => g.severity === 'warn')) {
+      severity = 'warn';
+    } else if (categoryGaps.length > 0) {
+      severity = 'info';
     }
 
     return {
       id: config.id,
       label: config.label,
-      count,
+      count: covered,
       total,
       percent: Math.min(percent, 100),
       severity,

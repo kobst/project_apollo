@@ -5,7 +5,8 @@
  * Hierarchy: Beat → PlotPoint → Scene
  * - PlotPoints align to Beats via ALIGNS_WITH edges
  * - Scenes satisfy PlotPoints via SATISFIED_BY edges
- * - Unassigned scenes (no PlotPoint, or PlotPoint not aligned to Beat) returned separately
+ * - Unassigned PlotPoints (no ALIGNS_WITH edge) returned separately
+ * - Unassigned scenes (no PlotPoint connection) returned separately
  */
 
 import type { Request, Response, NextFunction } from 'express';
@@ -31,7 +32,7 @@ interface OutlineScene {
 interface OutlinePlotPoint {
   id: string;
   title: string;
-  intent: string;
+  intent: string | undefined;
   status: string | undefined;
   scenes: OutlineScene[];
 }
@@ -58,12 +59,15 @@ interface OutlineAct {
 interface OutlineData {
   storyId: string;
   acts: OutlineAct[];
-  /** Scenes not connected to any PlotPoint, or connected to PlotPoint without Beat alignment */
+  /** PlotPoints not aligned to any Beat (no ALIGNS_WITH edge) */
+  unassignedPlotPoints: OutlinePlotPoint[];
+  /** Scenes not connected to any PlotPoint */
   unassignedScenes: OutlineScene[];
   summary: {
     totalBeats: number;
     totalScenes: number;
     totalPlotPoints: number;
+    unassignedPlotPointCount: number;
     unassignedSceneCount: number;
   };
 }
@@ -153,20 +157,15 @@ export function createOutlineHandler(ctx: StorageContext) {
         }
       }
 
-      // Collect unassigned scenes:
-      // - Scenes with no PlotPoint connection, OR
-      // - Scenes with PlotPoint that has no Beat alignment
-      const unassignedScenes: Scene[] = [];
-      for (const scene of scenes) {
-        const ppId = sceneToPlotPoint.get(scene.id);
-        if (!ppId) {
-          // No PlotPoint connection
-          unassignedScenes.push(scene);
-        } else if (!alignedPlotPoints.has(ppId)) {
-          // PlotPoint exists but not aligned to any Beat
-          unassignedScenes.push(scene);
-        }
-      }
+      // Collect unassigned PlotPoints (no ALIGNS_WITH edge to any Beat)
+      const unassignedPPs: PlotPoint[] = plotPoints.filter(
+        (pp) => !alignedPlotPoints.has(pp.id)
+      );
+
+      // Collect unassigned scenes (no SATISFIED_BY edge from any PlotPoint)
+      const unassignedScenes: Scene[] = scenes.filter(
+        (scene) => !sceneToPlotPoint.has(scene.id)
+      );
       // Sort by order_index (undefined treated as last)
       unassignedScenes.sort((a, b) => {
         const orderA = a.order_index ?? Number.MAX_SAFE_INTEGER;
@@ -216,14 +215,25 @@ export function createOutlineHandler(ctx: StorageContext) {
         }
       }
 
+      // Convert unassigned PlotPoints to OutlinePlotPoint format (with their scenes)
+      const unassignedPlotPoints: OutlinePlotPoint[] = unassignedPPs.map((pp) => ({
+        id: pp.id,
+        title: pp.title,
+        intent: pp.intent,
+        status: pp.status,
+        scenes: (scenesByPlotPoint.get(pp.id) || []).map(toOutlineScene),
+      }));
+
       const data: OutlineData = {
         storyId: id,
         acts,
+        unassignedPlotPoints,
         unassignedScenes: unassignedScenes.map(toOutlineScene),
         summary: {
           totalBeats: outlineBeats.length,
           totalScenes: scenes.length,
           totalPlotPoints: plotPoints.length,
+          unassignedPlotPointCount: unassignedPPs.length,
           unassignedSceneCount: unassignedScenes.length,
         },
       };

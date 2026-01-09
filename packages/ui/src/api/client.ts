@@ -49,6 +49,13 @@ import type {
   UpdatePlotPointData,
   DeletePlotPointData,
   PlotPointFilters,
+  SceneData,
+  ScenesListData,
+  CreateSceneRequest,
+  CreateSceneData,
+  UpdateSceneData,
+  DeleteSceneData,
+  SceneFilters,
   CoverageData,
   GapsData,
   GapTier,
@@ -244,6 +251,24 @@ export const api = {
     PATCH<UpdatePlotPointData>(`/stories/${storyId}/plot-points/${ppId}`, { changes }),
   deletePlotPoint: (storyId: string, ppId: string) =>
     DELETE<DeletePlotPointData>(`/stories/${storyId}/plot-points/${ppId}`),
+
+  // Scenes
+  listScenes: (storyId: string, filters?: SceneFilters, limit?: number, offset?: number) => {
+    const params = new URLSearchParams();
+    if (filters?.unassigned !== undefined) params.set('unassigned', filters.unassigned.toString());
+    if (limit) params.set('limit', limit.toString());
+    if (offset) params.set('offset', offset.toString());
+    const query = params.toString();
+    return GET<ScenesListData>(`/stories/${storyId}/scenes${query ? `?${query}` : ''}`);
+  },
+  getScene: (storyId: string, sceneId: string) =>
+    GET<SceneData>(`/stories/${storyId}/scenes/${sceneId}`),
+  createScene: (storyId: string, data: CreateSceneRequest) =>
+    POST<CreateSceneData>(`/stories/${storyId}/scenes`, data),
+  updateScene: (storyId: string, sceneId: string, changes: Record<string, unknown>) =>
+    PATCH<UpdateSceneData>(`/stories/${storyId}/scenes/${sceneId}`, { changes }),
+  deleteScene: (storyId: string, sceneId: string) =>
+    DELETE<DeleteSceneData>(`/stories/${storyId}/scenes/${sceneId}`),
 
   // Coverage (deprecated - use getGaps)
   getCoverage: (storyId: string) =>

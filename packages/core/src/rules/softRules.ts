@@ -149,7 +149,6 @@ export const THEME_NOT_ORPHANED: Rule = {
               nodeType: 'Theme',
               context: {
                 themeStatement: theme.statement,
-                themeStatus: theme.status,
               },
             }
           )
@@ -201,56 +200,6 @@ export const MOTIF_NOT_ORPHANED: Rule = {
               nodeType: 'Motif',
               context: {
                 motifName: motif.name,
-                motifStatus: motif.status,
-              },
-            }
-          )
-        );
-      }
-    }
-
-    return violations;
-  },
-};
-
-// =============================================================================
-// PP_HAS_INTENT
-// =============================================================================
-
-/**
- * PlotPoint should have an intent set.
- * The intent field helps categorize the plot point's primary purpose.
- */
-export const PP_HAS_INTENT: Rule = {
-  id: 'PP_HAS_INTENT',
-  name: 'PlotPoint Should Have Intent',
-  severity: 'soft',
-  category: 'completeness',
-  description: 'Plot points should have their intent (plot/character/theme/tone) specified',
-
-  evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
-    const violations: RuleViolation[] = [];
-    const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
-
-    for (const pp of plotPoints) {
-      // Skip if not in scope
-      if (!isNodeInScope(scope, pp.id)) continue;
-
-      // Check if intent is missing or empty
-      if (!pp.intent) {
-        violations.push(
-          createViolation(
-            'PP_HAS_INTENT',
-            'soft',
-            'completeness',
-            `PlotPoint "${pp.title}" has no intent specified`,
-            {
-              nodeId: pp.id,
-              nodeType: 'PlotPoint',
-              field: 'intent',
-              context: {
-                plotPointTitle: pp.title,
-                plotPointStatus: pp.status,
               },
             }
           )
@@ -303,55 +252,6 @@ export const PP_EVENT_REALIZATION: Rule = {
             {
               nodeId: pp.id,
               nodeType: 'PlotPoint',
-              context: {
-                plotPointTitle: pp.title,
-                plotPointStatus: pp.status,
-              },
-            }
-          )
-        );
-      }
-    }
-
-    return violations;
-  },
-};
-
-// =============================================================================
-// PP_HAS_CRITERIA
-// =============================================================================
-
-/**
- * PlotPoint should have criteria_of_satisfaction set.
- * Clear criteria help determine when a plot point is properly fulfilled.
- */
-export const PP_HAS_CRITERIA: Rule = {
-  id: 'PP_HAS_CRITERIA',
-  name: 'PlotPoint Should Have Satisfaction Criteria',
-  severity: 'soft',
-  category: 'completeness',
-  description: 'Plot points should define what must be true to count as fulfilled',
-
-  evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
-    const violations: RuleViolation[] = [];
-    const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
-
-    for (const pp of plotPoints) {
-      // Skip if not in scope
-      if (!isNodeInScope(scope, pp.id)) continue;
-
-      // Check if criteria_of_satisfaction is missing or empty
-      if (!pp.criteria_of_satisfaction || pp.criteria_of_satisfaction.trim() === '') {
-        violations.push(
-          createViolation(
-            'PP_HAS_CRITERIA',
-            'soft',
-            'completeness',
-            `PlotPoint "${pp.title}" has no satisfaction criteria defined`,
-            {
-              nodeId: pp.id,
-              nodeType: 'PlotPoint',
-              field: 'criteria_of_satisfaction',
               context: {
                 plotPointTitle: pp.title,
                 plotPointStatus: pp.status,
@@ -515,9 +415,7 @@ export const SOFT_RULES: Rule[] = [
   SCENE_HAS_PLOTPOINT,
   THEME_NOT_ORPHANED,
   MOTIF_NOT_ORPHANED,
-  PP_HAS_INTENT,
   PP_EVENT_REALIZATION,
-  PP_HAS_CRITERIA,
   STORY_HAS_PREMISE,
   LOCATION_HAS_SETTING,
 ];

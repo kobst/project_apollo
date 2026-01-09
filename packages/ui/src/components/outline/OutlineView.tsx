@@ -1,15 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { api } from '../../api/client';
-import type { OutlineData } from '../../api/types';
+import type { OutlineData, OutlinePlotPoint, OutlineScene, CreateSceneRequest } from '../../api/types';
 import { ActRow } from './ActRow';
+import { UnassignedSection } from './UnassignedSection';
+import { CreatePlotPointModal } from './CreatePlotPointModal';
+import { CreateSceneModal } from './CreateSceneModal';
 import styles from './OutlineView.module.css';
 
 export function OutlineView() {
-  const { currentStoryId, status } = useStory();
+  const { currentStoryId, status, refreshStatus } = useStory();
   const [outline, setOutline] = useState<OutlineData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Modal states
+  const [showPlotPointModal, setShowPlotPointModal] = useState(false);
+  const [showSceneModal, setShowSceneModal] = useState(false);
+  const [savingPlotPoint, setSavingPlotPoint] = useState(false);
+  const [savingScene, setSavingScene] = useState(false);
 
   const fetchOutline = useCallback(async () => {
     if (!currentStoryId) return;
@@ -31,6 +40,56 @@ export function OutlineView() {
   useEffect(() => {
     void fetchOutline();
   }, [fetchOutline]);
+
+  // Handle creating a new unassigned PlotPoint
+  const handleAddPlotPoint = useCallback(async (data: Parameters<typeof api.createPlotPoint>[1]) => {
+    if (!currentStoryId) return;
+
+    setSavingPlotPoint(true);
+    try {
+      await api.createPlotPoint(currentStoryId, data);
+      setShowPlotPointModal(false);
+      // Refresh outline to show the new plot point
+      await fetchOutline();
+      // Also refresh status to update counts
+      void refreshStatus();
+    } catch (err) {
+      console.error('Failed to create plot point:', err);
+    } finally {
+      setSavingPlotPoint(false);
+    }
+  }, [currentStoryId, fetchOutline, refreshStatus]);
+
+  // Handle creating a new unassigned Scene
+  const handleAddScene = useCallback(async (data: CreateSceneRequest) => {
+    if (!currentStoryId) return;
+
+    setSavingScene(true);
+    try {
+      await api.createScene(currentStoryId, data);
+      setShowSceneModal(false);
+      // Refresh outline to show the new scene
+      await fetchOutline();
+      // Also refresh status to update counts
+      void refreshStatus();
+    } catch (err) {
+      console.error('Failed to create scene:', err);
+    } finally {
+      setSavingScene(false);
+    }
+  }, [currentStoryId, fetchOutline, refreshStatus]);
+
+  // Handle clicking on an unassigned plot point
+  const handlePlotPointClick = useCallback((pp: OutlinePlotPoint) => {
+    // For now, just log - could open a detail modal in the future
+    console.log('Clicked plot point:', pp.id);
+  }, []);
+
+  // Handle clicking on an unassigned scene
+  const handleSceneClick = useCallback((scene: OutlineScene) => {
+    // For now, just log - could open a detail modal in the future
+    console.log('Clicked scene:', scene.id);
+  }, []);
 
   if (!currentStoryId) {
     return (
@@ -69,6 +128,11 @@ export function OutlineView() {
     );
   }
 
+  // Calculate total unassigned count
+  const unassignedPlotPointCount = outline.unassignedPlotPoints?.length ?? 0;
+  const unassignedSceneCount = outline.unassignedScenes?.length ?? 0;
+  const totalUnassignedCount = unassignedPlotPointCount + unassignedSceneCount;
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -80,11 +144,14 @@ export function OutlineView() {
             <strong>{outline.summary.totalBeats}</strong> beats
           </span>
           <span className={styles.summaryItem}>
+            <strong>{outline.summary.totalPlotPoints}</strong> plot points
+          </span>
+          <span className={styles.summaryItem}>
             <strong>{outline.summary.totalScenes}</strong> scenes
           </span>
-          {outline.summary.unassignedSceneCount > 0 && (
+          {totalUnassignedCount > 0 && (
             <span className={styles.summaryItemWarning}>
-              <strong>{outline.summary.unassignedSceneCount}</strong> unassigned
+              <strong>{totalUnassignedCount}</strong> unassigned
             </span>
           )}
         </div>
@@ -101,32 +168,34 @@ export function OutlineView() {
           </div>
         )}
 
-        {/* Global Unassigned Scenes Section */}
-        {outline.unassignedScenes.length > 0 && (
-          <div className={styles.unassignedSection}>
-            <div className={styles.unassignedHeader}>
-              <span className={styles.unassignedIcon}>!</span>
-              <h3 className={styles.unassignedTitle}>
-                Unassigned Scenes
-                <span className={styles.unassignedCount}>
-                  {' '}({outline.unassignedScenes.length})
-                </span>
-              </h3>
-            </div>
-            <p className={styles.unassignedDescription}>
-              These scenes need to be connected to a Plot Point that is aligned to a Beat.
-            </p>
-            <div className={styles.unassignedList}>
-              {outline.unassignedScenes.map((scene) => (
-                <div key={scene.id} className={styles.unassignedScene}>
-                  <div className={styles.unassignedSceneHeading}>{scene.heading}</div>
-                  <div className={styles.unassignedSceneOverview}>{scene.overview}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Unassigned Items Section */}
+        <UnassignedSection
+          plotPoints={outline.unassignedPlotPoints ?? []}
+          scenes={outline.unassignedScenes ?? []}
+          onAddPlotPoint={() => setShowPlotPointModal(true)}
+          onAddScene={() => setShowSceneModal(true)}
+          onPlotPointClick={handlePlotPointClick}
+          onSceneClick={handleSceneClick}
+        />
       </div>
+
+      {/* Create Plot Point Modal */}
+      {showPlotPointModal && (
+        <CreatePlotPointModal
+          onAdd={handleAddPlotPoint}
+          onCancel={() => setShowPlotPointModal(false)}
+          saving={savingPlotPoint}
+        />
+      )}
+
+      {/* Create Scene Modal */}
+      {showSceneModal && (
+        <CreateSceneModal
+          onAdd={handleAddScene}
+          onCancel={() => setShowSceneModal(false)}
+          saving={savingScene}
+        />
+      )}
     </div>
   );
 }

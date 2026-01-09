@@ -406,32 +406,4 @@ describe('Validator', () => {
     });
   });
 
-  describe('Conflict intensity constraint', () => {
-    it('should allow conflict with valid intensity 1-5', () => {
-      const conflict = createConflict({ id: 'conf_1', intensity: 3 });
-      const patch = createMinimalPatch('sv0', [
-        { op: 'ADD_NODE', node: conflict },
-      ]);
-
-      const result = validatePatch(graph, patch);
-
-      expect(result.success).toBe(true);
-    });
-
-    it('should reject conflict with intensity outside 1-5', () => {
-      const conflict = createConflict({ id: 'conf_1', intensity: 10 });
-      const patch = createMinimalPatch('sv0', [
-        { op: 'ADD_NODE', node: conflict },
-      ]);
-
-      const result = validatePatch(graph, patch);
-
-      expect(result.success).toBe(false);
-      expect(
-        result.errors.some(
-          (e) => e.code === 'OUT_OF_RANGE' && e.field === 'intensity'
-        )
-      ).toBe(true);
-    });
-  });
 });

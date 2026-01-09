@@ -47,6 +47,11 @@ import {
   createCoverageHandler,
   createGapsHandler,
   createRecomputeOrderHandler,
+  createSceneHandler,
+  listScenesHandler,
+  getSceneHandler,
+  updateSceneHandler,
+  deleteSceneHandler,
 } from '../handlers/index.js';
 
 export function createStoriesRouter(ctx: StorageContext): Router {
@@ -120,6 +125,13 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.get('/:id/plot-points/:ppId', getPlotPointHandler(ctx));
   router.patch('/:id/plot-points/:ppId', updatePlotPointHandler(ctx));
   router.delete('/:id/plot-points/:ppId', deletePlotPointHandler(ctx));
+
+  // Scene endpoints
+  router.post('/:id/scenes', createSceneHandler(ctx));
+  router.get('/:id/scenes', listScenesHandler(ctx));
+  router.get('/:id/scenes/:sceneId', getSceneHandler(ctx));
+  router.patch('/:id/scenes/:sceneId', updateSceneHandler(ctx));
+  router.delete('/:id/scenes/:sceneId', deleteSceneHandler(ctx));
 
   return router;
 }

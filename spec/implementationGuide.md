@@ -656,18 +656,9 @@ function checkNodeRules(graph: GraphState): ValidationError[] {
     }
   }
   
-  // Conflict validation
-  for (const conflict of getNodesByType<Conflict>(graph, 'Conflict')) {
-    if (conflict.intensity && (conflict.intensity < 1 || conflict.intensity > 5)) {
-      errors.push({
-        code: 'OUT_OF_RANGE',
-        message: `Conflict ${conflict.id} has invalid intensity: ${conflict.intensity}`,
-        node_id: conflict.id,
-        field: 'intensity',
-      });
-    }
-  }
-  
+  // Note: Conflict.intensity and Conflict.stakes were removed from schema
+  // AI infers these from narrative context rather than storing as fields
+
   return errors;
 }
 
@@ -930,51 +921,47 @@ function deriveConflictQuestions(graph: GraphState): OpenQuestion[] {
 
 function deriveThemeMotifQuestions(graph: GraphState): OpenQuestion[] {
   const questions: OpenQuestion[] = [];
-  
-  // ThemeUngrounded
+
+  // ThemeUngrounded - status field removed, now determined by edge presence
   const themes = getNodesByType<Theme>(graph, 'Theme');
   for (const theme of themes) {
-    if (theme.status === 'FLOATING') {
-      const expressedEdges = graph.edges.filter(
-        e => e.type === 'EXPRESSED_IN' && e.from === theme.id
-      );
-      if (expressedEdges.length === 0) {
-        questions.push({
-          id: `oq_theme_${theme.id}`,
-          type: 'ThemeUngrounded',
-          domain: 'THEME_MOTIF',
-          severity: 'SOFT',
-          phase: 'REVISION',
-          group_key: `THEME:GROUND:${theme.id}`,
-          target_node_id: theme.id,
-          message: `Theme "${theme.statement}" is floating and not expressed in any scene`,
-        });
-      }
+    const expressedEdges = graph.edges.filter(
+      e => e.type === 'EXPRESSED_IN' && e.from === theme.id
+    );
+    if (expressedEdges.length === 0) {
+      questions.push({
+        id: `oq_theme_${theme.id}`,
+        type: 'ThemeUngrounded',
+        domain: 'THEME_MOTIF',
+        severity: 'SOFT',
+        phase: 'REVISION',
+        group_key: `THEME:GROUND:${theme.id}`,
+        target_node_id: theme.id,
+        message: `Theme "${theme.statement}" is not expressed in any scene`,
+      });
     }
   }
-  
-  // MotifUngrounded
+
+  // MotifUngrounded - status field removed, now determined by edge presence
   const motifs = getNodesByType<Motif>(graph, 'Motif');
   for (const motif of motifs) {
-    if (motif.status === 'FLOATING') {
-      const appearsEdges = graph.edges.filter(
-        e => e.type === 'APPEARS_IN' && e.from === motif.id
-      );
-      if (appearsEdges.length === 0) {
-        questions.push({
-          id: `oq_motif_${motif.id}`,
-          type: 'MotifUngrounded',
-          domain: 'THEME_MOTIF',
-          severity: 'SOFT',
-          phase: 'REVISION',
-          group_key: `MOTIF:GROUND:${motif.id}`,
-          target_node_id: motif.id,
-          message: `Motif "${motif.name}" is floating and doesn't appear in any scene`,
-        });
-      }
+    const appearsEdges = graph.edges.filter(
+      e => e.type === 'APPEARS_IN' && e.from === motif.id
+    );
+    if (appearsEdges.length === 0) {
+      questions.push({
+        id: `oq_motif_${motif.id}`,
+        type: 'MotifUngrounded',
+        domain: 'THEME_MOTIF',
+        severity: 'SOFT',
+        phase: 'REVISION',
+        group_key: `MOTIF:GROUND:${motif.id}`,
+        target_node_id: motif.id,
+        message: `Motif "${motif.name}" doesn't appear in any scene`,
+      });
     }
   }
-  
+
   return questions;
 }
 ```

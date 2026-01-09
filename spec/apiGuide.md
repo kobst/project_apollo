@@ -174,6 +174,88 @@ curl http://localhost:3000/stories/my-story/status
 
 ---
 
+### Get Story Outline
+
+```
+GET /stories/:id/outline
+```
+
+Returns the story structure organized by acts and beats, with PlotPoints and Scenes nested appropriately. Also returns unassigned items that haven't been placed in the structure yet.
+
+```bash
+curl http://localhost:3000/stories/my-story/outline
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "storyId": "my-story",
+    "acts": [
+      {
+        "act": 1,
+        "beats": [
+          {
+            "id": "beat_OpeningImage",
+            "beatType": "OpeningImage",
+            "act": 1,
+            "positionIndex": 1,
+            "guidance": "Visual snapshot of the hero's world...",
+            "status": "REALIZED",
+            "plotPoints": [
+              {
+                "id": "pp_1234",
+                "title": "Establish detective's lonely life",
+                "intent": "character",
+                "status": "approved",
+                "scenes": [
+                  {
+                    "id": "scene_001",
+                    "heading": "INT. DETECTIVE'S APARTMENT - NIGHT",
+                    "overview": "Detective sits alone..."
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "unassignedPlotPoints": [
+      {
+        "id": "pp_5678",
+        "title": "Car chase through downtown",
+        "intent": "plot",
+        "status": "proposed",
+        "scenes": []
+      }
+    ],
+    "unassignedScenes": [
+      {
+        "id": "scene_loose",
+        "heading": "EXT. ROOFTOP - NIGHT",
+        "overview": "Confrontation scene..."
+      }
+    ],
+    "summary": {
+      "totalBeats": 15,
+      "totalScenes": 5,
+      "totalPlotPoints": 8,
+      "unassignedPlotPointCount": 2,
+      "unassignedSceneCount": 1
+    }
+  }
+}
+```
+
+**Notes:**
+- `unassignedPlotPoints`: PlotPoints without an `ALIGNS_WITH` edge to any Beat
+- `unassignedScenes`: Scenes without a `SATISFIED_BY` edge from any PlotPoint
+- Use the Edges API (`POST /stories/:id/edges`) to assign items to the structure
+
+---
+
 ## Open Questions
 
 ### List Open Questions

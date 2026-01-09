@@ -173,7 +173,8 @@ function computeStructureTier(graph: GraphState): TierSummary {
 
 /**
  * Compute PlotPoints tier summary.
- * Coverage: PlotPoints with SATISFIED_BY edges / total active PlotPoints.
+ * Coverage: PlotPoints with SATISFIED_BY edges / expected minimum.
+ * Expected minimum = number of beats (at least one plot point per beat).
  * Active = proposed or approved (excludes deprecated).
  */
 function computePlotPointsTier(graph: GraphState): TierSummary {
@@ -181,13 +182,23 @@ function computePlotPointsTier(graph: GraphState): TierSummary {
   // Active plot points = not deprecated (proposed or approved)
   const activePPs = plotPoints.filter((pp) => pp.status !== 'deprecated');
 
-  // If no active plot points, show 0/0 = 0%
+  // Get the number of beats to determine minimum expected plot points
+  const beats = getNodesByType<Beat>(graph, 'Beat');
+  const numBeats = beats.length;
+
+  // Expected minimum: at least one plot point per beat, or EXPECTED_BEATS if no beats yet
+  const expectedMin = numBeats > 0 ? numBeats : EXPECTED_BEATS;
+
+  // Total is the greater of existing active PPs or expected minimum
+  const total = Math.max(activePPs.length, expectedMin);
+
+  // If no active plot points, show 0/expectedMin
   if (activePPs.length === 0) {
     return {
       tier: 'plotPoints',
       label: 'Plot Points',
       covered: 0,
-      total: 0,
+      total,
       percent: 0,
     };
   }
@@ -197,7 +208,6 @@ function computePlotPointsTier(graph: GraphState): TierSummary {
   const satisfiedPPIds = new Set(satisfiedByEdges.map((e) => e.to));
 
   const covered = activePPs.filter((pp) => satisfiedPPIds.has(pp.id)).length;
-  const total = activePPs.length;
 
   return {
     tier: 'plotPoints',
@@ -210,18 +220,34 @@ function computePlotPointsTier(graph: GraphState): TierSummary {
 
 /**
  * Compute Scenes tier summary.
- * Coverage: Scenes with both HAS_CHARACTER and LOCATED_AT edges / total scenes.
+ * Coverage: Scenes with both HAS_CHARACTER and LOCATED_AT edges / expected minimum.
+ * Expected minimum = max(beats, plot points) - need enough scenes to cover both.
  */
 function computeScenesTier(graph: GraphState): TierSummary {
   const scenes = getNodesByType<Scene>(graph, 'Scene');
 
-  // If no scenes, show 0/0 = 0%
+  // Get the number of beats
+  const beats = getNodesByType<Beat>(graph, 'Beat');
+  const numBeats = beats.length > 0 ? beats.length : EXPECTED_BEATS;
+
+  // Get the number of active plot points
+  const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
+  const numActivePPs = plotPoints.filter((pp) => pp.status !== 'deprecated').length;
+
+  // Expected minimum: the greater of beats or plot points
+  // (need at least one scene per beat, and at least one scene per plot point)
+  const expectedMin = Math.max(numBeats, numActivePPs);
+
+  // Total is the greater of existing scenes or expected minimum
+  const total = Math.max(scenes.length, expectedMin);
+
+  // If no scenes, show 0/expectedMin
   if (scenes.length === 0) {
     return {
       tier: 'scenes',
       label: 'Scenes',
       covered: 0,
-      total: 0,
+      total,
       percent: 0,
     };
   }
@@ -245,8 +271,8 @@ function computeScenesTier(graph: GraphState): TierSummary {
     tier: 'scenes',
     label: 'Scenes',
     covered,
-    total: scenes.length,
-    percent: Math.round((covered / scenes.length) * 100),
+    total,
+    percent: Math.round((covered / total) * 100),
   };
 }
 

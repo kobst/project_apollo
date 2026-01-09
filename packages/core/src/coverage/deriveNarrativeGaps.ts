@@ -400,57 +400,53 @@ function deriveConflictGaps(graph: GraphState): Gap[] {
 function deriveThemeMotifGaps(graph: GraphState): Gap[] {
   const gaps: Gap[] = [];
 
-  // ThemeUngrounded
+  // ThemeUngrounded - themes without EXPRESSED_IN edges
   const themes = getNodesByType<Theme>(graph, 'Theme');
   for (const theme of themes) {
-    if (theme.status === 'FLOATING') {
-      const expressedEdges = graph.edges.filter(
-        (e) => e.type === 'EXPRESSED_IN' && e.from === theme.id
-      );
-      if (expressedEdges.length === 0) {
-        const config = NARRATIVE_GAP_CONFIG.ThemeUngrounded;
-        gaps.push({
-          id: `gap_theme_${theme.id}`,
-          type: config.type,
-          tier: config.tier,
-          title: 'Theme Ungrounded',
-          description: `Theme "${theme.statement}" is floating and not expressed in any scene`,
-          scopeRefs: { nodeIds: [theme.id] },
-          severity: config.defaultSeverity,
-          source: 'derived',
-          status: 'open',
-          phase: config.phase,
-          domain: config.domain,
-          groupKey: `THEME:GROUND:${theme.id}`,
-        });
-      }
+    const expressedEdges = graph.edges.filter(
+      (e) => e.type === 'EXPRESSED_IN' && e.from === theme.id
+    );
+    if (expressedEdges.length === 0) {
+      const config = NARRATIVE_GAP_CONFIG.ThemeUngrounded;
+      gaps.push({
+        id: `gap_theme_${theme.id}`,
+        type: config.type,
+        tier: config.tier,
+        title: 'Theme Ungrounded',
+        description: `Theme "${theme.statement}" is not expressed in any scene`,
+        scopeRefs: { nodeIds: [theme.id] },
+        severity: config.defaultSeverity,
+        source: 'derived',
+        status: 'open',
+        phase: config.phase,
+        domain: config.domain,
+        groupKey: `THEME:GROUND:${theme.id}`,
+      });
     }
   }
 
-  // MotifUngrounded
+  // MotifUngrounded - motifs without APPEARS_IN edges
   const motifs = getNodesByType<Motif>(graph, 'Motif');
   for (const motif of motifs) {
-    if (motif.status === 'FLOATING') {
-      const appearsEdges = graph.edges.filter(
-        (e) => e.type === 'APPEARS_IN' && e.from === motif.id
-      );
-      if (appearsEdges.length === 0) {
-        const config = NARRATIVE_GAP_CONFIG.MotifUngrounded;
-        gaps.push({
-          id: `gap_motif_${motif.id}`,
-          type: config.type,
-          tier: config.tier,
-          title: 'Motif Ungrounded',
-          description: `Motif "${motif.name}" is floating and doesn't appear in any scene`,
-          scopeRefs: { nodeIds: [motif.id] },
-          severity: config.defaultSeverity,
-          source: 'derived',
-          status: 'open',
-          phase: config.phase,
-          domain: config.domain,
-          groupKey: `MOTIF:GROUND:${motif.id}`,
-        });
-      }
+    const appearsEdges = graph.edges.filter(
+      (e) => e.type === 'APPEARS_IN' && e.from === motif.id
+    );
+    if (appearsEdges.length === 0) {
+      const config = NARRATIVE_GAP_CONFIG.MotifUngrounded;
+      gaps.push({
+        id: `gap_motif_${motif.id}`,
+        type: config.type,
+        tier: config.tier,
+        title: 'Motif Ungrounded',
+        description: `Motif "${motif.name}" doesn't appear in any scene`,
+        scopeRefs: { nodeIds: [motif.id] },
+        severity: config.defaultSeverity,
+        source: 'derived',
+        status: 'open',
+        phase: config.phase,
+        domain: config.domain,
+        groupKey: `MOTIF:GROUND:${motif.id}`,
+      });
     }
   }
 

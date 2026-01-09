@@ -29,8 +29,6 @@ const RULE_TO_TIER: Record<string, GapTier> = {
   SCENE_ACT_BOUNDARY: 'structure',
 
   // PlotPoints tier
-  PP_HAS_INTENT: 'plotPoints',
-  PP_HAS_CRITERIA: 'plotPoints',
   PP_EVENT_REALIZATION: 'plotPoints',
   PP_DAG_NO_CYCLES: 'plotPoints',
   PP_ACT_ALIGNMENT: 'plotPoints',
@@ -79,8 +77,6 @@ const RULE_LABELS: Record<string, string> = {
   SCENE_ACT_BOUNDARY: 'Scene Act Mismatch',
 
   // PlotPoints
-  PP_HAS_INTENT: 'PlotPoint Missing Intent',
-  PP_HAS_CRITERIA: 'PlotPoint Missing Criteria',
   PP_EVENT_REALIZATION: 'Unrealized PlotPoint',
   PP_DAG_NO_CYCLES: 'PlotPoint Cycle Detected',
   PP_ACT_ALIGNMENT: 'PlotPoint Act Mismatch',
