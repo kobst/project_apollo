@@ -297,7 +297,7 @@ These nodes establish the "top of the pyramid" - the foundational context that e
 
 **Optional:**
 - `summary`
-- `intent` (enum: `plot`, `character`, `theme`, `tone`) – *AI can infer from context*
+- `intent` (enum: `plot`, `character`, `tone`) – *AI can infer from context*
 - `priority` (enum: `low`, `medium`, `high`)
 - `urgency` (enum: `low`, `medium`, `high`)
 - `stakes_change` (enum: `up`, `down`, `steady`)
@@ -307,8 +307,6 @@ These nodes establish the "top of the pyramid" - the foundational context that e
 - `confidence` (0–1)
 - `tags[]`
 - `ownerId`
-
-**Active Phase:** Outline → Draft
 
 **Notes:**
 - Plot points can exist before scenes are created

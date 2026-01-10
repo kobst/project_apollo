@@ -109,7 +109,7 @@ For each node:
 | status | string (enum) | ❌ | PROPOSED/ARCHIVED |
 
 ### Enums
-- `cluster_type`: STRUCTURE, SCENE_LIST, SCENE_QUALITY, CONFLICT, CHARACTER, THEME, MOTIF
+- `cluster_type`: STRUCTURE, SCENE_LIST, SCENE_QUALITY, CHARACTER
 - `status`: PROPOSED, ARCHIVED
 
 ### ScopeBudget Schema (required)
@@ -117,8 +117,7 @@ For each node:
 {
   "max_ops_per_move": "integer (1..20)",
   "max_new_nodes_per_move": "integer (0..10)",
-  "allowed_node_types": "string[] (subset of node types)",
-  "allowed_depth": "OUTLINE | DRAFT | REVISION"
+  "allowed_node_types": "string[] (subset of node types)"
 }
 ```
 
@@ -143,8 +142,7 @@ For each node:
   "scope_budget": {
     "max_ops_per_move": 6,
     "max_new_nodes_per_move": 2,
-    "allowed_node_types": ["Scene"],
-    "allowed_depth": "OUTLINE"
+    "allowed_node_types": ["Scene"]
   },
   "status": "PROPOSED"
 }
@@ -855,8 +853,8 @@ When validation fails, return:
 {
   "op": "ADD_EDGE",
   "edge": {
-    "type": "MANIFESTS_IN",
-    "from": "conf_01J0C001",
+    "type": "SATISFIED_BY",
+    "from": "pp_01J0PP001",
     "to": "scene_01J0SC001"
   }
 }
