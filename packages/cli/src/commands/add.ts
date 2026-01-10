@@ -11,9 +11,7 @@ import {
   type Patch,
   type Character,
   type Location,
-  type Conflict,
   type Scene,
-  type ConflictType,
 } from '@apollo/core';
 import {
   loadGraph,
@@ -192,84 +190,6 @@ async function addLocation(
 }
 
 // =============================================================================
-// Add Conflict
-// =============================================================================
-
-const VALID_CONFLICT_TYPES: ConflictType[] = [
-  'interpersonal',
-  'internal',
-  'societal',
-  'ideological',
-  'systemic',
-  'nature',
-  'technological',
-];
-
-interface AddConflictOptions {
-  type: string;
-  description: string;
-  stakes?: string;
-  intensity?: string;
-  yes?: boolean;
-}
-
-async function addConflict(
-  name: string,
-  options: AddConflictOptions
-): Promise<void> {
-  // Validate conflict type
-  if (!VALID_CONFLICT_TYPES.includes(options.type as ConflictType)) {
-    throw new CLIError(
-      `Invalid conflict type: "${options.type}"`,
-      `Valid types: ${VALID_CONFLICT_TYPES.join(', ')}`
-    );
-  }
-
-  // Validate intensity if provided
-  let intensity: 1 | 2 | 3 | 4 | 5 | undefined;
-  if (options.intensity) {
-    const parsed = parseInt(options.intensity, 10);
-    if (isNaN(parsed) || parsed < 1 || parsed > 5) {
-      throw new CLIError(
-        `Invalid intensity: "${options.intensity}"`,
-        'Intensity must be 1-5'
-      );
-    }
-    intensity = parsed as 1 | 2 | 3 | 4 | 5;
-  }
-
-  const id = generateId('conflict', name);
-
-  const conflict: Conflict = {
-    type: 'Conflict',
-    id,
-    name,
-    conflict_type: options.type as ConflictType,
-    description: options.description,
-    ...(options.stakes && { stakes: options.stakes }),
-    ...(intensity && { intensity }),
-    status: 'FLOATING',
-  };
-
-  const patch: Patch = {
-    type: 'Patch',
-    id: `patch_add_${id}`,
-    base_story_version_id: 'current',
-    created_at: new Date().toISOString(),
-    ops: [{ op: 'ADD_NODE', node: conflict }],
-    metadata: { source: 'cli-add' },
-  };
-
-  await applyPatchWithConfirmation(
-    patch,
-    `Add Conflict: ${name}`,
-    options.yes ?? false
-  );
-
-  console.log(pc.dim('ID:'), id);
-}
-
-// =============================================================================
 // Add Scene
 // =============================================================================
 
@@ -392,25 +312,6 @@ export function addCommand(program: Command): void {
     .action(async (name: string, opts: AddLocationOptions) => {
       try {
         await addLocation(name, opts);
-      } catch (error) {
-        handleError(error);
-        process.exit(1);
-      }
-    });
-
-  // add conflict
-  add
-    .command('conflict')
-    .description('Add a new conflict')
-    .argument('<name>', 'Conflict name')
-    .requiredOption('--type <type>', 'Conflict type: interpersonal, internal, societal, ideological, systemic, nature, technological')
-    .requiredOption('--description <text>', 'Conflict description (min 20 chars)')
-    .option('--stakes <text>', 'Stakes description')
-    .option('--intensity <n>', 'Intensity level 1-5')
-    .option('-y, --yes', 'Skip confirmation')
-    .action(async (name: string, opts: AddConflictOptions) => {
-      try {
-        await addConflict(name, opts);
       } catch (error) {
         handleError(error);
         process.exit(1);

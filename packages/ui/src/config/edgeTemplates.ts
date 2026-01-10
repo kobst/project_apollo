@@ -54,54 +54,12 @@ export const EDGE_TEMPLATES: Record<EdgeType, EdgeTemplate> = {
       notes: {},
     },
   },
-  INVOLVES: {
-    label: 'Involves',
-    description: 'Conflict involves a character',
-    sourceTypes: ['Conflict'],
-    targetTypes: ['Character'],
-    properties: {
-      weight: { min: 0, max: 1 },
-      notes: {},
-    },
-  },
-  MANIFESTS_IN: {
-    label: 'Manifests In',
-    description: 'Conflict manifests in a scene',
-    sourceTypes: ['Conflict'],
-    targetTypes: ['Scene'],
-    properties: {
-      order: { min: 1 },
-      weight: { min: 0, max: 1 },
-      notes: {},
-    },
-  },
   HAS_ARC: {
     label: 'Has Arc',
     description: 'Character has a character arc',
     sourceTypes: ['Character'],
     targetTypes: ['CharacterArc'],
     properties: {
-      notes: {},
-    },
-  },
-  EXPRESSED_IN: {
-    label: 'Expressed In',
-    description: 'Theme is expressed in a scene or beat',
-    sourceTypes: ['Theme'],
-    targetTypes: ['Scene', 'Beat'],
-    properties: {
-      weight: { min: 0, max: 1 },
-      confidence: { min: 0, max: 1 },
-      notes: {},
-    },
-  },
-  APPEARS_IN: {
-    label: 'Appears In',
-    description: 'Motif appears in a scene',
-    sourceTypes: ['Motif'],
-    targetTypes: ['Scene'],
-    properties: {
-      order: { min: 1 },
       notes: {},
     },
   },
@@ -135,38 +93,11 @@ export const EDGE_TEMPLATES: Record<EdgeType, EdgeTemplate> = {
   },
   ADVANCES: {
     label: 'Advances',
-    description: 'Plot point advances a character arc or theme',
+    description: 'Plot point advances a character arc',
     sourceTypes: ['PlotPoint'],
-    targetTypes: ['CharacterArc', 'Theme'],
+    targetTypes: ['CharacterArc'],
     properties: {
       weight: { min: 0, max: 1 },
-      notes: {},
-    },
-  },
-  SETS_UP: {
-    label: 'Sets Up',
-    description: 'Plot point sets up a motif',
-    sourceTypes: ['PlotPoint'],
-    targetTypes: ['Motif'],
-    properties: {
-      notes: {},
-    },
-  },
-  PAYS_OFF: {
-    label: 'Pays Off',
-    description: 'Plot point pays off a motif',
-    sourceTypes: ['PlotPoint'],
-    targetTypes: ['Motif'],
-    properties: {
-      notes: {},
-    },
-  },
-  DEFINES: {
-    label: 'Defines',
-    description: 'Logline defines a central conflict',
-    sourceTypes: ['Logline'],
-    targetTypes: ['Conflict'],
-    properties: {
       notes: {},
     },
   },

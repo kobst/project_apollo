@@ -151,10 +151,6 @@ function mapDomainToClusterType(
       return 'SCENE_LIST';
     case 'CHARACTER':
       return 'CHARACTER';
-    case 'CONFLICT':
-      return 'CONFLICT';
-    case 'THEME_MOTIF':
-      return oqType === 'ThemeUngrounded' ? 'THEME' : 'MOTIF';
     default:
       return 'STRUCTURE';
   }
@@ -180,29 +176,11 @@ function getScopeBudget(clusterType: ClusterType, _phase: OQPhase): ScopeBudget 
       allowed_node_types: ['Scene'],
       allowed_depth: 'DRAFT',
     },
-    CONFLICT: {
-      max_ops_per_move: 6,
-      max_new_nodes_per_move: 2,
-      allowed_node_types: ['Conflict', 'Scene'],
-      allowed_depth: 'DRAFT',
-    },
     CHARACTER: {
       max_ops_per_move: 6,
       max_new_nodes_per_move: 1,
       allowed_node_types: ['CharacterArc'],
       allowed_depth: 'DRAFT',
-    },
-    THEME: {
-      max_ops_per_move: 4,
-      max_new_nodes_per_move: 0,
-      allowed_node_types: ['Scene', 'Beat'],
-      allowed_depth: 'REVISION',
-    },
-    MOTIF: {
-      max_ops_per_move: 4,
-      max_new_nodes_per_move: 0,
-      allowed_node_types: ['Scene', 'Beat'],
-      allowed_depth: 'REVISION',
     },
   };
 
@@ -629,11 +607,6 @@ function extractOQTypeFromGap(gap: Gap): OpenQuestion['type'] {
   if (id.includes('char_desc_')) return 'CharacterUnderspecified';
   if (id.includes('char_arc_')) return 'MissingCharacterArc';
   if (id.includes('arc_ungrounded_')) return 'ArcUngrounded';
-  if (id.includes('conf_parties_')) return 'ConflictNeedsParties';
-  if (id.includes('conf_manifest_')) return 'ConflictNeedsManifestation';
-  if (id.includes('theme_')) return 'ThemeUngrounded';
-  if (id.includes('motif_')) return 'MotifUngrounded';
-
   // Default based on domain
   switch (gap.domain) {
     case 'STRUCTURE':
@@ -642,10 +615,6 @@ function extractOQTypeFromGap(gap: Gap): OpenQuestion['type'] {
       return 'SceneHasNoCast';
     case 'CHARACTER':
       return 'CharacterUnderspecified';
-    case 'CONFLICT':
-      return 'ConflictNeedsParties';
-    case 'THEME_MOTIF':
-      return 'ThemeUngrounded';
     default:
       return 'BeatUnrealized';
   }

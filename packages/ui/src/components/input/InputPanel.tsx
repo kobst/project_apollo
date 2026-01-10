@@ -15,11 +15,7 @@ const TARGET_TYPES = [
   { value: 'Character', label: 'Character' },
   { value: 'Location', label: 'Location' },
   { value: 'Scene', label: 'Scene' },
-  { value: 'Conflict', label: 'Conflict' },
   { value: 'PlotPoint', label: 'Plot Point' },
-  // Abstract/meaning
-  { value: 'Theme', label: 'Theme' },
-  { value: 'Motif', label: 'Motif' },
   { value: 'Object', label: 'Prop' },
 ];
 

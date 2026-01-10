@@ -37,10 +37,9 @@ const EXPECTED_BEATS = 15;
 const FOUNDATION_TYPES = [
   'Setting',
   'GenreTone',
-  'Conflict',
-  'Theme',
-  'Motif',
   'Character',
+  'Location',
+  'Object',
 ] as const;
 
 // =============================================================================
@@ -131,7 +130,7 @@ function computePremiseTier(graph: GraphState): TierSummary {
 
 /**
  * Compute Foundations tier summary.
- * Coverage: Count of present foundation node types out of 6.
+ * Coverage: Count of present foundation node types out of 5.
  */
 function computeFoundationsTier(graph: GraphState): TierSummary {
   let covered = 0;

@@ -74,8 +74,6 @@ export {
 export {
   SCENE_HAS_CHARACTER,
   SCENE_HAS_LOCATION,
-  THEME_NOT_ORPHANED,
-  MOTIF_NOT_ORPHANED,
   SOFT_RULES,
   registerSoftRules,
 } from './softRules.js';

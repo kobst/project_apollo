@@ -25,9 +25,6 @@ import type {
   Scene,
   Character,
   CharacterArc,
-  Conflict,
-  Theme,
-  Motif,
 } from '../types/nodes.js';
 
 // =============================================================================
@@ -61,16 +58,6 @@ export function deriveOpenQuestions(
 
   // CHARACTER domain
   questions.push(...deriveCharacterQuestions(graph, phase));
-
-  // CONFLICT domain (DRAFT and REVISION)
-  if (phase === 'DRAFT' || phase === 'REVISION') {
-    questions.push(...deriveConflictQuestions(graph));
-  }
-
-  // THEME_MOTIF domain (REVISION only)
-  if (phase === 'REVISION') {
-    questions.push(...deriveThemeMotifQuestions(graph));
-  }
 
   return questions;
 }
@@ -311,108 +298,6 @@ function deriveCharacterQuestions(
   return questions;
 }
 
-// =============================================================================
-// CONFLICT Domain
-// =============================================================================
-
-/**
- * Derive conflict-related questions.
- */
-function deriveConflictQuestions(graph: GraphState): OpenQuestion[] {
-  const questions: OpenQuestion[] = [];
-  const conflicts = getNodesByType<Conflict>(graph, 'Conflict');
-
-  for (const conflict of conflicts) {
-    // ConflictNeedsParties
-    const involvesEdges = graph.edges.filter(
-      (e) => e.type === 'INVOLVES' && e.from === conflict.id
-    );
-    if (involvesEdges.length === 0) {
-      questions.push({
-        id: `oq_conf_parties_${conflict.id}`,
-        type: 'ConflictNeedsParties',
-        domain: 'CONFLICT',
-        severity: 'IMPORTANT',
-        phase: 'DRAFT',
-        group_key: `CONFLICT:SETUP:${conflict.id}`,
-        target_node_id: conflict.id,
-        message: `Conflict "${conflict.name}" has no characters involved`,
-      });
-    }
-
-    // ConflictNeedsManifestation
-    const manifestsEdges = graph.edges.filter(
-      (e) => e.type === 'MANIFESTS_IN' && e.from === conflict.id
-    );
-    if (manifestsEdges.length === 0) {
-      questions.push({
-        id: `oq_conf_manifest_${conflict.id}`,
-        type: 'ConflictNeedsManifestation',
-        domain: 'CONFLICT',
-        severity: 'IMPORTANT',
-        phase: 'DRAFT',
-        group_key: `CONFLICT:SHOW:${conflict.id}`,
-        target_node_id: conflict.id,
-        message: `Conflict "${conflict.name}" doesn't manifest in any scene`,
-      });
-    }
-  }
-
-  return questions;
-}
-
-// =============================================================================
-// THEME_MOTIF Domain
-// =============================================================================
-
-/**
- * Derive theme and motif grounding questions.
- */
-function deriveThemeMotifQuestions(graph: GraphState): OpenQuestion[] {
-  const questions: OpenQuestion[] = [];
-
-  // ThemeUngrounded - themes without EXPRESSED_IN edges
-  const themes = getNodesByType<Theme>(graph, 'Theme');
-  for (const theme of themes) {
-    const expressedEdges = graph.edges.filter(
-      (e) => e.type === 'EXPRESSED_IN' && e.from === theme.id
-    );
-    if (expressedEdges.length === 0) {
-      questions.push({
-        id: `oq_theme_${theme.id}`,
-        type: 'ThemeUngrounded',
-        domain: 'THEME_MOTIF',
-        severity: 'SOFT',
-        phase: 'REVISION',
-        group_key: `THEME:GROUND:${theme.id}`,
-        target_node_id: theme.id,
-        message: `Theme "${theme.statement}" is not expressed in any scene`,
-      });
-    }
-  }
-
-  // MotifUngrounded - motifs without APPEARS_IN edges
-  const motifs = getNodesByType<Motif>(graph, 'Motif');
-  for (const motif of motifs) {
-    const appearsEdges = graph.edges.filter(
-      (e) => e.type === 'APPEARS_IN' && e.from === motif.id
-    );
-    if (appearsEdges.length === 0) {
-      questions.push({
-        id: `oq_motif_${motif.id}`,
-        type: 'MotifUngrounded',
-        domain: 'THEME_MOTIF',
-        severity: 'SOFT',
-        phase: 'REVISION',
-        group_key: `MOTIF:GROUND:${motif.id}`,
-        target_node_id: motif.id,
-        message: `Motif "${motif.name}" doesn't appear in any scene`,
-      });
-    }
-  }
-
-  return questions;
-}
 
 // =============================================================================
 // Utility Functions

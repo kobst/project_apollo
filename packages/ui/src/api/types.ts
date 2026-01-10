@@ -13,17 +13,14 @@ export interface APIResponse<T = unknown> {
 // Phases, severities, domains
 export type OQPhase = 'OUTLINE' | 'DRAFT' | 'REVISION';
 export type OQSeverity = 'BLOCKING' | 'IMPORTANT' | 'SOFT';
-export type OQDomain = 'STRUCTURE' | 'SCENE' | 'CHARACTER' | 'CONFLICT' | 'THEME_MOTIF';
+export type OQDomain = 'STRUCTURE' | 'SCENE' | 'CHARACTER';
 
 // Status (bootstrap endpoint)
 export interface StoryStats {
   scenes: number;
   beats: number;
   characters: number;
-  conflicts: number;
   locations: number;
-  themes: number;
-  motifs: number;
   objects: number;
   plotPoints: number;
   edges: number;
@@ -436,18 +433,11 @@ export type EdgeType =
   | 'HAS_CHARACTER'
   | 'LOCATED_AT'
   | 'FEATURES_OBJECT'
-  | 'INVOLVES'
-  | 'MANIFESTS_IN'
   | 'HAS_ARC'
-  | 'EXPRESSED_IN'
-  | 'APPEARS_IN'
   | 'ALIGNS_WITH'
   | 'SATISFIED_BY'
   | 'PRECEDES'
   | 'ADVANCES'
-  | 'SETS_UP'
-  | 'PAYS_OFF'
-  | 'DEFINES'
   | 'PART_OF'
   | 'SET_IN';
 
@@ -646,7 +636,7 @@ export interface BulkAttachData {
 // PlotPoint Types
 // =============================================================================
 
-export type PlotPointIntent = 'plot' | 'character' | 'theme' | 'tone';
+export type PlotPointIntent = 'plot' | 'character' | 'tone';
 export type PlotPointPriority = 'low' | 'medium' | 'high';
 export type PlotPointUrgency = 'low' | 'medium' | 'high';
 export type PlotPointStakesChange = 'up' | 'down' | 'steady';
@@ -756,7 +746,7 @@ export type GapSeverity = 'blocker' | 'warn' | 'info';
 export type GapSource = 'rule-engine' | 'derived' | 'user' | 'extractor' | 'import';
 export type GapStatus = 'open' | 'in_progress' | 'resolved';
 export type GapPhase = 'OUTLINE' | 'DRAFT' | 'REVISION';
-export type GapDomain = 'STRUCTURE' | 'SCENE' | 'CHARACTER' | 'CONFLICT' | 'THEME_MOTIF';
+export type GapDomain = 'STRUCTURE' | 'SCENE' | 'CHARACTER';
 
 export interface GapData {
   id: string;

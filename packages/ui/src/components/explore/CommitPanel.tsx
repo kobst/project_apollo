@@ -19,10 +19,7 @@ interface CommitPanelProps {
 const REQUIRED_FIELDS: Record<string, string[]> = {
   Character: ['name'],
   Scene: ['heading'],
-  Conflict: ['name', 'conflict_type'],
   Location: ['name'],
-  Theme: ['name'],
-  Motif: ['name'],
   Beat: [],
   CharacterArc: ['arc_type'],
   Object: ['name'],

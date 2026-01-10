@@ -8,10 +8,7 @@ export type NodeTypeOption =
   | 'Beat'
   | 'Scene'
   | 'Character'
-  | 'Conflict'
   | 'Location'
-  | 'Theme'
-  | 'Motif'
   | 'Object'
   | 'PlotPoint';
 
@@ -26,10 +23,6 @@ const NODE_TYPES: { type: NodeTypeOption; label: string; statKey?: keyof StorySt
   { type: 'Logline', label: 'Logline', statKey: 'loglines' },
   { type: 'Setting', label: 'Settings', statKey: 'settings' },
   { type: 'GenreTone', label: 'Genre/Tone', statKey: 'genreTones' },
-  // Abstract meaning
-  { type: 'Theme', label: 'Themes', statKey: 'themes' },
-  { type: 'Motif', label: 'Motifs', statKey: 'motifs' },
-  { type: 'Conflict', label: 'Conflicts', statKey: 'conflicts' },
   // Structure & content
   { type: 'Beat', label: 'Beats', statKey: 'beats' },
   { type: 'PlotPoint', label: 'Plot Points', statKey: 'plotPoints' },

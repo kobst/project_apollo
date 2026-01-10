@@ -25,7 +25,6 @@ interface AddPlotPointModalProps {
 const INTENT_OPTIONS: { value: PlotPointIntent; label: string }[] = [
   { value: 'plot', label: 'Plot' },
   { value: 'character', label: 'Character' },
-  { value: 'theme', label: 'Theme' },
   { value: 'tone', label: 'Tone' },
 ];
 

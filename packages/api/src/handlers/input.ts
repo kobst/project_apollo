@@ -10,9 +10,7 @@ import {
   type Patch,
   type Character,
   type Location,
-  type Conflict,
   type Scene,
-  type ConflictType,
 } from '@apollo/core';
 import type { StorageContext } from '../config.js';
 import {
@@ -22,16 +20,6 @@ import {
 } from '../storage.js';
 import { NotFoundError, BadRequestError, ValidationError } from '../middleware/error.js';
 import type { APIResponse, InputRequest } from '../types.js';
-
-const VALID_CONFLICT_TYPES: ConflictType[] = [
-  'interpersonal',
-  'internal',
-  'societal',
-  'ideological',
-  'systemic',
-  'nature',
-  'technological',
-];
 
 interface InputResponseData {
   nodeId: string;
@@ -140,39 +128,6 @@ export function createInputHandler(ctx: StorageContext) {
             base_story_version_id: state.history.currentVersionId,
             created_at: new Date().toISOString(),
             ops: [{ op: 'ADD_NODE', node: location }],
-            metadata: { source: 'api-input' },
-          };
-          break;
-        }
-
-        case 'conflict': {
-          const conflictType = rest.conflictType as ConflictType | undefined;
-          if (!conflictType || !VALID_CONFLICT_TYPES.includes(conflictType)) {
-            throw new BadRequestError(
-              `conflictType is required and must be one of: ${VALID_CONFLICT_TYPES.join(', ')}`
-            );
-          }
-          if (!description || description.length < 20) {
-            throw new BadRequestError('description is required (min 20 characters)');
-          }
-
-          nodeId = generateId('conflict', name);
-
-          const conflict: Conflict = {
-            type: 'Conflict',
-            id: nodeId,
-            name,
-            conflict_type: conflictType,
-            description,
-            status: 'FLOATING',
-          };
-
-          patch = {
-            type: 'Patch',
-            id: `patch_add_${nodeId}`,
-            base_story_version_id: state.history.currentVersionId,
-            created_at: new Date().toISOString(),
-            ops: [{ op: 'ADD_NODE', node: conflict }],
             metadata: { source: 'api-input' },
           };
           break;

@@ -12,47 +12,36 @@ import type { NodeType } from './nodes.js';
 /**
  * All valid edge types in the knowledge graph.
  *
+ * Scene edges:
  * HAS_CHARACTER: Scene → Character
  * LOCATED_AT: Scene → Location
  * FEATURES_OBJECT: Scene → Object
- * INVOLVES: Conflict → Character
- * MANIFESTS_IN: Conflict → Scene
+ * SET_IN: Scene → Setting (scene takes place in setting)
+ *
+ * Character edges:
  * HAS_ARC: Character → CharacterArc
- * EXPRESSED_IN: Theme → Scene | Beat
- * APPEARS_IN: Motif → Scene
  *
  * PlotPoint edges:
  * ALIGNS_WITH: PlotPoint → Beat (optional alignment to STC beat)
  * SATISFIED_BY: PlotPoint → Scene (with properties.order for sequencing)
  * PRECEDES: PlotPoint → PlotPoint (causal/temporal chain, DAG)
- * ADVANCES: PlotPoint → CharacterArc | Theme
- * SETS_UP: PlotPoint → Motif (setup relationship)
- * PAYS_OFF: PlotPoint → Motif (payoff relationship)
+ * ADVANCES: PlotPoint → CharacterArc
  *
- * Context layer edges:
- * DEFINES: Logline → Conflict (logline defines central conflicts)
+ * Location edges:
  * PART_OF: Location → Setting (location is part of setting/world)
- * SET_IN: Scene → Setting (scene takes place in setting)
  *
- * Note: FULFILLS (Scene → Beat) was deprecated in favor of the PlotPoint model.
- * Scenes now connect to Beats via: Scene ← SATISFIED_BY ← PlotPoint → ALIGNS_WITH → Beat
+ * Note: Conflict, Theme, and Motif nodes have been removed.
+ * These concepts are now stored as prose in Story Context.
  */
 export type EdgeType =
   | 'HAS_CHARACTER'
   | 'LOCATED_AT'
   | 'FEATURES_OBJECT'
-  | 'INVOLVES'
-  | 'MANIFESTS_IN'
   | 'HAS_ARC'
-  | 'EXPRESSED_IN'
-  | 'APPEARS_IN'
   | 'ALIGNS_WITH'
   | 'SATISFIED_BY'
   | 'PRECEDES'
   | 'ADVANCES'
-  | 'SETS_UP'
-  | 'PAYS_OFF'
-  | 'DEFINES'
   | 'PART_OF'
   | 'SET_IN';
 
@@ -154,34 +143,10 @@ export const EDGE_RULES: Record<EdgeType, EdgeRule> = {
     target: ['Object'],
   },
 
-  // Conflict → Character
-  INVOLVES: {
-    source: ['Conflict'],
-    target: ['Character'],
-  },
-
-  // Conflict → Scene
-  MANIFESTS_IN: {
-    source: ['Conflict'],
-    target: ['Scene'],
-  },
-
   // Character → CharacterArc
   HAS_ARC: {
     source: ['Character'],
     target: ['CharacterArc'],
-  },
-
-  // Theme → Scene | Beat
-  EXPRESSED_IN: {
-    source: ['Theme'],
-    target: ['Scene', 'Beat'],
-  },
-
-  // Motif → Scene
-  APPEARS_IN: {
-    source: ['Motif'],
-    target: ['Scene'],
   },
 
   // PlotPoint → Beat (optional alignment to STC beat)
@@ -202,28 +167,10 @@ export const EDGE_RULES: Record<EdgeType, EdgeRule> = {
     target: ['PlotPoint'],
   },
 
-  // PlotPoint → CharacterArc | Theme
+  // PlotPoint → CharacterArc
   ADVANCES: {
     source: ['PlotPoint'],
-    target: ['CharacterArc', 'Theme'],
-  },
-
-  // PlotPoint → Motif (setup relationship)
-  SETS_UP: {
-    source: ['PlotPoint'],
-    target: ['Motif'],
-  },
-
-  // PlotPoint → Motif (payoff relationship)
-  PAYS_OFF: {
-    source: ['PlotPoint'],
-    target: ['Motif'],
-  },
-
-  // Logline → Conflict (logline defines central conflicts)
-  DEFINES: {
-    source: ['Logline'],
-    target: ['Conflict'],
+    target: ['CharacterArc'],
   },
 
   // Location → Setting (location is part of setting/world)
@@ -246,18 +193,11 @@ export const EDGE_TYPES: EdgeType[] = [
   'HAS_CHARACTER',
   'LOCATED_AT',
   'FEATURES_OBJECT',
-  'INVOLVES',
-  'MANIFESTS_IN',
   'HAS_ARC',
-  'EXPRESSED_IN',
-  'APPEARS_IN',
   'ALIGNS_WITH',
   'SATISFIED_BY',
   'PRECEDES',
   'ADVANCES',
-  'SETS_UP',
-  'PAYS_OFF',
-  'DEFINES',
   'PART_OF',
   'SET_IN',
 ];

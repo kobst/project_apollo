@@ -11,10 +11,8 @@ import type {
   Beat,
   Scene,
   CharacterArc,
-  Conflict,
   Location,
   StoryObject,
-  Theme,
 } from '../types/nodes.js';
 import { EDGE_RULES } from '../types/edges.js';
 
@@ -185,26 +183,6 @@ function checkFKIntegrity(graph: GraphState): ValidationError[] {
         message: `Object "${obj.id}" references non-existent Scene "${obj.introduced_in_scene_id}"`,
         node_id: obj.id,
         field: 'introduced_in_scene_id',
-      });
-    }
-  }
-
-  // Conflict.start_beat_id and end_beat_id must exist if set
-  for (const conflict of getNodesByType<Conflict>(graph, 'Conflict')) {
-    if (conflict.start_beat_id && !getNode(graph, conflict.start_beat_id)) {
-      errors.push({
-        code: 'FK_INTEGRITY',
-        message: `Conflict "${conflict.id}" references non-existent Beat "${conflict.start_beat_id}"`,
-        node_id: conflict.id,
-        field: 'start_beat_id',
-      });
-    }
-    if (conflict.end_beat_id && !getNode(graph, conflict.end_beat_id)) {
-      errors.push({
-        code: 'FK_INTEGRITY',
-        message: `Conflict "${conflict.id}" references non-existent Beat "${conflict.end_beat_id}"`,
-        node_id: conflict.id,
-        field: 'end_beat_id',
       });
     }
   }
@@ -403,30 +381,6 @@ function checkNodeRules(graph: GraphState): ValidationError[] {
         message: `Scene "${scene.id}" has invalid order_index: ${scene.order_index} (must be >= 1)`,
         node_id: scene.id,
         field: 'order_index',
-      });
-    }
-  }
-
-  // Conflict validation
-  for (const conflict of getNodesByType<Conflict>(graph, 'Conflict')) {
-    if (!conflict.description || conflict.description.length < 20) {
-      errors.push({
-        code: 'CONSTRAINT_VIOLATION',
-        message: `Conflict "${conflict.id}" has description shorter than 20 characters`,
-        node_id: conflict.id,
-        field: 'description',
-      });
-    }
-  }
-
-  // Theme validation
-  for (const theme of getNodesByType<Theme>(graph, 'Theme')) {
-    if (!theme.statement || theme.statement.length < 5 || theme.statement.length > 240) {
-      errors.push({
-        code: 'CONSTRAINT_VIOLATION',
-        message: `Theme "${theme.id}" statement must be 5-240 characters`,
-        node_id: theme.id,
-        field: 'statement',
       });
     }
   }

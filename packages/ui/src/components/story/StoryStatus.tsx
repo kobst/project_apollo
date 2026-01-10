@@ -62,8 +62,8 @@ export function StoryStatus() {
           <span className={styles.statLabel}>Chars</span>
         </div>
         <div className={styles.stat}>
-          <span className={styles.statValue}>{status.stats.conflicts}</span>
-          <span className={styles.statLabel}>Confl</span>
+          <span className={styles.statValue}>{status.stats.locations}</span>
+          <span className={styles.statLabel}>Locs</span>
         </div>
       </div>
     </div>

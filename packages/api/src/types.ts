@@ -36,10 +36,7 @@ export interface StoryStats {
   scenes: number;
   beats: number;
   characters: number;
-  conflicts: number;
   locations: number;
-  themes: number;
-  motifs: number;
   objects: number;
   plotPoints: number;
   edges: number;

@@ -14,8 +14,6 @@ const CATEGORY_TO_NODE_TYPE: Record<StoryMapCategory, string | null> = {
   genreTone: 'GenreTone',
   setting: 'Setting',
   characters: 'Character',
-  conflicts: 'Conflict',
-  themes: 'Theme', // Will also include Motif
   locations: 'Location',
   objects: 'Object',
   board: null, // Special: uses OutlineView
@@ -57,14 +55,11 @@ export function WorkspaceView() {
       return <div>Unknown category</div>;
     }
 
-    const includeMotifs = selectedCategory === 'themes';
-
     return (
       <FoundationsPanel
         key={selectedCategory}
         category={selectedCategory}
         nodeType={nodeType}
-        includeMotifs={includeMotifs}
       />
     );
   };

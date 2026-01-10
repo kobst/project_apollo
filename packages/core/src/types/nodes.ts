@@ -44,10 +44,7 @@ export type ClusterType =
   | 'STRUCTURE'
   | 'SCENE_LIST'
   | 'SCENE_QUALITY'
-  | 'CONFLICT'
-  | 'CHARACTER'
-  | 'THEME'
-  | 'MOTIF';
+  | 'CHARACTER';
 
 export type ClusterStatus = 'PROPOSED' | 'ARCHIVED';
 
@@ -249,30 +246,11 @@ export interface StoryObject extends BaseNode {
 }
 
 // =============================================================================
-// 10. Theme
+// 10-11. Theme and Motif - REMOVED
 // =============================================================================
-
-export type ThemePriority = 'HIGH' | 'MED' | 'LOW';
-
-export interface Theme extends BaseNode {
-  type: 'Theme';
-  statement: string;
-  notes?: string;
-  priority?: ThemePriority;
-}
-
-// =============================================================================
-// 11. Motif
-// =============================================================================
-
-export type MotifType = 'PATTERN' | 'IMAGE' | 'SYMBOL';
-
-export interface Motif extends BaseNode {
-  type: 'Motif';
-  name: string;
-  description?: string;
-  motif_type?: MotifType;
-}
+// Themes and Motifs are now stored as prose in Story Context (StoryMetadata.storyContext)
+// rather than formal graph nodes. This acknowledges they are interpretive concepts
+// *about* the story rather than concrete entities *in* the story.
 
 // =============================================================================
 // 12. CharacterArc
@@ -297,36 +275,17 @@ export interface CharacterArc extends BaseNode {
 }
 
 // =============================================================================
-// 13. Conflict
+// 13. Conflict - REMOVED
 // =============================================================================
-
-export type ConflictType =
-  | 'interpersonal'
-  | 'internal'
-  | 'societal'
-  | 'ideological'
-  | 'systemic'
-  | 'nature'
-  | 'technological';
-
-export type ConflictStatus = 'FLOATING' | 'ACTIVE' | 'RESOLVED';
-
-export interface Conflict extends BaseNode {
-  type: 'Conflict';
-  name: string;
-  conflict_type: ConflictType;
-  description: string;
-  status?: ConflictStatus;
-  start_beat_id?: string;
-  end_beat_id?: string;
-  notes?: string;
-}
+// Conflicts are now stored as prose in Story Context (StoryMetadata.storyContext).
+// Concrete interpersonal conflicts may be represented as Character-to-Character
+// edge relationships in a future iteration.
 
 // =============================================================================
 // 14. PlotPoint
 // =============================================================================
 
-export type PlotPointIntent = 'plot' | 'character' | 'theme' | 'tone';
+export type PlotPointIntent = 'plot' | 'character' | 'tone';
 export type PlotPointPriority = 'low' | 'medium' | 'high';
 export type PlotPointUrgency = 'low' | 'medium' | 'high';
 export type PlotPointStakesChange = 'up' | 'down' | 'steady';
@@ -479,10 +438,7 @@ export type ContentNode =
   | Character
   | Location
   | StoryObject
-  | Theme
-  | Motif
   | CharacterArc
-  | Conflict
   | PlotPoint
   | Logline
   | Setting
@@ -501,10 +457,7 @@ export type NodeType =
   | 'Character'
   | 'Location'
   | 'Object'
-  | 'Theme'
-  | 'Motif'
   | 'CharacterArc'
-  | 'Conflict'
   | 'PlotPoint'
   | 'Logline'
   | 'Setting'
@@ -523,10 +476,7 @@ export const NODE_TYPES: NodeType[] = [
   'Character',
   'Location',
   'Object',
-  'Theme',
-  'Motif',
   'CharacterArc',
-  'Conflict',
   'PlotPoint',
   'Logline',
   'Setting',

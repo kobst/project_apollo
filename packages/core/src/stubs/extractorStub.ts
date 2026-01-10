@@ -8,14 +8,11 @@
 import type { Patch } from '../types/patch.js';
 import type {
   Character,
-  Conflict,
   Location,
   Beat,
   BeatType,
   Scene,
   PlotPoint,
-  Theme,
-  Motif,
   StoryObject,
   Logline,
   Setting,
@@ -24,7 +21,6 @@ import type {
   Tone,
 } from '../types/nodes.js';
 import { BEAT_ACT_MAP, BEAT_POSITION_MAP } from '../types/nodes.js';
-import { generateEdgeId } from '../types/edges.js';
 
 // =============================================================================
 // Extractor Stub
@@ -32,7 +28,7 @@ import { generateEdgeId } from '../types/edges.js';
 
 /**
  * Extract a minimal Patch from a logline.
- * Creates protagonist, central conflict, and primary location.
+ * Creates protagonist and primary location.
  *
  * @param logline - The story logline/premise
  * @param baseVersionId - The base story version ID
@@ -62,18 +58,6 @@ export function extractFromLogline(
           status: 'ACTIVE',
         } as Character,
       },
-      // Add central conflict
-      {
-        op: 'ADD_NODE',
-        node: {
-          type: 'Conflict',
-          id: 'conf_central',
-          name: 'Central Conflict',
-          conflict_type: 'societal',
-          description: logline.length >= 20 ? logline : logline.padEnd(20, '.'),
-          status: 'ACTIVE',
-        } as Conflict,
-      },
       // Add primary location
       {
         op: 'ADD_NODE',
@@ -83,16 +67,6 @@ export function extractFromLogline(
           name: 'PRIMARY LOCATION',
           description: 'Main setting extracted from logline',
         } as Location,
-      },
-      // Link conflict to protagonist
-      {
-        op: 'ADD_EDGE',
-        edge: {
-          id: generateEdgeId(),
-          type: 'INVOLVES',
-          from: 'conf_central',
-          to: 'char_protagonist',
-        },
       },
     ],
     metadata: {
@@ -417,11 +391,9 @@ export function extractFromInput(
     const title = input.length < 60 ? input : input.slice(0, 57) + '...';
 
     // Determine intent based on keywords
-    let intent: 'plot' | 'character' | 'theme' | 'tone' = 'plot';
+    let intent: 'plot' | 'character' | 'tone' = 'plot';
     if (lowerInput.includes('feel') || lowerInput.includes('emotion') || lowerInput.includes('mood')) {
       intent = 'tone';
-    } else if (lowerInput.includes('theme') || lowerInput.includes('meaning') || lowerInput.includes('message')) {
-      intent = 'theme';
     } else if (lowerInput.includes('character') || lowerInput.includes('protagonist') || lowerInput.includes('arc')) {
       intent = 'character';
     }
@@ -452,85 +424,6 @@ export function extractFromInput(
           {
             op: 'ADD_NODE',
             node: plotPoint,
-          },
-        ],
-        metadata: {
-          source: 'extractorStub',
-          action: 'extractFromInput',
-        },
-      },
-    });
-  }
-
-  if (targetType === 'Theme' || (!targetType && (lowerInput.includes('theme') || lowerInput.includes('meaning') || lowerInput.includes('message') || lowerInput.includes('explores')))) {
-    // Theme extraction proposal
-    const themeId = `theme_extracted_${Date.now()}`;
-    const patchId = `patch_theme_${Date.now()}`;
-
-    // Extract statement from input
-    const statement = input.length < 100 ? input : input.slice(0, 97) + '...';
-
-    const theme: Theme = {
-      type: 'Theme',
-      id: themeId,
-      statement,
-    };
-
-    proposals.push({
-      id: 'prop_theme_0',
-      title: `Create theme: ${statement.slice(0, 30)}${statement.length > 30 ? '...' : ''}`,
-      description: 'Extract a thematic element that runs through the story.',
-      confidence: 0.7,
-      extractedEntities: [{ type: 'Theme', name: statement, id: themeId }],
-      patch: {
-        type: 'Patch',
-        id: patchId,
-        base_story_version_id: baseVersionId,
-        created_at: timestamp,
-        ops: [
-          {
-            op: 'ADD_NODE',
-            node: theme,
-          },
-        ],
-        metadata: {
-          source: 'extractorStub',
-          action: 'extractFromInput',
-        },
-      },
-    });
-  }
-
-  if (targetType === 'Motif' || (!targetType && (lowerInput.includes('motif') || lowerInput.includes('symbol') || lowerInput.includes('recurring') || lowerInput.includes('imagery')))) {
-    // Motif extraction proposal
-    const motifId = `motif_extracted_${Date.now()}`;
-    const patchId = `patch_motif_${Date.now()}`;
-
-    // Extract name from input
-    const name = input.length < 40 ? input : input.slice(0, 37) + '...';
-
-    const motif: Motif = {
-      type: 'Motif',
-      id: motifId,
-      name,
-      description: input.slice(0, 300),
-    };
-
-    proposals.push({
-      id: 'prop_motif_0',
-      title: `Create motif: ${name.slice(0, 30)}${name.length > 30 ? '...' : ''}`,
-      description: 'Extract a recurring symbol or imagery pattern.',
-      confidence: 0.7,
-      extractedEntities: [{ type: 'Motif', name, id: motifId }],
-      patch: {
-        type: 'Patch',
-        id: patchId,
-        base_story_version_id: baseVersionId,
-        created_at: timestamp,
-        ops: [
-          {
-            op: 'ADD_NODE',
-            node: motif,
           },
         ],
         metadata: {
@@ -749,17 +642,18 @@ export function extractFromInput(
     });
   }
 
-  // If no specific extractions, create a generic conflict/theme proposal
+  // If no specific extractions, create a generic plot point proposal
   if (proposals.length === 0) {
-    const conflictId = `conf_extracted_${Date.now()}`;
-    const patchId = `patch_conflict_${Date.now()}`;
+    const plotPointId = `pp_generic_${Date.now()}`;
+    const patchId = `patch_generic_${Date.now()}`;
+    const title = input.length < 60 ? input : input.slice(0, 57) + '...';
 
     proposals.push({
-      id: 'prop_conflict_0',
-      title: 'Extract conflict/theme',
-      description: 'Create a new conflict or thematic element from the input.',
+      id: 'prop_generic_0',
+      title: 'Create plot point',
+      description: 'Create a new plot point from the input.',
       confidence: 0.6,
-      extractedEntities: [{ type: 'Conflict', name: 'Extracted Conflict', id: conflictId }],
+      extractedEntities: [{ type: 'PlotPoint', name: title, id: plotPointId }],
       patch: {
         type: 'Patch',
         id: patchId,
@@ -769,13 +663,15 @@ export function extractFromInput(
           {
             op: 'ADD_NODE',
             node: {
-              type: 'Conflict',
-              id: conflictId,
-              name: 'Extracted Conflict',
-              conflict_type: 'interpersonal',
-              description: input.slice(0, 300),
-              status: 'FLOATING',
-            } as Conflict,
+              type: 'PlotPoint',
+              id: plotPointId,
+              title,
+              summary: input.slice(0, 300),
+              intent: 'plot',
+              status: 'proposed',
+              createdAt: timestamp,
+              updatedAt: timestamp,
+            } as PlotPoint,
           },
         ],
         metadata: {

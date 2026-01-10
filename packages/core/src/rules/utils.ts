@@ -19,15 +19,9 @@ import { SCOPE_EXPANSION_LIMIT } from './types.js';
  * Edge types where the parent (container) is the TARGET of the edge.
  * For these types, ordering is relative to the target node.
  *
- * - EXPRESSED_IN: Theme → Scene|Beat (Scene/Beat is where themes are expressed)
- * - APPEARS_IN: Motif → Scene (Scene is where motifs appear)
- *
- * Note: FULFILLS was removed - scenes connect to beats via PlotPoints now.
+ * Currently empty - all remaining edge types have the parent as source.
  */
-export const PARENT_IS_TARGET_EDGE_TYPES: EdgeType[] = [
-  'EXPRESSED_IN',
-  'APPEARS_IN',
-];
+export const PARENT_IS_TARGET_EDGE_TYPES: EdgeType[] = [];
 
 /**
  * Get the parent node ID for an edge (the node that "contains" the ordered items).

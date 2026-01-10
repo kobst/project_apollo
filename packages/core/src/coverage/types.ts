@@ -25,8 +25,8 @@ export type GapType = 'structural' | 'narrative';
  * Ordered from top (most abstract) to bottom (most concrete).
  */
 export type GapTier =
-  | 'premise' // Top: Premise node (0-1)
-  | 'foundations' // Setting, GenreTone, Conflict, Theme, Motif, Character
+  | 'premise' // Top: Logline node (0-1)
+  | 'foundations' // Setting, GenreTone, Character, Location, Object
   | 'structure' // Beat nodes (15 STC beats)
   | 'plotPoints' // PlotPoint nodes
   | 'scenes'; // Scene nodes
@@ -64,9 +64,7 @@ export type GapStatus = 'open' | 'in_progress' | 'resolved';
 export type GapDomain =
   | 'STRUCTURE'
   | 'SCENE'
-  | 'CHARACTER'
-  | 'CONFLICT'
-  | 'THEME_MOTIF';
+  | 'CHARACTER';
 
 /**
  * Gap phase indicates when this gap is most relevant.
@@ -245,13 +243,7 @@ export type NarrativeGapType =
   // Character domain
   | 'CharacterUnderspecified'
   | 'MissingCharacterArc'
-  | 'ArcUngrounded'
-  // Conflict domain
-  | 'ConflictNeedsParties'
-  | 'ConflictNeedsManifestation'
-  // Theme/Motif domain
-  | 'ThemeUngrounded'
-  | 'MotifUngrounded';
+  | 'ArcUngrounded';
 
 /**
  * Mapping from narrative gap types to their configuration.
@@ -326,38 +318,6 @@ export const NARRATIVE_GAP_CONFIG: Record<NarrativeGapType, NarrativeGapConfig> 
     defaultSeverity: 'info',
     phase: 'REVISION',
   },
-
-  // CONFLICT domain
-  ConflictNeedsParties: {
-    tier: 'foundations',
-    type: 'narrative',
-    domain: 'CONFLICT',
-    defaultSeverity: 'warn',
-    phase: 'DRAFT',
-  },
-  ConflictNeedsManifestation: {
-    tier: 'foundations',
-    type: 'narrative',
-    domain: 'CONFLICT',
-    defaultSeverity: 'warn',
-    phase: 'DRAFT',
-  },
-
-  // THEME_MOTIF domain
-  ThemeUngrounded: {
-    tier: 'foundations',
-    type: 'narrative',
-    domain: 'THEME_MOTIF',
-    defaultSeverity: 'info',
-    phase: 'REVISION',
-  },
-  MotifUngrounded: {
-    tier: 'foundations',
-    type: 'narrative',
-    domain: 'THEME_MOTIF',
-    defaultSeverity: 'info',
-    phase: 'REVISION',
-  },
 };
 
 /**
@@ -373,10 +333,6 @@ export const NARRATIVE_GAP_TYPES: NarrativeGapType[] = [
   'CharacterUnderspecified',
   'MissingCharacterArc',
   'ArcUngrounded',
-  'ConflictNeedsParties',
-  'ConflictNeedsManifestation',
-  'ThemeUngrounded',
-  'MotifUngrounded',
 ];
 
 /**
@@ -386,8 +342,6 @@ export const GAP_DOMAINS: GapDomain[] = [
   'STRUCTURE',
   'SCENE',
   'CHARACTER',
-  'CONFLICT',
-  'THEME_MOTIF',
 ];
 
 /**

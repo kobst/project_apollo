@@ -82,7 +82,7 @@ function toPlotPointData(pp: PlotPoint, fulfillmentCount: number, alignedBeatId?
 
 interface CreatePlotPointBody {
   title: string;
-  intent?: 'plot' | 'character' | 'theme' | 'tone';
+  intent?: 'plot' | 'character' | 'tone';
   summary?: string;
   priority?: 'low' | 'medium' | 'high';
   urgency?: 'low' | 'medium' | 'high';

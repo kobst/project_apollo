@@ -9,7 +9,6 @@ import type {
   EdgeProperties,
   EdgeStatus,
   EdgeType,
-  GapData,
 } from '../../api/types';
 import { NodeDetailPanel } from '../explore/NodeDetailPanel';
 import { NodeEditor } from '../explore/NodeEditor';
@@ -35,7 +34,6 @@ function isOrderedEdgeType(edgeType: EdgeType): boolean {
 
 interface NodeDetailModalProps {
   node: NodeData;
-  nodeGaps: GapData[];
   allNodes: NodeData[];
   onClose: () => void;
   onNodeUpdated: () => void;
@@ -44,7 +42,6 @@ interface NodeDetailModalProps {
 
 export function NodeDetailModal({
   node,
-  nodeGaps,
   allNodes,
   onClose,
   onNodeUpdated,
@@ -378,23 +375,6 @@ export function NodeDetailModal({
             &times;
           </button>
         </div>
-
-        {/* Node gaps */}
-        {nodeGaps.length > 0 && (
-          <div className={styles.gapsBar}>
-            {nodeGaps.map(gap => (
-              <div
-                key={gap.id}
-                className={`${styles.gapItem} ${styles[gap.severity]}`}
-              >
-                <span className={styles.gapIcon}>
-                  {gap.severity === 'blocker' ? '!' : gap.severity === 'warn' ? '?' : 'i'}
-                </span>
-                <span>{gap.title}</span>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* Body */}
         <div className={styles.body}>

@@ -48,7 +48,7 @@ export function ExploreView() {
   } = useStory();
 
   // Local explore state
-  const [selectedType, setSelectedType] = useState<NodeTypeOption>('Theme');
+  const [selectedType, setSelectedType] = useState<NodeTypeOption>('Character');
   const [nodes, setNodes] = useState<NodeData[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [nodeRelations, setNodeRelations] = useState<NodeRelationsData | null>(null);
@@ -171,7 +171,7 @@ export function ExploreView() {
       if (!currentStoryId) return;
       try {
         // Fetch nodes of all types for the picker
-        const types = ['Beat', 'Scene', 'Character', 'Conflict', 'Location', 'Theme', 'Motif', 'CharacterArc', 'Object', 'PlotPoint'];
+        const types = ['Beat', 'Scene', 'Character', 'Location', 'CharacterArc', 'Object', 'PlotPoint', 'Logline', 'Setting', 'GenreTone'];
         const results = await Promise.all(
           types.map(type => api.listNodes(currentStoryId, type).catch(() => ({ nodes: [] })))
         );

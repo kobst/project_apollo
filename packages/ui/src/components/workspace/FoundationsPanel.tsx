@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { api } from '../../api/client';
-import type { NodeData, GapsData } from '../../api/types';
+import type { NodeData } from '../../api/types';
 import { NodeCardGrid } from './NodeCardGrid';
 import { NodeDetailModal } from './NodeDetailModal';
 import { InputPanel } from '../input/InputPanel';
@@ -11,19 +11,15 @@ import styles from './FoundationsPanel.module.css';
 interface FoundationsPanelProps {
   category: StoryMapCategory;
   nodeType: string;
-  includeMotifs?: boolean;
 }
 
-export function FoundationsPanel({ category, nodeType, includeMotifs }: FoundationsPanelProps) {
+export function FoundationsPanel({ category, nodeType }: FoundationsPanelProps) {
   const { currentStoryId, refreshStatus } = useStory();
 
   // Node state
   const [nodes, setNodes] = useState<NodeData[]>([]);
   const [nodesLoading, setNodesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Gaps state
-  const [gapsData, setGapsData] = useState<GapsData | null>(null);
 
   // Modal state
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
@@ -39,42 +35,21 @@ export function FoundationsPanel({ category, nodeType, includeMotifs }: Foundati
     setError(null);
 
     try {
-      // Fetch primary type
       const data = await api.listNodes(currentStoryId, nodeType);
-      let fetchedNodes = data.nodes;
-
-      // Include motifs if needed (for themes category)
-      if (includeMotifs) {
-        const motifData = await api.listNodes(currentStoryId, 'Motif');
-        fetchedNodes = [...fetchedNodes, ...motifData.nodes];
-      }
-
-      setNodes(fetchedNodes);
+      setNodes(data.nodes);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load nodes');
       setNodes([]);
     } finally {
       setNodesLoading(false);
     }
-  }, [currentStoryId, nodeType, includeMotifs]);
-
-  // Fetch gaps for this category
-  const fetchGaps = useCallback(async () => {
-    if (!currentStoryId) return;
-
-    try {
-      const data = await api.getGaps(currentStoryId);
-      setGapsData(data);
-    } catch (err) {
-      console.error('Failed to fetch gaps:', err);
-    }
-  }, [currentStoryId]);
+  }, [currentStoryId, nodeType]);
 
   // Fetch all nodes for the relation picker
   const fetchAllNodes = useCallback(async () => {
     if (!currentStoryId) return;
     try {
-      const types = ['Beat', 'Scene', 'Character', 'Conflict', 'Location', 'Theme', 'Motif', 'CharacterArc', 'Object', 'PlotPoint', 'Logline', 'Setting', 'GenreTone'];
+      const types = ['Beat', 'Scene', 'Character', 'Location', 'CharacterArc', 'Object', 'PlotPoint', 'Logline', 'Setting', 'GenreTone'];
       const results = await Promise.all(
         types.map(type => api.listNodes(currentStoryId, type).catch(() => ({ nodes: [] })))
       );
@@ -87,41 +62,8 @@ export function FoundationsPanel({ category, nodeType, includeMotifs }: Foundati
 
   useEffect(() => {
     void fetchNodes();
-    void fetchGaps();
     void fetchAllNodes();
-  }, [fetchNodes, fetchGaps, fetchAllNodes]);
-
-  // Filter gaps for this category
-  const categoryGaps = useMemo(() => {
-    if (!gapsData) return [];
-
-    return gapsData.gaps.filter(gap => {
-      // Match by node type or tier
-      const nodeTypeLower = nodeType.toLowerCase();
-      const titleLower = gap.title.toLowerCase();
-
-      if (titleLower.includes(nodeTypeLower)) return true;
-      if (includeMotifs && titleLower.includes('motif')) return true;
-
-      // Match by tier for some categories
-      if (category === 'logline' && gap.tier === 'premise') return true;
-      if (category === 'characters' && gap.tier === 'foundations' && gap.domain === 'CHARACTER') return true;
-      if (category === 'conflicts' && gap.tier === 'foundations' && gap.domain === 'CONFLICT') return true;
-      if (category === 'locations' && gap.tier === 'foundations') return true;
-      if (category === 'objects' && gap.tier === 'foundations') return true;
-      if (category === 'plotPoints' && gap.tier === 'plotPoints') return true;
-      if (category === 'scenes' && gap.tier === 'scenes') return true;
-
-      return false;
-    });
-  }, [gapsData, nodeType, includeMotifs, category]);
-
-  // Get gaps for a specific node
-  const getNodeGaps = useCallback((nodeId: string) => {
-    return categoryGaps.filter(gap =>
-      gap.scopeRefs?.nodeIds?.includes(nodeId)
-    );
-  }, [categoryGaps]);
+  }, [fetchNodes, fetchAllNodes]);
 
   // Handlers
   const handleSelectNode = useCallback((node: NodeData) => {
@@ -134,16 +76,14 @@ export function FoundationsPanel({ category, nodeType, includeMotifs }: Foundati
 
   const handleNodeUpdated = useCallback(() => {
     void fetchNodes();
-    void fetchGaps();
     void refreshStatus();
-  }, [fetchNodes, fetchGaps, refreshStatus]);
+  }, [fetchNodes, refreshStatus]);
 
   const handleNodeDeleted = useCallback(() => {
     setSelectedNode(null);
     void fetchNodes();
-    void fetchGaps();
     void refreshStatus();
-  }, [fetchNodes, fetchGaps, refreshStatus]);
+  }, [fetchNodes, refreshStatus]);
 
   const getCategoryLabel = () => {
     const labels: Record<StoryMapCategory, string> = {
@@ -152,8 +92,6 @@ export function FoundationsPanel({ category, nodeType, includeMotifs }: Foundati
       genreTone: 'Genre/Tone',
       setting: 'Setting',
       characters: 'Characters',
-      conflicts: 'Conflicts',
-      themes: 'Themes & Motifs',
       locations: 'Locations',
       objects: 'Objects',
       board: 'Structure Board',
@@ -180,7 +118,6 @@ export function FoundationsPanel({ category, nodeType, includeMotifs }: Foundati
         ) : (
           <NodeCardGrid
             nodes={nodes}
-            gaps={categoryGaps}
             onSelectNode={handleSelectNode}
             categoryLabel={getCategoryLabel()}
           />
@@ -196,7 +133,6 @@ export function FoundationsPanel({ category, nodeType, includeMotifs }: Foundati
       {selectedNode && (
         <NodeDetailModal
           node={selectedNode}
-          nodeGaps={getNodeGaps(selectedNode.id)}
           allNodes={allNodes}
           onClose={handleCloseModal}
           onNodeUpdated={handleNodeUpdated}
