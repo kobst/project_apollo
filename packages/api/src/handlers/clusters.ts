@@ -13,7 +13,7 @@ import {
   generateClusterForGap,
   getNode,
 } from '@apollo/core';
-import type { GapPhase, Gap } from '@apollo/core';
+import type { Gap } from '@apollo/core';
 import type { StorageContext } from '../config.js';
 import { loadVersionedStateById, deserializeGraph } from '../storage.js';
 import {
@@ -58,10 +58,9 @@ export function createClustersHandler(ctx: StorageContext) {
       }
 
       const graph = deserializeGraph(currentVersion.graph);
-      const phase: GapPhase = state.metadata?.phase ?? 'OUTLINE';
 
       // Compute coverage to get unified gaps
-      const coverage = computeCoverage(graph, phase);
+      const coverage = computeCoverage(graph);
       // Filter to narrative gaps (only these need cluster generation)
       const narrativeGaps = coverage.gaps.filter((g) => g.type === 'narrative');
 
@@ -111,11 +110,11 @@ export function createClustersHandler(ctx: StorageContext) {
           );
         }
 
-        // Use the highest priority gap (blocker > warn > info)
-        const priorityOrder = ['blocker', 'warn', 'info'];
+        // Use the highest priority gap by tier (premise > foundations > structure > plotPoints > scenes)
+        const tierPriority = ['premise', 'foundations', 'structure', 'plotPoints', 'scenes'];
         scopedGaps.sort(
           (a, b) =>
-            priorityOrder.indexOf(a.severity) - priorityOrder.indexOf(b.severity)
+            tierPriority.indexOf(a.tier) - tierPriority.indexOf(b.tier)
         );
         gap = scopedGaps[0];
         seedKey = `scope_${scopeNodeId}`;
@@ -146,7 +145,6 @@ export function createClustersHandler(ctx: StorageContext) {
       const clusterResult = generateClusterForGap(
         gap,
         state.history.currentVersionId,
-        phase,
         { count, seed }
       );
 
@@ -170,7 +168,6 @@ export function createClustersHandler(ctx: StorageContext) {
           clusterId: clusterResult.cluster.id,
           title: clusterResult.cluster.title,
           clusterType: clusterResult.cluster.cluster_type ?? 'UNKNOWN',
-          scope: clusterResult.cluster.scope_budget.allowed_depth,
           seed,
           moves,
         },

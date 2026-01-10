@@ -10,12 +10,6 @@ interface GapItemProps {
 export function GapItem({ gap, onGenerateCluster }: GapItemProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const severityClass = {
-    blocker: styles.blocker,
-    warn: styles.warning,
-    info: styles.info,
-  }[gap.severity];
-
   // Map type to human-readable label
   const typeLabel = {
     structural: 'Structural',
@@ -35,7 +29,7 @@ export function GapItem({ gap, onGenerateCluster }: GapItemProps) {
   };
 
   return (
-    <div className={`${styles.item} ${severityClass}`}>
+    <div className={styles.item}>
       <div
         className={styles.header}
         onClick={() => setExpanded(!expanded)}
@@ -67,7 +61,6 @@ export function GapItem({ gap, onGenerateCluster }: GapItemProps) {
           )}
           <div className={styles.meta}>
             <span className={styles.source}>Source: {gap.source}</span>
-            {gap.phase && <span className={styles.phase}>Phase: {gap.phase}</span>}
           </div>
           {/* Only narrative gaps can generate clusters */}
           {gap.type === 'narrative' && onGenerateCluster && (

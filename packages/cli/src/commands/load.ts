@@ -97,7 +97,6 @@ export function loadCommand(program: Command): void {
         await createStory(storyId, graph, storyVersionId, {
           name: options.name ?? data.storyVersion?.label ?? data.metadata?.name ?? storyId,
           ...(logline && { logline }),
-          phase: data.metadata?.phase ?? 'OUTLINE',
         });
 
         // Clear any existing session

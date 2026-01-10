@@ -3,35 +3,7 @@
  */
 
 import pc from 'picocolors';
-import type { OpenQuestion, OQSeverity, Patch, PatchOp, AddNodeOp, UpdateNodeOp, DeleteNodeOp, AddEdgeOp, DeleteEdgeOp, ValidationError } from '@apollo/core';
-
-// =============================================================================
-// Colors
-// =============================================================================
-
-export function severityColor(severity: OQSeverity): (text: string) => string {
-  switch (severity) {
-    case 'BLOCKING':
-      return pc.red;
-    case 'IMPORTANT':
-      return pc.yellow;
-    case 'SOFT':
-      return pc.dim;
-  }
-}
-
-export function phaseColor(phase: string): string {
-  switch (phase) {
-    case 'OUTLINE':
-      return pc.blue(phase);
-    case 'DRAFT':
-      return pc.magenta(phase);
-    case 'REVISION':
-      return pc.green(phase);
-    default:
-      return phase;
-  }
-}
+import type { OpenQuestion, Patch, PatchOp, AddNodeOp, UpdateNodeOp, DeleteNodeOp, AddEdgeOp, DeleteEdgeOp, ValidationError } from '@apollo/core';
 
 // =============================================================================
 // Table Formatting
@@ -73,13 +45,11 @@ export function formatTable(
 // =============================================================================
 
 export function formatOQ(oq: OpenQuestion): string {
-  const color = severityColor(oq.severity);
   const id = pc.dim(`[${oq.id}]`);
-  const severity = color(oq.severity.padEnd(9));
   const domain = pc.cyan(oq.domain.padEnd(12));
   const message = oq.message;
 
-  return `${id} ${severity} ${domain} ${message}`;
+  return `${id} ${domain} ${message}`;
 }
 
 export function formatOQList(questions: OpenQuestion[]): string {
@@ -89,32 +59,23 @@ export function formatOQList(questions: OpenQuestion[]): string {
 
   const lines: string[] = [];
 
-  // Group by severity
-  const blocking = questions.filter((q) => q.severity === 'BLOCKING');
-  const important = questions.filter((q) => q.severity === 'IMPORTANT');
-  const soft = questions.filter((q) => q.severity === 'SOFT');
+  // Group by domain
+  const byDomain = new Map<string, OpenQuestion[]>();
+  for (const q of questions) {
+    const existing = byDomain.get(q.domain);
+    if (existing) {
+      existing.push(q);
+    } else {
+      byDomain.set(q.domain, [q]);
+    }
+  }
 
-  if (blocking.length > 0) {
-    lines.push(pc.red(pc.bold(`BLOCKING (${blocking.length}):`)));
-    for (const oq of blocking) {
+  for (const [domain, domainQuestions] of byDomain) {
+    lines.push(pc.bold(`${domain} (${domainQuestions.length}):`));
+    for (const oq of domainQuestions) {
       lines.push('  ' + formatOQ(oq));
     }
     lines.push('');
-  }
-
-  if (important.length > 0) {
-    lines.push(pc.yellow(pc.bold(`IMPORTANT (${important.length}):`)));
-    for (const oq of important) {
-      lines.push('  ' + formatOQ(oq));
-    }
-    lines.push('');
-  }
-
-  if (soft.length > 0) {
-    lines.push(pc.dim(pc.bold(`SOFT (${soft.length}):`)));
-    for (const oq of soft) {
-      lines.push('  ' + formatOQ(oq));
-    }
   }
 
   return lines.join('\n');
@@ -129,10 +90,8 @@ export function formatNodeCounts(counts: Record<string, number>): string {
     'Beat',
     'Scene',
     'Character',
-    'Conflict',
     'Location',
-    'Theme',
-    'Motif',
+    'Object',
     'CharacterArc',
   ];
 

@@ -5,7 +5,7 @@
 
 import { readFile, writeFile, mkdir, access, readdir } from 'fs/promises';
 import { join } from 'path';
-import type { GraphState, KGNode, Edge, OQPhase } from '@apollo/core';
+import type { GraphState, KGNode, Edge } from '@apollo/core';
 import { normalizeEdge } from '@apollo/core';
 import type { StorageContext } from './config.js';
 
@@ -21,7 +21,6 @@ export interface SerializedGraph {
 export interface StoryMetadata {
   name?: string;
   logline?: string;
-  phase?: OQPhase;
   storyContext?: string;           // Markdown content for creative guidance
   storyContextModifiedAt?: string; // ISO timestamp for version tracking
 }

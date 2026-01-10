@@ -15,7 +15,6 @@ export function ClusterCard() {
         <h3 className={styles.title}>{cluster.title}</h3>
         <div className={styles.meta}>
           <span className={styles.type}>{cluster.clusterType}</span>
-          <span className={styles.scope}>{cluster.scope}</span>
         </div>
       </div>
 

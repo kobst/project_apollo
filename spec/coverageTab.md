@@ -11,7 +11,7 @@ The Coverage system provides visual progress indicators showing story completene
 **Key Characteristics:**
 - Integrated into the Story Map left navigation
 - Progress indicators per category (not just tiers)
-- Gap severity badges on categories with issues
+- Gap tier badges on categories with issues
 - Gaps filtered by selected category in FoundationsPanel
 
 **UI Location:**
@@ -28,7 +28,7 @@ The coverage pyramid consists of five tiers, ordered from most fundamental (top)
 | Tier | Label | What's Counted | Coverage Formula |
 |------|-------|----------------|------------------|
 | `premise` | Premise | Premise nodes | Has Premise? 1/1 or 0/1 |
-| `foundations` | Foundations | Setting, GenreTone, Conflict, Theme, Motif, Character | Count of present types / 6 |
+| `foundations` | Foundations | Setting, GenreTone, Character, Location, Object | Count of present types / 5 |
 | `structure` | Structure | Distinct Beat types | Unique beat_types / 15 |
 | `plotPoints` | Plot Points | Active PlotPoints with SATISFIED_BY edges | Linked PPs / total active PPs |
 | `scenes` | Scenes | Scenes with Character + Location | Complete scenes / total scenes |
@@ -41,10 +41,10 @@ The coverage pyramid consists of five tiers, ordered from most fundamental (top)
 - `percent`: 0% or 100%
 
 **Foundations Tier:**
-- Tracks presence of 6 node types: Setting, GenreTone, Conflict, Theme, Motif, Character
+- Tracks presence of 5 node types: Setting, GenreTone, Character, Location, Object
 - `covered`: Count of types that have at least one node
-- `total`: 6
-- `percent`: (covered / 6) * 100
+- `total`: 5
+- `percent`: (covered / 5) * 100
 
 **Structure Tier:**
 - Based on Save the Cat 15-beat structure
@@ -76,43 +76,31 @@ A Gap represents a coverage issue that needs attention. Gaps are derived from tw
 ### 2.1 Gap Types
 
 ```typescript
-type GapType = 'structural' | 'completeness' | 'creative';
+type GapType = 'structural' | 'narrative';
 ```
 
 | Type | Description |
 |------|-------------|
 | `structural` | Issues with story structure or ordering |
-| `completeness` | Missing required elements |
-| `creative` | Orphaned creative elements (themes, motifs) |
+| `narrative` | Completeness issues derived from narrative rules |
 
-### 2.2 Gap Severity
-
-```typescript
-type GapSeverity = 'blocker' | 'warn' | 'info';
-```
-
-| Severity | Description | Visual |
-|----------|-------------|--------|
-| `blocker` | Must fix before proceeding | Red border |
-| `warn` | Should fix, but not blocking | Orange border |
-| `info` | Informational, optional to fix | Blue border |
-
-### 2.3 Gap Interface
+### 2.2 Gap Interface
 
 ```typescript
 interface Gap {
   id: string;
   type: GapType;
   tier: GapTier;
-  severity: GapSeverity;
   title: string;
-  message: string;
-  nodeRefs: {
+  description: string;
+  scopeRefs: {
     nodeIds?: string[];
     edgeIds?: string[];
   };
   source: 'rule-engine' | 'derived' | 'user';
-  status: 'open' | 'resolved';
+  status: 'open' | 'in_progress' | 'resolved';
+  domain?: 'STRUCTURE' | 'SCENE' | 'CHARACTER';
+  groupKey?: string;
 }
 ```
 
@@ -130,8 +118,6 @@ Lint rule violations are mapped to coverage tiers:
 ### Foundations Tier
 | Rule ID | Label |
 |---------|-------|
-| `THEME_NOT_ORPHANED` | Orphaned Theme |
-| `MOTIF_NOT_ORPHANED` | Orphaned Motif |
 | `LOCATION_HAS_SETTING` | Location Without Setting |
 
 ### Structure Tier
@@ -191,7 +177,7 @@ interface TierSummary {
   "data": {
     "summary": [
       { "tier": "premise", "label": "Premise", "covered": 0, "total": 1, "percent": 0 },
-      { "tier": "foundations", "label": "Foundations", "covered": 3, "total": 6, "percent": 50 },
+      { "tier": "foundations", "label": "Foundations", "covered": 3, "total": 5, "percent": 60 },
       { "tier": "structure", "label": "Structure", "covered": 15, "total": 15, "percent": 100 },
       { "tier": "plotPoints", "label": "Plot Points", "covered": 0, "total": 2, "percent": 0 },
       { "tier": "scenes", "label": "Scenes", "covered": 0, "total": 3, "percent": 0 }
@@ -199,12 +185,11 @@ interface TierSummary {
     "gaps": [
       {
         "id": "gap_rule_001",
-        "type": "completeness",
+        "type": "structural",
         "tier": "premise",
-        "severity": "blocker",
         "title": "Missing Premise",
-        "message": "Story has no Premise node defined",
-        "nodeRefs": {},
+        "description": "Story has no Premise node defined",
+        "scopeRefs": {},
         "source": "rule-engine",
         "status": "open"
       }
@@ -222,7 +207,7 @@ interface TierSummary {
 Left navigation panel in Workspace showing all categories:
 
 **Foundations Section:**
-- Premise, Genre/Tone, Setting, Characters, Conflicts, Themes/Motifs
+- Premise, Genre/Tone, Setting, Characters, Locations, Objects
 
 **Outline Section:**
 - Structure Board (beat view), Plot Points, Scenes
@@ -231,7 +216,7 @@ Each category row displays:
 - Label
 - Progress bar (color based on completion %)
 - Count (covered/total)
-- Severity badge (!, ?, i) if gaps exist
+- Gap indicator if gaps exist
 
 ### 5.2 FoundationsPanel
 
@@ -244,7 +229,7 @@ Three-column layout for category content:
 
 Displayed below node list in FoundationsPanel:
 - Filtered to selected category
-- Grouped by severity: BLOCKERS, WARNINGS, INFO
+- Grouped by type: Structural, Narrative
 - Collapsible via toggle button
 
 ### 5.4 Legacy Components (Deprecated)

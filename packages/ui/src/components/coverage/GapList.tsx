@@ -18,11 +18,6 @@ export function GapList({ gaps, selectedTier, gapType, onGenerateCluster }: GapL
     filteredGaps = gaps.filter((g) => g.type === gapType);
   }
 
-  // Group gaps by severity
-  const blockers = filteredGaps.filter((g) => g.severity === 'blocker');
-  const warnings = filteredGaps.filter((g) => g.severity === 'warn');
-  const infos = filteredGaps.filter((g) => g.severity === 'info');
-
   if (filteredGaps.length === 0) {
     return (
       <div className={styles.empty}>
@@ -35,12 +30,16 @@ export function GapList({ gaps, selectedTier, gapType, onGenerateCluster }: GapL
     );
   }
 
+  // Group by type (structural vs narrative)
+  const structural = filteredGaps.filter((g) => g.type === 'structural');
+  const narrative = filteredGaps.filter((g) => g.type === 'narrative');
+
   return (
     <div className={styles.list}>
-      {blockers.length > 0 && (
+      {structural.length > 0 && (
         <div className={styles.section}>
-          <h4 className={styles.sectionTitle}>Blockers ({blockers.length})</h4>
-          {blockers.map((gap) => (
+          <h4 className={styles.sectionTitle}>Structural ({structural.length})</h4>
+          {structural.map((gap) => (
             <GapItem
               key={gap.id}
               gap={gap}
@@ -50,23 +49,10 @@ export function GapList({ gaps, selectedTier, gapType, onGenerateCluster }: GapL
         </div>
       )}
 
-      {warnings.length > 0 && (
+      {narrative.length > 0 && (
         <div className={styles.section}>
-          <h4 className={styles.sectionTitle}>Warnings ({warnings.length})</h4>
-          {warnings.map((gap) => (
-            <GapItem
-              key={gap.id}
-              gap={gap}
-              onGenerateCluster={onGenerateCluster}
-            />
-          ))}
-        </div>
-      )}
-
-      {infos.length > 0 && (
-        <div className={styles.section}>
-          <h4 className={styles.sectionTitle}>Info ({infos.length})</h4>
-          {infos.map((gap) => (
+          <h4 className={styles.sectionTitle}>Narrative ({narrative.length})</h4>
+          {narrative.map((gap) => (
             <GapItem
               key={gap.id}
               gap={gap}

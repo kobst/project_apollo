@@ -17,9 +17,9 @@ import type {
   ScopeBudget,
   ClusterType,
 } from '../types/nodes.js';
-import type { OpenQuestion, OQPhase } from '../types/openQuestion.js';
+import type { OpenQuestion } from '../types/openQuestion.js';
 import type { Edge } from '../types/edges.js';
-import type { Gap, GapPhase } from '../coverage/types.js';
+import type { Gap } from '../coverage/types.js';
 
 // =============================================================================
 // Cluster Generation
@@ -30,13 +30,11 @@ import type { Gap, GapPhase } from '../coverage/types.js';
  *
  * @param openQuestions - Array of OpenQuestions to address
  * @param baseVersionId - The base story version ID
- * @param phase - Current phase (affects scope budgets)
  * @returns Array of MoveClusters with NarrativeMoves
  */
 export function generateClusters(
   openQuestions: OpenQuestion[],
-  baseVersionId: string,
-  phase: OQPhase = 'OUTLINE'
+  baseVersionId: string
 ): ClusterResult[] {
   const timestamp = new Date().toISOString();
   const results: ClusterResult[] = [];
@@ -56,8 +54,7 @@ export function generateClusters(
       primaryOQ,
       questions.slice(1),
       baseVersionId,
-      timestamp,
-      phase
+      timestamp
     );
 
     results.push(cluster);
@@ -104,13 +101,12 @@ function generateClusterForOQ(
   primaryOQ: OpenQuestion,
   supportingOQs: OpenQuestion[],
   baseVersionId: string,
-  timestamp: string,
-  phase: OQPhase
+  timestamp: string
 ): ClusterResult {
   const clusterId = `mc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
   const clusterType = mapDomainToClusterType(primaryOQ.domain, primaryOQ.type);
-  const scopeBudget = getScopeBudget(clusterType, phase);
+  const scopeBudget = getScopeBudget(clusterType);
 
   const cluster: MoveCluster = {
     type: 'MoveCluster',
@@ -156,31 +152,27 @@ function mapDomainToClusterType(
   }
 }
 
-function getScopeBudget(clusterType: ClusterType, _phase: OQPhase): ScopeBudget {
+function getScopeBudget(clusterType: ClusterType): ScopeBudget {
   const budgets: Record<ClusterType, ScopeBudget> = {
     STRUCTURE: {
       max_ops_per_move: 6,
       max_new_nodes_per_move: 2,
       allowed_node_types: ['Scene', 'Beat'],
-      allowed_depth: 'OUTLINE',
     },
     SCENE_LIST: {
       max_ops_per_move: 5,
       max_new_nodes_per_move: 1,
       allowed_node_types: ['Scene'],
-      allowed_depth: 'OUTLINE',
     },
     SCENE_QUALITY: {
       max_ops_per_move: 4,
       max_new_nodes_per_move: 0,
       allowed_node_types: ['Scene'],
-      allowed_depth: 'DRAFT',
     },
     CHARACTER: {
       max_ops_per_move: 6,
       max_new_nodes_per_move: 1,
       allowed_node_types: ['CharacterArc'],
-      allowed_depth: 'DRAFT',
     },
   };
 
@@ -199,14 +191,6 @@ function generateClusterTitle(oq: OpenQuestion): string {
       return `Assign location to scene`;
     case 'MissingCharacterArc':
       return `Define character arc`;
-    case 'ConflictNeedsParties':
-      return `Assign conflict participants`;
-    case 'ConflictNeedsManifestation':
-      return `Show conflict in scenes`;
-    case 'ThemeUngrounded':
-      return `Ground theme in scenes`;
-    case 'MotifUngrounded':
-      return `Manifest motif in scenes`;
     default:
       return `Address: ${oq.type}`;
   }
@@ -452,7 +436,6 @@ function seededRandom(seed: number): () => number {
 export function generateClusterForQuestion(
   oq: OpenQuestion,
   baseVersionId: string,
-  phase: OQPhase = 'OUTLINE',
   options: ClusterGenerationOptions = {}
 ): ClusterResult {
   const timestamp = new Date().toISOString();
@@ -464,7 +447,7 @@ export function generateClusterForQuestion(
 
   const clusterId = `mc_${seed}_${Math.floor(random() * 100000).toString(36)}`;
   const clusterType = mapDomainToClusterType(oq.domain, oq.type);
-  const scopeBudget = getScopeBudget(clusterType, phase);
+  const scopeBudget = getScopeBudget(clusterType);
 
   const cluster: MoveCluster = {
     type: 'MoveCluster',
@@ -580,8 +563,6 @@ function gapToOpenQuestion(gap: Gap): OpenQuestion {
     id: gap.id,
     type: oqType,
     domain: gap.domain ?? 'STRUCTURE',
-    severity: mapGapSeverityToOQ(gap.severity),
-    phase: gap.phase ?? 'OUTLINE',
     group_key: gap.groupKey ?? `${gap.domain ?? 'STRUCTURE'}:${gap.tier}:${gap.id}`,
     message: gap.description,
   };
@@ -621,22 +602,6 @@ function extractOQTypeFromGap(gap: Gap): OpenQuestion['type'] {
 }
 
 /**
- * Map Gap severity to OQ severity.
- */
-function mapGapSeverityToOQ(severity: Gap['severity']): OpenQuestion['severity'] {
-  switch (severity) {
-    case 'blocker':
-      return 'BLOCKING';
-    case 'warn':
-      return 'IMPORTANT';
-    case 'info':
-      return 'SOFT';
-    default:
-      return 'IMPORTANT';
-  }
-}
-
-/**
  * Generate a MoveCluster for a unified Gap.
  *
  * This is the preferred entry point for cluster generation with the new
@@ -646,14 +611,13 @@ function mapGapSeverityToOQ(severity: Gap['severity']): OpenQuestion['severity']
 export function generateClusterForGap(
   gap: Gap,
   baseVersionId: string,
-  phase: GapPhase = 'OUTLINE',
   options: ClusterGenerationOptions = {}
 ): ClusterResult {
   // Convert Gap to OpenQuestion for internal processing
   const oq = gapToOpenQuestion(gap);
 
   // Use the existing OQ-based generation (maintains all the variant logic)
-  return generateClusterForQuestion(oq, baseVersionId, phase as OQPhase, options);
+  return generateClusterForQuestion(oq, baseVersionId, options);
 }
 
 /**
@@ -663,13 +627,12 @@ export function generateClusterForGap(
  */
 export function generateClustersForGaps(
   gaps: Gap[],
-  baseVersionId: string,
-  phase: GapPhase = 'OUTLINE'
+  baseVersionId: string
 ): ClusterResult[] {
   // Filter to narrative gaps (structural gaps don't need cluster generation)
   const narrativeGaps = gaps.filter((g) => g.type === 'narrative');
 
   // Convert to OQs and use existing cluster generation
   const oqs = narrativeGaps.map(gapToOpenQuestion);
-  return generateClusters(oqs, baseVersionId, phase as OQPhase);
+  return generateClusters(oqs, baseVersionId);
 }

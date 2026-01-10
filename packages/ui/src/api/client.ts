@@ -59,9 +59,7 @@ import type {
   CoverageData,
   GapsData,
   GapTier,
-  GapSeverity,
   GapDomain,
-  GapPhase,
   GapType,
   BranchRequest,
   BranchResponseData,
@@ -69,6 +67,12 @@ import type {
   CheckoutData,
   StoryContextData,
   UpdateContextData,
+  IdeaData,
+  IdeasListData,
+  CreateIdeaRequest,
+  CreateIdeaData,
+  UpdateIdeaData,
+  DeleteIdeaData,
 } from './types';
 
 const API_BASE = '/api';
@@ -280,17 +284,13 @@ export const api = {
   getGaps: (
     storyId: string,
     filters?: {
-      phase?: GapPhase;
       tier?: GapTier;
-      severity?: GapSeverity;
       domain?: GapDomain;
       type?: GapType;
     }
   ) => {
     const params = new URLSearchParams();
-    if (filters?.phase) params.set('phase', filters.phase);
     if (filters?.tier) params.set('tier', filters.tier);
-    if (filters?.severity) params.set('severity', filters.severity);
     if (filters?.domain) params.set('domain', filters.domain);
     if (filters?.type) params.set('type', filters.type);
     const query = params.toString();
@@ -302,6 +302,23 @@ export const api = {
     GET<StoryContextData>(`/stories/${storyId}/context`),
   updateContext: (storyId: string, context: string) =>
     PATCH<UpdateContextData>(`/stories/${storyId}/context`, { context }),
+
+  // Ideas
+  listIdeas: (storyId: string, limit?: number, offset?: number) => {
+    const params = new URLSearchParams();
+    if (limit) params.set('limit', limit.toString());
+    if (offset) params.set('offset', offset.toString());
+    const query = params.toString();
+    return GET<IdeasListData>(`/stories/${storyId}/ideas${query ? `?${query}` : ''}`);
+  },
+  getIdea: (storyId: string, ideaId: string) =>
+    GET<IdeaData>(`/stories/${storyId}/ideas/${ideaId}`),
+  createIdea: (storyId: string, data: CreateIdeaRequest) =>
+    POST<CreateIdeaData>(`/stories/${storyId}/ideas`, data),
+  updateIdea: (storyId: string, ideaId: string, changes: Record<string, unknown>) =>
+    PATCH<UpdateIdeaData>(`/stories/${storyId}/ideas/${ideaId}`, { changes }),
+  deleteIdea: (storyId: string, ideaId: string) =>
+    DELETE<DeleteIdeaData>(`/stories/${storyId}/ideas/${ideaId}`),
 };
 
 export { ApiError };

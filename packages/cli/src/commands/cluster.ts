@@ -4,7 +4,6 @@
 
 import type { Command } from 'commander';
 import { deriveOpenQuestions, generateClusterForQuestion } from '@apollo/core';
-import type { OQPhase } from '@apollo/core';
 import { loadGraph, loadVersionedState, getCurrentStoryId } from '../state/store.js';
 import { addCluster, getLastSeed, setLastSeed, clearClusters } from '../state/session.js';
 import { CLIError, handleError } from '../utils/errors.js';
@@ -44,8 +43,7 @@ export function clusterCommand(program: Command): void {
         if (!state) {
           throw new CLIError('Current story state not found.');
         }
-        const phase: OQPhase = state.metadata?.phase ?? 'OUTLINE';
-        const questions = deriveOpenQuestions(graph, phase);
+        const questions = deriveOpenQuestions(graph);
 
         // Find the question
         const oq = questions.find((q) => q.id === oqId);
@@ -88,7 +86,6 @@ export function clusterCommand(program: Command): void {
         const clusterResult = generateClusterForQuestion(
           oq,
           state.history.currentVersionId,
-          phase,
           { count, seed }
         );
 
@@ -102,7 +99,6 @@ export function clusterCommand(program: Command): void {
         heading(clusterResult.cluster.title);
         console.log(pc.dim('Cluster ID:'), clusterResult.cluster.id);
         console.log(pc.dim('Cluster type:'), clusterResult.cluster.cluster_type);
-        console.log(pc.dim('Scope:'), clusterResult.cluster.scope_budget.allowed_depth);
         console.log(pc.dim('Seed:'), seed);
         console.log();
 

@@ -1,25 +1,22 @@
 /**
  * OpenQuestion derivation from graph state.
- * Derives OpenQuestions based on schema rules and current phase.
+ * Derives OpenQuestions based on schema rules.
  *
  * @deprecated This module is deprecated. Use `computeCoverage()` from the
  * `coverage` module instead, which provides a unified Gap model that includes
  * both structural gaps (from rule violations) and narrative gaps (from this module).
  *
  * Migration path:
- * - Replace `deriveOpenQuestions(graph, phase)` with `computeCoverage(graph, phase).gaps`
+ * - Replace `deriveOpenQuestions(graph)` with `computeCoverage(graph).gaps`
  * - Filter by `gap.type === 'narrative'` to get equivalent narrative gaps
- * - The unified Gap model has additional fields like `domain`, `phase`, `groupKey`
+ * - The unified Gap model has additional fields like `domain`, `groupKey`
  *
  * This module will be removed in a future version.
  */
 
 import type { GraphState } from './graph.js';
 import { getNodesByType } from './graph.js';
-import type {
-  OpenQuestion,
-  OQPhase,
-} from '../types/openQuestion.js';
+import type { OpenQuestion } from '../types/openQuestion.js';
 import type {
   Beat,
   Scene,
@@ -34,30 +31,24 @@ import type {
 /**
  * Derive all OpenQuestions from the current graph state.
  *
- * @deprecated Use `computeCoverage(graph, phase).gaps.filter(g => g.type === 'narrative')`
+ * @deprecated Use `computeCoverage(graph).gaps.filter(g => g.type === 'narrative')`
  * from the coverage module instead.
  *
  * @param graph - The current graph state
- * @param phase - The current phase (OUTLINE, DRAFT, REVISION)
  * @returns Array of derived OpenQuestions
  */
-export function deriveOpenQuestions(
-  graph: GraphState,
-  phase: OQPhase = 'OUTLINE'
-): OpenQuestion[] {
+export function deriveOpenQuestions(graph: GraphState): OpenQuestion[] {
   const questions: OpenQuestion[] = [];
 
-  // STRUCTURE domain (always active)
+  // STRUCTURE domain
   questions.push(...deriveBeatUnrealized(graph));
   questions.push(...deriveActImbalance(graph));
 
-  // SCENE domain (DRAFT and REVISION)
-  if (phase === 'DRAFT' || phase === 'REVISION') {
-    questions.push(...deriveSceneQuality(graph));
-  }
+  // SCENE domain
+  questions.push(...deriveSceneQuality(graph));
 
   // CHARACTER domain
-  questions.push(...deriveCharacterQuestions(graph, phase));
+  questions.push(...deriveCharacterQuestions(graph));
 
   return questions;
 }
@@ -104,8 +95,6 @@ function deriveBeatUnrealized(graph: GraphState): OpenQuestion[] {
         id: `oq_beat_${beat.id}`,
         type: 'BeatUnrealized',
         domain: 'STRUCTURE',
-        severity: 'IMPORTANT',
-        phase: 'OUTLINE',
         group_key: `STRUCTURE:BEAT:${beat.beat_type}`,
         target_node_id: beat.id,
         message,
@@ -159,8 +148,6 @@ function deriveActImbalance(graph: GraphState): OpenQuestion[] {
         id: `oq_act_${act}`,
         type: 'ActImbalance',
         domain: 'STRUCTURE',
-        severity: 'IMPORTANT',
-        phase: 'OUTLINE',
         group_key: `STRUCTURE:ACT:${act}`,
         message: `Act ${act} has no scenes while neighboring acts have content`,
       });
@@ -191,8 +178,6 @@ function deriveSceneQuality(graph: GraphState): OpenQuestion[] {
         id: `oq_scene_cast_${scene.id}`,
         type: 'SceneHasNoCast',
         domain: 'SCENE',
-        severity: 'IMPORTANT',
-        phase: 'DRAFT',
         group_key: `SCENE:QUALITY:${scene.id}`,
         target_node_id: scene.id,
         message: `Scene "${scene.heading}" has no characters assigned`,
@@ -208,8 +193,6 @@ function deriveSceneQuality(graph: GraphState): OpenQuestion[] {
         id: `oq_scene_loc_${scene.id}`,
         type: 'SceneNeedsLocation',
         domain: 'SCENE',
-        severity: 'IMPORTANT',
-        phase: 'DRAFT',
         group_key: `SCENE:QUALITY:${scene.id}`,
         target_node_id: scene.id,
         message: `Scene "${scene.heading}" has no location assigned`,
@@ -227,10 +210,7 @@ function deriveSceneQuality(graph: GraphState): OpenQuestion[] {
 /**
  * Derive character-related questions.
  */
-function deriveCharacterQuestions(
-  graph: GraphState,
-  phase: OQPhase
-): OpenQuestion[] {
+function deriveCharacterQuestions(graph: GraphState): OpenQuestion[] {
   const questions: OpenQuestion[] = [];
   const characters = getNodesByType<Character>(graph, 'Character');
 
@@ -240,58 +220,48 @@ function deriveCharacterQuestions(
       (e) => e.type === 'HAS_CHARACTER' && e.to === char.id
     ).length;
 
-    // CharacterUnderspecified (OUTLINE phase)
+    // CharacterUnderspecified
     if (!char.description && appearances >= 2) {
       questions.push({
         id: `oq_char_desc_${char.id}`,
         type: 'CharacterUnderspecified',
         domain: 'CHARACTER',
-        severity: 'SOFT',
-        phase: 'OUTLINE',
         group_key: `CHARACTER:DETAIL:${char.id}`,
         target_node_id: char.id,
         message: `Character "${char.name}" appears in ${appearances} scenes but has no description`,
       });
     }
 
-    // MissingCharacterArc (DRAFT and REVISION)
-    if (phase === 'DRAFT' || phase === 'REVISION') {
-      const hasArc = graph.edges.some(
-        (e) => e.type === 'HAS_ARC' && e.from === char.id
-      );
-      if (!hasArc && appearances >= 3) {
-        questions.push({
-          id: `oq_char_arc_${char.id}`,
-          type: 'MissingCharacterArc',
-          domain: 'CHARACTER',
-          severity: 'IMPORTANT',
-          phase: 'DRAFT',
-          group_key: `CHARACTER:ARC:${char.id}`,
-          target_node_id: char.id,
-          message: `Character "${char.name}" appears in ${appearances} scenes but has no arc defined`,
-        });
-      }
+    // MissingCharacterArc
+    const hasArc = graph.edges.some(
+      (e) => e.type === 'HAS_ARC' && e.from === char.id
+    );
+    if (!hasArc && appearances >= 3) {
+      questions.push({
+        id: `oq_char_arc_${char.id}`,
+        type: 'MissingCharacterArc',
+        domain: 'CHARACTER',
+        group_key: `CHARACTER:ARC:${char.id}`,
+        target_node_id: char.id,
+        message: `Character "${char.name}" appears in ${appearances} scenes but has no arc defined`,
+      });
     }
   }
 
-  // ArcUngrounded (REVISION only)
-  if (phase === 'REVISION') {
-    const arcs = getNodesByType<CharacterArc>(graph, 'CharacterArc');
-    for (const arc of arcs) {
-      if (!arc.turn_refs || arc.turn_refs.length === 0) {
-        const char = characters.find((c) => c.id === arc.character_id);
-        const charName = char?.name ?? arc.character_id;
-        questions.push({
-          id: `oq_arc_ungrounded_${arc.id}`,
-          type: 'ArcUngrounded',
-          domain: 'CHARACTER',
-          severity: 'SOFT',
-          phase: 'REVISION',
-          group_key: `CHARACTER:ARC:${arc.character_id}`,
-          target_node_id: arc.id,
-          message: `CharacterArc for "${charName}" has no turn references`,
-        });
-      }
+  // ArcUngrounded
+  const arcs = getNodesByType<CharacterArc>(graph, 'CharacterArc');
+  for (const arc of arcs) {
+    if (!arc.turn_refs || arc.turn_refs.length === 0) {
+      const char = characters.find((c) => c.id === arc.character_id);
+      const charName = char?.name ?? arc.character_id;
+      questions.push({
+        id: `oq_arc_ungrounded_${arc.id}`,
+        type: 'ArcUngrounded',
+        domain: 'CHARACTER',
+        group_key: `CHARACTER:ARC:${arc.character_id}`,
+        target_node_id: arc.id,
+        message: `CharacterArc for "${charName}" has no turn references`,
+      });
     }
   }
 
@@ -314,26 +284,6 @@ export function filterByDomain(
 }
 
 /**
- * Filter OpenQuestions by severity.
- */
-export function filterBySeverity(
-  questions: OpenQuestion[],
-  severity: OpenQuestion['severity']
-): OpenQuestion[] {
-  return questions.filter((q) => q.severity === severity);
-}
-
-/**
- * Filter OpenQuestions by phase.
- */
-export function filterByPhase(
-  questions: OpenQuestion[],
-  phase: OQPhase
-): OpenQuestion[] {
-  return questions.filter((q) => q.phase === phase);
-}
-
-/**
  * Group OpenQuestions by group_key.
  */
 export function groupByKey(
@@ -351,18 +301,3 @@ export function groupByKey(
   return groups;
 }
 
-/**
- * Get blocking questions (must resolve before commit).
- */
-export function getBlockingQuestions(
-  questions: OpenQuestion[]
-): OpenQuestion[] {
-  return filterBySeverity(questions, 'BLOCKING');
-}
-
-/**
- * Check if there are any blocking questions.
- */
-export function hasBlockingQuestions(questions: OpenQuestion[]): boolean {
-  return questions.some((q) => q.severity === 'BLOCKING');
-}

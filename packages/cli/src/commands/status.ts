@@ -7,7 +7,7 @@ import { getGraphStats, deriveOpenQuestions } from '@apollo/core';
 import { loadGraph, loadVersionedState, getCurrentStoryId } from '../state/store.js';
 import { loadSession } from '../state/session.js';
 import { handleError, CLIError } from '../utils/errors.js';
-import { heading, formatNodeCounts, phaseColor } from '../utils/format.js';
+import { heading, formatNodeCounts } from '../utils/format.js';
 import pc from 'picocolors';
 
 export function statusCommand(program: Command): void {
@@ -34,8 +34,7 @@ export function statusCommand(program: Command): void {
           throw new CLIError('Current story state not found.');
         }
         const stats = getGraphStats(graph);
-        const phase = state.metadata?.phase ?? 'OUTLINE';
-        const questions = deriveOpenQuestions(graph, phase);
+        const questions = deriveOpenQuestions(graph);
         const session = await loadSession();
 
         heading('Story Status');
@@ -48,7 +47,6 @@ export function statusCommand(program: Command): void {
         if (state.metadata?.logline) {
           console.log(pc.dim('Logline:'), state.metadata.logline);
         }
-        console.log(pc.dim('Phase:'), phaseColor(phase));
         console.log(pc.dim('Updated:'), state.updatedAt);
         console.log();
 
@@ -62,22 +60,11 @@ export function statusCommand(program: Command): void {
         console.log();
 
         // Open questions summary
-        const blocking = questions.filter((q) => q.severity === 'BLOCKING').length;
-        const important = questions.filter((q) => q.severity === 'IMPORTANT').length;
-        const soft = questions.filter((q) => q.severity === 'SOFT').length;
-
         console.log(pc.bold('Open Questions:'));
-        if (blocking > 0) {
-          console.log('  ' + pc.red(`${blocking} blocking`));
-        }
-        if (important > 0) {
-          console.log('  ' + pc.yellow(`${important} important`));
-        }
-        if (soft > 0) {
-          console.log('  ' + pc.dim(`${soft} soft`));
-        }
-        if (questions.length === 0) {
-          console.log('  ' + pc.green('None! Story complete for this phase.'));
+        if (questions.length > 0) {
+          console.log('  ' + `${questions.length} total`);
+        } else {
+          console.log('  ' + pc.green('None!'));
         }
         console.log();
 

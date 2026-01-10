@@ -4,15 +4,13 @@
  * GET /stories/:id/gaps - Returns unified gaps (structural + narrative)
  *
  * This endpoint replaces both /coverage and /open-questions with a unified
- * Gap model that supports filtering by tier, severity, domain, type, and phase.
+ * Gap model that supports filtering by tier, severity, domain, and type.
  */
 
 import type { Request, Response, NextFunction } from 'express';
 import { computeCoverage } from '@apollo/core';
 import type {
-  GapPhase,
   GapTier,
-  GapSeverity,
   GapDomain,
   GapType,
   Gap,
@@ -33,10 +31,8 @@ interface GapData {
   title: string;
   description: string;
   scopeRefs: { nodeIds?: string[]; edgeIds?: string[] };
-  severity: GapSeverity;
   source: 'rule-engine' | 'derived' | 'user' | 'extractor' | 'import';
   status: 'open' | 'in_progress' | 'resolved';
-  phase?: GapPhase;
   domain?: GapDomain;
   groupKey?: string;
   dependencies?: string[];
@@ -58,7 +54,6 @@ interface TierSummaryData {
 interface GapsResponseData {
   summary: TierSummaryData[];
   gaps: GapData[];
-  phase: GapPhase;
 }
 
 // =============================================================================
@@ -66,13 +61,9 @@ interface GapsResponseData {
 // =============================================================================
 
 interface GapsQuery {
-  /** Story phase for phase-gated gaps (OUTLINE, DRAFT, REVISION) */
-  phase?: string;
   /** Filter by tier (premise, foundations, structure, plotPoints, scenes) */
   tier?: string;
-  /** Filter by severity (blocker, warn, info) */
-  severity?: string;
-  /** Filter by domain (STRUCTURE, SCENE, CHARACTER, CONFLICT, THEME_MOTIF) */
+  /** Filter by domain (STRUCTURE, SCENE, CHARACTER) */
   domain?: string;
   /** Filter by type (structural, narrative) */
   type?: string;
@@ -94,15 +85,11 @@ function gapToData(gap: Gap): GapData {
     title: gap.title,
     description: gap.description,
     scopeRefs: gap.scopeRefs,
-    severity: gap.severity,
     source: gap.source,
     status: gap.status,
   };
 
   // Add optional fields only if defined
-  if (gap.phase !== undefined) {
-    result.phase = gap.phase;
-  }
   if (gap.domain !== undefined) {
     result.domain = gap.domain;
   }
@@ -127,10 +114,8 @@ function gapToData(gap: Gap): GapData {
  * GET /stories/:id/gaps - Get unified gaps with filtering
  *
  * Query parameters:
- * - phase: OUTLINE | DRAFT | REVISION (for phase-gated narrative gaps)
  * - tier: premise | foundations | structure | plotPoints | scenes
- * - severity: blocker | warn | info
- * - domain: STRUCTURE | SCENE | CHARACTER | CONFLICT | THEME_MOTIF
+ * - domain: STRUCTURE | SCENE | CHARACTER
  * - type: structural | narrative
  */
 export function createGapsHandler(ctx: StorageContext) {
@@ -142,9 +127,7 @@ export function createGapsHandler(ctx: StorageContext) {
     try {
       const { id } = req.params;
       const {
-        phase: queryPhase,
         tier: filterTier,
-        severity: filterSeverity,
         domain: filterDomain,
         type: filterType,
       } = req.query;
@@ -163,23 +146,15 @@ export function createGapsHandler(ctx: StorageContext) {
         throw new NotFoundError('Current version');
       }
 
-      // Determine phase from query or story metadata
-      const phase: GapPhase =
-        (queryPhase as GapPhase) ?? state.metadata?.phase ?? 'OUTLINE';
-
       // Compute coverage (includes both structural and narrative gaps)
       const graph = deserializeGraph(currentVersion.graph);
-      const coverage = computeCoverage(graph, phase);
+      const coverage = computeCoverage(graph);
 
       // Apply filters
       let gaps = coverage.gaps;
 
       if (filterTier) {
         gaps = gaps.filter((g) => g.tier === filterTier);
-      }
-
-      if (filterSeverity) {
-        gaps = gaps.filter((g) => g.severity === filterSeverity);
       }
 
       if (filterDomain) {
@@ -197,7 +172,6 @@ export function createGapsHandler(ctx: StorageContext) {
         data: {
           summary: coverage.summary,
           gaps: gaps.map(gapToData),
-          phase,
         },
       });
     } catch (error) {

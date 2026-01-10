@@ -120,7 +120,6 @@ curl -X POST http://localhost:3000/stories/init \
       "scenes": 0,
       "beats": 15,
       "characters": 1,
-      "conflicts": 1,
       "locations": 1,
       "edges": 1
     }
@@ -150,7 +149,6 @@ curl http://localhost:3000/stories/my-story/status
     "storyId": "my-story",
     "name": "My Story",
     "logline": "A detective solves an impossible crime",
-    "phase": "OUTLINE",
     "currentVersionId": "sv_1234567890",
     "currentBranch": "main",
     "updatedAt": "2024-01-15T10:30:00.000Z",
@@ -158,15 +156,11 @@ curl http://localhost:3000/stories/my-story/status
       "scenes": 0,
       "beats": 15,
       "characters": 1,
-      "conflicts": 1,
       "locations": 1,
       "edges": 1
     },
     "openQuestions": {
-      "total": 15,
-      "blocking": 0,
-      "important": 15,
-      "soft": 0
+      "total": 15
     }
   }
 }
@@ -269,16 +263,14 @@ Returns all open questions for the story.
 **Query Parameters:**
 | Param | Type | Description |
 |-------|------|-------------|
-| `phase` | string | Filter by phase: `OUTLINE`, `DRAFT`, `REVISION` |
-| `severity` | string | Filter by severity: `BLOCKING`, `IMPORTANT`, `SOFT` |
-| `domain` | string | Filter by domain: `STRUCTURE`, `CHARACTER`, `CONFLICT`, etc. |
+| `domain` | string | Filter by domain: `STRUCTURE`, `SCENE`, `CHARACTER` |
 
 ```bash
 # All questions
 curl http://localhost:3000/stories/my-story/open-questions
 
-# Filter by severity
-curl "http://localhost:3000/stories/my-story/open-questions?severity=BLOCKING"
+# Filter by domain
+curl "http://localhost:3000/stories/my-story/open-questions?domain=STRUCTURE"
 ```
 
 **Response:**
@@ -290,13 +282,12 @@ curl "http://localhost:3000/stories/my-story/open-questions?severity=BLOCKING"
       {
         "id": "oq_beat_beat_Catalyst",
         "message": "Beat \"Catalyst\" has no scenes assigned",
-        "phase": "OUTLINE",
-        "severity": "IMPORTANT",
+        "type": "BeatUnrealized",
         "domain": "STRUCTURE",
+        "group_key": "STRUCTURE:BEAT:Catalyst",
         "target_node_id": "beat_Catalyst"
       }
-    ],
-    "phase": "OUTLINE"
+    ]
   }
 }
 ```
@@ -445,7 +436,7 @@ Adds a node directly to the story graph.
 **Request Body:**
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `type` | string | Yes | Node type: `character`, `location`, `conflict`, `scene` |
+| `type` | string | Yes | Node type: `character`, `location`, `scene` |
 | `name` | string | Yes | Node name |
 | `description` | string | No | Description text |
 
@@ -463,14 +454,6 @@ Adds a node directly to the story graph.
 | `parent` | string | Parent location ID |
 | `tags` | string[] | Location tags |
 
-**Conflict:**
-| Field | Type | Description |
-|-------|------|-------------|
-| `conflictType` | string | Required: `interpersonal`, `internal`, `societal`, `ideological`, `systemic`, `nature`, `technological` |
-| `description` | string | Required (min 20 chars) |
-| `stakes` | string | Stakes description |
-| `intensity` | number | 1-5 intensity level |
-
 **Scene:**
 | Field | Type | Description |
 |-------|------|-------------|
@@ -487,15 +470,10 @@ curl -X POST http://localhost:3000/stories/my-story/input \
   -H 'Content-Type: application/json' \
   -d '{"type": "character", "name": "Detective Smith", "archetype": "Hero"}'
 
-# Add conflict
+# Add location
 curl -X POST http://localhost:3000/stories/my-story/input \
   -H 'Content-Type: application/json' \
-  -d '{
-    "type": "conflict",
-    "name": "The Impossible Murder",
-    "conflictType": "interpersonal",
-    "description": "A murder occurs in a locked room with no apparent way in or out"
-  }'
+  -d '{"type": "location", "name": "Crime Scene", "description": "A locked room with no apparent way in or out"}'
 ```
 
 **Response:**
@@ -913,8 +891,8 @@ curl http://localhost:3000/stories/my-story/lint/precommit
 |---------|-------------|----------|
 | `SCENE_HAS_CHARACTER` | Scene should have ≥1 character assigned | None (manual) |
 | `SCENE_HAS_LOCATION` | Scene should have a location assigned | None (manual) |
-| `THEME_NOT_ORPHANED` | Theme should be expressed in ≥1 scene/beat | None (manual) |
-| `MOTIF_NOT_ORPHANED` | Motif should appear in ≥1 scene | None (manual) |
+| `LOCATION_HAS_SETTING` | Location should be part of a Setting | None (manual) |
+| `STORY_HAS_PREMISE` | Story should have a Premise node | None (manual) |
 
 ---
 

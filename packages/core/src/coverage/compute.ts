@@ -20,7 +20,6 @@ import type {
   CoverageResponse,
   Gap,
   GapTier,
-  GapPhase,
 } from './types.js';
 import { TIER_ORDER } from './types.js';
 import { violationsToGaps } from './adapter.js';
@@ -50,13 +49,9 @@ const FOUNDATION_TYPES = [
  * Compute coverage for a story graph.
  *
  * @param graph - The story graph to analyze
- * @param phase - The current story phase (for phase-gated narrative gaps)
  * @returns Coverage response with tier summaries and gaps
  */
-export function computeCoverage(
-  graph: GraphState,
-  phase: GapPhase = 'OUTLINE'
-): CoverageResponse {
+export function computeCoverage(graph: GraphState): CoverageResponse {
   // Ensure rules are registered
   registerHardRules();
   registerSoftRules();
@@ -72,7 +67,7 @@ export function computeCoverage(
   gaps.push(...computeDerivedGaps(graph));
 
   // Add narrative gaps (from OQ derivation logic)
-  gaps.push(...deriveNarrativeGaps(graph, phase));
+  gaps.push(...deriveNarrativeGaps(graph));
 
   // Compute tier summaries
   const summary = computeTierSummaries(graph, gaps);
@@ -311,7 +306,6 @@ function computeMissingBeatGaps(graph: GraphState): Gap[] {
         title: `Missing Beat: ${formatBeatType(beatType)}`,
         description: `The "${formatBeatType(beatType)}" beat is not yet defined in the story structure.`,
         scopeRefs: {},
-        severity: 'info',
         source: 'derived',
         status: 'open',
       });
@@ -336,7 +330,6 @@ function computeMissingFoundationGaps(graph: GraphState): Gap[] {
         title: `Missing ${type}`,
         description: `No ${type} node has been created yet.`,
         scopeRefs: {},
-        severity: 'info',
         source: 'derived',
         status: 'open',
       });

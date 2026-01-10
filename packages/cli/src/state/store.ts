@@ -8,7 +8,6 @@ import { join } from 'path';
 import { homedir } from 'os';
 import type { GraphState } from '@apollo/core';
 import type { KGNode, Edge } from '@apollo/core';
-import type { OQPhase } from '@apollo/core';
 
 // =============================================================================
 // Types
@@ -22,7 +21,6 @@ export interface SerializedGraph {
 export interface StoryMetadata {
   name?: string;
   logline?: string;
-  phase?: OQPhase;
   storyContext?: string;           // Markdown content for creative guidance
   storyContextModifiedAt?: string; // ISO timestamp for version tracking
 }

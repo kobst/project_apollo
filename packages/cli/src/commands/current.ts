@@ -5,7 +5,7 @@
 import type { Command } from 'commander';
 import { getCurrentStoryId, loadState } from '../state/store.js';
 import { handleError } from '../utils/errors.js';
-import { heading, phaseColor } from '../utils/format.js';
+import { heading } from '../utils/format.js';
 import pc from 'picocolors';
 
 export function currentCommand(program: Command): void {
@@ -40,7 +40,6 @@ export function currentCommand(program: Command): void {
         if (state.metadata?.logline) {
           console.log(pc.dim('Logline:'), `"${state.metadata.logline}"`);
         }
-        console.log(pc.dim('Phase:'), phaseColor(state.metadata?.phase ?? 'OUTLINE'));
         console.log(pc.dim('Updated:'), state.updatedAt);
       } catch (error) {
         handleError(error);

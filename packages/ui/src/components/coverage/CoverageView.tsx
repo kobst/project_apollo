@@ -73,7 +73,6 @@ export function CoverageView() {
       <div className={styles.header}>
         <h2 className={styles.title}>
           Gaps: {status?.name || currentStoryId}
-          {gapsData && <span className={styles.phase}>({gapsData.phase})</span>}
         </h2>
         <div className={styles.controls}>
           <select

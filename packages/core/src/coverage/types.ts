@@ -32,14 +32,6 @@ export type GapTier =
   | 'scenes'; // Scene nodes
 
 /**
- * Gap severity determines visual treatment and priority.
- * - 'blocker': From hard rules, should be fixed
- * - 'warn': From soft rules, recommended to fix
- * - 'info': Informational, optional to address
- */
-export type GapSeverity = 'blocker' | 'warn' | 'info';
-
-/**
  * Source of the gap.
  * - 'rule-engine': Generated from lint rule violations
  * - 'derived': Generated from coverage-specific checks (missing beats, foundations)
@@ -66,11 +58,6 @@ export type GapDomain =
   | 'SCENE'
   | 'CHARACTER';
 
-/**
- * Gap phase indicates when this gap is most relevant.
- * Narrative gaps are phase-gated to surface at appropriate times.
- */
-export type GapPhase = 'OUTLINE' | 'DRAFT' | 'REVISION';
 
 // =============================================================================
 // Gap Interface
@@ -105,9 +92,6 @@ export interface Gap {
     edgeIds?: string[];
   };
 
-  /** Severity level */
-  severity: GapSeverity;
-
   /** Where this gap came from */
   source: GapSource;
 
@@ -117,9 +101,6 @@ export interface Gap {
   // -------------------------------------------------------------------------
   // Optional fields for narrative gaps (from Open Questions system)
   // -------------------------------------------------------------------------
-
-  /** Phase when this gap is most relevant (for narrative gaps) */
-  phase?: GapPhase;
 
   /** Domain this gap relates to (for filtering/clustering) */
   domain?: GapDomain;
@@ -224,8 +205,6 @@ export interface NarrativeGapConfig {
   tier: GapTier;
   type: GapType;
   domain: GapDomain;
-  defaultSeverity: GapSeverity;
-  phase: GapPhase;
 }
 
 /**
@@ -255,22 +234,16 @@ export const NARRATIVE_GAP_CONFIG: Record<NarrativeGapType, NarrativeGapConfig> 
     tier: 'structure',
     type: 'narrative',
     domain: 'STRUCTURE',
-    defaultSeverity: 'warn',
-    phase: 'OUTLINE',
   },
   ActImbalance: {
     tier: 'structure',
     type: 'narrative',
     domain: 'STRUCTURE',
-    defaultSeverity: 'warn',
-    phase: 'OUTLINE',
   },
   SceneUnplaced: {
     tier: 'scenes',
     type: 'structural',
     domain: 'STRUCTURE',
-    defaultSeverity: 'blocker',
-    phase: 'OUTLINE',
   },
 
   // SCENE domain
@@ -278,22 +251,16 @@ export const NARRATIVE_GAP_CONFIG: Record<NarrativeGapType, NarrativeGapConfig> 
     tier: 'scenes',
     type: 'narrative',
     domain: 'SCENE',
-    defaultSeverity: 'blocker',
-    phase: 'DRAFT',
   },
   SceneHasNoCast: {
     tier: 'scenes',
     type: 'narrative',
     domain: 'SCENE',
-    defaultSeverity: 'warn',
-    phase: 'DRAFT',
   },
   SceneNeedsLocation: {
     tier: 'scenes',
     type: 'narrative',
     domain: 'SCENE',
-    defaultSeverity: 'warn',
-    phase: 'DRAFT',
   },
 
   // CHARACTER domain
@@ -301,22 +268,16 @@ export const NARRATIVE_GAP_CONFIG: Record<NarrativeGapType, NarrativeGapConfig> 
     tier: 'foundations',
     type: 'narrative',
     domain: 'CHARACTER',
-    defaultSeverity: 'info',
-    phase: 'OUTLINE',
   },
   MissingCharacterArc: {
     tier: 'foundations',
     type: 'narrative',
     domain: 'CHARACTER',
-    defaultSeverity: 'warn',
-    phase: 'DRAFT',
   },
   ArcUngrounded: {
     tier: 'foundations',
     type: 'narrative',
     domain: 'CHARACTER',
-    defaultSeverity: 'info',
-    phase: 'REVISION',
   },
 };
 
@@ -343,8 +304,3 @@ export const GAP_DOMAINS: GapDomain[] = [
   'SCENE',
   'CHARACTER',
 ];
-
-/**
- * All gap phases.
- */
-export const GAP_PHASES: GapPhase[] = ['OUTLINE', 'DRAFT', 'REVISION'];

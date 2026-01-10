@@ -33,10 +33,6 @@ export function StoryStatus() {
 
       <div className={styles.meta}>
         <div className={styles.item}>
-          <span className={styles.label}>Phase</span>
-          <span className={styles.value}>{status.phase}</span>
-        </div>
-        <div className={styles.item}>
           <span className={styles.label}>Branch</span>
           <span className={styles.value}>{status.currentBranch ?? 'detached'}</span>
         </div>

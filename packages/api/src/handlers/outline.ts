@@ -11,7 +11,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { getNodesByType, getEdgesByType, getNode } from '@apollo/core';
-import type { Beat, Scene, PlotPoint } from '@apollo/core';
+import type { Beat, Scene, PlotPoint, Idea } from '@apollo/core';
 import type { StorageContext } from '../config.js';
 import { loadVersionedStateById, deserializeGraph } from '../storage.js';
 import { NotFoundError } from '../middleware/error.js';
@@ -35,6 +35,16 @@ interface OutlinePlotPoint {
   intent: string | undefined;
   status: string | undefined;
   scenes: OutlineScene[];
+}
+
+// Idea data for outline
+interface OutlineIdea {
+  id: string;
+  title: string;
+  description: string;
+  source: 'user' | 'ai';
+  suggestedType: string | undefined;
+  createdAt: string;
 }
 
 // Beat data for outline
@@ -63,12 +73,16 @@ interface OutlineData {
   unassignedPlotPoints: OutlinePlotPoint[];
   /** Scenes not connected to any PlotPoint */
   unassignedScenes: OutlineScene[];
+  /** Ideas - informal story ideas not yet promoted to formal nodes */
+  unassignedIdeas: OutlineIdea[];
   summary: {
     totalBeats: number;
     totalScenes: number;
     totalPlotPoints: number;
+    totalIdeas: number;
     unassignedPlotPointCount: number;
     unassignedSceneCount: number;
+    unassignedIdeaCount: number;
   };
 }
 
@@ -112,6 +126,7 @@ export function createOutlineHandler(ctx: StorageContext) {
       const beats = getNodesByType(graph, 'Beat') as Beat[];
       const scenes = getNodesByType(graph, 'Scene') as Scene[];
       const plotPoints = getNodesByType(graph, 'PlotPoint') as PlotPoint[];
+      const ideas = getNodesByType(graph, 'Idea') as Idea[];
 
       // Get edges for alignment and fulfillment
       const alignsWithEdges = getEdgesByType(graph, 'ALIGNS_WITH');
@@ -224,17 +239,35 @@ export function createOutlineHandler(ctx: StorageContext) {
         scenes: (scenesByPlotPoint.get(pp.id) || []).map(toOutlineScene),
       }));
 
+      // Convert ideas to OutlineIdea format (all ideas are "unassigned" since they don't connect to beats)
+      // Sort by createdAt (newest first)
+      const sortedIdeas = [...ideas].sort((a, b) => {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+
+      const unassignedIdeas: OutlineIdea[] = sortedIdeas.map((idea) => ({
+        id: idea.id,
+        title: idea.title,
+        description: idea.description,
+        source: idea.source,
+        suggestedType: idea.suggestedType,
+        createdAt: idea.createdAt,
+      }));
+
       const data: OutlineData = {
         storyId: id,
         acts,
         unassignedPlotPoints,
         unassignedScenes: unassignedScenes.map(toOutlineScene),
+        unassignedIdeas,
         summary: {
           totalBeats: outlineBeats.length,
           totalScenes: scenes.length,
           totalPlotPoints: plotPoints.length,
+          totalIdeas: ideas.length,
           unassignedPlotPointCount: unassignedPPs.length,
           unassignedSceneCount: unassignedScenes.length,
+          unassignedIdeaCount: ideas.length,
         },
       };
 

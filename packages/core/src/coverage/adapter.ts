@@ -6,7 +6,7 @@
  */
 
 import type { RuleViolation } from '../rules/types.js';
-import type { Gap, GapTier, GapSeverity, GapType } from './types.js';
+import type { Gap, GapTier, GapType } from './types.js';
 
 // =============================================================================
 // Rule to Tier Mapping
@@ -108,9 +108,6 @@ export function violationToGap(violation: RuleViolation): Gap {
     }
   }
 
-  // Map severity: hard -> blocker, soft -> warn
-  const severity: GapSeverity = violation.severity === 'hard' ? 'blocker' : 'warn';
-
   // All rule violations are structural (fixable with patches)
   const type: GapType = 'structural';
 
@@ -139,7 +136,6 @@ export function violationToGap(violation: RuleViolation): Gap {
     title,
     description: violation.message,
     scopeRefs,
-    severity,
     source: 'rule-engine',
     status: 'open',
   };

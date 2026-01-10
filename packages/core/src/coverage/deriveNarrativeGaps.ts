@@ -1,7 +1,7 @@
 /**
  * Narrative gap derivation from graph state.
  *
- * Derives narrative gaps based on schema rules and current phase.
+ * Derives narrative gaps based on schema rules.
  * This replaces the OpenQuestion derivation with unified Gap output.
  */
 
@@ -13,7 +13,7 @@ import type {
   Character,
   CharacterArc,
 } from '../types/nodes.js';
-import type { Gap, GapPhase } from './types.js';
+import type { Gap } from './types.js';
 import { NARRATIVE_GAP_CONFIG } from './types.js';
 
 // =============================================================================
@@ -24,26 +24,20 @@ import { NARRATIVE_GAP_CONFIG } from './types.js';
  * Derive all narrative gaps from the current graph state.
  *
  * @param graph - The current graph state
- * @param phase - The current phase (OUTLINE, DRAFT, REVISION)
  * @returns Array of derived Gaps (type: 'narrative')
  */
-export function deriveNarrativeGaps(
-  graph: GraphState,
-  phase: GapPhase = 'OUTLINE'
-): Gap[] {
+export function deriveNarrativeGaps(graph: GraphState): Gap[] {
   const gaps: Gap[] = [];
 
-  // STRUCTURE domain (always active)
+  // STRUCTURE domain
   gaps.push(...deriveBeatUnrealizedGaps(graph));
   gaps.push(...deriveActImbalanceGaps(graph));
 
-  // SCENE domain (DRAFT and REVISION)
-  if (phase === 'DRAFT' || phase === 'REVISION') {
-    gaps.push(...deriveSceneQualityGaps(graph));
-  }
+  // SCENE domain
+  gaps.push(...deriveSceneQualityGaps(graph));
 
   // CHARACTER domain
-  gaps.push(...deriveCharacterGaps(graph, phase));
+  gaps.push(...deriveCharacterGaps(graph));
 
   return gaps;
 }
@@ -94,10 +88,8 @@ function deriveBeatUnrealizedGaps(graph: GraphState): Gap[] {
         title: `Beat Unrealized: ${beat.beat_type}`,
         description,
         scopeRefs: { nodeIds: [beat.id] },
-        severity: config.defaultSeverity,
         source: 'derived',
         status: 'open',
-        phase: config.phase,
         domain: config.domain,
         groupKey: `STRUCTURE:BEAT:${beat.beat_type}`,
       });
@@ -154,10 +146,8 @@ function deriveActImbalanceGaps(graph: GraphState): Gap[] {
         title: `Act Imbalance: Act ${act}`,
         description: `Act ${act} has no scenes while neighboring acts have content`,
         scopeRefs: {},
-        severity: config.defaultSeverity,
         source: 'derived',
         status: 'open',
-        phase: config.phase,
         domain: config.domain,
         groupKey: `STRUCTURE:ACT:${act}`,
       });
@@ -192,10 +182,8 @@ function deriveSceneQualityGaps(graph: GraphState): Gap[] {
         title: 'Scene Has No Cast',
         description: `Scene "${scene.heading}" has no characters assigned`,
         scopeRefs: { nodeIds: [scene.id] },
-        severity: config.defaultSeverity,
         source: 'derived',
         status: 'open',
-        phase: config.phase,
         domain: config.domain,
         groupKey: `SCENE:QUALITY:${scene.id}`,
       });
@@ -214,10 +202,8 @@ function deriveSceneQualityGaps(graph: GraphState): Gap[] {
         title: 'Scene Needs Location',
         description: `Scene "${scene.heading}" has no location assigned`,
         scopeRefs: { nodeIds: [scene.id] },
-        severity: config.defaultSeverity,
         source: 'derived',
         status: 'open',
-        phase: config.phase,
         domain: config.domain,
         groupKey: `SCENE:QUALITY:${scene.id}`,
       });
@@ -234,7 +220,7 @@ function deriveSceneQualityGaps(graph: GraphState): Gap[] {
 /**
  * Derive character-related gaps.
  */
-function deriveCharacterGaps(graph: GraphState, phase: GapPhase): Gap[] {
+function deriveCharacterGaps(graph: GraphState): Gap[] {
   const gaps: Gap[] = [];
   const characters = getNodesByType<Character>(graph, 'Character');
 
@@ -244,7 +230,7 @@ function deriveCharacterGaps(graph: GraphState, phase: GapPhase): Gap[] {
       (e) => e.type === 'HAS_CHARACTER' && e.to === char.id
     ).length;
 
-    // CharacterUnderspecified (OUTLINE phase)
+    // CharacterUnderspecified
     if (!char.description && appearances >= 2) {
       const config = NARRATIVE_GAP_CONFIG.CharacterUnderspecified;
       gaps.push({
@@ -254,63 +240,53 @@ function deriveCharacterGaps(graph: GraphState, phase: GapPhase): Gap[] {
         title: 'Character Underspecified',
         description: `Character "${char.name}" appears in ${appearances} scenes but has no description`,
         scopeRefs: { nodeIds: [char.id] },
-        severity: config.defaultSeverity,
         source: 'derived',
         status: 'open',
-        phase: config.phase,
         domain: config.domain,
         groupKey: `CHARACTER:DETAIL:${char.id}`,
       });
     }
 
-    // MissingCharacterArc (DRAFT and REVISION)
-    if (phase === 'DRAFT' || phase === 'REVISION') {
-      const hasArc = graph.edges.some(
-        (e) => e.type === 'HAS_ARC' && e.from === char.id
-      );
-      if (!hasArc && appearances >= 3) {
-        const config = NARRATIVE_GAP_CONFIG.MissingCharacterArc;
-        gaps.push({
-          id: `gap_char_arc_${char.id}`,
-          type: config.type,
-          tier: config.tier,
-          title: 'Missing Character Arc',
-          description: `Character "${char.name}" appears in ${appearances} scenes but has no arc defined`,
-          scopeRefs: { nodeIds: [char.id] },
-          severity: config.defaultSeverity,
-          source: 'derived',
-          status: 'open',
-          phase: config.phase,
-          domain: config.domain,
-          groupKey: `CHARACTER:ARC:${char.id}`,
-        });
-      }
+    // MissingCharacterArc
+    const hasArc = graph.edges.some(
+      (e) => e.type === 'HAS_ARC' && e.from === char.id
+    );
+    if (!hasArc && appearances >= 3) {
+      const config = NARRATIVE_GAP_CONFIG.MissingCharacterArc;
+      gaps.push({
+        id: `gap_char_arc_${char.id}`,
+        type: config.type,
+        tier: config.tier,
+        title: 'Missing Character Arc',
+        description: `Character "${char.name}" appears in ${appearances} scenes but has no arc defined`,
+        scopeRefs: { nodeIds: [char.id] },
+        source: 'derived',
+        status: 'open',
+        domain: config.domain,
+        groupKey: `CHARACTER:ARC:${char.id}`,
+      });
     }
   }
 
-  // ArcUngrounded (REVISION only)
-  if (phase === 'REVISION') {
-    const arcs = getNodesByType<CharacterArc>(graph, 'CharacterArc');
-    for (const arc of arcs) {
-      if (!arc.turn_refs || arc.turn_refs.length === 0) {
-        const char = characters.find((c) => c.id === arc.character_id);
-        const charName = char?.name ?? arc.character_id;
-        const config = NARRATIVE_GAP_CONFIG.ArcUngrounded;
-        gaps.push({
-          id: `gap_arc_ungrounded_${arc.id}`,
-          type: config.type,
-          tier: config.tier,
-          title: 'Arc Ungrounded',
-          description: `CharacterArc for "${charName}" has no turn references`,
-          scopeRefs: { nodeIds: [arc.id] },
-          severity: config.defaultSeverity,
-          source: 'derived',
-          status: 'open',
-          phase: config.phase,
-          domain: config.domain,
-          groupKey: `CHARACTER:ARC:${arc.character_id}`,
-        });
-      }
+  // ArcUngrounded
+  const arcs = getNodesByType<CharacterArc>(graph, 'CharacterArc');
+  for (const arc of arcs) {
+    if (!arc.turn_refs || arc.turn_refs.length === 0) {
+      const char = characters.find((c) => c.id === arc.character_id);
+      const charName = char?.name ?? arc.character_id;
+      const config = NARRATIVE_GAP_CONFIG.ArcUngrounded;
+      gaps.push({
+        id: `gap_arc_ungrounded_${arc.id}`,
+        type: config.type,
+        tier: config.tier,
+        title: 'Arc Ungrounded',
+        description: `CharacterArc for "${charName}" has no turn references`,
+        scopeRefs: { nodeIds: [arc.id] },
+        source: 'derived',
+        status: 'open',
+        domain: config.domain,
+        groupKey: `CHARACTER:ARC:${arc.character_id}`,
+      });
     }
   }
 
@@ -327,23 +303,6 @@ function deriveCharacterGaps(graph: GraphState, phase: GapPhase): Gap[] {
  */
 export function filterGapsByDomain(gaps: Gap[], domain: Gap['domain']): Gap[] {
   return gaps.filter((g) => g.domain === domain);
-}
-
-/**
- * Filter gaps by severity.
- */
-export function filterGapsBySeverity(
-  gaps: Gap[],
-  severity: Gap['severity']
-): Gap[] {
-  return gaps.filter((g) => g.severity === severity);
-}
-
-/**
- * Filter gaps by phase.
- */
-export function filterGapsByPhase(gaps: Gap[], phase: GapPhase): Gap[] {
-  return gaps.filter((g) => g.phase === phase);
 }
 
 /**
@@ -371,16 +330,3 @@ export function groupGapsByKey(gaps: Gap[]): Map<string, Gap[]> {
   return groups;
 }
 
-/**
- * Get blocking gaps (must resolve before commit).
- */
-export function getBlockingGaps(gaps: Gap[]): Gap[] {
-  return filterGapsBySeverity(gaps, 'blocker');
-}
-
-/**
- * Check if there are any blocking gaps.
- */
-export function hasBlockingGaps(gaps: Gap[]): boolean {
-  return gaps.some((g) => g.severity === 'blocker');
-}

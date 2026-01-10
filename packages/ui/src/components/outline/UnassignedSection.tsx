@@ -6,32 +6,39 @@
  */
 
 import { useState, useCallback } from 'react';
-import type { OutlinePlotPoint, OutlineScene } from '../../api/types';
+import type { OutlinePlotPoint, OutlineScene, OutlineIdea } from '../../api/types';
 import { UnassignedPlotPointCard } from './UnassignedPlotPointCard';
 import { UnassignedSceneCard } from './UnassignedSceneCard';
+import { UnassignedIdeaCard } from './UnassignedIdeaCard';
 import styles from './UnassignedSection.module.css';
 
 interface UnassignedSectionProps {
   plotPoints: OutlinePlotPoint[];
   scenes: OutlineScene[];
+  ideas: OutlineIdea[];
   onAddPlotPoint: () => void;
   onAddScene: () => void;
+  onAddIdea: () => void;
   onPlotPointClick?: (pp: OutlinePlotPoint) => void;
   onSceneClick?: (scene: OutlineScene) => void;
+  onIdeaClick?: (idea: OutlineIdea) => void;
 }
 
 export function UnassignedSection({
   plotPoints,
   scenes,
+  ideas,
   onAddPlotPoint,
   onAddScene,
+  onAddIdea,
   onPlotPointClick,
   onSceneClick,
+  onIdeaClick,
 }: UnassignedSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [activeTab, setActiveTab] = useState<'plotPoints' | 'scenes'>('plotPoints');
+  const [activeTab, setActiveTab] = useState<'plotPoints' | 'scenes' | 'ideas'>('plotPoints');
 
-  const totalCount = plotPoints.length + scenes.length;
+  const totalCount = plotPoints.length + scenes.length + ideas.length;
 
   const toggleExpanded = useCallback(() => {
     setIsExpanded((prev) => !prev);
@@ -69,6 +76,11 @@ export function UnassignedSection({
               {scenes.length} Scene{scenes.length !== 1 ? 's' : ''}
             </span>
           )}
+          {ideas.length > 0 && (
+            <span className={styles.badge}>
+              {ideas.length} Idea{ideas.length !== 1 ? 's' : ''}
+            </span>
+          )}
         </div>
       </div>
 
@@ -100,6 +112,16 @@ export function UnassignedSection({
               Scenes
               {scenes.length > 0 && (
                 <span className={styles.tabCount}>{scenes.length}</span>
+              )}
+            </button>
+            <button
+              className={`${styles.tab} ${activeTab === 'ideas' ? styles.tabActive : ''}`}
+              onClick={() => setActiveTab('ideas')}
+              type="button"
+            >
+              Ideas
+              {ideas.length > 0 && (
+                <span className={styles.tabCount}>{ideas.length}</span>
               )}
             </button>
           </div>
@@ -154,6 +176,32 @@ export function UnassignedSection({
                   type="button"
                 >
                   + Add Scene
+                </button>
+              </>
+            )}
+
+            {activeTab === 'ideas' && (
+              <>
+                <div className={styles.itemsList}>
+                  {ideas.map((idea) => (
+                    <UnassignedIdeaCard
+                      key={idea.id}
+                      idea={idea}
+                      onClick={() => onIdeaClick?.(idea)}
+                    />
+                  ))}
+                  {ideas.length === 0 && (
+                    <div className={styles.emptyMessage}>
+                      No ideas yet
+                    </div>
+                  )}
+                </div>
+                <button
+                  className={styles.addButton}
+                  onClick={onAddIdea}
+                  type="button"
+                >
+                  + Add Idea
                 </button>
               </>
             )}

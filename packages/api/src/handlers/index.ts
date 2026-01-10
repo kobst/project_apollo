@@ -64,3 +64,10 @@ export {
   createGetContextHandler,
   createUpdateContextHandler,
 } from './context.js';
+export {
+  createIdeaHandler,
+  listIdeasHandler,
+  getIdeaHandler,
+  updateIdeaHandler,
+  deleteIdeaHandler,
+} from './ideas.js';

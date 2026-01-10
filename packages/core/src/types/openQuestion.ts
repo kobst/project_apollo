@@ -8,30 +8,12 @@
 // =============================================================================
 
 /**
- * Severity levels for OpenQuestions.
- * - BLOCKING: Must resolve before commit; prevents forward progress
- * - IMPORTANT: Surfaced prominently; should resolve before phase transition
- * - SOFT: Background suggestion; may remain unresolved
- */
-export type OQSeverity = 'BLOCKING' | 'IMPORTANT' | 'SOFT';
-
-/**
- * Phases when OpenQuestions are typically surfaced.
- * - OUTLINE: Beat structure and scene placement
- * - DRAFT: Scene content, characters, locations fleshed out
- * - REVISION: Polish, thematic grounding, arc completion
- */
-export type OQPhase = 'OUTLINE' | 'DRAFT' | 'REVISION';
-
-/**
  * Domains that OpenQuestions belong to.
  */
 export type OQDomain =
   | 'STRUCTURE'
   | 'SCENE'
-  | 'CHARACTER'
-  | 'CONFLICT'
-  | 'THEME_MOTIF';
+  | 'CHARACTER';
 
 /**
  * All OpenQuestion types.
@@ -50,14 +32,6 @@ export type OQDomain =
  * - CharacterUnderspecified: Character has no description and appears in ≥ 2 scenes
  * - MissingCharacterArc: Character appears in ≥ 3 scenes and has no HAS_ARC edge
  * - ArcUngrounded: CharacterArc exists with 0 turn_refs
- *
- * CONFLICT domain:
- * - ConflictNeedsParties: Conflict exists with 0 INVOLVES edges
- * - ConflictNeedsManifestation: Conflict exists with 0 MANIFESTS_IN edges
- *
- * THEME_MOTIF domain:
- * - ThemeUngrounded: Theme has status FLOATING and 0 EXPRESSED_IN edges
- * - MotifUngrounded: Motif has status FLOATING and 0 APPEARS_IN edges
  */
 export type OQType =
   // Structure domain
@@ -71,13 +45,7 @@ export type OQType =
   // Character domain
   | 'CharacterUnderspecified'
   | 'MissingCharacterArc'
-  | 'ArcUngrounded'
-  // Conflict domain
-  | 'ConflictNeedsParties'
-  | 'ConflictNeedsManifestation'
-  // Theme/Motif domain
-  | 'ThemeUngrounded'
-  | 'MotifUngrounded';
+  | 'ArcUngrounded';
 
 // =============================================================================
 // OpenQuestion Interface
@@ -91,8 +59,6 @@ export interface OpenQuestion {
   id: string;
   type: OQType;
   domain: OQDomain;
-  severity: OQSeverity;
-  phase: OQPhase;
   group_key: string;
   target_node_id?: string;
   message: string;
@@ -108,8 +74,6 @@ export interface OpenQuestion {
 export interface OQTypeInfo {
   type: OQType;
   domain: OQDomain;
-  defaultSeverity: OQSeverity;
-  phase: OQPhase;
   description: string;
 }
 
@@ -121,22 +85,16 @@ export const OQ_TYPE_INFO: Record<OQType, OQTypeInfo> = {
   BeatUnrealized: {
     type: 'BeatUnrealized',
     domain: 'STRUCTURE',
-    defaultSeverity: 'IMPORTANT',
-    phase: 'OUTLINE',
     description: 'Beat exists with 0 Scenes fulfilling it',
   },
   ActImbalance: {
     type: 'ActImbalance',
     domain: 'STRUCTURE',
-    defaultSeverity: 'IMPORTANT',
-    phase: 'OUTLINE',
     description: 'Act has no scenes while neighboring acts have content',
   },
   SceneUnplaced: {
     type: 'SceneUnplaced',
     domain: 'STRUCTURE',
-    defaultSeverity: 'BLOCKING',
-    phase: 'OUTLINE',
     description: 'Scene exists with missing/invalid beat assignment',
   },
 
@@ -144,22 +102,16 @@ export const OQ_TYPE_INFO: Record<OQType, OQTypeInfo> = {
   SceneNeedsOverview: {
     type: 'SceneNeedsOverview',
     domain: 'SCENE',
-    defaultSeverity: 'BLOCKING',
-    phase: 'DRAFT',
     description: 'Scene.scene_overview missing or < 20 chars',
   },
   SceneHasNoCast: {
     type: 'SceneHasNoCast',
     domain: 'SCENE',
-    defaultSeverity: 'IMPORTANT',
-    phase: 'DRAFT',
     description: 'Scene has 0 HAS_CHARACTER edges',
   },
   SceneNeedsLocation: {
     type: 'SceneNeedsLocation',
     domain: 'SCENE',
-    defaultSeverity: 'IMPORTANT',
-    phase: 'DRAFT',
     description: 'Scene has 0 LOCATED_AT edges',
   },
 
@@ -167,55 +119,17 @@ export const OQ_TYPE_INFO: Record<OQType, OQTypeInfo> = {
   CharacterUnderspecified: {
     type: 'CharacterUnderspecified',
     domain: 'CHARACTER',
-    defaultSeverity: 'SOFT',
-    phase: 'OUTLINE',
     description: 'Character has no description and appears in ≥ 2 scenes',
   },
   MissingCharacterArc: {
     type: 'MissingCharacterArc',
     domain: 'CHARACTER',
-    defaultSeverity: 'IMPORTANT',
-    phase: 'DRAFT',
     description: 'Character appears in ≥ 3 scenes and has no HAS_ARC edge',
   },
   ArcUngrounded: {
     type: 'ArcUngrounded',
     domain: 'CHARACTER',
-    defaultSeverity: 'SOFT',
-    phase: 'REVISION',
     description: 'CharacterArc exists with 0 turn_refs',
-  },
-
-  // CONFLICT domain
-  ConflictNeedsParties: {
-    type: 'ConflictNeedsParties',
-    domain: 'CONFLICT',
-    defaultSeverity: 'IMPORTANT',
-    phase: 'DRAFT',
-    description: 'Conflict exists with 0 INVOLVES edges',
-  },
-  ConflictNeedsManifestation: {
-    type: 'ConflictNeedsManifestation',
-    domain: 'CONFLICT',
-    defaultSeverity: 'IMPORTANT',
-    phase: 'DRAFT',
-    description: "Conflict exists with 0 MANIFESTS_IN edges",
-  },
-
-  // THEME_MOTIF domain
-  ThemeUngrounded: {
-    type: 'ThemeUngrounded',
-    domain: 'THEME_MOTIF',
-    defaultSeverity: 'SOFT',
-    phase: 'REVISION',
-    description: 'Theme has status FLOATING and 0 EXPRESSED_IN edges',
-  },
-  MotifUngrounded: {
-    type: 'MotifUngrounded',
-    domain: 'THEME_MOTIF',
-    defaultSeverity: 'SOFT',
-    phase: 'REVISION',
-    description: "Motif has status FLOATING and 0 APPEARS_IN edges",
   },
 };
 
@@ -233,23 +147,13 @@ export const OQ_TYPES: OQType[] = [
   'CharacterUnderspecified',
   'MissingCharacterArc',
   'ArcUngrounded',
-  'ConflictNeedsParties',
-  'ConflictNeedsManifestation',
-  'ThemeUngrounded',
-  'MotifUngrounded',
 ];
 
 export const OQ_DOMAINS: OQDomain[] = [
   'STRUCTURE',
   'SCENE',
   'CHARACTER',
-  'CONFLICT',
-  'THEME_MOTIF',
 ];
-
-export const OQ_PHASES: OQPhase[] = ['OUTLINE', 'DRAFT', 'REVISION'];
-
-export const OQ_SEVERITIES: OQSeverity[] = ['BLOCKING', 'IMPORTANT', 'SOFT'];
 
 // =============================================================================
 // Helper Functions
@@ -274,11 +178,4 @@ export function getOQTypeInfo(type: OQType): OQTypeInfo {
  */
 export function getOQTypesForDomain(domain: OQDomain): OQType[] {
   return OQ_TYPES.filter((type) => OQ_TYPE_INFO[type].domain === domain);
-}
-
-/**
- * Get OQ types for a specific phase.
- */
-export function getOQTypesForPhase(phase: OQPhase): OQType[] {
-  return OQ_TYPES.filter((type) => OQ_TYPE_INFO[type].phase === phase);
 }

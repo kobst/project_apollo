@@ -10,9 +10,7 @@ export interface APIResponse<T = unknown> {
   suggestion?: string;
 }
 
-// Phases, severities, domains
-export type OQPhase = 'OUTLINE' | 'DRAFT' | 'REVISION';
-export type OQSeverity = 'BLOCKING' | 'IMPORTANT' | 'SOFT';
+// Domains
 export type OQDomain = 'STRUCTURE' | 'SCENE' | 'CHARACTER';
 
 // Status (bootstrap endpoint)
@@ -23,6 +21,7 @@ export interface StoryStats {
   locations: number;
   objects: number;
   plotPoints: number;
+  ideas: number;
   edges: number;
   loglines: number;
   settings: number;
@@ -31,16 +30,12 @@ export interface StoryStats {
 
 export interface OpenQuestionSummary {
   total: number;
-  blocking: number;
-  important: number;
-  soft: number;
 }
 
 export interface StatusData {
   storyId: string;
   name?: string;
   logline?: string;
-  phase: OQPhase;
   currentVersionId: string;
   currentBranch: string | null;
   updatedAt: string;
@@ -53,15 +48,12 @@ export interface StatusData {
 export interface OpenQuestionData {
   id: string;
   message: string;
-  phase: OQPhase;
-  severity: OQSeverity;
   domain: OQDomain;
   target_node_id?: string;
 }
 
 export interface OpenQuestionsData {
   questions: OpenQuestionData[];
-  phase: OQPhase;
 }
 
 // Clusters and Moves
@@ -76,7 +68,6 @@ export interface ClusterData {
   clusterId: string;
   title: string;
   clusterType: string;
-  scope: string;
   seed: number;
   moves: MoveData[];
 }
@@ -295,6 +286,18 @@ export interface OutlineScene {
   status?: string;
 }
 
+export type IdeaSource = 'user' | 'ai';
+export type IdeaSuggestedType = 'PlotPoint' | 'Scene' | 'Character' | 'Location' | 'Object';
+
+export interface OutlineIdea {
+  id: string;
+  title: string;
+  description: string;
+  source: IdeaSource;
+  suggestedType?: IdeaSuggestedType;
+  createdAt: string;
+}
+
 export interface OutlinePlotPoint {
   id: string;
   title: string;
@@ -326,12 +329,16 @@ export interface OutlineData {
   unassignedPlotPoints: OutlinePlotPoint[];
   /** Scenes not connected to any PlotPoint */
   unassignedScenes: OutlineScene[];
+  /** Ideas - informal story ideas not yet promoted to formal nodes */
+  unassignedIdeas: OutlineIdea[];
   summary: {
     totalBeats: number;
     totalScenes: number;
     totalPlotPoints: number;
+    totalIdeas: number;
     unassignedPlotPointCount: number;
     unassignedSceneCount: number;
+    unassignedIdeaCount: number;
   };
 }
 
@@ -737,15 +744,52 @@ export interface SceneFilters {
 }
 
 // =============================================================================
+// Idea Types
+// =============================================================================
+
+export interface IdeaData extends NodeData {
+  source: IdeaSource;
+  suggestedType?: IdeaSuggestedType;
+}
+
+export interface IdeasListData {
+  ideas: IdeaData[];
+  totalCount: number;
+  limit: number;
+  offset: number;
+}
+
+export interface CreateIdeaRequest {
+  title: string;
+  description: string;
+  source?: IdeaSource;
+  suggestedType?: IdeaSuggestedType;
+}
+
+export interface CreateIdeaData {
+  idea: IdeaData;
+  newVersionId: string;
+}
+
+export interface UpdateIdeaData {
+  idea: IdeaData;
+  newVersionId: string;
+  fieldsUpdated: string[];
+}
+
+export interface DeleteIdeaData {
+  deleted: true;
+  newVersionId: string;
+}
+
+// =============================================================================
 // Coverage / Gap Types (Unified Model)
 // =============================================================================
 
 export type GapType = 'structural' | 'narrative';
 export type GapTier = 'premise' | 'foundations' | 'structure' | 'plotPoints' | 'scenes';
-export type GapSeverity = 'blocker' | 'warn' | 'info';
 export type GapSource = 'rule-engine' | 'derived' | 'user' | 'extractor' | 'import';
 export type GapStatus = 'open' | 'in_progress' | 'resolved';
-export type GapPhase = 'OUTLINE' | 'DRAFT' | 'REVISION';
 export type GapDomain = 'STRUCTURE' | 'SCENE' | 'CHARACTER';
 
 export interface GapData {
@@ -755,11 +799,9 @@ export interface GapData {
   title: string;
   description: string;
   scopeRefs: { nodeIds?: string[]; edgeIds?: string[] };
-  severity: GapSeverity;
   source: GapSource;
   status: GapStatus;
   // Optional fields for narrative gaps
-  phase?: GapPhase;
   domain?: GapDomain;
   groupKey?: string;
   dependencies?: string[];
@@ -786,7 +828,6 @@ export interface CoverageData {
 export interface GapsData {
   summary: TierSummaryData[];
   gaps: GapData[];
-  phase: GapPhase;
 }
 
 // =============================================================================

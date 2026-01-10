@@ -121,9 +121,6 @@ export function StoriesView() {
                   <span className={styles.statLabel}>PlotPts</span>
                 </div>
               </div>
-              <div className={styles.phaseBadge}>
-                Phase: {status.phase}
-              </div>
             </div>
 
             <BranchSelector

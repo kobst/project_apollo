@@ -54,6 +54,11 @@ import {
   deleteSceneHandler,
   createGetContextHandler,
   createUpdateContextHandler,
+  createIdeaHandler,
+  listIdeasHandler,
+  getIdeaHandler,
+  updateIdeaHandler,
+  deleteIdeaHandler,
 } from '../handlers/index.js';
 
 export function createStoriesRouter(ctx: StorageContext): Router {
@@ -138,6 +143,13 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   // Story Context endpoints
   router.get('/:id/context', createGetContextHandler(ctx));
   router.patch('/:id/context', createUpdateContextHandler(ctx));
+
+  // Idea endpoints
+  router.post('/:id/ideas', createIdeaHandler(ctx));
+  router.get('/:id/ideas', listIdeasHandler(ctx));
+  router.get('/:id/ideas/:ideaId', getIdeaHandler(ctx));
+  router.patch('/:id/ideas/:ideaId', updateIdeaHandler(ctx));
+  router.delete('/:id/ideas/:ideaId', deleteIdeaHandler(ctx));
 
   return router;
 }

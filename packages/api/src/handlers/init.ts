@@ -92,7 +92,6 @@ export function createInitHandler(ctx: StorageContext) {
         {
           name: name ?? storyId,
           ...(logline && { logline }),
-          phase: 'OUTLINE',
         },
         ctx
       );
@@ -117,6 +116,7 @@ export function createInitHandler(ctx: StorageContext) {
             locations: graphStats.nodeCountByType.Location ?? 0,
             objects: graphStats.nodeCountByType.Object ?? 0,
             plotPoints: graphStats.nodeCountByType.PlotPoint ?? 0,
+            ideas: graphStats.nodeCountByType.Idea ?? 0,
             edges: graphStats.edgeCount,
             loglines: graphStats.nodeCountByType.Logline ?? 0,
             settings: graphStats.nodeCountByType.Setting ?? 0,

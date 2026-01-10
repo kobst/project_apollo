@@ -4,28 +4,18 @@
 
 import type { Command } from 'commander';
 import { deriveOpenQuestions } from '@apollo/core';
-import type { OQPhase, OQSeverity, OQDomain } from '@apollo/core';
-import { loadGraph, loadVersionedState, getCurrentStoryId } from '../state/store.js';
+import type { OQDomain } from '@apollo/core';
+import { loadGraph, getCurrentStoryId } from '../state/store.js';
 import { handleError, CLIError } from '../utils/errors.js';
-import { heading, formatOQList, phaseColor } from '../utils/format.js';
+import { heading, formatOQList } from '../utils/format.js';
 
 export function oqsCommand(program: Command): void {
   program
     .command('oqs')
     .description('List open questions')
-    .option(
-      '-p, --phase <phase>',
-      'Filter by phase (OUTLINE, DRAFT, REVISION)'
-    )
-    .option(
-      '-s, --severity <severity>',
-      'Filter by severity (BLOCKING, IMPORTANT, SOFT)'
-    )
     .option('-d, --domain <domain>', 'Filter by domain')
     .action(
       async (options: {
-        phase?: string;
-        severity?: string;
         domain?: string;
       }) => {
         try {
@@ -42,23 +32,15 @@ export function oqsCommand(program: Command): void {
             throw new CLIError('Current story not found.');
           }
 
-          const state = await loadVersionedState();
-          const phase: OQPhase =
-            (options.phase as OQPhase) ?? state?.metadata?.phase ?? 'OUTLINE';
-
-          let questions = deriveOpenQuestions(graph, phase);
+          let questions = deriveOpenQuestions(graph);
 
           // Apply filters
-          if (options.severity) {
-            const severity = options.severity.toUpperCase() as OQSeverity;
-            questions = questions.filter((q) => q.severity === severity);
-          }
           if (options.domain) {
             const domain = options.domain.toUpperCase() as OQDomain;
             questions = questions.filter((q) => q.domain === domain);
           }
 
-          heading(`Open Questions (${phaseColor(phase)})`);
+          heading(`Open Questions`);
           console.log(`Total: ${questions.length}`);
           console.log();
           console.log(formatOQList(questions));

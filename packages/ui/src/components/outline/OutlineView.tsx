@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { api } from '../../api/client';
-import type { OutlineData, OutlinePlotPoint, OutlineScene, CreateSceneRequest } from '../../api/types';
+import type { OutlineData, OutlinePlotPoint, OutlineScene, OutlineIdea, CreateSceneRequest, CreateIdeaRequest } from '../../api/types';
 import { ActRow } from './ActRow';
 import { UnassignedSection } from './UnassignedSection';
 import { CreatePlotPointModal } from './CreatePlotPointModal';
 import { CreateSceneModal } from './CreateSceneModal';
+import { CreateIdeaModal } from './CreateIdeaModal';
 import styles from './OutlineView.module.css';
 
 export function OutlineView() {
@@ -17,8 +18,10 @@ export function OutlineView() {
   // Modal states
   const [showPlotPointModal, setShowPlotPointModal] = useState(false);
   const [showSceneModal, setShowSceneModal] = useState(false);
+  const [showIdeaModal, setShowIdeaModal] = useState(false);
   const [savingPlotPoint, setSavingPlotPoint] = useState(false);
   const [savingScene, setSavingScene] = useState(false);
+  const [savingIdea, setSavingIdea] = useState(false);
 
   const fetchOutline = useCallback(async () => {
     if (!currentStoryId) return;
@@ -79,6 +82,25 @@ export function OutlineView() {
     }
   }, [currentStoryId, fetchOutline, refreshStatus]);
 
+  // Handle creating a new Idea
+  const handleAddIdea = useCallback(async (data: CreateIdeaRequest) => {
+    if (!currentStoryId) return;
+
+    setSavingIdea(true);
+    try {
+      await api.createIdea(currentStoryId, data);
+      setShowIdeaModal(false);
+      // Refresh outline to show the new idea
+      await fetchOutline();
+      // Also refresh status to update counts
+      void refreshStatus();
+    } catch (err) {
+      console.error('Failed to create idea:', err);
+    } finally {
+      setSavingIdea(false);
+    }
+  }, [currentStoryId, fetchOutline, refreshStatus]);
+
   // Handle clicking on an unassigned plot point
   const handlePlotPointClick = useCallback((pp: OutlinePlotPoint) => {
     // For now, just log - could open a detail modal in the future
@@ -89,6 +111,12 @@ export function OutlineView() {
   const handleSceneClick = useCallback((scene: OutlineScene) => {
     // For now, just log - could open a detail modal in the future
     console.log('Clicked scene:', scene.id);
+  }, []);
+
+  // Handle clicking on an idea
+  const handleIdeaClick = useCallback((idea: OutlineIdea) => {
+    // For now, just log - could open a detail modal in the future
+    console.log('Clicked idea:', idea.id);
   }, []);
 
   if (!currentStoryId) {
@@ -131,7 +159,8 @@ export function OutlineView() {
   // Calculate total unassigned count
   const unassignedPlotPointCount = outline.unassignedPlotPoints?.length ?? 0;
   const unassignedSceneCount = outline.unassignedScenes?.length ?? 0;
-  const totalUnassignedCount = unassignedPlotPointCount + unassignedSceneCount;
+  const unassignedIdeaCount = outline.unassignedIdeas?.length ?? 0;
+  const totalUnassignedCount = unassignedPlotPointCount + unassignedSceneCount + unassignedIdeaCount;
 
   return (
     <div className={styles.container}>
@@ -172,10 +201,13 @@ export function OutlineView() {
         <UnassignedSection
           plotPoints={outline.unassignedPlotPoints ?? []}
           scenes={outline.unassignedScenes ?? []}
+          ideas={outline.unassignedIdeas ?? []}
           onAddPlotPoint={() => setShowPlotPointModal(true)}
           onAddScene={() => setShowSceneModal(true)}
+          onAddIdea={() => setShowIdeaModal(true)}
           onPlotPointClick={handlePlotPointClick}
           onSceneClick={handleSceneClick}
+          onIdeaClick={handleIdeaClick}
         />
       </div>
 
@@ -194,6 +226,15 @@ export function OutlineView() {
           onAdd={handleAddScene}
           onCancel={() => setShowSceneModal(false)}
           saving={savingScene}
+        />
+      )}
+
+      {/* Create Idea Modal */}
+      {showIdeaModal && (
+        <CreateIdeaModal
+          onAdd={handleAddIdea}
+          onCancel={() => setShowIdeaModal(false)}
+          saving={savingIdea}
         />
       )}
     </div>

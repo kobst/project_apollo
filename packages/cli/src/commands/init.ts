@@ -71,7 +71,6 @@ export function initCommand(program: Command): void {
           await createStory(storyId, initializedGraph, versionId, {
             name: options.name ?? storyId,
             ...(logline && { logline }),
-            phase: 'OUTLINE',
           });
 
           // Clear any existing session

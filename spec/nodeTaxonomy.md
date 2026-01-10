@@ -56,7 +56,7 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 **Optional:**
 - `description`
-- `cluster_type` (`STRUCTURE`, `SCENE_LIST`, `CHARACTER`, `CONFLICT`, `THEME`)
+- `cluster_type` (`STRUCTURE`, `SCENE_LIST`, `CHARACTER`)
 - `target_open_question_ids[]`
 - `status` (`PROPOSED`, `ARCHIVED`)
 
@@ -131,7 +131,6 @@ These nodes establish the "top of the pyramid" - the foundational context that e
 **Notes:**
 - Top of the pyramid - everything else serves the premise
 - Typically only one Premise node per story
-- Can optionally connect to Conflicts via `DEFINES` edge
 
 ---
 
@@ -320,49 +319,11 @@ These nodes establish the "top of the pyramid" - the foundational context that e
 
 ---
 
-## E. ABSTRACT / MEANING (4)
+## E. ABSTRACT / MEANING (1)
 
 ---
 
-### 14) `Theme`
-**Purpose:** Soft attractor for meaning
-
-**Required:**
-- `id`
-- `statement`
-
-**Optional:**
-- `notes`
-- `priority` (enum: `HIGH`, `MED`, `LOW`)
-
-**Active Phase:** Outline
-
-**Notes:**
-- Grounding determined by presence of `EXPRESSED_IN` edges (not a status field)
-- AI derives grounding status from graph relationships
-
----
-
-### 15) `Motif`
-**Purpose:** Recurring symbolic element
-
-**Required:**
-- `id`
-- `name`
-
-**Optional:**
-- `description`
-- `motif_type` (enum: `PATTERN`, `IMAGE`, `SYMBOL`)
-
-**Active Phase:** Outline
-
-**Notes:**
-- Grounding determined by presence of `APPEARS_IN` edges (not a status field)
-- AI derives grounding status from graph relationships
-
----
-
-### 16) `CharacterArc`
+### 14) `CharacterArc`
 **Purpose:** Trajectory of character transformation
 
 **Required:**
@@ -373,34 +334,63 @@ These nodes establish the "top of the pyramid" - the foundational context that e
 - `arc_type`
 - `start_state`
 - `end_state`
-- `turn_refs[]`  
+- `turn_refs[]`
   *(references to Beat and/or Scene IDs with optional notes)*
 - `status` (`FLOATING`, `PARTIAL`, `GROUNDED`)
 
-**Active Phase:** Draft
+**Notes:**
+- Conflicts and themes are now captured in Story Context as prose rather than as formal nodes
+- These interpretive concepts are *about* the story, not entities *in* the story
 
 ---
 
-### 17) `Conflict`
-**Purpose:** Tension between characters, groups, or abstract forces
+## F. STAGING (1)
+
+---
+
+### 15) `Idea`
+**Purpose:** Unassigned creative concept awaiting promotion to a concrete node type
 
 **Required:**
 - `id`
-- `name`
-- `conflict_type` (enum: `interpersonal`, `internal`, `societal`, `ideological`, `systemic`, `nature`, `technological`)
-- `description`
+- `title` *(short label, e.g., "Max's betrayal reveal")*
+- `description` *(1-3 sentences explaining the idea)*
+- `source` (`user`, `ai`)
+- `createdAt`
 
 **Optional:**
-- `status` (`FLOATING`, `ACTIVE`, `RESOLVED`)
-- `start_beat_id`
-- `end_beat_id`
-- `notes`
-
-**Active Phase:** Outline → Draft
+- `suggestedType` (`PlotPoint`, `Scene`, `Character`, `Location`, `Object`)
 
 **Notes:**
-- Stakes and intensity are inferred by AI from narrative context rather than stored as fields
-- Grounding determined by `INVOLVES` and `MANIFESTS_IN` edges
+- Ideas live in the "Unassigned" area of the Outline view
+- Can be promoted to a concrete node type (PlotPoint, Scene, etc.)
+- Allows capturing creative thoughts without immediately committing to structure
+- When promoted, the Idea is deleted and a new node of the target type is created
+
+---
+
+## G. STORY CONTEXT (Metadata)
+
+**Story Context** is a prose field on story metadata (not a graph node) that captures interpretive concepts:
+
+**Contains:**
+- Thematic concerns and themes
+- Central conflicts
+- Recurring motifs
+- Symbolic elements
+- Tone notes
+
+**Purpose:**
+- Provides context for AI during generation
+- Captures concepts that are *about* the story, not entities *in* it
+- Serves as the "claude.md" equivalent for the story
+
+**Location:** `state.metadata.storyContext` (markdown string)
+
+**Notes:**
+- AI reads Story Context when generating proposals
+- Users can edit directly in the Premise/Context panel
+- Legacy Conflict/Theme/Motif nodes are auto-migrated here on load
 
 ---
 
@@ -415,7 +405,6 @@ These nodes establish the "top of the pyramid" - the foundational context that e
 - `PlotPoint -[SATISFIED_BY]-> Scene` *(Scene realizes the PlotPoint)*
 
 ### Context Layer
-- `Premise -[DEFINES]-> Conflict` *(optional: premise defines central conflicts)*
 - `Location -[PART_OF]-> Setting` *(location belongs to a setting/world)*
 - `Scene -[SET_IN]-> Setting` *(scene takes place in a setting - broader than location)*
 
@@ -425,24 +414,15 @@ These nodes establish the "top of the pyramid" - the foundational context that e
 - `Scene -[FEATURES_OBJECT]-> Object`
 
 ### Meaning & Arcs
-- `Theme -[EXPRESSED_IN]-> Beat`
-- `Theme -[EXPRESSED_IN]-> Scene`
-- `Motif -[APPEARS_IN]-> Scene`
 - `CharacterArc -[HAS_TURN_IN]-> Beat`
 - `CharacterArc -[HAS_TURN_IN]-> Scene`
-
-### Conflict
-- `Conflict -[INVOLVES]-> Character`
-- `Conflict -[MANIFESTS_IN]-> Scene`
-- `Conflict -[SPANS_BEATS]-> Beat`
+- `Character -[HAS_ARC]-> CharacterArc`
 
 ### PlotPoint
 - `PlotPoint -[ALIGNS_WITH]-> Beat` *(optional alignment to STC beat)*
 - `PlotPoint -[SATISFIED_BY]-> Scene` *(with order property)*
 - `PlotPoint -[PRECEDES]-> PlotPoint` *(causal chain, must be DAG)*
-- `PlotPoint -[ADVANCES]-> CharacterArc | Theme`
-- `PlotPoint -[SETS_UP]-> Motif`
-- `PlotPoint -[PAYS_OFF]-> Motif`
+- `PlotPoint -[ADVANCES]-> CharacterArc`
 
 ### Workflow
 - `StoryVersion -[HAS]-> Beat/Scene/Character/...`
@@ -470,22 +450,10 @@ These nodes establish the "top of the pyramid" - the foundational context that e
   → `SceneNeedsLocation(scene_id)` *(Draft)*
 
 ### Character & Arc
-- **Character appears in ≥3 scenes, no CharacterArc**  
-  → `MissingCharacterArc(character_id)` *(Draft)*
-- **CharacterArc exists, no turn_refs**  
-  → `ArcUngrounded(character_arc_id)` *(Revision)*
-
-### Theme / Motif (soft)
-- **Theme exists, no EXPRESSED_IN links**  
-  → `ThemeUngrounded(theme_id)` *(Revision)*
-- **Motif exists, no APPEARS_IN links**  
-  → `MotifUngrounded(motif_id)` *(Revision)*
-
-### Conflict
-- **Conflict exists, no INVOLVES relationships**
-  → `ConflictNeedsParties(conflict_id)` *(Draft)*
-- **Conflict exists, no MANIFESTS_IN scenes**
-  → `ConflictNeedsManifestation(conflict_id)` *(Draft/Revision)*
+- **Character appears in ≥3 scenes, no CharacterArc**
+  → `MissingCharacterArc(character_id)`
+- **CharacterArc exists, no turn_refs**
+  → `ArcUngrounded(character_arc_id)`
 
 ### PlotPoint (hard rules - block commit)
 - **PRECEDES edges form a cycle**
@@ -513,7 +481,7 @@ These nodes establish the "top of the pyramid" - the foundational context that e
 - Causality captured via `PlotPoint` nodes and `PRECEDES` edges
 - PlotPoints represent writer intent; scenes realize that intent via `SATISFIED_BY`
 - DialogueLine deferred; notable dialogue stored on Scene
-- Abstract meaning nodes allowed to float intentionally
+- Conflicts, themes, and motifs are captured as prose in Story Context, not as graph nodes
 - Structure is enforced as an attractor, not a gate
 
 ---
@@ -525,6 +493,12 @@ This v1 taxonomy supports:
 - rapid alternative generation
 - explicit structural grounding
 - reversible branching
-- progressive refinement from outline → draft → revision
+
+**Story Elements** include only concrete entities in the story:
+- Characters (people/entities with agency)
+- Locations (physical spaces)
+- Objects (significant items)
+
+Interpretive concepts like conflicts, themes, and motifs are captured in **Story Context** as prose rather than as formal graph nodes.
 
 It intentionally favors **flexibility and human judgment** over rigid theory encoding.

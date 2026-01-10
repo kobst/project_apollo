@@ -2,7 +2,7 @@
  * API request and response types
  */
 
-import type { OQPhase, OQSeverity, OQDomain } from '@apollo/core';
+import type { OQDomain } from '@apollo/core';
 
 // =============================================================================
 // Response Types
@@ -39,6 +39,7 @@ export interface StoryStats {
   locations: number;
   objects: number;
   plotPoints: number;
+  ideas: number;
   edges: number;
   loglines: number;
   settings: number;
@@ -47,16 +48,12 @@ export interface StoryStats {
 
 export interface OpenQuestionSummary {
   total: number;
-  blocking: number;
-  important: number;
-  soft: number;
 }
 
 export interface StatusData {
   storyId: string;
   name?: string | undefined;
   logline?: string | undefined;
-  phase: OQPhase;
   currentVersionId: string;
   currentBranch: string | null;
   updatedAt: string;
@@ -72,15 +69,12 @@ export interface StatusData {
 export interface OpenQuestionData {
   id: string;
   message: string;
-  phase: OQPhase;
-  severity: OQSeverity;
   domain: OQDomain;
   target_node_id?: string | undefined;
 }
 
 export interface OpenQuestionsData {
   questions: OpenQuestionData[];
-  phase: OQPhase;
 }
 
 // =============================================================================
@@ -98,7 +92,6 @@ export interface ClusterData {
   clusterId: string;
   title: string;
   clusterType: string;
-  scope: string;
   seed: number;
   moves: MoveData[];
 }
@@ -221,7 +214,7 @@ export interface InitRequest {
 }
 
 export interface InputRequest {
-  type: 'character' | 'location' | 'conflict' | 'scene';
+  type: 'character' | 'location' | 'scene';
   name: string;
   description?: string;
 }

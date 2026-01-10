@@ -141,8 +141,8 @@ The Workspace tab is the main editing environment. It combines coverage tracking
 │ ├─ Genre/... │ ┌─────────┬─────────────────┬──────────────┐ │
 │ ├─ Setting   │ │ Node    │ Node Detail     │ Input Panel  │ │
 │ ├─ Chars     │ │ List    │ Panel           │              │ │
-│ ├─ Conflicts │ │         │                 │ [Extract]    │ │
-│ └─ Themes    │ │         │                 │              │ │
+│ ├─ Locations │ │         │                 │ [Extract]    │ │
+│ └─ Objects   │ │         │                 │              │ │
 │              │ │         │ [Edit] [Delete] │              │ │
 │ Outline      │ │         │                 │              │ │
 │ ├─ Board     │ ├─────────┴─────────────────┴──────────────┤ │
@@ -165,14 +165,14 @@ Story Map
 │   ├── Premise         [========  ] 1/1  ✓
 │   ├── Genre/Tone      [          ] 0/1
 │   ├── Setting         [====      ] 1/2
-│   ├── Characters      [======    ] 3/5  !
-│   ├── Conflicts       [==========] 3/3  ✓
-│   └── Themes/Motifs   [===       ] 1/3
+│   ├── Characters      [======    ] 3/5
+│   ├── Locations       [====      ] 2/4
+│   └── Objects         [===       ] 1/3
 │
 └── Outline
     ├── Structure Board [==========] 15/15 ✓
     ├── Plot Points     [          ] 0/3
-    └── Scenes          [==        ] 3/40 !
+    └── Scenes          [==        ] 3/40
 ```
 
 ### Progress Indicators
@@ -181,7 +181,7 @@ Story Map
 |---------|-------------|
 | **Progress Bar** | Visual fill showing completion percentage |
 | **Count** | `covered/total` for the category |
-| **Status Badge** | Gap severity indicator |
+| **Status Badge** | Gap count indicator |
 
 ### Progress Bar Colors
 
@@ -192,14 +192,13 @@ Story Map
 | **Red** | < 50% complete |
 | **Gray** | 0% (empty) |
 
-### Status Badges
+### Status Indicators
 
-| Badge | Meaning |
-|-------|---------|
-| **!** (red) | Has blocker-level gaps |
-| **?** (orange) | Has warning-level gaps |
-| **i** (blue) | Has info-level gaps |
-| (none) | No gaps |
+| Indicator | Meaning |
+|-----------|---------|
+| **✓** (green) | Category is complete |
+| **Gap count** | Number of gaps in category |
+| (none) | No issues |
 
 ### Navigation
 
@@ -245,21 +244,22 @@ The people in your story.
 - **Progress**: Based on character completeness
 - **Gaps**: Character-specific issues from lint rules
 
-### Conflicts
+### Locations
 
-The driving tensions and obstacles.
+Specific places where scenes occur.
 
-- **Fields**: name, description, conflict_type, status
-- **Related**: Connect to Characters via INVOLVES edges
-- **Gaps**: Conflict completeness issues
+- **Fields**: name, description, parent_location_id
+- **Related**: Connect to Settings via PART_OF edges
+- **Gaps**: Location without Setting
 
-### Themes/Motifs
+### Objects
 
-Thematic elements and recurring symbols.
+Significant items and props in your story.
 
-- **Themes**: Abstract ideas (statement, notes)
-- **Motifs**: Recurring symbols/imagery (name, description)
-- **Gaps**: "Orphaned Theme" or "Orphaned Motif" if not connected to scenes
+- **Fields**: name, description
+- **Related**: Scenes connect to Objects via FEATURES_OBJECT edges
+
+**Note**: Themes, conflicts, and motifs are captured in Story Context as prose rather than as formal graph nodes.
 
 ---
 
@@ -298,7 +298,7 @@ The beat-by-beat structure view (same as previous Outline tab).
 List view of all plot points.
 
 - **Fields**: title, summary, intent (optional), priority, urgency
-- **Intent Types**: PLOT, CHARACTER, THEME, TONE
+- **Intent Types**: PLOT, CHARACTER, TONE
 - **Progress**: Based on SATISFIED_BY edges from scenes
 
 ### Scenes
@@ -340,12 +340,10 @@ The **Node Editor** allows direct modification of committed graph nodes within t
 | **Beat** | guidance, notes, status |
 | **Scene** | title, heading, scene_overview, mood, int_ext, time_of_day, status |
 | **Character** | name, description, archetype, status |
-| **Conflict** | name, description, conflict_type, status |
 | **Location** | name, description, atmosphere |
-| **Theme** | statement, notes |
-| **Motif** | name, description |
 | **PlotPoint** | title, summary, intent, priority, urgency, stakes_change, status, act |
 | **Object** | name, description |
+| **CharacterArc** | arc_type, start_state, end_state, turn_refs, status |
 
 ### PatchBuilder Preview
 
@@ -407,13 +405,13 @@ When viewing a node, the Relations section shows:
 ├─────────────────────────────────────────────────────────┤
 │ OUTGOING (2)                                            │
 │ ┌─────────────────────────────────────────────────────┐ │
-│ │ FULFILLS → beat_Catalyst  Beat     [✎] [×]         │ │
-│ │ LOCATED_AT → loc_primary  Location [✎] [×]         │ │
+│ │ HAS_CHARACTER → char_john  Character  [✎] [×]      │ │
+│ │ LOCATED_AT → loc_primary  Location    [✎] [×]      │ │
 │ └─────────────────────────────────────────────────────┘ │
 │                                                         │
 │ INCOMING (1)                                            │
 │ ┌─────────────────────────────────────────────────────┐ │
-│ │ Central Conflict  Conflict → INVOLVES  [✎] [×]     │ │
+│ │ Hero's Call  PlotPoint → SATISFIED_BY  [✎] [×]     │ │
 │ └─────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -436,22 +434,17 @@ Choose the relationship type based on the current node:
 
 | Edge Type | Source → Target |
 |-----------|-----------------|
-| **DEFINES** | Premise → Conflict |
 | **PART_OF** | Location → Setting |
 | **SET_IN** | Scene → Setting |
 | **SATISFIED_BY** | PlotPoint → Scene |
 | **ALIGNS_WITH** | PlotPoint → Beat |
 | **HAS_CHARACTER** | Scene → Character |
 | **LOCATED_AT** | Scene → Location |
-| **INVOLVES** | Conflict → Character |
-| **MANIFESTS_IN** | Conflict → Scene |
-| **EXPRESSED_IN** | Theme → Scene/Beat |
-| **APPEARS_IN** | Motif → Scene |
 | **FEATURES_OBJECT** | Scene → Object |
 | **PRECEDES** | PlotPoint → PlotPoint |
-| **ADVANCES** | PlotPoint → CharacterArc/Theme |
-| **SETS_UP** | PlotPoint → Motif |
-| **PAYS_OFF** | PlotPoint → Motif |
+| **ADVANCES** | PlotPoint → CharacterArc |
+| **HAS_ARC** | Character → CharacterArc |
+| **HAS_TURN_IN** | CharacterArc → Beat/Scene |
 
 *Only valid edge types for the current node type are shown.*
 
@@ -467,9 +460,8 @@ Set optional properties based on the edge type:
 
 | Property | Description | Edge Types |
 |----------|-------------|------------|
-| **Order** | Sequence number (≥1) | SATISFIED_BY, HAS_CHARACTER, MANIFESTS_IN, APPEARS_IN |
-| **Weight** | Strength of relation (0-1) | INVOLVES, MANIFESTS_IN, EXPRESSED_IN |
-| **Confidence** | AI confidence score (0-1) | EXPRESSED_IN, ALIGNS_WITH |
+| **Order** | Sequence number (≥1) | SATISFIED_BY, HAS_CHARACTER |
+| **Confidence** | AI confidence score (0-1) | ALIGNS_WITH |
 | **Notes** | Human-readable annotation | All types |
 
 ### Editing an Existing Edge
@@ -542,10 +534,7 @@ Found in the right column of the FoundationsPanel, visible when any category is 
 | **Character** | Extract character nodes |
 | **Location** | Extract location nodes |
 | **Scene** | Extract scene nodes |
-| **Conflict** | Extract conflict nodes |
 | **PlotPoint** | Extract plot point nodes |
-| **Theme** | Extract thematic elements |
-| **Motif** | Extract recurring symbols/imagery |
 | **Object** | Extract significant props/items |
 
 ### Extraction Workflow
@@ -602,8 +591,6 @@ Soft rules check completeness. They warn but don't block commits.
 | **Scene Has Character** | Scene should have at least one character assigned |
 | **Scene Has Location** | Scene should have a location assigned |
 | **Scene Has PlotPoint** | Scene should be connected to a PlotPoint |
-| **Theme Not Orphaned** | Theme should be expressed in at least one scene or beat |
-| **Motif Not Orphaned** | Motif should appear in at least one scene |
 | **PlotPoint Has Intent** | PlotPoint should have intent specified |
 | **PlotPoint Event Realization** | Approved PlotPoint should have scenes satisfying it |
 | **PlotPoint Has Criteria** | PlotPoint should have satisfaction criteria |
@@ -903,9 +890,8 @@ Review Diff → Continue with next OQ
 ### Open Question Fields
 - `id`: Unique identifier
 - `message`: Human-readable question text
-- `phase`: OUTLINE | DRAFT | REVISION
-- `severity`: BLOCKING | IMPORTANT | SOFT
-- `domain`: STRUCTURE | SCENE | CHARACTER | CONFLICT | THEME_MOTIF
+- `domain`: STRUCTURE | SCENE | CHARACTER
+- `group_key`: Grouping key for clustering
 - `target_node_id`: Related graph node (optional)
 
 ### Move Fields

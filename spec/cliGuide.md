@@ -2,7 +2,7 @@
 
 ## Overview
 
-Project Apollo is a screenplay knowledge graph system that helps writers develop stories using a structured, graph-based approach. The system uses the **Save the Cat** 15-beat structure as its foundation and tracks story elements (characters, conflicts, locations, scenes) as nodes in a knowledge graph.
+Project Apollo is a screenplay knowledge graph system that helps writers develop stories using a structured, graph-based approach. The system uses the **Save the Cat** 15-beat structure as its foundation and tracks story elements (characters, locations, objects, scenes, plot points) as nodes in a knowledge graph.
 
 The CLI provides an interactive way to:
 - Initialize stories with or without a logline
@@ -26,12 +26,12 @@ packages/
 | Concept | Description |
 |---------|-------------|
 | **GraphState** | The in-memory knowledge graph containing all story nodes and edges |
-| **Nodes** | Story elements: Beat, Scene, Character, Conflict, Location, Theme, Motif, CharacterArc |
-| **Edges** | Relationships between nodes: HAS_CHARACTER, LOCATED_AT, FULFILLS, INVOLVES, etc. |
+| **Nodes** | Story elements: Beat, Scene, Character, Location, Object, PlotPoint, CharacterArc, Idea |
+| **Edges** | Relationships between nodes: HAS_CHARACTER, LOCATED_AT, SATISFIED_BY, ALIGNS_WITH, etc. |
 | **Patch** | A set of operations (ADD_NODE, UPDATE_NODE, DELETE_NODE, ADD_EDGE, DELETE_EDGE) |
 | **Open Question (OQ)** | A gap or issue in the story that needs attention |
 | **Move Cluster** | A set of possible moves (patches) to address an open question |
-| **Phase** | Story development phase: OUTLINE → DRAFT → REVISION |
+| **Story Context** | Prose metadata for themes, conflicts, and motifs (not graph nodes) |
 
 ### Edge Types (Relationships)
 
@@ -39,20 +39,19 @@ Edges connect nodes to form the knowledge graph. The system uses 9 edge types:
 
 | Edge Type | Source → Target | Required | Description |
 |-----------|-----------------|----------|-------------|
-| **FULFILLS** | Scene → Beat | Implicit | Scene realizes/delivers the beat. Created automatically from `Scene.beat_id`. |
-| **HAS_CHARACTER** | Scene → Character | DRAFT | Character appears in the scene. |
-| **LOCATED_AT** | Scene → Location | DRAFT | Scene's primary location. |
+| **FULFILLS** | Scene → Beat | Deprecated | Use PlotPoint hierarchy instead. |
+| **HAS_CHARACTER** | Scene → Character | Recommended | Character appears in the scene. |
+| **LOCATED_AT** | Scene → Location | Recommended | Scene's primary location. |
 | **FEATURES_OBJECT** | Scene → Object | Optional | Significant prop/object in scene. |
-| **INVOLVES** | Conflict → Character | DRAFT | Character is party to the conflict. |
-| **MANIFESTS_IN** | Conflict → Scene | DRAFT | Scene shows the conflict in action. |
 | **HAS_ARC** | Character → CharacterArc | Optional | Arc belongs to this character. |
-| **EXPRESSED_IN** | Theme → Scene/Beat | REVISION | Theme is evidenced by scene or beat. |
-| **APPEARS_IN** | Motif → Scene | REVISION | Motif appears in the scene. |
+| **ALIGNS_WITH** | PlotPoint → Beat | Optional | PlotPoint aligns to structural beat. |
+| **SATISFIED_BY** | PlotPoint → Scene | Optional | Scene satisfies the plot point. |
+| **PRECEDES** | PlotPoint → PlotPoint | Optional | Causal ordering (must be DAG). |
+| **PART_OF** | Location → Setting | Optional | Location belongs to a setting. |
 
 **Notes:**
-- FULFILLS edges are derived from `Scene.beat_id` — never create them manually via patches.
+- FULFILLS edges are deprecated — use PlotPoint with ALIGNS_WITH and SATISFIED_BY instead.
 - Edges are unique by `(type, from, to)` — no duplicates allowed.
-- "Required" column indicates when validation enforces the edge (by phase).
 
 ### The 15-Beat Structure
 
@@ -103,7 +102,7 @@ Initialize a new story with optional name and logline.
 ```bash
 project-apollo init --name "Detective Story" "A detective solves an impossible crime"
 ```
-Creates: 15 beats + 1 character + 1 conflict + 1 location
+Creates: 15 beats + 1 character + 1 location
 
 **With logline only** (ID derived from logline):
 ```bash
@@ -131,8 +130,8 @@ Logline: "A detective solves an impossible crime"
 Nodes:
   Beat           15
   Character      1
-  Conflict       1
   Location       1
+  Object         0
 
 ✓ Story created and set as current.
 Run "project-apollo oqs" to see open questions.
@@ -216,21 +215,18 @@ Story Status
 Story: detective-story
 Name: Detective Story
 Logline: A detective solves an impossible crime in a locked room
-Phase: OUTLINE
 Updated: 2026-01-02T12:00:00.000Z
 
 Nodes:
   Beat           15
   Scene          2
   Character      1
-  Conflict       1
   Location       1
+  Object         0
 
 Edges: 3
 
-Open Questions:
-  13 important
-  2 soft
+Open Questions: 15
 ```
 
 ---
@@ -456,7 +452,7 @@ project-apollo load mystory.json --force  # Overwrite existing
 
 ### `project-apollo add <type> [options]`
 
-Add nodes directly to the story graph. Supports characters, locations, conflicts, and scenes.
+Add nodes directly to the story graph. Supports characters, locations, objects, and scenes.
 
 #### Add Character
 
@@ -485,23 +481,6 @@ project-apollo add location "Cafe" --description "A cozy corner cafe" --tags "ro
 - `-d, --description <text>` - Location description
 - `-p, --parent <id>` - Parent location ID (for nested locations)
 - `-t, --tags <list>` - Comma-separated tags
-- `-y, --yes` - Skip confirmation
-
-#### Add Conflict
-
-```bash
-project-apollo add conflict "Save the President" \
-  --type societal \
-  --description "A coup unfolds aboard Air Force One while the president tries to survive."
-```
-
-**Required options:**
-- `--type <type>` - Conflict type: `interpersonal`, `internal`, `societal`, `ideological`, `systemic`, `nature`, `technological`
-- `--description <text>` - Conflict description (min 20 chars)
-
-**Optional:**
-- `--stakes <text>` - Stakes description
-- `--intensity <n>` - Intensity level 1-5
 - `-y, --yes` - Skip confirmation
 
 #### Add Scene
@@ -909,50 +888,33 @@ Each story maintains a complete version history with named branches. Every chang
 
 ## Open Question Types
 
-Open questions are derived automatically from graph state. They're organized by domain and surfaced based on the current phase.
+Open questions are derived automatically from graph state. They're organized by domain.
 
 ### STRUCTURE Domain
 
-| Type | Severity | Phase | Trigger |
-|------|----------|-------|---------|
-| `BeatUnrealized` | IMPORTANT | OUTLINE | Beat has 0 scenes fulfilling it |
-| `ActImbalance` | IMPORTANT | OUTLINE | Act has 0 scenes while neighbors have 2+ |
-| `SceneUnplaced` | BLOCKING | OUTLINE | Scene has invalid/missing beat assignment |
+| Type | Trigger |
+|------|---------|
+| `BeatUnrealized` | Beat has 0 scenes fulfilling it |
+| `ActImbalance` | Act has 0 scenes while neighbors have 2+ |
+| `SceneUnplaced` | Scene has invalid/missing beat assignment |
 
 ### SCENE Domain
 
-| Type | Severity | Phase | Trigger |
-|------|----------|-------|---------|
-| `SceneNeedsOverview` | BLOCKING | DRAFT | Scene overview missing or < 20 chars |
-| `SceneHasNoCast` | IMPORTANT | DRAFT | Scene has 0 HAS_CHARACTER edges |
-| `SceneNeedsLocation` | IMPORTANT | DRAFT | Scene has 0 LOCATED_AT edges |
+| Type | Trigger |
+|------|---------|
+| `SceneNeedsOverview` | Scene overview missing or < 20 chars |
+| `SceneHasNoCast` | Scene has 0 HAS_CHARACTER edges |
+| `SceneNeedsLocation` | Scene has 0 LOCATED_AT edges |
 
 ### CHARACTER Domain
 
-| Type | Severity | Phase | Trigger |
-|------|----------|-------|---------|
-| `CharacterUnderspecified` | SOFT | DRAFT | Character in 2+ scenes with no description |
-| `MissingCharacterArc` | IMPORTANT | DRAFT | Character in 3+ scenes with no HAS_ARC edge |
-| `ArcUngrounded` | SOFT | REVISION | CharacterArc has 0 turn_refs |
+| Type | Trigger |
+|------|---------|
+| `CharacterUnderspecified` | Character in 2+ scenes with no description |
+| `MissingCharacterArc` | Character in 3+ scenes with no HAS_ARC edge |
+| `ArcUngrounded` | CharacterArc has 0 turn_refs |
 
-### CONFLICT Domain
-
-| Type | Severity | Phase | Trigger |
-|------|----------|-------|---------|
-| `ConflictNeedsParties` | IMPORTANT | DRAFT | Conflict has 0 INVOLVES edges |
-| `ConflictNeedsManifestation` | IMPORTANT | DRAFT | Conflict has 0 MANIFESTS_IN edges |
-
-### THEME_MOTIF Domain
-
-| Type | Severity | Phase | Trigger |
-|------|----------|-------|---------|
-| `ThemeUngrounded` | SOFT | REVISION | Theme is FLOATING with 0 EXPRESSED_IN edges |
-| `MotifUngrounded` | SOFT | REVISION | Motif is FLOATING with 0 APPEARS_IN edges |
-
-**Severity Levels:**
-- **BLOCKING** — Must resolve before proceeding; prevents phase transition
-- **IMPORTANT** — Should resolve before phase transition
-- **SOFT** — Suggestion; may remain unresolved
+**Note:** Severity and phase are no longer enforced. OpenQuestions serve as guidance for AI generation opportunities.
 
 ## Current Limitations
 
@@ -960,14 +922,13 @@ Open questions are derived automatically from graph state. They're organized by 
 
 The current system uses **deterministic stubs** instead of real LLM integration. This means:
 
-- `initializeStory()` creates placeholder character/conflict/location from logline
+- `initializeStory()` creates placeholder character/location from logline
 - `generateClusterForQuestion()` creates template scenes with generic content
 - Move titles and rationales are pre-defined templates
 
 **Real LLM integration would:**
 - Generate contextually-aware scene descriptions
 - Create meaningful character names and backgrounds
-- Produce story-specific conflict descriptions
 - Offer creative, diverse move options
 
 ### Manual Commands
@@ -978,7 +939,6 @@ The CLI now supports direct node manipulation:
 # Add nodes
 project-apollo add character "John" --description "..."
 project-apollo add location "Paris" --description "..."
-project-apollo add conflict "Save the world" --type societal --description "..."
 project-apollo add scene --beat Catalyst --overview "..."
 
 # Edit nodes

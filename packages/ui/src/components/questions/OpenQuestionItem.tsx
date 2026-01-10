@@ -10,13 +10,6 @@ interface Props {
 export function OpenQuestionItem({ question, selected }: Props) {
   const { selectOQ } = useStory();
 
-  const severityClass =
-    question.severity === 'BLOCKING'
-      ? styles.blocking
-      : question.severity === 'IMPORTANT'
-        ? styles.important
-        : styles.soft;
-
   return (
     <button
       className={`${styles.item} ${selected ? styles.selected : ''}`}
@@ -24,9 +17,6 @@ export function OpenQuestionItem({ question, selected }: Props) {
       type="button"
     >
       <div className={styles.top}>
-        <span className={`${styles.severity} ${severityClass}`}>
-          {question.severity}
-        </span>
         <span className={styles.domain}>{question.domain}</span>
       </div>
       <div className={styles.message}>{question.message}</div>

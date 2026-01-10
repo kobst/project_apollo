@@ -440,72 +440,7 @@ New implementations should use PlotPoints with SATISFIED_BY edges instead.
 
 ---
 
-## 1.10 Theme
-
-### Fields
-| Field | Type | Req? | Description |
-|---|---|:---:|---|
-| id | string | ✅ | Theme id |
-| statement | string | ✅ | Thematic statement |
-| notes | string | ❌ | Notes |
-| priority | string (enum) | ❌ | HIGH/MED/LOW |
-| status | string (enum) | ❌ | FLOATING/GROUNDED |
-
-### Enums
-- `priority`: HIGH, MED, LOW
-- `status`: FLOATING, GROUNDED
-
-### Constraints
-- `statement` length 5–240.
-
-### Example
-```json
-{
-  "type": "Theme",
-  "id": "theme_01J0TH001",
-  "statement": "Redemption through duty under pressure.",
-  "priority": "HIGH",
-  "status": "FLOATING"
-}
-```
-
----
-
-## 1.11 Motif
-
-**Note:** Motif encompasses recurring patterns, images, and symbols. Explicit "Symbol" nodes are not separated in v1; symbolic elements should be modeled as Motifs with appropriate description.
-
-### Fields
-| Field | Type | Req? | Description |
-|---|---|:---:|---|
-| id | string | ✅ | Motif id |
-| name | string | ✅ | Motif label |
-| description | string | ❌ | Description |
-| motif_type | string (enum) | ❌ | PATTERN/IMAGE/SYMBOL |
-| status | string (enum) | ❌ | FLOATING/GROUNDED |
-
-### Enums
-- `motif_type`: PATTERN, IMAGE, SYMBOL
-- `status`: FLOATING, GROUNDED
-
-### Constraints
-- `name` length 1–80.
-
-### Example
-```json
-{
-  "type": "Motif",
-  "id": "motif_01J0M001",
-  "name": "Heartbeat alarms",
-  "description": "Recurring medical beeps that punctuate tension.",
-  "motif_type": "PATTERN",
-  "status": "FLOATING"
-}
-```
-
----
-
-## 1.12 CharacterArc
+## 1.10 CharacterArc
 
 ### Fields
 | Field | Type | Req? | Description |
@@ -554,49 +489,7 @@ New implementations should use PlotPoints with SATISFIED_BY edges instead.
 
 ---
 
-## 1.13 Conflict
-
-### Fields
-| Field | Type | Req? | Description |
-|---|---|:---:|---|
-| id | string | ✅ | Conflict id |
-| name | string | ✅ | Short display name |
-| conflict_type | string (enum) | ✅ | Conflict category |
-| description | string | ✅ | What the conflict is |
-| stakes | string | ❌ | Stakes |
-| intensity | integer (1..5) | ❌ | Intensity |
-| status | string (enum) | ❌ | FLOATING/ACTIVE/RESOLVED |
-| start_beat_id | string | ❌ | Beat id |
-| end_beat_id | string | ❌ | Beat id |
-| notes | string | ❌ | Notes |
-
-### Enums
-- `conflict_type`: interpersonal, internal, societal, ideological, systemic, nature, technological
-- `status`: FLOATING, ACTIVE, RESOLVED
-
-### Constraints
-- `description` length 20–2000.
-- `intensity` 1–5.
-- `start_beat_id`/`end_beat_id` must reference Beats if present.
-
-### Example
-```json
-{
-  "type": "Conflict",
-  "id": "conf_01J0C001",
-  "name": "Save the president during a coup",
-  "conflict_type": "societal",
-  "description": "A coup unfolds aboard Air Force One; the surgeon must keep the president alive while traitors seize control.",
-  "stakes": "If he fails, the president dies and the country destabilizes.",
-  "intensity": 5,
-  "status": "ACTIVE",
-  "start_beat_id": "beat_CATALYST"
-}
-```
-
----
-
-## 1.14 PlotPoint
+## 1.11 PlotPoint
 
 PlotPoints are intermediate narrative units that bridge Beats and Scenes. They represent specific story points or events that must be satisfied by one or more Scenes.
 
@@ -720,53 +613,13 @@ New implementations should use PlotPoints with ALIGNS_WITH and SATISFIED_BY edge
 
 ---
 
-## 2.8 INVOLVES
-| Property | Value |
-|---|---|
-| Source → Target | Conflict → Character |
-| Cardinality | many-to-many |
-| Required | ❌ Optional in OUTLINE, ✅ Required in DRAFT |
-| Meaning | Character is a party to the conflict |
-
----
-
-## 2.9 MANIFESTS_IN
-| Property | Value |
-|---|---|
-| Source → Target | Conflict → Scene |
-| Cardinality | many-to-many |
-| Required | ❌ Optional in OUTLINE, ✅ Expected in DRAFT |
-| Meaning | Scene shows the conflict in action |
-
----
-
-## 2.10 HAS_ARC
+## 2.8 HAS_ARC
 | Property | Value |
 |---|---|
 | Source → Target | Character → CharacterArc |
 | Cardinality | one-to-many |
 | Required | ❌ Optional (rule-based after threshold) |
 | Meaning | This arc belongs to the character |
-
----
-
-## 2.11 EXPRESSED_IN
-| Property | Value |
-|---|---|
-| Source → Target | Theme → Scene OR Theme → Beat |
-| Cardinality | many-to-many |
-| Required | ❌ Optional (Themes may float) |
-| Meaning | Theme is evidenced by a beat or scene |
-
----
-
-## 2.12 APPEARS_IN
-| Property | Value |
-|---|---|
-| Source → Target | Motif → Scene |
-| Cardinality | many-to-many |
-| Required | ❌ Optional (Motifs may float) |
-| Meaning | Motif appears in the Scene |
 
 ---
 
@@ -802,15 +655,6 @@ New implementations should use PlotPoints with ALIGNS_WITH and SATISFIED_BY edge
   - Zero scenes (early outline)
   - One scene (typical MVP)
   - Multiple scenes (allowed)
-
-## 3.4 Floating Nodes (Theme / Motif)
-- Themes and Motifs may exist without grounding edges.
-- Grounding status is determined by edge presence (not a status field):
-  - Theme is "grounded" if it has EXPRESSED_IN → Scene/Beat edges
-  - Motif is "grounded" if it has APPEARS_IN → Scene edges
-- Validation does **not** fail due to ungrounded Theme/Motif.
-
----
 
 # 4) Validation Rules (Pre-Commit)
 
@@ -855,27 +699,13 @@ Validation runs on a staged graph after applying a Patch. A Patch may be committ
 - Required: id, name
 - `introduced_in_scene_id` references Scene if present
 
-### Theme
-- Required: id, statement
-- `statement` length 5–240
-
-### Motif
-- Required: id, name
-
 ### CharacterArc
 - Required: id, character_id
 - `character_id` references Character
 - For each turn_ref: at least one of beat_id/scene_id; referenced nodes must exist
 
-### Conflict
-- Required: id, name, conflict_type, description
-- `conflict_type` valid enum
-- `intensity` (if present) 1..5
-- `start_beat_id`/`end_beat_id` reference Beats if present
-
 ## 4.3 Business Rules (MVP)
 - If a Scene has HAS_CHARACTER edges, each Character must exist.
-- If a Conflict has MANIFESTS_IN edges, each Scene must exist.
 - If a Character has HAS_ARC edge, the referenced CharacterArc.character_id must match.
 
 ## 4.4 Validation Error Response Schema
@@ -946,10 +776,10 @@ When validation fails, return:
 {
   "op": "ADD_NODE",
   "node": {
-    "type": "Theme",
-    "id": "theme_01J0TH001",
-    "statement": "Redemption through duty under pressure.",
-    "status": "FLOATING"
+    "type": "PlotPoint",
+    "id": "pp_01J0PP001",
+    "title": "Hero discovers the truth",
+    "status": "proposed"
   }
 }
 ```
@@ -1066,9 +896,9 @@ OpenQuestions are derived deterministically from the current StoryVersion graph 
 
 Each type includes:
 - **Trigger:** Condition that generates the question
-- **Severity:** BLOCKING / IMPORTANT / SOFT
-- **Phase:** When typically surfaced
 - **Group key:** Canonical grouping identifier
+
+**Note:** Severity and Phase are no longer enforced in code. OpenQuestions serve as guidance for AI generation opportunities, not as blocking gates.
 
 ---
 
@@ -1150,49 +980,7 @@ Each type includes:
 | Property | Value |
 |---|---|
 | Trigger | CharacterArc exists with 0 turn_refs |
-| Severity | SOFT |
-| Phase | REVISION |
 | Group key | `CHARACTER:ARC:<character_id>` |
-
----
-
-## 6.4 CONFLICT Domain
-
-### ConflictNeedsParties
-| Property | Value |
-|---|---|
-| Trigger | Conflict exists with 0 INVOLVES edges |
-| Severity | IMPORTANT |
-| Phase | DRAFT |
-| Group key | `CONFLICT:SETUP:<conflict_id>` |
-
-### ConflictNeedsManifestation
-| Property | Value |
-|---|---|
-| Trigger | Conflict exists with 0 MANIFESTS_IN edges |
-| Severity | IMPORTANT |
-| Phase | DRAFT |
-| Group key | `CONFLICT:SHOW:<conflict_id>` |
-
----
-
-## 6.5 THEME_MOTIF Domain
-
-### ThemeUngrounded
-| Property | Value |
-|---|---|
-| Trigger | Theme has 0 EXPRESSED_IN edges |
-| Severity | SOFT |
-| Phase | REVISION |
-| Group key | `THEME:GROUND:<theme_id>` |
-
-### MotifUngrounded
-| Property | Value |
-|---|---|
-| Trigger | Motif has 0 APPEARS_IN edges |
-| Severity | SOFT |
-| Phase | REVISION |
-| Group key | `MOTIF:GROUND:<motif_id>` |
 
 ---
 

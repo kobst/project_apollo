@@ -148,9 +148,8 @@ export function StoryContextEditor({ compact = false }: StoryContextEditorProps)
       {error && <div className={styles.error}>{error}</div>}
 
       <div className={styles.description}>
-        Use this space for creative guidance, world-building notes, tone references,
-        character backstory, or anything that helps shape your story.
-        Changes are auto-saved.
+        Creative guidance that can't be captured in formal nodes: vision, themes,
+        working notes, references, and constraints. Changes are auto-saved.
       </div>
 
       <div className={styles.editorWrapper}>
@@ -161,20 +160,24 @@ export function StoryContextEditor({ compact = false }: StoryContextEditorProps)
           onBlur={handleBlur}
           placeholder={`# Story Context
 
-## World & Setting
-Describe the world, time period, and atmosphere...
+## Creative Direction
+Overall vision, mood, what makes this story unique.
+(For specific genre/tone, use the GenreTone node)
 
-## Tone & Style
-What's the emotional register? Visual style references?
+## Themes & Motifs
+Thematic concerns, recurring symbols, what the story explores.
+This is the designated home for themes since they are prose, not formal nodes.
 
-## Key Themes
-What are the central themes and motifs?
+## Working Notes
+Fragments, unresolved ideas, things still being figured out.
+Examples: "Maybe the partner is also dirty?" / "Need a twist in Act 3"
 
-## Character Notes
-Backstory, motivations, relationships...
+## Reference & Inspiration
+External sources, mood boards, "like X meets Y", visual references.
 
-## Reference Material
-Links, inspirations, mood boards...`}
+## Constraints & Rules
+Story-specific rules that guide generation.
+Examples: "No flashbacks" / "Single POV only" / "Magic always has a cost"`}
           disabled={saving}
         />
       </div>

@@ -25,7 +25,6 @@ This document catalogs the node types used to represent narrative structure, cau
 **Notes:**
 - Top of the pyramid - everything else serves the premise
 - Typically only one Premise node per story
-- Can optionally connect to Conflicts via DEFINES edge
 
 **Examples:** Logline, core setup
 
@@ -61,14 +60,6 @@ This document catalogs the node types used to represent narrative structure, cau
 - Typically only one GenreTone node per story
 
 **Examples:** "noir / cynical", "comedy / light", "thriller / tense"
-
-### Theme
-
-**Purpose:** Represents an inferred or explicit thematic concern
-
-**Abstraction:** Level 0–1 (Derived)
-
-**Requirement:** Must be grounded in ≥1 Scene via evidence links
 
 ## 2. Structural Planning Nodes (Macro / Meso)
 
@@ -196,27 +187,15 @@ This document catalogs the node types used to represent narrative structure, cau
 - Scenes are LOCATED_AT a Location
 - Supports hierarchical locations via parent_location_id
 
-### Prop
+### Object
 
-**Purpose:** Significant object with narrative relevance
+**Purpose:** Significant item or prop with narrative relevance
 
 **Abstraction:** Level 3–4
 
-### Motif
-
-**Purpose:** Repeating narrative or visual element
-
-**Abstraction:** Level 0–1 (Derived)
-
-**Requirement:** Must recur across scenes
-
-### Symbol
-
-**Purpose:** Represents abstract meaning embodied by an element
-
-**Abstraction:** Level 0–1 (Derived)
-
-**Requirement:** Must be grounded in evidence
+**Notes:**
+- Connected to Scenes via FEATURES_OBJECT edge
+- Can track where items are introduced and reappear
 
 ## 7. Workflow & Reasoning Nodes (Meta)
 
@@ -227,9 +206,9 @@ This document catalogs the node types used to represent narrative structure, cau
 **Derived From:** Schema–graph mismatches
 
 **Examples:**
-- MissingGoal
-- MissingStateChange
-- UnanchoredTheme
+- BeatUnrealized
+- SceneUnplaced
+- MissingCharacterArc
 
 **Notes:** Mechanically generated, not invented
 

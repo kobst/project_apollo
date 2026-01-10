@@ -37,7 +37,6 @@ export interface ScopeBudget {
   max_ops_per_move: number;
   max_new_nodes_per_move: number;
   allowed_node_types: string[];
-  allowed_depth: 'OUTLINE' | 'DRAFT' | 'REVISION';
 }
 
 export type ClusterType =
@@ -422,6 +421,32 @@ export interface GenreTone extends BaseNode {
 }
 
 // =============================================================================
+// 18. Idea
+// =============================================================================
+
+/**
+ * Idea - Story ideas that are more formalized than Story Context prose
+ * but not yet ready to be PlotPoints or Scenes.
+ * Serves as an intermediate stage in the idea lifecycle.
+ */
+export type IdeaSource = 'user' | 'ai';
+export type IdeaSuggestedType = 'PlotPoint' | 'Scene' | 'Character' | 'Location' | 'Object';
+
+export interface Idea extends BaseNode {
+  type: 'Idea';
+  /** Short label, e.g., "Max's betrayal reveal" */
+  title: string;
+  /** 1-3 sentences explaining the idea */
+  description: string;
+  /** Who created it */
+  source: IdeaSource;
+  /** What it might become when promoted */
+  suggestedType?: IdeaSuggestedType;
+  /** ISO timestamp of creation */
+  createdAt: string;
+}
+
+// =============================================================================
 // Union Types
 // =============================================================================
 
@@ -442,7 +467,8 @@ export type ContentNode =
   | PlotPoint
   | Logline
   | Setting
-  | GenreTone;
+  | GenreTone
+  | Idea;
 
 /**
  * All valid node type strings
@@ -461,7 +487,8 @@ export type NodeType =
   | 'PlotPoint'
   | 'Logline'
   | 'Setting'
-  | 'GenreTone';
+  | 'GenreTone'
+  | 'Idea';
 
 /**
  * List of all node types for validation
@@ -481,4 +508,5 @@ export const NODE_TYPES: NodeType[] = [
   'Logline',
   'Setting',
   'GenreTone',
+  'Idea',
 ];

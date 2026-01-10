@@ -9,11 +9,9 @@
 export type {
   GapType,
   GapTier,
-  GapSeverity,
   GapSource,
   GapStatus,
   GapDomain,
-  GapPhase,
   Gap,
   TierSummary,
   CoverageResponse,
@@ -28,7 +26,6 @@ export {
   NARRATIVE_GAP_CONFIG,
   NARRATIVE_GAP_TYPES,
   GAP_DOMAINS,
-  GAP_PHASES,
 } from './types.js';
 
 // Adapter
@@ -41,10 +38,6 @@ export { computeCoverage } from './compute.js';
 export {
   deriveNarrativeGaps,
   filterGapsByDomain,
-  filterGapsBySeverity,
-  filterGapsByPhase,
   filterGapsByType,
   groupGapsByKey,
-  getBlockingGaps,
-  hasBlockingGaps,
 } from './deriveNarrativeGaps.js';
