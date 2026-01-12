@@ -6,6 +6,7 @@
 import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import type { MoveCluster, NarrativeMove, Patch } from '@apollo/core';
+import type { ai } from '@apollo/core';
 import type { StorageContext } from './config.js';
 
 // =============================================================================
@@ -263,4 +264,248 @@ export async function removeExtractionProposalById(
     (p) => p.id !== proposalId
   );
   await saveSessionById(storyId, session, ctx);
+}
+
+// =============================================================================
+// Generation Session Types
+// =============================================================================
+
+export type GenerationEntryPointType = 'beat' | 'plotPoint' | 'character' | 'gap' | 'idea' | 'naked';
+
+export interface GenerationEntryPoint {
+  type: GenerationEntryPointType;
+  targetId?: string;
+  targetData?: Record<string, unknown>;
+}
+
+export interface GenerationSessionParams {
+  depth: ai.GenerationDepth;
+  count: ai.GenerationCount;
+  direction?: string;
+}
+
+export interface GenerationSession {
+  id: string;
+  storyId: string;
+  createdAt: string;
+  updatedAt: string;
+
+  // Entry point context
+  entryPoint: GenerationEntryPoint;
+  initialParams: GenerationSessionParams;
+
+  // Package tree
+  packages: ai.NarrativePackage[];
+
+  // Navigation state
+  currentPackageId?: string;
+
+  // Status
+  status: 'active' | 'accepted' | 'abandoned';
+  acceptedPackageId?: string;
+}
+
+// =============================================================================
+// Generation Session Operations
+// =============================================================================
+
+const GENERATION_SESSION_FILE = 'generation-session.json';
+
+function getGenerationSessionPath(storyId: string, ctx: StorageContext): string {
+  return join(ctx.dataDir, 'stories', storyId, GENERATION_SESSION_FILE);
+}
+
+/**
+ * Create a new generation session.
+ */
+export async function createGenerationSession(
+  storyId: string,
+  entryPoint: GenerationEntryPoint,
+  params: GenerationSessionParams,
+  ctx: StorageContext
+): Promise<GenerationSession> {
+  const now = new Date().toISOString();
+  const sessionId = `gs_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+  const session: GenerationSession = {
+    id: sessionId,
+    storyId,
+    createdAt: now,
+    updatedAt: now,
+    entryPoint,
+    initialParams: params,
+    packages: [],
+    status: 'active',
+  };
+
+  await saveGenerationSession(storyId, session, ctx);
+  return session;
+}
+
+/**
+ * Load generation session for a story.
+ */
+export async function loadGenerationSession(
+  storyId: string,
+  ctx: StorageContext
+): Promise<GenerationSession | null> {
+  try {
+    const content = await readFile(getGenerationSessionPath(storyId, ctx), 'utf-8');
+    return JSON.parse(content) as GenerationSession;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Save generation session.
+ */
+export async function saveGenerationSession(
+  storyId: string,
+  session: GenerationSession,
+  ctx: StorageContext
+): Promise<void> {
+  const storyDir = join(ctx.dataDir, 'stories', storyId);
+  await mkdir(storyDir, { recursive: true });
+  await writeFile(
+    getGenerationSessionPath(storyId, ctx),
+    JSON.stringify(session, null, 2),
+    'utf-8'
+  );
+}
+
+/**
+ * Add packages to a generation session.
+ */
+export async function addPackagesToSession(
+  storyId: string,
+  packages: ai.NarrativePackage[],
+  ctx: StorageContext
+): Promise<GenerationSession> {
+  const session = await loadGenerationSession(storyId, ctx);
+  if (!session) {
+    throw new Error(`No active generation session for story ${storyId}`);
+  }
+
+  session.packages.push(...packages);
+  session.updatedAt = new Date().toISOString();
+
+  // Set current to first package if not set
+  if (!session.currentPackageId && packages.length > 0 && packages[0]) {
+    session.currentPackageId = packages[0].id;
+  }
+
+  await saveGenerationSession(storyId, session, ctx);
+  return session;
+}
+
+/**
+ * Set the current package being viewed.
+ */
+export async function setCurrentPackage(
+  storyId: string,
+  packageId: string,
+  ctx: StorageContext
+): Promise<void> {
+  const session = await loadGenerationSession(storyId, ctx);
+  if (!session) {
+    throw new Error(`No active generation session for story ${storyId}`);
+  }
+
+  const pkg = session.packages.find((p) => p.id === packageId);
+  if (!pkg) {
+    throw new Error(`Package ${packageId} not found in session`);
+  }
+
+  session.currentPackageId = packageId;
+  session.updatedAt = new Date().toISOString();
+  await saveGenerationSession(storyId, session, ctx);
+}
+
+/**
+ * Find a package by ID in the session.
+ */
+export async function findPackageInSession(
+  storyId: string,
+  packageId: string,
+  ctx: StorageContext
+): Promise<ai.NarrativePackage | null> {
+  const session = await loadGenerationSession(storyId, ctx);
+  if (!session) {
+    return null;
+  }
+
+  return session.packages.find((p) => p.id === packageId) ?? null;
+}
+
+/**
+ * Mark session as accepted with the chosen package.
+ */
+export async function markSessionAccepted(
+  storyId: string,
+  packageId: string,
+  ctx: StorageContext
+): Promise<void> {
+  const session = await loadGenerationSession(storyId, ctx);
+  if (!session) {
+    throw new Error(`No active generation session for story ${storyId}`);
+  }
+
+  session.status = 'accepted';
+  session.acceptedPackageId = packageId;
+  session.updatedAt = new Date().toISOString();
+  await saveGenerationSession(storyId, session, ctx);
+}
+
+/**
+ * Mark session as abandoned.
+ */
+export async function markSessionAbandoned(
+  storyId: string,
+  ctx: StorageContext
+): Promise<void> {
+  const session = await loadGenerationSession(storyId, ctx);
+  if (!session) {
+    return; // Nothing to abandon
+  }
+
+  session.status = 'abandoned';
+  session.updatedAt = new Date().toISOString();
+  await saveGenerationSession(storyId, session, ctx);
+}
+
+/**
+ * Delete generation session file.
+ */
+export async function deleteGenerationSession(
+  storyId: string,
+  ctx: StorageContext
+): Promise<void> {
+  try {
+    await unlink(getGenerationSessionPath(storyId, ctx));
+  } catch {
+    // Ignore if file doesn't exist
+  }
+}
+
+/**
+ * Get package tree structure (parent-child relationships).
+ */
+export function getPackageTree(session: GenerationSession): Map<string, string[]> {
+  const tree = new Map<string, string[]>();
+
+  // Initialize with root packages (no parent)
+  for (const pkg of session.packages) {
+    if (!pkg.parent_package_id) {
+      const existing = tree.get('root') ?? [];
+      existing.push(pkg.id);
+      tree.set('root', existing);
+    } else {
+      const existing = tree.get(pkg.parent_package_id) ?? [];
+      existing.push(pkg.id);
+      tree.set(pkg.parent_package_id, existing);
+    }
+  }
+
+  return tree;
 }

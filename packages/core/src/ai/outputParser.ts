@@ -1,0 +1,484 @@
+/**
+ * Output parsing for AI responses.
+ *
+ * Handles:
+ * - JSON extraction from markdown code blocks
+ * - Schema validation
+ * - Normalization of package data
+ * - ID validation and regeneration
+ */
+
+import type {
+  InterpretationResult,
+  GenerationResult,
+  NarrativePackage,
+  NodeChange,
+  EdgeChange,
+  StoryContextChange,
+  ConflictInfo,
+  ValidationResult,
+  ValidationError,
+} from './types.js';
+import { isValidNodeId, defaultIdGenerator, type IdGenerator } from './idGenerator.js';
+
+// =============================================================================
+// Error Class
+// =============================================================================
+
+/**
+ * Error thrown when parsing fails.
+ */
+export class ParseError extends Error {
+  constructor(
+    message: string,
+    public rawData: unknown
+  ) {
+    super(message);
+    this.name = 'ParseError';
+  }
+}
+
+// =============================================================================
+// Main Parsers
+// =============================================================================
+
+/**
+ * Parse interpretation response from LLM.
+ *
+ * @param raw - Raw LLM response string
+ * @returns Parsed interpretation result
+ * @throws ParseError if parsing fails
+ */
+export function parseInterpretationResponse(raw: string): InterpretationResult {
+  const json = extractJson(raw);
+  const parsed = JSON.parse(json);
+
+  validateInterpretationSchema(parsed);
+
+  return parsed as InterpretationResult;
+}
+
+/**
+ * Parse generation response from LLM.
+ *
+ * @param raw - Raw LLM response string
+ * @returns Parsed generation result with normalized packages
+ * @throws ParseError if parsing fails
+ */
+export function parseGenerationResponse(raw: string): GenerationResult {
+  const json = extractJson(raw);
+  const parsed = JSON.parse(json);
+
+  validateGenerationSchema(parsed);
+
+  // Normalize packages
+  const packages = (parsed.packages ?? []).map(normalizePackage);
+
+  return { packages };
+}
+
+// =============================================================================
+// JSON Extraction
+// =============================================================================
+
+/**
+ * Extract JSON from markdown code blocks or raw text.
+ *
+ * Handles:
+ * - ```json ... ``` blocks
+ * - ``` ... ``` blocks
+ * - Raw JSON objects
+ *
+ * @param raw - Raw string that may contain JSON
+ * @returns Cleaned JSON string
+ * @throws ParseError if no JSON found
+ */
+function extractJson(raw: string): string {
+  // Try to extract from markdown code block
+  const codeBlockMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch && codeBlockMatch[1]) {
+    return cleanJson(codeBlockMatch[1]);
+  }
+
+  // Try to find JSON object directly
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    return cleanJson(jsonMatch[0]);
+  }
+
+  throw new ParseError('No JSON found in response', raw);
+}
+
+/**
+ * Clean common JSON formatting issues.
+ *
+ * Handles:
+ * - Trailing commas
+ * - Single quotes (basic replacement)
+ *
+ * @param json - Raw JSON string
+ * @returns Cleaned JSON string
+ */
+function cleanJson(json: string): string {
+  let cleaned = json.trim();
+
+  // Remove trailing commas before } or ]
+  cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
+
+  return cleaned;
+}
+
+// =============================================================================
+// Schema Validation
+// =============================================================================
+
+/**
+ * Validate interpretation response schema.
+ */
+function validateInterpretationSchema(data: unknown): void {
+  if (typeof data !== 'object' || data === null) {
+    throw new ParseError('Response must be an object', data);
+  }
+
+  const obj = data as Record<string, unknown>;
+
+  if (!obj.interpretation || typeof obj.interpretation !== 'object') {
+    throw new ParseError('Missing or invalid interpretation field', data);
+  }
+
+  if (!Array.isArray(obj.proposals)) {
+    throw new ParseError('Missing or invalid proposals array', data);
+  }
+}
+
+/**
+ * Validate generation response schema.
+ */
+function validateGenerationSchema(data: unknown): void {
+  if (typeof data !== 'object' || data === null) {
+    throw new ParseError('Response must be an object', data);
+  }
+
+  const obj = data as Record<string, unknown>;
+
+  if (!Array.isArray(obj.packages)) {
+    throw new ParseError('Missing or invalid packages array', data);
+  }
+
+  for (let i = 0; i < obj.packages.length; i++) {
+    validatePackageSchema(obj.packages[i], i);
+  }
+}
+
+/**
+ * Validate a single package schema.
+ */
+function validatePackageSchema(pkg: unknown, index: number): void {
+  if (typeof pkg !== 'object' || pkg === null) {
+    throw new ParseError(`Package ${index} must be an object`, pkg);
+  }
+
+  const p = pkg as Record<string, unknown>;
+
+  // Required fields
+  if (typeof p.id !== 'string') {
+    throw new ParseError(`Package ${index} missing id`, pkg);
+  }
+  if (typeof p.title !== 'string') {
+    throw new ParseError(`Package ${index} missing title`, pkg);
+  }
+  if (typeof p.rationale !== 'string') {
+    throw new ParseError(`Package ${index} missing rationale`, pkg);
+  }
+
+  // Changes structure
+  if (!p.changes || typeof p.changes !== 'object') {
+    throw new ParseError(`Package ${index} missing changes`, pkg);
+  }
+}
+
+// =============================================================================
+// Normalization
+// =============================================================================
+
+/**
+ * Normalize a package from raw LLM output.
+ */
+function normalizePackage(pkg: Record<string, unknown>): NarrativePackage {
+  const changes = pkg.changes as Record<string, unknown> | undefined;
+  const impact = pkg.impact as Record<string, unknown> | undefined;
+
+  const result: NarrativePackage = {
+    id: String(pkg.id),
+    title: String(pkg.title),
+    rationale: String(pkg.rationale),
+    confidence: normalizeConfidence(pkg.confidence),
+    style_tags: normalizeStringArray(pkg.style_tags),
+    changes: normalizeChanges(changes),
+    impact: normalizeImpact(impact),
+  };
+
+  // Only set optional properties if they have values
+  if (typeof pkg.parent_package_id === 'string') {
+    result.parent_package_id = pkg.parent_package_id;
+  }
+  if (typeof pkg.refinement_prompt === 'string') {
+    result.refinement_prompt = pkg.refinement_prompt;
+  }
+
+  return result;
+}
+
+/**
+ * Normalize confidence to 0-1 range.
+ */
+function normalizeConfidence(value: unknown): number {
+  if (typeof value === 'number') {
+    return Math.max(0, Math.min(1, value));
+  }
+  return 0.5; // default
+}
+
+/**
+ * Normalize an array of strings.
+ */
+function normalizeStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((v) => typeof v === 'string');
+  }
+  return [];
+}
+
+/**
+ * Normalize changes object.
+ */
+function normalizeChanges(changes: Record<string, unknown> | undefined): {
+  storyContext?: StoryContextChange[];
+  nodes: NodeChange[];
+  edges: EdgeChange[];
+} {
+  if (!changes) {
+    return { nodes: [], edges: [] };
+  }
+
+  const result: {
+    storyContext?: StoryContextChange[];
+    nodes: NodeChange[];
+    edges: EdgeChange[];
+  } = {
+    nodes: Array.isArray(changes.nodes)
+      ? (changes.nodes as NodeChange[])
+      : [],
+    edges: Array.isArray(changes.edges)
+      ? (changes.edges as EdgeChange[])
+      : [],
+  };
+
+  // Only set storyContext if it exists and is an array
+  if (Array.isArray(changes.storyContext)) {
+    result.storyContext = changes.storyContext as StoryContextChange[];
+  }
+
+  return result;
+}
+
+/**
+ * Normalize impact object.
+ */
+function normalizeImpact(impact: Record<string, unknown> | undefined): {
+  fulfills_gaps: string[];
+  creates_gaps: string[];
+  conflicts: ConflictInfo[];
+} {
+  if (!impact) {
+    return { fulfills_gaps: [], creates_gaps: [], conflicts: [] };
+  }
+
+  return {
+    fulfills_gaps: normalizeStringArray(impact.fulfills_gaps),
+    creates_gaps: normalizeStringArray(impact.creates_gaps),
+    conflicts: Array.isArray(impact.conflicts)
+      ? (impact.conflicts as ConflictInfo[])
+      : [],
+  };
+}
+
+// =============================================================================
+// ID Validation
+// =============================================================================
+
+/**
+ * Validate that generated node IDs don't conflict with existing IDs.
+ *
+ * Checks for:
+ * - Duplicates with existing graph IDs
+ * - Duplicates within package
+ * - Invalid ID formats
+ *
+ * @param result - Generation result to validate
+ * @param existingIds - Set of existing node IDs
+ * @returns Validation result
+ */
+export function validateGeneratedIds(
+  result: GenerationResult,
+  existingIds: Set<string>
+): ValidationResult {
+  const errors: ValidationError[] = [];
+  const seenIds = new Set<string>();
+
+  for (const pkg of result.packages) {
+    for (const change of pkg.changes.nodes) {
+      if (change.operation === 'add') {
+        // Check for duplicate with existing
+        if (existingIds.has(change.node_id)) {
+          errors.push({
+            code: 'DUPLICATE_ID',
+            message: `Node ID ${change.node_id} already exists in graph`,
+            nodeId: change.node_id,
+          });
+        }
+
+        // Check for duplicate within packages
+        if (seenIds.has(change.node_id)) {
+          errors.push({
+            code: 'DUPLICATE_ID_IN_PACKAGE',
+            message: `Node ID ${change.node_id} used multiple times in packages`,
+            nodeId: change.node_id,
+          });
+        }
+
+        seenIds.add(change.node_id);
+
+        // Validate ID format
+        if (!isValidNodeId(change.node_id)) {
+          errors.push({
+            code: 'INVALID_ID_FORMAT',
+            message: `Node ID ${change.node_id} has invalid format`,
+            nodeId: change.node_id,
+          });
+        }
+      }
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings: [],
+  };
+}
+
+/**
+ * Validate that edge references point to valid nodes.
+ *
+ * Checks that from/to IDs exist in either:
+ * - Existing graph nodes
+ * - New nodes being added in the same package
+ *
+ * @param result - Generation result to validate
+ * @param existingNodeIds - Set of existing node IDs
+ * @returns Validation result
+ */
+export function validateEdgeReferences(
+  result: GenerationResult,
+  existingNodeIds: Set<string>
+): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  for (const pkg of result.packages) {
+    // Collect all new node IDs from this package
+    const newNodeIds = new Set<string>();
+    for (const change of pkg.changes.nodes) {
+      if (change.operation === 'add') {
+        newNodeIds.add(change.node_id);
+      }
+    }
+
+    // Validate edges
+    for (const edge of pkg.changes.edges) {
+      if (edge.operation === 'add') {
+        const fromExists =
+          existingNodeIds.has(edge.from) || newNodeIds.has(edge.from);
+        const toExists =
+          existingNodeIds.has(edge.to) || newNodeIds.has(edge.to);
+
+        if (!fromExists) {
+          errors.push({
+            code: 'INVALID_EDGE_FROM',
+            message: `Edge references non-existent node: ${edge.from}`,
+            nodeId: edge.from,
+          });
+        }
+
+        if (!toExists) {
+          errors.push({
+            code: 'INVALID_EDGE_TO',
+            message: `Edge references non-existent node: ${edge.to}`,
+            nodeId: edge.to,
+          });
+        }
+      }
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings: [],
+  };
+}
+
+// =============================================================================
+// ID Regeneration
+// =============================================================================
+
+/**
+ * Regenerate IDs that are duplicates or have invalid formats.
+ *
+ * Also updates edge references to point to the new IDs.
+ *
+ * @param result - Generation result with potentially invalid IDs
+ * @param existingIds - Set of existing node IDs
+ * @param idGenerator - ID generator function (default: production generator)
+ * @returns New generation result with valid IDs
+ */
+export function regenerateInvalidIds(
+  result: GenerationResult,
+  existingIds: Set<string>,
+  idGenerator: IdGenerator = defaultIdGenerator
+): GenerationResult {
+  const idMapping = new Map<string, string>();
+
+  const newPackages = result.packages.map((pkg) => {
+    // Regenerate node IDs
+    const newNodes = pkg.changes.nodes.map((change) => {
+      if (change.operation === 'add') {
+        const needsNewId =
+          existingIds.has(change.node_id) ||
+          idMapping.has(change.node_id) ||
+          !isValidNodeId(change.node_id);
+
+        if (needsNewId) {
+          const newId = idGenerator(change.node_type);
+          idMapping.set(change.node_id, newId);
+          return { ...change, node_id: newId };
+        }
+      }
+      return change;
+    });
+
+    // Update edge references
+    const newEdges = pkg.changes.edges.map((edge) => {
+      const newFrom = idMapping.get(edge.from) ?? edge.from;
+      const newTo = idMapping.get(edge.to) ?? edge.to;
+      return { ...edge, from: newFrom, to: newTo };
+    });
+
+    return {
+      ...pkg,
+      changes: { ...pkg.changes, nodes: newNodes, edges: newEdges },
+    };
+  });
+
+  return { packages: newPackages };
+}

@@ -80,6 +80,7 @@
 .editor {
   flex: 1;
   width: 100%;
+  min-height: 300px;
   padding: 1rem;
   background: var(--bg-secondary, #1e1e1e);
   border: 1px solid var(--border-color);
@@ -90,6 +91,7 @@
   line-height: 1.6;
   resize: none;
   outline: none;
+  cursor: text;
 }
 
 .editor:focus {

@@ -1,0 +1,174 @@
+/**
+ * Generation prompt builder.
+ *
+ * Generates N complete narrative packages from an entry point.
+ */
+
+import type { GenerationParams, GenerationEntryPoint } from '../types.js';
+import { getDepthBudget } from '../config.js';
+
+/**
+ * Build the generation prompt for the LLM.
+ *
+ * The generation phase:
+ * 1. Analyzes the entry point and context
+ * 2. Consults story state and gaps
+ * 3. Generates N distinct, complete packages
+ * 4. Each package is self-contained and ready to apply
+ *
+ * @param params - Generation parameters
+ * @returns Complete prompt string
+ */
+export function buildGenerationPrompt(params: GenerationParams): string {
+  const { entryPoint, storyContext, gaps, direction, depth, count } = params;
+  const budget = getDepthBudget(depth);
+
+  const entryDescription = describeEntryPoint(entryPoint);
+
+  return `You are an AI assistant helping to develop a screenplay. Your task is to generate ${count} complete narrative packages based on the given entry point.
+
+## Your Role
+
+1. Understand the entry point and generation context
+2. Consult the story state for thematic alignment
+3. Review gaps for opportunities to fulfill
+4. Generate ${count} distinct, complete packages
+5. Each package must be self-contained and ready to apply
+
+## Entry Point
+
+${entryDescription}
+
+## Current Story State
+
+${storyContext}
+
+## Open Gaps (Opportunities)
+
+${gaps}
+
+${direction ? `## User Direction\n\n"${direction}"\n` : ''}
+
+## Generation Budget
+
+- **Depth**: ${depth}
+- Maximum new nodes per package: ${budget.maxNodes}
+- Maximum total operations per package: ${budget.maxOps}
+
+## Available Node Types
+
+- **Character**: name, description, archetype, traits[]
+- **Location**: name, description, parent_location_id
+- **Object**: name, description
+- **PlotPoint**: title, summary, intent (plot|character|tone), priority, stakes_change
+- **Scene**: heading, scene_overview, order_index, mood, key_actions[]
+
+## Available Edge Types
+
+- HAS_CHARACTER: Scene → Character
+- LOCATED_AT: Scene → Location
+- FEATURES_OBJECT: Scene → Object
+- ALIGNS_WITH: PlotPoint → Beat
+- SATISFIED_BY: PlotPoint → Scene
+- PRECEDES: PlotPoint → PlotPoint (causal ordering)
+- ADVANCES: PlotPoint → CharacterArc
+- PART_OF: Location → Setting
+
+## Output Format
+
+Respond with a JSON object matching this schema:
+
+\`\`\`json
+{
+  "packages": [
+    {
+      "id": "pkg_12345_abc",
+      "title": "Short descriptive title",
+      "rationale": "Why this package makes sense for the story",
+      "confidence": 0.85,
+      "style_tags": ["betrayal", "dramatic"],
+      "changes": {
+        "storyContext": [
+          {
+            "operation": "add",
+            "section": "Thematic Concerns",
+            "content": "New thematic element"
+          }
+        ],
+        "nodes": [
+          {
+            "operation": "add",
+            "node_type": "Character",
+            "node_id": "character_12345_xyz",
+            "data": { "name": "...", "description": "..." }
+          }
+        ],
+        "edges": [
+          {
+            "operation": "add",
+            "edge_type": "HAS_CHARACTER",
+            "from": "scene_123",
+            "to": "character_12345_xyz"
+          }
+        ]
+      },
+      "impact": {
+        "fulfills_gaps": ["gap_id_1"],
+        "creates_gaps": ["New gap description"],
+        "conflicts": [
+          {
+            "type": "interferes",
+            "existing_node_id": "character_456",
+            "description": "May overshadow existing character",
+            "source": "llm",
+            "resolution_included": false
+          }
+        ]
+      }
+    }
+  ]
+}
+\`\`\`
+
+## Guidelines
+
+1. **Variety**: Each package should take a meaningfully different approach
+2. **Completeness**: Include all supporting elements (characters, locations) needed
+3. **Coherence**: All elements within a package should work together
+4. **Alignment**: Respect the story's themes, tone, and constraints
+5. **Gaps**: Try to fulfill open gaps when relevant
+6. **Conflicts**: Flag any conflicts with existing content
+7. **IDs**: Use format \`{type}_{timestamp}_{5chars}\` for new node IDs
+
+Respond with only the JSON object.`;
+}
+
+/**
+ * Generate a description for the entry point.
+ */
+function describeEntryPoint(entryPoint: GenerationEntryPoint): string {
+  const targetInfo = entryPoint.targetData
+    ? `\nDetails: ${JSON.stringify(entryPoint.targetData)}`
+    : '';
+
+  switch (entryPoint.type) {
+    case 'beat':
+      return `Generate content to realize structural beat: ${entryPoint.targetId}${targetInfo}`;
+
+    case 'plotPoint':
+      return `Generate scenes and supporting elements for PlotPoint: ${entryPoint.targetId}${targetInfo}`;
+
+    case 'character':
+      return `Generate story developments featuring Character: ${entryPoint.targetId}${targetInfo}`;
+
+    case 'gap':
+      return `Generate content to resolve gap: ${entryPoint.targetId}${targetInfo}`;
+
+    case 'idea':
+      return `Develop Idea into concrete story elements: ${entryPoint.targetId}${targetInfo}`;
+
+    case 'naked':
+    default:
+      return `Analyze the story and generate highest-value additions. No specific target - use your judgment to identify what would most benefit the story.`;
+  }
+}

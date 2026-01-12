@@ -10,6 +10,25 @@ import { useStory } from '../../context/StoryContext';
 import { api } from '../../api/client';
 import styles from './StoryContextEditor.module.css';
 
+// Default template for new/empty Story Context
+const DEFAULT_TEMPLATE = `# Story Context
+
+## Creative Direction
+Overall vision, mood, what makes this story unique.
+
+## Themes & Motifs
+Thematic concerns, recurring symbols, what the story explores.
+
+## Working Notes
+Fragments, unresolved ideas, things still being figured out.
+
+## Reference & Inspiration
+External sources, mood boards, "like X meets Y", visual references.
+
+## Constraints & Rules
+Story-specific rules that guide generation.
+`;
+
 interface StoryContextEditorProps {
   /** If true, renders in compact mode for drawer */
   compact?: boolean;
@@ -38,11 +57,13 @@ export function StoryContextEditor({ compact = false }: StoryContextEditorProps)
 
       try {
         const data = await api.getContext(currentStoryId);
-        const ctx = data.context ?? '';
+        // Use default template if content is empty/null
+        const ctx = data.context?.trim() ? data.context : DEFAULT_TEMPLATE;
         setContent(ctx);
-        lastSavedContentRef.current = ctx;
+        lastSavedContentRef.current = data.context ?? '';
         setLastSaved(data.modifiedAt);
-        setHasChanges(false);
+        // Mark as having changes if we're using the template (needs initial save)
+        setHasChanges(!data.context?.trim());
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load context');
       } finally {
@@ -158,26 +179,7 @@ export function StoryContextEditor({ compact = false }: StoryContextEditorProps)
           value={content}
           onChange={(e) => handleChange(e.target.value)}
           onBlur={handleBlur}
-          placeholder={`# Story Context
-
-## Creative Direction
-Overall vision, mood, what makes this story unique.
-(For specific genre/tone, use the GenreTone node)
-
-## Themes & Motifs
-Thematic concerns, recurring symbols, what the story explores.
-This is the designated home for themes since they are prose, not formal nodes.
-
-## Working Notes
-Fragments, unresolved ideas, things still being figured out.
-Examples: "Maybe the partner is also dirty?" / "Need a twist in Act 3"
-
-## Reference & Inspiration
-External sources, mood boards, "like X meets Y", visual references.
-
-## Constraints & Rules
-Story-specific rules that guide generation.
-Examples: "No flashbacks" / "Single POV only" / "Magic always has a cost"`}
+          placeholder="Start typing your story context..."
           disabled={saving}
         />
       </div>

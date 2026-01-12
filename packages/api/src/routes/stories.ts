@@ -59,6 +59,14 @@ import {
   getIdeaHandler,
   updateIdeaHandler,
   deleteIdeaHandler,
+  createInterpretHandler,
+  createGenerateHandler,
+  createRegenerateHandler,
+  createRefineHandler,
+  createGetSessionHandler,
+  createDeleteSessionHandler,
+  createConvertProposalHandler,
+  createAcceptPackageHandler,
 } from '../handlers/index.js';
 
 export function createStoriesRouter(ctx: StorageContext): Router {
@@ -150,6 +158,16 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.get('/:id/ideas/:ideaId', getIdeaHandler(ctx));
   router.patch('/:id/ideas/:ideaId', updateIdeaHandler(ctx));
   router.delete('/:id/ideas/:ideaId', deleteIdeaHandler(ctx));
+
+  // AI Generation endpoints
+  router.post('/:id/interpret', createInterpretHandler(ctx));
+  router.post('/:id/generate', createGenerateHandler(ctx));
+  router.post('/:id/regenerate', createRegenerateHandler(ctx));
+  router.post('/:id/refine', createRefineHandler(ctx));
+  router.get('/:id/session', createGetSessionHandler(ctx));
+  router.delete('/:id/session', createDeleteSessionHandler(ctx));
+  router.post('/:id/proposal-to-package', createConvertProposalHandler(ctx));
+  router.post('/:id/accept-package', createAcceptPackageHandler(ctx));
 
   return router;
 }

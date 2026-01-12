@@ -10,6 +10,7 @@ import {
   initializeStory,
   seedBeats,
   getGraphStats,
+  ai,
 } from '@apollo/core';
 import type { StorageContext } from '../config.js';
 import {
@@ -84,7 +85,7 @@ export function createInitHandler(ctx: StorageContext) {
 
       const initializedGraph = applyPatch(graph, initPatch);
 
-      // Save story
+      // Save story with default Story Context template
       await createStory(
         storyId,
         initializedGraph,
@@ -92,6 +93,7 @@ export function createInitHandler(ctx: StorageContext) {
         {
           name: name ?? storyId,
           ...(logline && { logline }),
+          storyContext: ai.DEFAULT_STORY_CONTEXT,
         },
         ctx
       );
