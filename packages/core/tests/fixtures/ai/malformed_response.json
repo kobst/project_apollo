@@ -1,0 +1,24 @@
+{
+  "description": "Collection of malformed response strings for testing parser robustness",
+  "cases": {
+    "with_markdown_block": "Here is the generation result:\n\n```json\n{\n  \"packages\": [\n    {\n      \"id\": \"pkg_123_abc\",\n      \"title\": \"Test Package\",\n      \"rationale\": \"Test rationale\",\n      \"confidence\": 0.8,\n      \"style_tags\": [],\n      \"changes\": { \"nodes\": [], \"edges\": [] },\n      \"impact\": { \"fulfills_gaps\": [], \"creates_gaps\": [], \"conflicts\": [] }\n    }\n  ]\n}\n```\n\nThis package addresses the user's request.",
+
+    "with_unmarked_block": "```\n{\n  \"packages\": [\n    {\n      \"id\": \"pkg_456_def\",\n      \"title\": \"Unmarked Block\",\n      \"rationale\": \"From unmarked code block\",\n      \"confidence\": 0.75,\n      \"style_tags\": [],\n      \"changes\": { \"nodes\": [], \"edges\": [] },\n      \"impact\": { \"fulfills_gaps\": [], \"creates_gaps\": [], \"conflicts\": [] }\n    }\n  ]\n}\n```",
+
+    "trailing_commas": "{\n  \"packages\": [\n    {\n      \"id\": \"pkg_789_ghi\",\n      \"title\": \"Trailing Commas\",\n      \"rationale\": \"Has trailing commas\",\n      \"confidence\": 0.9,\n      \"style_tags\": [\"test\",],\n      \"changes\": { \"nodes\": [], \"edges\": [], },\n      \"impact\": { \"fulfills_gaps\": [], \"creates_gaps\": [], \"conflicts\": [], },\n    },\n  ],\n}",
+
+    "raw_json": "{\n  \"packages\": [\n    {\n      \"id\": \"pkg_101_jkl\",\n      \"title\": \"Raw JSON\",\n      \"rationale\": \"No markdown wrapper\",\n      \"confidence\": 0.85,\n      \"style_tags\": [],\n      \"changes\": { \"nodes\": [], \"edges\": [] },\n      \"impact\": { \"fulfills_gaps\": [], \"creates_gaps\": [], \"conflicts\": [] }\n    }\n  ]\n}",
+
+    "with_preamble": "I'll generate some narrative packages for you based on your request.\n\n{\n  \"packages\": [\n    {\n      \"id\": \"pkg_202_mno\",\n      \"title\": \"With Preamble\",\n      \"rationale\": \"Has text before JSON\",\n      \"confidence\": 0.88,\n      \"style_tags\": [],\n      \"changes\": { \"nodes\": [], \"edges\": [] },\n      \"impact\": { \"fulfills_gaps\": [], \"creates_gaps\": [], \"conflicts\": [] }\n    }\n  ]\n}\n\nLet me know if you'd like me to refine any of these.",
+
+    "missing_packages_field": "{\n  \"data\": [\n    { \"id\": \"pkg_bad\", \"title\": \"Wrong Field\" }\n  ]\n}",
+
+    "missing_required_fields": "{\n  \"packages\": [\n    {\n      \"id\": \"pkg_incomplete\",\n      \"confidence\": 0.5\n    }\n  ]\n}",
+
+    "not_json": "This is not JSON at all, just plain text.",
+
+    "empty_object": "{}",
+
+    "interpretation_with_block": "Based on my analysis:\n\n```json\n{\n  \"interpretation\": {\n    \"summary\": \"User wants to add a character\",\n    \"confidence\": 0.88\n  },\n  \"proposals\": [\n    {\n      \"type\": \"node\",\n      \"operation\": \"add\",\n      \"target_type\": \"Character\",\n      \"data\": { \"name\": \"John\" },\n      \"rationale\": \"Input describes a person\"\n    }\n  ]\n}\n```"
+  }
+}

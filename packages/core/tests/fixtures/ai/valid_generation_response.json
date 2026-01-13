@@ -1,0 +1,170 @@
+{
+  "packages": [
+    {
+      "id": "pkg_1736700000000_abc12",
+      "title": "The Corruption Reveal",
+      "rationale": "This package introduces the midpoint revelation where Mike discovers his partner's betrayal, creating dramatic tension and character development.",
+      "confidence": 0.85,
+      "style_tags": ["betrayal", "dramatic", "noir"],
+      "changes": {
+        "storyContext": [
+          {
+            "operation": "add",
+            "section": "Themes & Motifs",
+            "content": "Institutional betrayal - the system protects its own"
+          }
+        ],
+        "nodes": [
+          {
+            "operation": "add",
+            "node_type": "PlotPoint",
+            "node_id": "plotpoint_1736700000000_xyz45",
+            "data": {
+              "title": "Mike Discovers Partner's Betrayal",
+              "summary": "Mike finds evidence that his partner has been taking bribes from the cartel.",
+              "intent": "character",
+              "priority": 1
+            }
+          },
+          {
+            "operation": "add",
+            "node_type": "Scene",
+            "node_id": "scene_1736700000001_def67",
+            "data": {
+              "heading": "INT. EVIDENCE ROOM - NIGHT",
+              "scene_overview": "Mike, alone in the evidence room, discovers a hidden ledger that implicates his partner.",
+              "order_index": 25,
+              "mood": "tense"
+            }
+          },
+          {
+            "operation": "add",
+            "node_type": "Character",
+            "node_id": "character_1736700000002_ghi89",
+            "data": {
+              "name": "Agent Torres",
+              "description": "Internal Affairs investigator who has been tracking corruption in the department.",
+              "archetype": "ally"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "operation": "add",
+            "edge_type": "ALIGNS_WITH",
+            "from": "plotpoint_1736700000000_xyz45",
+            "to": "beat_Midpoint"
+          },
+          {
+            "operation": "add",
+            "edge_type": "SATISFIED_BY",
+            "from": "plotpoint_1736700000000_xyz45",
+            "to": "scene_1736700000001_def67"
+          },
+          {
+            "operation": "add",
+            "edge_type": "HAS_CHARACTER",
+            "from": "scene_1736700000001_def67",
+            "to": "character_1736700000002_ghi89"
+          }
+        ]
+      },
+      "impact": {
+        "fulfills_gaps": ["gap_midpoint_plotpoint"],
+        "creates_gaps": ["gap_partner_confrontation"],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "pkg_1736700000003_jkl34",
+      "title": "The Double Cross",
+      "rationale": "An alternative approach where Mike is set up by his partner, making him appear guilty of the corruption.",
+      "confidence": 0.78,
+      "style_tags": ["conspiracy", "frame-up", "paranoid"],
+      "changes": {
+        "nodes": [
+          {
+            "operation": "add",
+            "node_type": "PlotPoint",
+            "node_id": "plotpoint_1736700000004_mno56",
+            "data": {
+              "title": "Mike Is Framed",
+              "summary": "Evidence is planted to make Mike look like the corrupt cop.",
+              "intent": "plot",
+              "priority": 1
+            }
+          }
+        ],
+        "edges": [
+          {
+            "operation": "add",
+            "edge_type": "ALIGNS_WITH",
+            "from": "plotpoint_1736700000004_mno56",
+            "to": "beat_Midpoint"
+          }
+        ]
+      },
+      "impact": {
+        "fulfills_gaps": ["gap_midpoint_plotpoint"],
+        "creates_gaps": ["gap_clear_mikes_name"],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "pkg_1736700000005_pqr78",
+      "title": "The Moral Dilemma",
+      "rationale": "Mike discovers his partner's corruption but also learns the partner did it to save his family from cartel threats.",
+      "confidence": 0.72,
+      "style_tags": ["moral-complexity", "empathy", "difficult-choices"],
+      "changes": {
+        "nodes": [
+          {
+            "operation": "add",
+            "node_type": "PlotPoint",
+            "node_id": "plotpoint_1736700000006_stu90",
+            "data": {
+              "title": "The Partner's Secret",
+              "summary": "Mike learns his partner was coerced into corruption to protect his family.",
+              "intent": "character",
+              "priority": 1
+            }
+          },
+          {
+            "operation": "modify",
+            "node_type": "Character",
+            "node_id": "character_partner_001",
+            "data": {
+              "description": "Mike's partner of 10 years, now revealed to be a victim of cartel coercion.",
+              "archetype": "tragic figure"
+            },
+            "previous_data": {
+              "description": "Mike's partner of 10 years.",
+              "archetype": "ally"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "operation": "add",
+            "edge_type": "ALIGNS_WITH",
+            "from": "plotpoint_1736700000006_stu90",
+            "to": "beat_Midpoint"
+          }
+        ]
+      },
+      "impact": {
+        "fulfills_gaps": ["gap_midpoint_plotpoint"],
+        "creates_gaps": [],
+        "conflicts": [
+          {
+            "type": "interferes",
+            "existing_node_id": "character_partner_001",
+            "description": "Changes the partner's established characterization",
+            "source": "llm",
+            "resolution_included": true
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+{
+  "description": "Response with various ID issues for testing validation",
+  "packages": [
+    {
+      "id": "pkg_duplicate_test",
+      "title": "Package with Duplicate IDs",
+      "rationale": "Contains duplicate node IDs within the package",
+      "confidence": 0.8,
+      "style_tags": [],
+      "changes": {
+        "nodes": [
+          {
+            "operation": "add",
+            "node_type": "Character",
+            "node_id": "char_duplicate_001",
+            "data": { "name": "First Character" }
+          },
+          {
+            "operation": "add",
+            "node_type": "Character",
+            "node_id": "char_duplicate_001",
+            "data": { "name": "Second Character with Same ID" }
+          }
+        ],
+        "edges": []
+      },
+      "impact": { "fulfills_gaps": [], "creates_gaps": [], "conflicts": [] }
+    },
+    {
+      "id": "pkg_invalid_format_test",
+      "title": "Package with Invalid ID Formats",
+      "rationale": "Contains IDs that don't match expected format",
+      "confidence": 0.75,
+      "style_tags": [],
+      "changes": {
+        "nodes": [
+          {
+            "operation": "add",
+            "node_type": "Character",
+            "node_id": "bad-id-format",
+            "data": { "name": "Bad Format" }
+          },
+          {
+            "operation": "add",
+            "node_type": "Location",
+            "node_id": "123_numeric_start",
+            "data": { "name": "Numeric Start" }
+          },
+          {
+            "operation": "add",
+            "node_type": "Scene",
+            "node_id": "scene__double_underscore",
+            "data": { "heading": "Double Underscore" }
+          },
+          {
+            "operation": "add",
+            "node_type": "PlotPoint",
+            "node_id": "",
+            "data": { "title": "Empty ID" }
+          }
+        ],
+        "edges": []
+      },
+      "impact": { "fulfills_gaps": [], "creates_gaps": [], "conflicts": [] }
+    },
+    {
+      "id": "pkg_edge_reference_test",
+      "title": "Package with Invalid Edge References",
+      "rationale": "Contains edges pointing to non-existent nodes",
+      "confidence": 0.7,
+      "style_tags": [],
+      "changes": {
+        "nodes": [
+          {
+            "operation": "add",
+            "node_type": "Scene",
+            "node_id": "scene_1736700000000_valid",
+            "data": { "heading": "INT. VALID SCENE - DAY" }
+          }
+        ],
+        "edges": [
+          {
+            "operation": "add",
+            "edge_type": "HAS_CHARACTER",
+            "from": "scene_1736700000000_valid",
+            "to": "nonexistent_character_xyz"
+          },
+          {
+            "operation": "add",
+            "edge_type": "LOCATED_AT",
+            "from": "nonexistent_scene_abc",
+            "to": "location_123"
+          }
+        ]
+      },
+      "impact": { "fulfills_gaps": [], "creates_gaps": [], "conflicts": [] }
+    },
+    {
+      "id": "pkg_existing_id_collision",
+      "title": "Package Colliding with Existing IDs",
+      "rationale": "Contains IDs that already exist in the graph",
+      "confidence": 0.65,
+      "style_tags": [],
+      "changes": {
+        "nodes": [
+          {
+            "operation": "add",
+            "node_type": "Character",
+            "node_id": "character_existing_001",
+            "data": { "name": "Collision Character" }
+          }
+        ],
+        "edges": []
+      },
+      "impact": { "fulfills_gaps": [], "creates_gaps": [], "conflicts": [] }
+    }
+  ]
+}

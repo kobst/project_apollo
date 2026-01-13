@@ -1,0 +1,150 @@
+{
+  "description": "Sample graph state for testing context serialization",
+  "storyVersion": {
+    "type": "StoryVersion",
+    "id": "sv_sample_001",
+    "parentVersionId": null,
+    "label": "Initial version",
+    "createdAt": "2026-01-10T12:00:00Z"
+  },
+  "nodes": [
+    {
+      "type": "Beat",
+      "id": "beat_OpeningImage",
+      "act": 1,
+      "name": "Opening Image",
+      "order": 1,
+      "description": "The first impression of the world and protagonist"
+    },
+    {
+      "type": "Beat",
+      "id": "beat_Catalyst",
+      "act": 1,
+      "name": "Catalyst",
+      "order": 5,
+      "description": "The inciting incident that launches the story"
+    },
+    {
+      "type": "Beat",
+      "id": "beat_Midpoint",
+      "act": 2,
+      "name": "Midpoint",
+      "order": 8,
+      "description": "A major turning point"
+    },
+    {
+      "type": "Character",
+      "id": "character_mike_001",
+      "name": "Detective Mike Reyes",
+      "description": "A seasoned homicide detective with a troubled past",
+      "archetype": "protagonist",
+      "traits": ["determined", "cynical", "loyal"]
+    },
+    {
+      "type": "Character",
+      "id": "character_partner_001",
+      "name": "Detective Sarah Chen",
+      "description": "Mike's partner of 10 years",
+      "archetype": "ally"
+    },
+    {
+      "type": "Character",
+      "id": "character_villain_001",
+      "name": "Victor Castellano",
+      "description": "Cartel boss running operations in the city",
+      "archetype": "antagonist"
+    },
+    {
+      "type": "Location",
+      "id": "location_precinct_001",
+      "name": "Downtown Precinct",
+      "description": "The central police station where Mike works"
+    },
+    {
+      "type": "Location",
+      "id": "location_warehouse_001",
+      "name": "Abandoned Warehouse",
+      "description": "Cartel meeting point on the docks"
+    },
+    {
+      "type": "PlotPoint",
+      "id": "plotpoint_murder_001",
+      "title": "Murder Discovery",
+      "summary": "Mike is called to investigate a murder that connects to the cartel",
+      "intent": "plot",
+      "priority": 1
+    },
+    {
+      "type": "Scene",
+      "id": "scene_opening_001",
+      "heading": "EXT. CITY STREETS - NIGHT",
+      "scene_overview": "Mike drives through rain-soaked streets, establishing the noir atmosphere",
+      "order_index": 1,
+      "mood": "atmospheric"
+    },
+    {
+      "type": "Scene",
+      "id": "scene_crime_002",
+      "heading": "INT. CRIME SCENE - NIGHT",
+      "scene_overview": "Mike and Sarah examine the body, finding the first clue",
+      "order_index": 5,
+      "mood": "tense"
+    },
+    {
+      "type": "Idea",
+      "id": "idea_twist_001",
+      "content": "Maybe the victim was actually an undercover agent?",
+      "source": "brainstorm"
+    },
+    {
+      "type": "CharacterArc",
+      "id": "arc_mike_001",
+      "name": "Mike's Redemption",
+      "description": "Mike must confront his past mistakes while pursuing justice"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_001",
+      "type": "ALIGNS_WITH",
+      "from": "plotpoint_murder_001",
+      "to": "beat_Catalyst"
+    },
+    {
+      "id": "edge_002",
+      "type": "SATISFIED_BY",
+      "from": "plotpoint_murder_001",
+      "to": "scene_crime_002"
+    },
+    {
+      "id": "edge_003",
+      "type": "HAS_CHARACTER",
+      "from": "scene_opening_001",
+      "to": "character_mike_001"
+    },
+    {
+      "id": "edge_004",
+      "type": "HAS_CHARACTER",
+      "from": "scene_crime_002",
+      "to": "character_mike_001"
+    },
+    {
+      "id": "edge_005",
+      "type": "HAS_CHARACTER",
+      "from": "scene_crime_002",
+      "to": "character_partner_001"
+    },
+    {
+      "id": "edge_006",
+      "type": "LOCATED_AT",
+      "from": "scene_crime_002",
+      "to": "location_warehouse_001"
+    },
+    {
+      "id": "edge_007",
+      "type": "ADVANCES",
+      "from": "plotpoint_murder_001",
+      "to": "arc_mike_001"
+    }
+  ]
+}

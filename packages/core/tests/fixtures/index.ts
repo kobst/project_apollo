@@ -9,6 +9,7 @@ import { createEmptyGraph } from '../../src/core/graph.js';
 import type { GraphState } from '../../src/core/graph.js';
 import type { Patch, KGNode } from '../../src/types/patch.js';
 import type { Edge } from '../../src/types/edges.js';
+import type { GenerationResult, InterpretationResult } from '../../src/ai/types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -70,4 +71,63 @@ export const fixtures = {
 
   /** Load story state after first scene added */
   afterAcceptance: (): GraphState => loadFixtureAsGraph('after_acceptance_sv1'),
+};
+
+// =============================================================================
+// AI Fixture Loaders
+// =============================================================================
+
+interface MalformedResponseCases {
+  with_markdown_block: string;
+  with_unmarked_block: string;
+  trailing_commas: string;
+  raw_json: string;
+  with_preamble: string;
+  missing_packages_field: string;
+  missing_required_fields: string;
+  not_json: string;
+  empty_object: string;
+  interpretation_with_block: string;
+}
+
+interface InvalidIdsFixture {
+  description: string;
+  packages: GenerationResult['packages'];
+}
+
+/**
+ * Load AI-specific fixtures
+ */
+export const aiFixtures = {
+  /** Valid generation response with 3 packages */
+  validGenerationResponse: (): GenerationResult => {
+    const path = join(__dirname, 'ai/valid_generation_response.json');
+    const content = readFileSync(path, 'utf-8');
+    return JSON.parse(content) as GenerationResult;
+  },
+
+  /** Valid interpretation response */
+  validInterpretationResponse: (): InterpretationResult => {
+    const path = join(__dirname, 'ai/valid_interpretation_response.json');
+    const content = readFileSync(path, 'utf-8');
+    return JSON.parse(content) as InterpretationResult;
+  },
+
+  /** Malformed response cases for parser testing */
+  malformedResponses: (): MalformedResponseCases => {
+    const path = join(__dirname, 'ai/malformed_response.json');
+    const content = readFileSync(path, 'utf-8');
+    const data = JSON.parse(content) as { cases: MalformedResponseCases };
+    return data.cases;
+  },
+
+  /** Invalid ID response cases */
+  invalidIdsResponse: (): InvalidIdsFixture => {
+    const path = join(__dirname, 'ai/invalid_ids_response.json');
+    const content = readFileSync(path, 'utf-8');
+    return JSON.parse(content) as InvalidIdsFixture;
+  },
+
+  /** Sample graph for serialization testing */
+  sampleGraph: (): GraphState => loadFixtureAsGraph('ai/sample_graph'),
 };

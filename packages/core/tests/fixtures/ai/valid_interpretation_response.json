@@ -1,0 +1,43 @@
+{
+  "interpretation": {
+    "summary": "User wants to introduce a scene where the protagonist discovers their partner's betrayal. This is a pivotal moment that shifts the story's direction.",
+    "confidence": 0.92
+  },
+  "proposals": [
+    {
+      "type": "node",
+      "operation": "add",
+      "target_type": "PlotPoint",
+      "data": {
+        "title": "Discovery of Betrayal",
+        "summary": "Mike discovers evidence that his partner has been working with the antagonist.",
+        "intent": "character",
+        "priority": 1
+      },
+      "rationale": "The input describes a specific narrative event that should be tracked as a PlotPoint for story structure.",
+      "relates_to": ["character_mike_001", "character_partner_001"]
+    },
+    {
+      "type": "node",
+      "operation": "add",
+      "target_type": "Scene",
+      "data": {
+        "heading": "INT. POLICE STATION - NIGHT",
+        "scene_overview": "Mike finds incriminating documents in his partner's desk while working late.",
+        "mood": "tense"
+      },
+      "rationale": "A concrete scene is needed to dramatize the discovery moment.",
+      "relates_to": ["character_mike_001"]
+    }
+  ],
+  "alternatives": [
+    {
+      "summary": "Could be interpreted as a thematic note about trust and betrayal rather than a specific scene",
+      "confidence": 0.45
+    },
+    {
+      "summary": "Could be an Idea node to explore later rather than a concrete scene now",
+      "confidence": 0.35
+    }
+  ]
+}
