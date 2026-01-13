@@ -13,9 +13,7 @@ import {
   createScene,
   createCharacter,
   createLocation,
-  createConflict,
   createCharacterArc,
-  createTheme,
   resetIdCounter,
 } from './helpers/index.js';
 import { edges } from './helpers/index.js';
@@ -84,51 +82,6 @@ describe('Validator', () => {
       ).toBe(true);
     });
 
-    it('should reject INVOLVES edge with wrong source (not Conflict)', () => {
-      const char = createCharacter({ id: 'char_1' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_1' });
-      graph.nodes.set(char.id, char);
-      graph.nodes.set(scene.id, scene);
-
-      const patch = createMinimalPatch('sv0', [
-        {
-          op: 'ADD_EDGE',
-          edge: { type: 'INVOLVES', from: 'scene_1', to: 'char_1' },
-        },
-      ]);
-
-      const result = validatePatch(graph, patch);
-
-      expect(result.success).toBe(false);
-    });
-
-    it('should validate EXPRESSED_IN edge to Scene', () => {
-      const theme = createTheme({ id: 'theme_1' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_1' });
-      graph.nodes.set(theme.id, theme);
-      graph.nodes.set(scene.id, scene);
-
-      const patchToScene = createMinimalPatch('sv0', [
-        {
-          op: 'ADD_EDGE',
-          edge: { type: 'EXPRESSED_IN', from: 'theme_1', to: 'scene_1' },
-        },
-      ]);
-      expect(validatePatch(graph, patchToScene).success).toBe(true);
-    });
-
-    it('should validate EXPRESSED_IN edge to Beat', () => {
-      const theme = createTheme({ id: 'theme_1' });
-      graph.nodes.set(theme.id, theme);
-
-      const patchToBeat = createMinimalPatch('sv0', [
-        {
-          op: 'ADD_EDGE',
-          edge: { type: 'EXPRESSED_IN', from: 'theme_1', to: 'beat_Catalyst' },
-        },
-      ]);
-      expect(validatePatch(graph, patchToBeat).success).toBe(true);
-    });
   });
 
   describe('Missing required fields', () => {
@@ -169,45 +122,6 @@ describe('Validator', () => {
       expect(result.errors.some((e) => e.code === 'OUT_OF_RANGE')).toBe(true);
     });
 
-    it('should reject Conflict with description under 20 chars', () => {
-      const shortConflict = createConflict({
-        id: 'conf_short',
-        description: 'Too short',
-      });
-
-      const patch = createMinimalPatch('sv0', [
-        { op: 'ADD_NODE', node: shortConflict },
-      ]);
-
-      const result = validatePatch(graph, patch);
-
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject Theme with statement under 5 chars', () => {
-      const tooShortTheme = createTheme({ id: 'theme_short', statement: 'Hi' });
-      const patch = createMinimalPatch('sv0', [
-        { op: 'ADD_NODE', node: tooShortTheme },
-      ]);
-
-      const result = validatePatch(graph, patch);
-
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject Theme with statement over 240 chars', () => {
-      const tooLongTheme = createTheme({
-        id: 'theme_long',
-        statement: 'A'.repeat(250),
-      });
-      const patch = createMinimalPatch('sv0', [
-        { op: 'ADD_NODE', node: tooLongTheme },
-      ]);
-
-      const result = validatePatch(graph, patch);
-
-      expect(result.success).toBe(false);
-    });
   });
 
   describe('FK integrity violations', () => {

@@ -31,14 +31,6 @@
       "status": "ACTIVE"
     },
     {
-      "type": "Conflict",
-      "id": "conf_central",
-      "name": "The Awakening",
-      "conflict_type": "internal",
-      "description": "Alex must overcome their fear of failure to save their community from an environmental disaster.",
-      "status": "ACTIVE"
-    },
-    {
       "type": "Location",
       "id": "loc_hometown",
       "name": "Pine Valley",
@@ -68,10 +60,8 @@
     }
   ],
   "edges": [
-    { "id": "edge_acc_001", "type": "INVOLVES", "from": "conf_central", "to": "char_protagonist", "status": "approved", "createdAt": "2025-01-01T00:04:30.000Z" },
     { "id": "edge_acc_002", "type": "HAS_CHARACTER", "from": "scene_catalyst_001", "to": "char_protagonist", "status": "approved", "createdAt": "2025-01-01T00:04:30.000Z" },
     { "id": "edge_acc_003", "type": "LOCATED_AT", "from": "scene_catalyst_001", "to": "loc_hometown", "status": "approved", "createdAt": "2025-01-01T00:04:30.000Z" },
-    { "id": "edge_acc_004", "type": "MANIFESTS_IN", "from": "conf_central", "to": "scene_catalyst_001", "status": "approved", "createdAt": "2025-01-01T00:04:30.000Z" },
     { "id": "edge_acc_005", "type": "ALIGNS_WITH", "from": "pp_catalyst_001", "to": "beat_Catalyst", "status": "approved", "createdAt": "2025-01-01T00:04:00.000Z" },
     { "id": "edge_acc_006", "type": "SATISFIED_BY", "from": "pp_catalyst_001", "to": "scene_catalyst_001", "status": "approved", "createdAt": "2025-01-01T00:04:30.000Z", "properties": { "order": 1 } }
   ]

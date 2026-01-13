@@ -11,16 +11,12 @@ import type { GraphState } from '../../src/core/graph.js';
 import {
   SCENE_HAS_CHARACTER,
   SCENE_HAS_LOCATION,
-  THEME_NOT_ORPHANED,
-  MOTIF_NOT_ORPHANED,
 } from '../../src/rules/softRules.js';
 import {
   createGraphWith15Beats,
   createScene,
   createCharacter,
   createLocation,
-  createTheme,
-  createMotif,
   resetIdCounter,
   edges,
 } from '../helpers/index.js';
@@ -98,78 +94,6 @@ describe('Soft Rules', () => {
       graph.edges.push(edges.locatedAt(scene.id, location.id));
 
       const violations = SCENE_HAS_LOCATION.evaluate(graph, { mode: 'full' });
-
-      expect(violations).toHaveLength(0);
-    });
-  });
-
-  // ===========================================================================
-  // THEME_NOT_ORPHANED
-  // ===========================================================================
-
-  describe('THEME_NOT_ORPHANED', () => {
-    it('should warn when theme has no EXPRESSED_IN edges', () => {
-      const theme = createTheme({ id: 'theme_1', statement: 'Love conquers all' });
-      graph.nodes.set(theme.id, theme);
-
-      const violations = THEME_NOT_ORPHANED.evaluate(graph, { mode: 'full' });
-
-      expect(violations).toHaveLength(1);
-      expect(violations[0].ruleId).toBe('THEME_NOT_ORPHANED');
-      expect(violations[0].severity).toBe('soft');
-      expect(violations[0].message).toContain('Love conquers all');
-      expect(violations[0].message).toContain('not expressed');
-    });
-
-    it('should not warn when theme is expressed in a scene', () => {
-      const theme = createTheme({ id: 'theme_1' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_1' });
-      graph.nodes.set(theme.id, theme);
-      graph.nodes.set(scene.id, scene);
-      graph.edges.push(edges.expressedIn(theme.id, scene.id));
-
-      const violations = THEME_NOT_ORPHANED.evaluate(graph, { mode: 'full' });
-
-      expect(violations).toHaveLength(0);
-    });
-
-    it('should not warn when theme is expressed in a beat', () => {
-      const theme = createTheme({ id: 'theme_1' });
-      graph.nodes.set(theme.id, theme);
-      graph.edges.push(edges.expressedIn(theme.id, 'beat_Midpoint'));
-
-      const violations = THEME_NOT_ORPHANED.evaluate(graph, { mode: 'full' });
-
-      expect(violations).toHaveLength(0);
-    });
-  });
-
-  // ===========================================================================
-  // MOTIF_NOT_ORPHANED
-  // ===========================================================================
-
-  describe('MOTIF_NOT_ORPHANED', () => {
-    it('should warn when motif has no APPEARS_IN edges', () => {
-      const motif = createMotif({ id: 'motif_1', name: 'Water imagery' });
-      graph.nodes.set(motif.id, motif);
-
-      const violations = MOTIF_NOT_ORPHANED.evaluate(graph, { mode: 'full' });
-
-      expect(violations).toHaveLength(1);
-      expect(violations[0].ruleId).toBe('MOTIF_NOT_ORPHANED');
-      expect(violations[0].severity).toBe('soft');
-      expect(violations[0].message).toContain('Water imagery');
-      expect(violations[0].message).toContain('does not appear');
-    });
-
-    it('should not warn when motif appears in a scene', () => {
-      const motif = createMotif({ id: 'motif_1' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_1' });
-      graph.nodes.set(motif.id, motif);
-      graph.nodes.set(scene.id, scene);
-      graph.edges.push(edges.appearsIn(motif.id, scene.id));
-
-      const violations = MOTIF_NOT_ORPHANED.evaluate(graph, { mode: 'full' });
 
       expect(violations).toHaveLength(0);
     });

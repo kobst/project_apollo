@@ -71,7 +71,6 @@ describe('Cluster Stub Determinism', () => {
         max_ops_per_move: 6,
         max_new_nodes_per_move: 2,
         allowed_node_types: ['Scene', 'Beat'],
-        allowed_depth: 'OUTLINE',
       });
     });
 
@@ -93,7 +92,6 @@ describe('Cluster Stub Determinism', () => {
         max_ops_per_move: 4,
         max_new_nodes_per_move: 0,
         allowed_node_types: ['Scene'],
-        allowed_depth: 'DRAFT',
       });
     });
 
@@ -116,56 +114,6 @@ describe('Cluster Stub Determinism', () => {
       );
     });
 
-    it('THEME cluster should have REVISION depth', () => {
-      const themeOQ: OpenQuestion = {
-        id: 'oq_theme_test',
-        type: 'ThemeUngrounded',
-        domain: 'THEME_MOTIF',
-        severity: 'SOFT',
-        phase: 'REVISION',
-        group_key: 'THEME:GROUND:theme_1',
-        target_node_id: 'theme_1',
-        message: 'Test',
-      };
-
-      const result = generateClusterForQuestion(themeOQ, 'sv0', 'REVISION');
-
-      expect(result.cluster.scope_budget.allowed_depth).toBe('REVISION');
-    });
-
-    it('MOTIF cluster should have REVISION depth', () => {
-      const motifOQ: OpenQuestion = {
-        id: 'oq_motif_test',
-        type: 'MotifUngrounded',
-        domain: 'THEME_MOTIF',
-        severity: 'SOFT',
-        phase: 'REVISION',
-        group_key: 'MOTIF:GROUND:motif_1',
-        target_node_id: 'motif_1',
-        message: 'Test',
-      };
-
-      const result = generateClusterForQuestion(motifOQ, 'sv0', 'REVISION');
-
-      expect(result.cluster.scope_budget.allowed_depth).toBe('REVISION');
-    });
-
-    it('CONFLICT cluster should have DRAFT depth', () => {
-      const conflictOQ: OpenQuestion = {
-        id: 'oq_conflict_test',
-        type: 'ConflictNeedsParties',
-        domain: 'CONFLICT',
-        severity: 'IMPORTANT',
-        phase: 'DRAFT',
-        group_key: 'CONFLICT:SETUP:conf_1',
-        target_node_id: 'conf_1',
-        message: 'Test',
-      };
-
-      const result = generateClusterForQuestion(conflictOQ, 'sv0', 'DRAFT');
-
-      expect(result.cluster.scope_budget.allowed_depth).toBe('DRAFT');
-    });
   });
 
   describe('Move generation for BeatUnrealized', () => {
@@ -321,7 +269,6 @@ describe('Cluster Stub Determinism', () => {
         { type: 'ActImbalance', expectedPattern: /Balance act/ },
         { type: 'SceneHasNoCast', expectedPattern: /Add characters/ },
         { type: 'MissingCharacterArc', expectedPattern: /Define character arc/ },
-        { type: 'ThemeUngrounded', expectedPattern: /Ground theme/ },
       ];
 
       for (const { type, expectedPattern } of testCases) {

@@ -1,5 +1,5 @@
 {
-  "description": "Patch that adds Character, Conflict, Location from logline extraction",
+  "description": "Patch that adds Character and Location from logline extraction",
   "type": "Patch",
   "id": "patch_seed_001",
   "base_story_version_id": "sv0",
@@ -18,26 +18,11 @@
     {
       "op": "ADD_NODE",
       "node": {
-        "type": "Conflict",
-        "id": "conf_central",
-        "name": "The Awakening",
-        "conflict_type": "internal",
-        "description": "Alex must overcome their fear of failure to save their community from an environmental disaster.",
-        "status": "ACTIVE"
-      }
-    },
-    {
-      "op": "ADD_NODE",
-      "node": {
         "type": "Location",
         "id": "loc_hometown",
         "name": "Pine Valley",
         "description": "A small mountain town threatened by flooding."
       }
-    },
-    {
-      "op": "ADD_EDGE",
-      "edge": { "id": "edge_seed_001", "type": "INVOLVES", "from": "conf_central", "to": "char_protagonist" }
     }
   ],
   "metadata": {

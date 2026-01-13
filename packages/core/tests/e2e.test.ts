@@ -53,19 +53,12 @@ describe('End-to-end loop', () => {
       // Validate
       expect(validateGraph(initializedGraph).success).toBe(true);
 
-      // Should have 15 beats + character + conflict + location
-      expect(initializedGraph.nodes.size).toBe(18);
+      // Should have 15 beats + character + location
+      expect(initializedGraph.nodes.size).toBe(17);
 
       // Check entities exist
       expect(initializedGraph.nodes.has('char_protagonist')).toBe(true);
-      expect(initializedGraph.nodes.has('conf_central')).toBe(true);
       expect(initializedGraph.nodes.has('loc_primary')).toBe(true);
-
-      // Check edge exists
-      const involvesEdge = initializedGraph.edges.find(
-        (e) => e.type === 'INVOLVES' && e.from === 'conf_central'
-      );
-      expect(involvesEdge).toBeDefined();
     });
 
     it('extractFromLogline should pad short descriptions', () => {
@@ -91,7 +84,7 @@ describe('End-to-end loop', () => {
       graph = applyPatch(graph, initPatch);
 
       // Get initial OQs
-      let questions = deriveOpenQuestions(graph, 'OUTLINE');
+      let questions = deriveOpenQuestions(graph);
       const initialBeatOQs = questions.filter(
         (q) => q.type === 'BeatUnrealized'
       );
@@ -118,7 +111,7 @@ describe('End-to-end loop', () => {
       graph = applyPatch(graph, firstMove.patch);
 
       // Verify Catalyst OQ is resolved
-      questions = deriveOpenQuestions(graph, 'OUTLINE');
+      questions = deriveOpenQuestions(graph);
       expect(
         questions.find((q) => q.target_node_id === 'beat_Catalyst')
       ).toBeUndefined();
@@ -150,7 +143,7 @@ describe('End-to-end loop', () => {
       graph = applyPatch(graph, addCharPatch);
 
       // Check DRAFT phase questions
-      questions = deriveOpenQuestions(graph, 'DRAFT');
+      questions = deriveOpenQuestions(graph);
 
       // Should NOT have SceneHasNoCast for that scene anymore
       const sceneNoCast = questions.find(
@@ -159,7 +152,7 @@ describe('End-to-end loop', () => {
       expect(sceneNoCast).toBeUndefined();
 
       // PHASE 3: REVISION (quick check)
-      questions = deriveOpenQuestions(graph, 'REVISION');
+      questions = deriveOpenQuestions(graph);
 
       // Should be able to derive questions in this phase
       expect(Array.isArray(questions)).toBe(true);
@@ -368,10 +361,6 @@ describe('End-to-end loop', () => {
             edge: edges.locatedAt('scene_catalyst_001', 'loc_hometown'),
           },
           {
-            op: 'ADD_EDGE',
-            edge: edges.manifestsIn('conf_central', 'scene_catalyst_001'),
-          },
-          {
             op: 'UPDATE_NODE',
             id: 'beat_Catalyst',
             set: { status: 'REALIZED' },
@@ -397,17 +386,16 @@ describe('End-to-end loop', () => {
       >;
       expect(catalystBeat.status).toBe('REALIZED');
 
-      // Check edges exist (6 total: 1 from seed_patch + 5 from sceneForCatalyst)
-      // seed_patch: INVOLVES
-      // sceneForCatalyst: ALIGNS_WITH, SATISFIED_BY, HAS_CHARACTER, LOCATED_AT, MANIFESTS_IN
-      expect(graph.edges.length).toBe(6);
+      // Check edges exist (4 total from sceneForCatalyst)
+      // sceneForCatalyst: ALIGNS_WITH, SATISFIED_BY, HAS_CHARACTER, LOCATED_AT
+      expect(graph.edges.length).toBe(4);
 
       // Check PlotPoint hierarchy edges exist
       expect(graph.edges.some((e) => e.type === 'ALIGNS_WITH' && e.from === 'pp_catalyst_001')).toBe(true);
       expect(graph.edges.some((e) => e.type === 'SATISFIED_BY' && e.from === 'pp_catalyst_001')).toBe(true);
 
       // Derive OQs - should have 14 BeatUnrealized (not 15) because Catalyst has scene via PlotPoint
-      const questions = deriveOpenQuestions(graph, 'OUTLINE');
+      const questions = deriveOpenQuestions(graph);
       const beatOQs = questions.filter((q) => q.type === 'BeatUnrealized');
       expect(beatOQs.length).toBe(14);
     });
@@ -438,7 +426,7 @@ describe('End-to-end loop', () => {
       graph = applyPatch(graph, initPatch);
 
       // Get OQs
-      const questions = deriveOpenQuestions(graph, 'OUTLINE');
+      const questions = deriveOpenQuestions(graph);
       const beatOQs = questions.filter((q) => q.type === 'BeatUnrealized');
       const initialCount = beatOQs.length;
 
@@ -457,7 +445,7 @@ describe('End-to-end loop', () => {
       }
 
       // Verify OQs are reduced
-      const newQuestions = deriveOpenQuestions(graph, 'OUTLINE');
+      const newQuestions = deriveOpenQuestions(graph);
       const newBeatOQs = newQuestions.filter((q) => q.type === 'BeatUnrealized');
 
       expect(newBeatOQs.length).toBeLessThan(initialCount);
@@ -468,9 +456,9 @@ describe('End-to-end loop', () => {
     it('STRUCTURE OQs should appear in all phases', () => {
       const graph = fixtures.emptyStory();
 
-      const outlineOQs = deriveOpenQuestions(graph, 'OUTLINE');
-      const draftOQs = deriveOpenQuestions(graph, 'DRAFT');
-      const revisionOQs = deriveOpenQuestions(graph, 'REVISION');
+      const outlineOQs = deriveOpenQuestions(graph);
+      const draftOQs = deriveOpenQuestions(graph);
+      const revisionOQs = deriveOpenQuestions(graph);
 
       const outlineBeatOQs = outlineOQs.filter(
         (q) => q.type === 'BeatUnrealized'

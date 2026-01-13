@@ -584,9 +584,8 @@ describe('applyPatch', () => {
       const result = applyPatch(emptyGraph, seedPatch);
 
       expect(result.nodes.has('char_protagonist')).toBe(true);
-      expect(result.nodes.has('conf_central')).toBe(true);
       expect(result.nodes.has('loc_hometown')).toBe(true);
-      expect(result.edges.length).toBe(1);
+      expect(result.edges.length).toBe(0);
     });
   });
 });

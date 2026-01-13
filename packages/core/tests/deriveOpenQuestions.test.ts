@@ -2,19 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   deriveOpenQuestions,
   filterByDomain,
-  filterBySeverity,
-  filterByPhase,
-  hasBlockingQuestions,
 } from '../src/core/deriveOpenQuestions.js';
 import type { GraphState } from '../src/core/graph.js';
-import type { OpenQuestion } from '../src/types/openQuestion.js';
 import { createGraphWith15Beats } from './helpers/index.js';
 import {
   createScene,
   createCharacter,
-  createConflict,
-  createTheme,
-  createMotif,
   createCharacterArc,
   createPlotPoint,
   resetIdCounter,
@@ -49,26 +42,24 @@ describe('deriveOpenQuestions', () => {
 
   describe('With 0 scenes - BeatUnrealized', () => {
     it('should derive BeatUnrealized for all 15 beats when no scenes exist', () => {
-      const questions = deriveOpenQuestions(graph, 'OUTLINE');
+      const questions = deriveOpenQuestions(graph);
 
       const beatUnrealized = questions.filter((q) => q.type === 'BeatUnrealized');
       expect(beatUnrealized.length).toBe(15);
     });
 
     it('should include BeatUnrealized for Catalyst when no scenes', () => {
-      const questions = deriveOpenQuestions(graph, 'OUTLINE');
+      const questions = deriveOpenQuestions(graph);
 
       const catalystOQ = questions.find(
         (q) => q.type === 'BeatUnrealized' && q.target_node_id === 'beat_Catalyst'
       );
       expect(catalystOQ).toBeDefined();
       expect(catalystOQ?.domain).toBe('STRUCTURE');
-      expect(catalystOQ?.severity).toBe('IMPORTANT');
-      expect(catalystOQ?.phase).toBe('OUTLINE');
     });
 
     it('BeatUnrealized should have correct group_key format', () => {
-      const questions = deriveOpenQuestions(graph, 'OUTLINE');
+      const questions = deriveOpenQuestions(graph);
 
       const catalystOQ = questions.find(
         (q) => q.type === 'BeatUnrealized' && q.target_node_id === 'beat_Catalyst'
@@ -84,7 +75,7 @@ describe('deriveOpenQuestions', () => {
       // Connect scene to beat through PlotPoint hierarchy
       attachSceneToBeat(graph, 'scene_catalyst', 'beat_Catalyst');
 
-      const questions = deriveOpenQuestions(graph, 'OUTLINE');
+      const questions = deriveOpenQuestions(graph);
 
       const catalystOQ = questions.find(
         (q) => q.type === 'BeatUnrealized' && q.target_node_id === 'beat_Catalyst'
@@ -97,7 +88,7 @@ describe('deriveOpenQuestions', () => {
       graph.nodes.set(scene.id, scene);
       attachSceneToBeat(graph, 'scene_catalyst', 'beat_Catalyst');
 
-      const questions = deriveOpenQuestions(graph, 'OUTLINE');
+      const questions = deriveOpenQuestions(graph);
 
       const debateOQ = questions.find(
         (q) => q.type === 'BeatUnrealized' && q.target_node_id === 'beat_Debate'
@@ -115,146 +106,10 @@ describe('deriveOpenQuestions', () => {
       graph.nodes.set(scene.id, scene);
       attachSceneToBeat(graph, 'scene_catalyst', 'beat_Catalyst');
 
-      const questions = deriveOpenQuestions(graph, 'OUTLINE');
+      const questions = deriveOpenQuestions(graph);
       const beatUnrealized = questions.filter((q) => q.type === 'BeatUnrealized');
 
       expect(beatUnrealized.length).toBe(14);
-    });
-  });
-
-  describe('Phase gating', () => {
-    it('ThemeUngrounded should only appear in REVISION phase', () => {
-      const theme = createTheme({ id: 'theme_1', status: 'FLOATING' });
-      graph.nodes.set(theme.id, theme);
-
-      // OUTLINE phase - should NOT have ThemeUngrounded
-      const outlineQuestions = deriveOpenQuestions(graph, 'OUTLINE');
-      expect(
-        outlineQuestions.some((q) => q.type === 'ThemeUngrounded')
-      ).toBe(false);
-
-      // DRAFT phase - should NOT have ThemeUngrounded
-      const draftQuestions = deriveOpenQuestions(graph, 'DRAFT');
-      expect(draftQuestions.some((q) => q.type === 'ThemeUngrounded')).toBe(
-        false
-      );
-
-      // REVISION phase - SHOULD have ThemeUngrounded
-      const revisionQuestions = deriveOpenQuestions(graph, 'REVISION');
-      expect(
-        revisionQuestions.some((q) => q.type === 'ThemeUngrounded')
-      ).toBe(true);
-    });
-
-    it('MotifUngrounded should only appear in REVISION phase', () => {
-      const motif = createMotif({ id: 'motif_1', status: 'FLOATING' });
-      graph.nodes.set(motif.id, motif);
-
-      expect(
-        deriveOpenQuestions(graph, 'OUTLINE').some(
-          (q) => q.type === 'MotifUngrounded'
-        )
-      ).toBe(false);
-      expect(
-        deriveOpenQuestions(graph, 'DRAFT').some(
-          (q) => q.type === 'MotifUngrounded'
-        )
-      ).toBe(false);
-      expect(
-        deriveOpenQuestions(graph, 'REVISION').some(
-          (q) => q.type === 'MotifUngrounded'
-        )
-      ).toBe(true);
-    });
-
-    it('ArcUngrounded should only appear in REVISION phase', () => {
-      const char = createCharacter({ id: 'char_1' });
-      const arc = createCharacterArc('char_1', { id: 'arc_1', turn_refs: [] });
-      graph.nodes.set(char.id, char);
-      graph.nodes.set(arc.id, arc);
-      graph.edges.push(edges.hasArc('char_1', 'arc_1'));
-
-      expect(
-        deriveOpenQuestions(graph, 'OUTLINE').some(
-          (q) => q.type === 'ArcUngrounded'
-        )
-      ).toBe(false);
-      expect(
-        deriveOpenQuestions(graph, 'DRAFT').some((q) => q.type === 'ArcUngrounded')
-      ).toBe(false);
-      expect(
-        deriveOpenQuestions(graph, 'REVISION').some(
-          (q) => q.type === 'ArcUngrounded'
-        )
-      ).toBe(true);
-    });
-
-    it('SceneHasNoCast should appear in DRAFT and REVISION', () => {
-      const scene = createScene('beat_Catalyst', { id: 'scene_1' });
-      graph.nodes.set(scene.id, scene);
-
-      expect(
-        deriveOpenQuestions(graph, 'OUTLINE').some(
-          (q) => q.type === 'SceneHasNoCast'
-        )
-      ).toBe(false);
-      expect(
-        deriveOpenQuestions(graph, 'DRAFT').some(
-          (q) => q.type === 'SceneHasNoCast'
-        )
-      ).toBe(true);
-      expect(
-        deriveOpenQuestions(graph, 'REVISION').some(
-          (q) => q.type === 'SceneHasNoCast'
-        )
-      ).toBe(true);
-    });
-
-    it('ConflictNeedsParties should appear in DRAFT and REVISION', () => {
-      const conflict = createConflict({ id: 'conf_1' });
-      graph.nodes.set(conflict.id, conflict);
-
-      expect(
-        deriveOpenQuestions(graph, 'OUTLINE').some(
-          (q) => q.type === 'ConflictNeedsParties'
-        )
-      ).toBe(false);
-      expect(
-        deriveOpenQuestions(graph, 'DRAFT').some(
-          (q) => q.type === 'ConflictNeedsParties'
-        )
-      ).toBe(true);
-      expect(
-        deriveOpenQuestions(graph, 'REVISION').some(
-          (q) => q.type === 'ConflictNeedsParties'
-        )
-      ).toBe(true);
-    });
-
-    it('MissingCharacterArc should appear in DRAFT and REVISION (for chars in 3+ scenes)', () => {
-      const char = createCharacter({ id: 'char_1' });
-      graph.nodes.set(char.id, char);
-
-      // Add character to 3 scenes
-      for (let i = 1; i <= 3; i++) {
-        const scene = createScene('beat_Catalyst', {
-          id: `scene_${i}`,
-          order_index: i,
-        });
-        graph.nodes.set(scene.id, scene);
-        graph.edges.push(edges.hasCharacter(`scene_${i}`, 'char_1'));
-      }
-
-      expect(
-        deriveOpenQuestions(graph, 'OUTLINE').some(
-          (q) => q.type === 'MissingCharacterArc'
-        )
-      ).toBe(false);
-      expect(
-        deriveOpenQuestions(graph, 'DRAFT').some(
-          (q) => q.type === 'MissingCharacterArc'
-        )
-      ).toBe(true);
     });
   });
 
@@ -279,7 +134,7 @@ describe('deriveOpenQuestions', () => {
       attachSceneToBeat(graph, 'scene_3', 'beat_Midpoint');
       attachSceneToBeat(graph, 'scene_4', 'beat_BadGuysCloseIn');
 
-      const questions = deriveOpenQuestions(graph, 'OUTLINE');
+      const questions = deriveOpenQuestions(graph);
 
       const actImbalance = questions.filter((q) => q.type === 'ActImbalance');
       expect(actImbalance.length).toBeGreaterThan(0);
@@ -291,7 +146,7 @@ describe('deriveOpenQuestions', () => {
       const scene = createScene('beat_Catalyst', { id: 'scene_nocast' });
       graph.nodes.set(scene.id, scene);
 
-      const questions = deriveOpenQuestions(graph, 'DRAFT');
+      const questions = deriveOpenQuestions(graph);
 
       const sceneNoCast = questions.find(
         (q) => q.type === 'SceneHasNoCast' && q.target_node_id === 'scene_nocast'
@@ -306,7 +161,7 @@ describe('deriveOpenQuestions', () => {
       graph.nodes.set(char.id, char);
       graph.edges.push(edges.hasCharacter('scene_withcast', 'char_1'));
 
-      const questions = deriveOpenQuestions(graph, 'DRAFT');
+      const questions = deriveOpenQuestions(graph);
 
       const sceneNoCast = questions.find(
         (q) =>
@@ -321,7 +176,7 @@ describe('deriveOpenQuestions', () => {
       const scene = createScene('beat_Catalyst', { id: 'scene_noloc' });
       graph.nodes.set(scene.id, scene);
 
-      const questions = deriveOpenQuestions(graph, 'DRAFT');
+      const questions = deriveOpenQuestions(graph);
 
       const needsLoc = questions.find(
         (q) =>
@@ -346,7 +201,7 @@ describe('deriveOpenQuestions', () => {
         graph.edges.push(edges.hasCharacter(`scene_${i}`, 'char_noarc'));
       }
 
-      const questions = deriveOpenQuestions(graph, 'DRAFT');
+      const questions = deriveOpenQuestions(graph);
 
       const missingArc = questions.find(
         (q) =>
@@ -370,7 +225,7 @@ describe('deriveOpenQuestions', () => {
         graph.edges.push(edges.hasCharacter(`scene_${i}`, 'char_few'));
       }
 
-      const questions = deriveOpenQuestions(graph, 'DRAFT');
+      const questions = deriveOpenQuestions(graph);
 
       const missingArc = questions.find(
         (q) =>
@@ -380,96 +235,12 @@ describe('deriveOpenQuestions', () => {
     });
   });
 
-  describe('ConflictNeedsParties and ConflictNeedsManifestation', () => {
-    it('should derive both when conflict has no edges', () => {
-      const conflict = createConflict({ id: 'conf_lonely' });
-      graph.nodes.set(conflict.id, conflict);
-
-      const questions = deriveOpenQuestions(graph, 'DRAFT');
-
-      expect(
-        questions.find(
-          (q) =>
-            q.type === 'ConflictNeedsParties' &&
-            q.target_node_id === 'conf_lonely'
-        )
-      ).toBeDefined();
-      expect(
-        questions.find(
-          (q) =>
-            q.type === 'ConflictNeedsManifestation' &&
-            q.target_node_id === 'conf_lonely'
-        )
-      ).toBeDefined();
-    });
-
-    it('should NOT derive ConflictNeedsParties when conflict has INVOLVES edge', () => {
-      const conflict = createConflict({ id: 'conf_1' });
-      const char = createCharacter({ id: 'char_1' });
-      graph.nodes.set(conflict.id, conflict);
-      graph.nodes.set(char.id, char);
-      graph.edges.push(edges.involves('conf_1', 'char_1'));
-
-      const questions = deriveOpenQuestions(graph, 'DRAFT');
-
-      expect(
-        questions.find(
-          (q) =>
-            q.type === 'ConflictNeedsParties' && q.target_node_id === 'conf_1'
-        )
-      ).toBeUndefined();
-    });
-  });
-
   describe('Helper functions', () => {
     it('filterByDomain should filter correctly', () => {
-      const questions = deriveOpenQuestions(graph, 'OUTLINE');
+      const questions = deriveOpenQuestions(graph);
 
       const structureOnly = filterByDomain(questions, 'STRUCTURE');
       expect(structureOnly.every((q) => q.domain === 'STRUCTURE')).toBe(true);
-    });
-
-    it('filterBySeverity should filter correctly', () => {
-      const questions = deriveOpenQuestions(graph, 'OUTLINE');
-
-      const importantOnly = filterBySeverity(questions, 'IMPORTANT');
-      expect(importantOnly.every((q) => q.severity === 'IMPORTANT')).toBe(true);
-    });
-
-    it('filterByPhase should filter correctly', () => {
-      // Add entities that generate questions in different phases
-      const scene = createScene('beat_Catalyst', { id: 'scene_1' });
-      const theme = createTheme({ id: 'theme_1', status: 'FLOATING' });
-      graph.nodes.set(scene.id, scene);
-      graph.nodes.set(theme.id, theme);
-
-      const questions = deriveOpenQuestions(graph, 'REVISION');
-
-      const outlinePhase = filterByPhase(questions, 'OUTLINE');
-      expect(outlinePhase.every((q) => q.phase === 'OUTLINE')).toBe(true);
-    });
-
-    it('hasBlockingQuestions should return true when BLOCKING questions exist', () => {
-      const questions: OpenQuestion[] = [
-        {
-          id: 'oq_test',
-          type: 'SceneUnplaced',
-          domain: 'STRUCTURE',
-          severity: 'BLOCKING',
-          phase: 'OUTLINE',
-          group_key: 'TEST',
-          message: 'Test blocking',
-        },
-      ];
-
-      expect(hasBlockingQuestions(questions)).toBe(true);
-    });
-
-    it('hasBlockingQuestions should return false when no BLOCKING questions', () => {
-      const questions = deriveOpenQuestions(graph, 'OUTLINE');
-
-      // BeatUnrealized is IMPORTANT, not BLOCKING
-      expect(hasBlockingQuestions(questions)).toBe(false);
     });
   });
 
@@ -477,7 +248,7 @@ describe('deriveOpenQuestions', () => {
     it('empty_story should have 15 BeatUnrealized questions', () => {
       const emptyGraph = fixtures.emptyStory();
 
-      const questions = deriveOpenQuestions(emptyGraph, 'OUTLINE');
+      const questions = deriveOpenQuestions(emptyGraph);
       const beatUnrealized = questions.filter((q) => q.type === 'BeatUnrealized');
 
       expect(beatUnrealized.length).toBe(15);
@@ -486,7 +257,7 @@ describe('deriveOpenQuestions', () => {
     it('after_acceptance should have 14 BeatUnrealized (Catalyst has scene)', () => {
       const afterGraph = fixtures.afterAcceptance();
 
-      const questions = deriveOpenQuestions(afterGraph, 'OUTLINE');
+      const questions = deriveOpenQuestions(afterGraph);
       const beatUnrealized = questions.filter((q) => q.type === 'BeatUnrealized');
 
       expect(beatUnrealized.length).toBe(14);
