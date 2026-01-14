@@ -175,9 +175,11 @@ export function createGenerateHandler(ctx: StorageContext) {
     res: Response<APIResponse<GenerateResponseData>>,
     next: NextFunction
   ): Promise<void> => {
+    console.log('[generateHandler] Received generate request');
     try {
       const { id } = req.params;
       const { entryPoint, depth = 'medium', count = 'few', direction } = req.body;
+      console.log(`[generateHandler] Story: ${id}, entryPoint: ${entryPoint?.type}, depth: ${depth}, count: ${count}`);
 
       if (!entryPoint || !entryPoint.type) {
         throw new BadRequestError('entryPoint with type is required');

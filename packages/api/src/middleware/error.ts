@@ -62,7 +62,9 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ): void {
+  // Log full error for debugging
   console.error('API Error:', err.message);
+  console.error('Stack:', err.stack);
 
   if (err instanceof ValidationError) {
     const response: ValidationErrorResponse = {
@@ -83,10 +85,11 @@ export function errorHandler(
     return;
   }
 
-  // Unknown error
+  // Unknown error - log full details and return message in dev
+  console.error('Full error object:', err);
   res.status(500).json({
     success: false,
-    error: 'Internal server error',
+    error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message,
   });
 }
 

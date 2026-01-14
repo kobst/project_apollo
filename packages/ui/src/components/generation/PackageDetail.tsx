@@ -42,11 +42,11 @@ function categorizeNodes(nodes: NodeChangeAI[]): {
 function getOpDisplay(op: string): { icon: string; className: string } {
   switch (op) {
     case 'add':
-      return { icon: '+', className: styles.opAdd };
+      return { icon: '+', className: styles.opAdd ?? '' };
     case 'modify':
-      return { icon: '~', className: styles.opModify };
+      return { icon: '~', className: styles.opModify ?? '' };
     case 'delete':
-      return { icon: '-', className: styles.opDelete };
+      return { icon: '-', className: styles.opDelete ?? '' };
     default:
       return { icon: '?', className: '' };
   }

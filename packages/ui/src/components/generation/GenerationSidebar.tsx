@@ -5,6 +5,7 @@ import type {
   GenerationEntryPoint,
   GenerationDepth,
   GenerationCount,
+  GenerateRequest,
   NarrativePackage,
 } from '../../api/types';
 import styles from './GenerationSidebar.module.css';
@@ -84,12 +85,16 @@ export function GenerationSidebar({
     if (!currentStoryId) return;
 
     const entryPoint: GenerationEntryPoint = { type: entryType };
-    await startGeneration(currentStoryId, {
+    const request: GenerateRequest = {
       entryPoint,
       depth,
       count,
-      direction: direction.trim() || undefined,
-    });
+    };
+    const trimmedDirection = direction.trim();
+    if (trimmedDirection) {
+      request.direction = trimmedDirection;
+    }
+    await startGeneration(currentStoryId, request);
   }, [currentStoryId, entryType, depth, count, direction, startGeneration]);
 
   const packageTree = session ? buildPackageTree(session.packages) : [];
@@ -186,14 +191,21 @@ export function GenerationSidebar({
             {DEPTH_OPTIONS.map((opt) => (
               <label
                 key={opt.value}
-                className={`${styles.radioOption} ${depth === opt.value ? styles.selected : ''}`}
+                className={`${styles.radioOption} ${depth === opt.value ? styles.selected : ''} ${loading ? styles.disabled : ''}`}
+                onClick={(e) => {
+                  if (loading) {
+                    e.preventDefault();
+                    return;
+                  }
+                  setDepth(opt.value);
+                }}
               >
                 <input
                   type="radio"
                   name="depth"
                   value={opt.value}
                   checked={depth === opt.value}
-                  onChange={() => setDepth(opt.value)}
+                  onChange={() => {}}
                   disabled={loading}
                   className={styles.radioInput}
                 />
@@ -210,14 +222,21 @@ export function GenerationSidebar({
             {COUNT_OPTIONS.map((opt) => (
               <label
                 key={opt.value}
-                className={`${styles.radioOption} ${count === opt.value ? styles.selected : ''}`}
+                className={`${styles.radioOption} ${count === opt.value ? styles.selected : ''} ${loading ? styles.disabled : ''}`}
+                onClick={(e) => {
+                  if (loading) {
+                    e.preventDefault();
+                    return;
+                  }
+                  setCount(opt.value);
+                }}
               >
                 <input
                   type="radio"
                   name="count"
                   value={opt.value}
                   checked={count === opt.value}
-                  onChange={() => setCount(opt.value)}
+                  onChange={() => {}}
                   disabled={loading}
                   className={styles.radioInput}
                 />

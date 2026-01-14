@@ -62,6 +62,9 @@ export async function generatePackages(
   llmClient: LLMClient,
   streamCallbacks?: StreamCallbacks
 ): Promise<GenerateResponse> {
+  console.log(`[generatePackages] Starting generation for story: ${storyId}`);
+  console.log(`[generatePackages] Entry point: ${request.entryPoint.type}, depth: ${request.depth}, count: ${request.count}`);
+
   const { entryPoint, depth, count, direction } = request;
 
   // 1. Load graph state and metadata
@@ -108,18 +111,33 @@ export async function generatePackages(
   const prompt = ai.buildGenerationPrompt(promptParams);
 
   // 6. Call LLM (with or without streaming)
+  console.log(`[generatePackages] Calling LLM (streaming: ${Boolean(streamCallbacks)})...`);
   let response: string;
 
-  if (streamCallbacks) {
-    const llmResponse = await llmClient.stream(prompt, undefined, streamCallbacks);
-    response = llmResponse.content;
-  } else {
-    const llmResponse = await llmClient.complete(prompt);
-    response = llmResponse.content;
+  try {
+    if (streamCallbacks) {
+      const llmResponse = await llmClient.stream(prompt, undefined, streamCallbacks);
+      response = llmResponse.content;
+    } else {
+      const llmResponse = await llmClient.complete(prompt);
+      response = llmResponse.content;
+    }
+    console.log(`[generatePackages] LLM response received, length: ${response.length}`);
+  } catch (llmError) {
+    console.error('[generatePackages] LLM call failed:', llmError);
+    throw llmError;
   }
 
   // 7. Parse response
-  let result = ai.parseGenerationResponse(response);
+  console.log('Parsing LLM response...');
+  let result: ai.GenerationResult;
+  try {
+    result = ai.parseGenerationResponse(response);
+  } catch (parseError) {
+    console.error('Failed to parse LLM response:', parseError);
+    console.error('Raw response (first 2000 chars):', response.slice(0, 2000));
+    throw parseError;
+  }
 
   // 8. Validate and fix IDs
   const existingNodeIds = new Set(graph.nodes.keys());

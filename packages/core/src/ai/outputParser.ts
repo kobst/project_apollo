@@ -110,11 +110,57 @@ function extractJson(raw: string): string {
 }
 
 /**
+ * Fix newlines inside JSON strings.
+ *
+ * LLMs often produce JSON with literal newlines inside string values.
+ * This function replaces them with spaces while preserving newlines
+ * outside of strings (for formatting).
+ */
+function fixNewlinesInStrings(json: string): string {
+  const result: string[] = [];
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < json.length; i++) {
+    const char = json.charAt(i);
+
+    if (escaped) {
+      result.push(char);
+      escaped = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      result.push(char);
+      escaped = true;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = !inString;
+      result.push(char);
+      continue;
+    }
+
+    // Replace newlines inside strings with spaces
+    if (inString && (char === '\n' || char === '\r')) {
+      result.push(' ');
+      continue;
+    }
+
+    result.push(char);
+  }
+
+  return result.join('');
+}
+
+/**
  * Clean common JSON formatting issues.
  *
  * Handles:
+ * - Newlines inside strings (replaced with spaces)
  * - Trailing commas
- * - Single quotes (basic replacement)
+ * - Missing commas between array elements or object properties
  *
  * @param json - Raw JSON string
  * @returns Cleaned JSON string
@@ -122,8 +168,30 @@ function extractJson(raw: string): string {
 function cleanJson(json: string): string {
   let cleaned = json.trim();
 
+  // First, fix newlines inside strings (most common LLM error)
+  cleaned = fixNewlinesInStrings(cleaned);
+
   // Remove trailing commas before } or ]
   cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
+
+  // Add missing commas between } and { (objects in array)
+  cleaned = cleaned.replace(/\}(\s*)\{/g, '},$1{');
+
+  // Add missing commas between ] and { (end of array, start of object)
+  cleaned = cleaned.replace(/\](\s*)\{/g, '],$1{');
+
+  // Add missing commas between } and [ (end of object, start of array)
+  cleaned = cleaned.replace(/\}(\s*)\[/g, '},$1[');
+
+  // Add missing commas between ] and [ (arrays)
+  cleaned = cleaned.replace(/\](\s*)\[/g, '],$1[');
+
+  // Add missing commas between string/number/boolean and { or [
+  cleaned = cleaned.replace(/(["'\d]|true|false|null)(\s*)\{/g, '$1,$2{');
+  cleaned = cleaned.replace(/(["'\d]|true|false|null)(\s*)\[/g, '$1,$2[');
+
+  // Add missing commas between } or ] and string start
+  cleaned = cleaned.replace(/([}\]])(\s*)"(?![:,}\]])/g, '$1,$2"');
 
   return cleaned;
 }

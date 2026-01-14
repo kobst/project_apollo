@@ -76,7 +76,15 @@ ${direction ? `## User Direction\n\n"${direction}"\n` : ''}
 
 ## Output Format
 
-Respond with a JSON object matching this schema:
+**CRITICAL: You MUST output valid, parseable JSON. Follow these rules strictly:**
+
+1. **NO newlines inside strings** - Use spaces or \\n escape sequences instead
+2. **Escape special characters** - Use \\" for quotes, \\\\ for backslashes
+3. **NO trailing commas** - Last item in arrays/objects must NOT have a comma after it
+4. **Keep strings concise** - Descriptions should be 1-2 sentences max
+5. **Test mentally** - Before outputting, verify the JSON would parse correctly
+
+Schema:
 
 \`\`\`json
 {
@@ -100,7 +108,7 @@ Respond with a JSON object matching this schema:
             "operation": "add",
             "node_type": "Character",
             "node_id": "character_12345_xyz",
-            "data": { "name": "...", "description": "..." }
+            "data": { "name": "Character Name", "description": "Brief description in one sentence." }
           }
         ],
         "edges": [
@@ -115,15 +123,7 @@ Respond with a JSON object matching this schema:
       "impact": {
         "fulfills_gaps": ["gap_id_1"],
         "creates_gaps": ["New gap description"],
-        "conflicts": [
-          {
-            "type": "interferes",
-            "existing_node_id": "character_456",
-            "description": "May overshadow existing character",
-            "source": "llm",
-            "resolution_included": false
-          }
-        ]
+        "conflicts": []
       }
     }
   ]
@@ -137,10 +137,10 @@ Respond with a JSON object matching this schema:
 3. **Coherence**: All elements within a package should work together
 4. **Alignment**: Respect the story's themes, tone, and constraints
 5. **Gaps**: Try to fulfill open gaps when relevant
-6. **Conflicts**: Flag any conflicts with existing content
+6. **Conflicts**: Flag any conflicts with existing content (empty array if none)
 7. **IDs**: Use format \`{type}_{timestamp}_{5chars}\` for new node IDs
 
-Respond with only the JSON object.`;
+Output ONLY the JSON object, no markdown code blocks, no explanation.`;
 }
 
 /**
