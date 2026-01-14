@@ -17,6 +17,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
     "@apollo/core": "*",
+    "dotenv": "^17.2.3",
     "express": "^4.21.0"
   },
   "devDependencies": {

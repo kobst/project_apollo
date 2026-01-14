@@ -73,6 +73,15 @@ import type {
   CreateIdeaData,
   UpdateIdeaData,
   DeleteIdeaData,
+  // AI Generation types
+  InterpretRequest,
+  InterpretResponseData,
+  GenerateRequest,
+  GenerateResponseData,
+  RefineRequest,
+  RefineResponseData,
+  SessionResponseData,
+  AcceptPackageResponseData,
 } from './types';
 
 const API_BASE = '/api';
@@ -319,6 +328,181 @@ export const api = {
     PATCH<UpdateIdeaData>(`/stories/${storyId}/ideas/${ideaId}`, { changes }),
   deleteIdea: (storyId: string, ideaId: string) =>
     DELETE<DeleteIdeaData>(`/stories/${storyId}/ideas/${ideaId}`),
+
+  // ==========================================================================
+  // AI Generation
+  // ==========================================================================
+
+  /**
+   * Interpret freeform user input into structured proposals
+   */
+  interpret: (storyId: string, data: InterpretRequest) =>
+    POST<InterpretResponseData>(`/stories/${storyId}/interpret`, data),
+
+  /**
+   * Generate narrative packages from an entry point
+   */
+  generate: (storyId: string, data: GenerateRequest) =>
+    POST<GenerateResponseData>(`/stories/${storyId}/generate`, data),
+
+  /**
+   * Regenerate packages using the same parameters as the current session
+   */
+  regenerate: (storyId: string) =>
+    POST<GenerateResponseData>(`/stories/${storyId}/regenerate`),
+
+  /**
+   * Refine a package with user guidance to produce variations
+   */
+  refine: (storyId: string, data: RefineRequest) =>
+    POST<RefineResponseData>(`/stories/${storyId}/refine`, data),
+
+  /**
+   * Get the current generation session for a story
+   */
+  getSession: (storyId: string) =>
+    GET<SessionResponseData>(`/stories/${storyId}/session`),
+
+  /**
+   * Delete/abandon the current generation session
+   */
+  deleteSession: (storyId: string) =>
+    DELETE<{ abandoned: boolean }>(`/stories/${storyId}/session`),
+
+  /**
+   * Accept a package and apply its changes to the graph
+   */
+  acceptPackage: (storyId: string, packageId: string) =>
+    POST<AcceptPackageResponseData>(`/stories/${storyId}/accept-package`, { packageId }),
 };
+
+// =============================================================================
+// Streaming API helpers
+// =============================================================================
+
+/**
+ * Create an EventSource for streaming AI responses.
+ *
+ * @example
+ * ```typescript
+ * const { eventSource, abort } = createStreamingRequest(
+ *   '/api/stories/story_123/generate',
+ *   { entryPoint: { type: 'beat', targetId: 'beat_Midpoint' } }
+ * );
+ *
+ * eventSource.onmessage = (event) => {
+ *   const data = JSON.parse(event.data);
+ *   if (data.type === 'token') {
+ *     console.log('Token:', data.content);
+ *   } else if (data.type === 'result') {
+ *     console.log('Result:', data.data);
+ *   }
+ * };
+ *
+ * // To abort:
+ * abort();
+ * ```
+ */
+export function createStreamingRequest(
+  endpoint: string,
+  body: unknown
+): { eventSource: EventSource; abort: () => void } {
+  // For SSE with POST, we need to use fetch with ReadableStream
+  // EventSource only supports GET, so we create a custom solution
+  const controller = new AbortController();
+
+  // Create a custom event target to mimic EventSource API
+  const eventTarget = new EventTarget();
+  const customEventSource = {
+    onmessage: null as ((event: MessageEvent) => void) | null,
+    onerror: null as ((event: Event) => void) | null,
+    onopen: null as ((event: Event) => void) | null,
+    close: () => controller.abort(),
+    addEventListener: (type: string, listener: EventListener) =>
+      eventTarget.addEventListener(type, listener),
+    removeEventListener: (type: string, listener: EventListener) =>
+      eventTarget.removeEventListener(type, listener),
+  };
+
+  // Start the streaming fetch
+  (async () => {
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        const error = new Error(errorData.error || 'Stream request failed');
+        if (customEventSource.onerror) {
+          customEventSource.onerror(new ErrorEvent('error', { error }));
+        }
+        return;
+      }
+
+      if (customEventSource.onopen) {
+        customEventSource.onopen(new Event('open'));
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete SSE messages
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') {
+              return;
+            }
+            try {
+              // Validate JSON is parseable before dispatching
+              JSON.parse(data);
+              const event = new MessageEvent('message', { data });
+              eventTarget.dispatchEvent(event);
+              if (customEventSource.onmessage) {
+                customEventSource.onmessage(event);
+              }
+            } catch {
+              // Ignore parse errors for incomplete JSON
+            }
+          }
+        }
+      }
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        if (customEventSource.onerror) {
+          customEventSource.onerror(
+            new ErrorEvent('error', { error: err as Error })
+          );
+        }
+      }
+    }
+  })();
+
+  return {
+    eventSource: customEventSource as unknown as EventSource,
+    abort: () => controller.abort(),
+  };
+}
 
 export { ApiError };

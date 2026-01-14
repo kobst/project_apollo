@@ -844,3 +844,214 @@ export interface UpdateContextData {
   modifiedAt: string;
   newVersionId: string;
 }
+
+// =============================================================================
+// AI Generation Types
+// =============================================================================
+
+// Entry point types for generation
+export type GenerationEntryPointType =
+  | 'beat'
+  | 'plotPoint'
+  | 'character'
+  | 'gap'
+  | 'idea'
+  | 'naked';
+
+export interface GenerationEntryPoint {
+  type: GenerationEntryPointType;
+  targetId?: string;
+}
+
+// Generation depth and count
+export type GenerationDepth = 'narrow' | 'medium' | 'wide';
+export type GenerationCount = 'few' | 'standard' | 'many';
+
+// Interpretation request/response
+export interface InterpretRequest {
+  userInput: string;
+  targetType?: string;
+}
+
+export interface InterpretationProposal {
+  type: 'node' | 'storyContext' | 'edge';
+  operation: 'add' | 'modify';
+  target_type?: string;
+  data: Record<string, unknown>;
+  rationale: string;
+  relates_to?: string[];
+}
+
+export interface InterpretResponseData {
+  interpretation: {
+    summary: string;
+    confidence: number;
+  };
+  proposals: InterpretationProposal[];
+  alternatives?: Array<{
+    summary: string;
+    confidence: number;
+  }>;
+}
+
+// Generation request/response
+export interface GenerateRequest {
+  entryPoint: GenerationEntryPoint;
+  depth?: GenerationDepth;
+  count?: GenerationCount;
+  direction?: string;
+}
+
+export interface NodeChangeAI {
+  operation: 'add' | 'modify' | 'delete';
+  node_type: string;
+  node_id: string;
+  data?: Record<string, unknown>;
+  previous_data?: Record<string, unknown>;
+}
+
+export interface EdgeChangeAI {
+  operation: 'add' | 'delete';
+  edge_type: string;
+  from: string;
+  to: string;
+  properties?: Record<string, unknown>;
+}
+
+export interface StoryContextChange {
+  operation: 'add' | 'modify' | 'delete';
+  section: string;
+  content: string;
+  previous_content?: string;
+}
+
+export interface ConflictInfo {
+  type: 'contradicts' | 'duplicates' | 'interferes';
+  existing_node_id: string;
+  description: string;
+  source: 'llm' | 'lint';
+  resolution_included: boolean;
+}
+
+export interface PackageChanges {
+  storyContext?: StoryContextChange[];
+  nodes: NodeChangeAI[];
+  edges: EdgeChangeAI[];
+}
+
+export interface PackageImpact {
+  fulfills_gaps: string[];
+  creates_gaps: string[];
+  conflicts: ConflictInfo[];
+}
+
+export interface NarrativePackage {
+  id: string;
+  title: string;
+  rationale: string;
+  confidence: number;
+  parent_package_id?: string;
+  refinement_prompt?: string;
+  style_tags: string[];
+  changes: PackageChanges;
+  impact: PackageImpact;
+}
+
+export interface GenerateResponseData {
+  sessionId: string;
+  packages: NarrativePackage[];
+}
+
+// Refine request/response
+export interface RefineRequest {
+  basePackageId: string;
+  keepElements?: string[];
+  regenerateElements?: string[];
+  guidance: string;
+  depth?: GenerationDepth;
+  count?: GenerationCount;
+}
+
+export interface RefineResponseData {
+  variations: NarrativePackage[];
+}
+
+// Session types
+export type SessionStatus = 'active' | 'accepted' | 'abandoned';
+
+export interface RefinableElement {
+  id: string;
+  type: string;
+  label: string;
+}
+
+export interface RefinableStoryContextChange {
+  section: string;
+  operation: 'add' | 'modify' | 'delete';
+}
+
+export interface RefinableElements {
+  nodes: RefinableElement[];
+  storyContextChanges: RefinableStoryContextChange[];
+}
+
+export interface GenerationSession {
+  id: string;
+  storyId: string;
+  createdAt: string;
+  updatedAt: string;
+  entryPoint: GenerationEntryPoint;
+  packages: NarrativePackage[];
+  currentPackageId?: string;
+  status: SessionStatus;
+  acceptedPackageId?: string;
+  refinableElements?: RefinableElements;
+}
+
+export interface SessionResponseData extends GenerationSession {}
+
+// Accept package response
+export interface AcceptPackageResponseData {
+  packageId: string;
+  title: string;
+  newVersionId: string;
+  patchOpsApplied: number;
+  nodesAdded: number;
+  nodesModified: number;
+  nodesDeleted: number;
+  edgesAdded: number;
+  edgesDeleted: number;
+  storyContextUpdated: boolean;
+}
+
+// Streaming event types (for SSE)
+export type StreamEventType = 'token' | 'usage' | 'error' | 'result';
+
+export interface StreamTokenEvent {
+  type: 'token';
+  content: string;
+}
+
+export interface StreamUsageEvent {
+  type: 'usage';
+  usage: {
+    input_tokens: number;
+    output_tokens: number;
+  };
+}
+
+export interface StreamErrorEvent {
+  type: 'error';
+  message: string;
+}
+
+export interface StreamResultEvent<T> {
+  type: 'result';
+  data: T;
+}
+
+export type StreamEvent<T> =
+  | StreamTokenEvent
+  | StreamUsageEvent
+  | StreamErrorEvent
+  | StreamResultEvent<T>;

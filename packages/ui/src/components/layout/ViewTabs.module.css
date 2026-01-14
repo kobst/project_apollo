@@ -32,3 +32,13 @@
   background: #3a3a5a;
   color: #fff;
 }
+
+.badge {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 6px;
+  background: #5a9a5a;
+  border-radius: 50%;
+  vertical-align: middle;
+}

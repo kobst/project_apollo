@@ -1,0 +1,83 @@
+.container {
+  display: flex;
+  height: 100%;
+  background: #12121f;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Error Banner */
+.error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  background: rgba(229, 115, 115, 0.1);
+  border-bottom: 1px solid rgba(229, 115, 115, 0.2);
+  color: #e57373;
+  font-size: 13px;
+}
+
+.errorIcon {
+  font-size: 16px;
+}
+
+/* Empty States */
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: #12121f;
+}
+
+.emptyContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  text-align: center;
+}
+
+.emptyContent h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #ccc;
+  margin: 0 0 12px 0;
+}
+
+.emptyContent p {
+  font-size: 15px;
+  color: #777;
+  margin: 0;
+  max-width: 500px;
+  line-height: 1.6;
+}
+
+.emptyHints {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.hint {
+  font-size: 13px;
+  color: #666;
+  padding: 10px 16px;
+  background: #1a1a2e;
+  border-radius: 6px;
+  border-left: 3px solid #3a3a5a;
+}
+
+.hint strong {
+  color: #888;
+}

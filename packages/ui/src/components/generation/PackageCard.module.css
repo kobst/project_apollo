@@ -1,0 +1,269 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background: #1e1e2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.card:hover {
+  border-color: #3a3a5a;
+  background: #222238;
+}
+
+.card.selected {
+  border-color: #5a7ca5;
+  background: rgba(90, 124, 165, 0.08);
+}
+
+.card.expanded {
+  cursor: default;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ddd;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.confidence {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.confidenceHigh {
+  background: rgba(129, 199, 132, 0.15);
+  color: #81c784;
+}
+
+.confidenceMedium {
+  background: rgba(255, 213, 79, 0.15);
+  color: #ffd54f;
+}
+
+.confidenceLow {
+  background: rgba(229, 115, 115, 0.15);
+  color: #e57373;
+}
+
+/* Rationale */
+.rationale {
+  font-size: 12px;
+  color: #888;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Tags */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  padding: 2px 8px;
+  background: #2a2a4a;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #999;
+}
+
+/* Changes */
+.changes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sectionHeader {
+  font-size: 10px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.summary {
+  font-size: 12px;
+  color: #888;
+  padding-left: 4px;
+}
+
+/* Change items */
+.changeItem {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: #252540;
+}
+
+.opIcon {
+  font-weight: 700;
+  font-family: monospace;
+  width: 12px;
+  text-align: center;
+}
+
+.opAdd .opIcon {
+  color: #81c784;
+}
+
+.opModify .opIcon {
+  color: #ffd54f;
+}
+
+.opDelete .opIcon {
+  color: #e57373;
+}
+
+.nodeType {
+  color: #7a9cc5;
+  font-weight: 500;
+}
+
+.nodeLabel {
+  color: #ccc;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Edge items */
+.edgeItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 2px 6px 2px 20px;
+  color: #777;
+}
+
+.edgeIcon {
+  color: #555;
+  font-family: monospace;
+}
+
+.edgeType {
+  color: #6a8aaa;
+}
+
+.edgeArrow {
+  color: #555;
+}
+
+.edgeTarget {
+  color: #888;
+}
+
+/* Impact */
+.impact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid #2a2a4a;
+}
+
+.impactGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.impactIcon {
+  width: 14px;
+  text-align: center;
+}
+
+.impactIcon:first-child {
+  color: #81c784;
+}
+
+.impactLabel {
+  color: #888;
+}
+
+.impactValue {
+  color: #aaa;
+}
+
+/* Conflicts */
+.conflicts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.conflictItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 11px;
+  padding: 6px 8px;
+  background: rgba(229, 115, 115, 0.08);
+  border-radius: 4px;
+  border-left: 2px solid #e57373;
+}
+
+.conflictIcon {
+  color: #e57373;
+}
+
+.conflictType {
+  color: #e57373;
+  font-weight: 500;
+}
+
+.conflictDesc {
+  color: #c97373;
+  flex: 1;
+}
+
+/* Lineage */
+.lineage {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #666;
+  padding-top: 6px;
+  border-top: 1px solid #2a2a4a;
+}
+
+.lineageIcon {
+  color: #5a7ca5;
+}
+
+.lineageText {
+  font-style: italic;
+}
