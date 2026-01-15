@@ -53,6 +53,7 @@ import {
 import {
   createLLMClient,
   isLLMConfigured,
+  getMissingKeyError,
   type StreamCallbacks,
 } from '../ai/llmClient.js';
 import { NotFoundError, BadRequestError } from '../middleware/error.js';
@@ -89,10 +90,8 @@ export function createInterpretHandler(ctx: StorageContext) {
       }
 
       if (!isLLMConfigured()) {
-        throw new BadRequestError(
-          'ANTHROPIC_API_KEY not configured',
-          'Set the ANTHROPIC_API_KEY environment variable'
-        );
+        const { message, suggestion } = getMissingKeyError();
+        throw new BadRequestError(message, suggestion);
       }
 
       const llmClient = createLLMClient();
@@ -186,10 +185,8 @@ export function createGenerateHandler(ctx: StorageContext) {
       }
 
       if (!isLLMConfigured()) {
-        throw new BadRequestError(
-          'ANTHROPIC_API_KEY not configured',
-          'Set the ANTHROPIC_API_KEY environment variable'
-        );
+        const { message, suggestion } = getMissingKeyError();
+        throw new BadRequestError(message, suggestion);
       }
 
       const llmClient = createLLMClient();
@@ -258,10 +255,8 @@ export function createRegenerateHandler(ctx: StorageContext) {
       const { id } = req.params;
 
       if (!isLLMConfigured()) {
-        throw new BadRequestError(
-          'ANTHROPIC_API_KEY not configured',
-          'Set the ANTHROPIC_API_KEY environment variable'
-        );
+        const { message, suggestion } = getMissingKeyError();
+        throw new BadRequestError(message, suggestion);
       }
 
       const llmClient = createLLMClient();
@@ -348,10 +343,8 @@ export function createRefineHandler(ctx: StorageContext) {
       }
 
       if (!isLLMConfigured()) {
-        throw new BadRequestError(
-          'ANTHROPIC_API_KEY not configured',
-          'Set the ANTHROPIC_API_KEY environment variable'
-        );
+        const { message, suggestion } = getMissingKeyError();
+        throw new BadRequestError(message, suggestion);
       }
 
       const llmClient = createLLMClient();
