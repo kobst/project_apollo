@@ -888,6 +888,8 @@ export interface InterpretResponseData {
     confidence: number;
   };
   proposals: InterpretationProposal[];
+  /** Pre-computed validation for each proposal (by index) */
+  validations: Record<number, ProposalValidation>;
   alternatives?: Array<{
     summary: string;
     confidence: number;
@@ -1055,3 +1057,56 @@ export type StreamEvent<T> =
   | StreamUsageEvent
   | StreamErrorEvent
   | StreamResultEvent<T>;
+
+// =============================================================================
+// Proposal Validation Types
+// =============================================================================
+
+export type SimilarityType = 'exact' | 'fuzzy' | 'partial';
+
+export interface SimilarityMatch {
+  existingNodeId: string;
+  existingNodeType: string;
+  existingNodeName: string;
+  matchedField: string;
+  similarity: number;
+  type: SimilarityType;
+}
+
+export interface GapMatch {
+  gapId: string;
+  gapTitle: string;
+  gapTier: GapTier;
+  fulfillment: 'full' | 'partial';
+  reason: string;
+}
+
+export interface ConnectionSuggestion {
+  nodeId: string;
+  nodeType: string;
+  nodeName: string;
+  edgeType: EdgeType;
+  direction: 'from' | 'to';
+  reason: string;
+  confidence: number;
+}
+
+export interface ProposalWarning {
+  code: string;
+  severity: 'info' | 'warning' | 'error';
+  message: string;
+  suggestion?: string;
+}
+
+export interface ProposalValidation {
+  similarities: SimilarityMatch[];
+  fulfillsGaps: GapMatch[];
+  suggestedConnections: ConnectionSuggestion[];
+  warnings: ProposalWarning[];
+  score: number;
+}
+
+export interface ConvertProposalResponseData {
+  package: NarrativePackage;
+  validation: ProposalValidation;
+}

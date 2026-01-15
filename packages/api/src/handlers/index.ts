@@ -79,5 +79,6 @@ export {
   createGetSessionHandler,
   createDeleteSessionHandler,
   createConvertProposalHandler,
+  createApplyPackageHandler,
   createAcceptPackageHandler,
 } from './generate.js';

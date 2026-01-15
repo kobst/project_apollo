@@ -70,8 +70,9 @@
 
 .selectors {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
   flex: 1;
 }
 
@@ -180,4 +181,270 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* AI Toggle */
+.aiToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.aiToggle input {
+  width: 14px;
+  height: 14px;
+  accent-color: #9c7cf5;
+}
+
+.aiToggleLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9c7cf5;
+  letter-spacing: 0.5px;
+}
+
+.aiToggle input:disabled + .aiToggleLabel {
+  opacity: 0.5;
+}
+
+/* AI Interpretation Results */
+.aiInterpretation {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: rgba(156, 124, 245, 0.08);
+  border: 1px solid rgba(156, 124, 245, 0.2);
+  border-radius: 6px;
+}
+
+.interpretationHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.interpretationSummary {
+  font-size: 13px;
+  color: #ccc;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.interpretationConfidence {
+  font-size: 11px;
+  color: #9c7cf5;
+  white-space: nowrap;
+}
+
+/* AI Proposal Card */
+.proposalCard {
+  background: #252540;
+  border: 1px solid #3a3a5a;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.proposalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.proposalType {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9c7cf5;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.proposalOp {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(90, 124, 165, 0.2);
+  border-radius: 3px;
+  color: #8ab4f8;
+}
+
+.proposalName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ddd;
+  margin-bottom: 6px;
+}
+
+.proposalDescription {
+  font-size: 12px;
+  color: #aaa;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.proposalRationale {
+  font-size: 11px;
+  color: #777;
+  font-style: italic;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.proposalRelations {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.proposalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.acceptBtn {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 4px;
+  background: #4a7c59;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.acceptBtn:hover:not(:disabled) {
+  background: #5a9a6a;
+}
+
+.acceptBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Alternatives */
+.alternatives {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #3a3a5a;
+}
+
+.alternativesTitle {
+  font-size: 11px;
+  font-weight: 500;
+  color: #666;
+  margin: 0 0 8px 0;
+}
+
+.alternative {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 12px;
+  color: #888;
+}
+
+.altConfidence {
+  font-size: 11px;
+  color: #666;
+}
+
+/* Validation Results */
+.validationResults {
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  border: 1px solid #3a3a5a;
+}
+
+.validationSection {
+  margin-bottom: 6px;
+}
+
+.validationSection:last-child {
+  margin-bottom: 0;
+}
+
+.validationSuccess {
+  font-size: 11px;
+  color: #81c784;
+  display: block;
+  padding: 4px 0;
+}
+
+.validationWarning {
+  font-size: 11px;
+  color: #ffb74d;
+  display: block;
+  padding: 4px 0;
+}
+
+.validationError {
+  font-size: 11px;
+  color: #e57373;
+  display: block;
+  padding: 4px 0;
+}
+
+.validationInfo {
+  font-size: 11px;
+  color: #64b5f6;
+  display: block;
+  padding: 4px 0;
+}
+
+.connectionSuggestion {
+  font-size: 10px;
+  color: #888;
+  padding: 2px 0 2px 12px;
+  font-family: monospace;
+}
+
+.validationScore {
+  font-size: 10px;
+  color: #888;
+  text-align: right;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #3a3a5a;
+}
+
+.validateBtn {
+  padding: 5px 12px;
+  border: 1px solid #5a7ca5;
+  border-radius: 4px;
+  background: transparent;
+  color: #8ab4f8;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.validateBtn:hover:not(:disabled) {
+  background: rgba(90, 124, 165, 0.2);
+}
+
+.validateBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Proposal with errors */
+.hasErrors {
+  border-color: rgba(229, 115, 115, 0.4);
+}
+
+.acceptBtnWarning {
+  background: #7a5a4a;
+}
+
+.acceptBtnWarning:hover:not(:disabled) {
+  background: #8a6a5a;
 }

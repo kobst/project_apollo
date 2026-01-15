@@ -66,6 +66,7 @@ import {
   createGetSessionHandler,
   createDeleteSessionHandler,
   createConvertProposalHandler,
+  createApplyPackageHandler,
   createAcceptPackageHandler,
 } from '../handlers/index.js';
 
@@ -167,6 +168,7 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.get('/:id/session', createGetSessionHandler(ctx));
   router.delete('/:id/session', createDeleteSessionHandler(ctx));
   router.post('/:id/proposal-to-package', createConvertProposalHandler(ctx));
+  router.post('/:id/apply-package', createApplyPackageHandler(ctx));
   router.post('/:id/accept-package', createAcceptPackageHandler(ctx));
 
   return router;

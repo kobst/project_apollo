@@ -486,7 +486,356 @@ Rate limiting / cost management for LLM calls
 Caching strategies for similar generation requests
 
 
-12. Summary
+12. Input Processing Workflows
+
+This section documents the two pathways for processing user text input into story graph changes.
+
+### 12.1 Overview
+
+Users can input freeform text through the Input Panel, which offers two processing modes:
+
+| Mode | Method | Speed | Best For |
+|------|--------|-------|----------|
+| **Extract** | Pattern matching | Fast | Structured input (scripts, outlines) |
+| **Interpret** (AI) | LLM analysis | Slower | Natural language, creative ideas |
+
+Both modes produce **proposals** that require user acceptance before being applied.
+
+### 12.2 Extraction (Pattern-Based)
+
+Non-AI extraction uses regex patterns to identify story elements in structured text.
+
+**Triggers:**
+- Screenplay format (INT./EXT. headers)
+- Character cues (ALL CAPS names)
+- Beat markers (ACT ONE, MIDPOINT, etc.)
+- Explicit type markers ("Character: name")
+
+**Flow:**
+```
+User Input → Pattern Matching → Proposals → Accept/Reject → Apply to Graph
+```
+
+**API Endpoint:**
+```
+POST /stories/:id/extract
+{
+  "input": "INT. POLICE STATION - NIGHT\n\nCAIN enters, looking nervous...",
+  "targetType": "Scene"  // Optional hint
+}
+```
+
+**Response:**
+```json
+{
+  "proposals": [
+    {
+      "id": "prop_123",
+      "title": "Scene: INT. POLICE STATION - NIGHT",
+      "description": "Detected scene header with location",
+      "confidence": 0.9,
+      "extractedEntities": [
+        { "type": "Scene", "name": "INT. POLICE STATION - NIGHT", "id": "scene_xxx" },
+        { "type": "Character", "name": "CAIN", "id": "char_xxx" }
+      ]
+    }
+  ]
+}
+```
+
+### 12.3 Interpretation (AI-Powered)
+
+AI interpretation uses an LLM to understand natural language and propose appropriate changes.
+
+**Flow:**
+```
+User Input → LLM Analysis → InterpretationProposals + Validations → Accept → Apply
+```
+
+Validation happens automatically as part of the interpret response - no separate "Check" step needed.
+
+**API Endpoint:**
+```
+POST /stories/:id/interpret
+{
+  "userInput": "Cain realizes the cops are connected to the drug ring",
+  "targetType": "PlotPoint"  // Optional hint
+}
+```
+
+**Response:**
+```json
+{
+  "interpretation": {
+    "summary": "User is describing a key plot revelation...",
+    "confidence": 0.92
+  },
+  "proposals": [
+    {
+      "type": "node",
+      "operation": "add",
+      "target_type": "PlotPoint",
+      "data": {
+        "title": "Cain discovers police corruption",
+        "summary": "Cain realizes the cops are connected..."
+      },
+      "rationale": "This is a major turning point...",
+      "relates_to": ["char_protagonist", "pp_extracted_123"]
+    }
+  ],
+  "validations": {
+    "0": {
+      "similarities": [],
+      "fulfillsGaps": [{ "gapId": "...", "gapTitle": "Missing PlotPoint", "fulfillment": "full" }],
+      "suggestedConnections": [{ "nodeId": "...", "nodeName": "Cain", "edgeType": "ADVANCES" }],
+      "warnings": [],
+      "score": 0.95
+    }
+  },
+  "alternatives": [
+    {
+      "summary": "Could also be interpreted as a Scene...",
+      "confidence": 0.3
+    }
+  ]
+}
+```
+
+**InterpretationProposal Schema:**
+```typescript
+interface InterpretationProposal {
+  type: 'node' | 'storyContext' | 'edge';
+  operation: 'add' | 'modify';
+  target_type?: string;              // Node type if type='node'
+  data: Record<string, unknown>;     // Node data or content
+  rationale: string;                 // AI explanation
+  relates_to?: string[];             // Referenced node IDs (informational)
+}
+```
+
+---
+
+## 13. Proposal Validation (Automatic Pre-Flight)
+
+Validation happens automatically when proposals are generated. Each AI interpretation proposal is validated against the existing knowledge graph as part of the interpret response.
+
+### 13.1 Purpose
+
+The validation system helps users understand:
+- **Conflicts**: Does this duplicate or contradict existing nodes?
+- **Fit**: Which story gaps would this fill?
+- **Connections**: What existing nodes could this relate to?
+
+### 13.2 Validation Flow
+
+```
+POST /stories/:id/interpret
+         ↓
+   LLM generates proposals
+         ↓
+   Server auto-validates each proposal
+         ↓
+   Response includes proposals + validations
+         ↓
+   ┌─────────────────────────────────────┐
+   │ • Similarity warnings               │
+   │ • Gap fulfillment indicators        │
+   │ • Connection suggestions            │
+   │ • Overall score                     │
+   └─────────────────────────────────────┘
+         ↓
+   User decides: Accept / Accept Anyway / Reject
+```
+
+No manual "Check" step required - validation is included automatically.
+
+### 13.3 Validation Components
+
+#### Similarity Detection
+
+Compares proposed node name/title against existing nodes of the same type using text similarity:
+
+| Match Type | Similarity | Result |
+|------------|------------|--------|
+| **Exact** | ≥95% | ERROR: "Character 'Cain' already exists" |
+| **Fuzzy** | 60-95% | WARNING: "Similar to 'Cain Smith'" |
+| **Partial** | Contains | WARNING: Substring match detected |
+
+**Fields Checked by Node Type:**
+
+| Node Type | Primary Field | Secondary Fields |
+|-----------|--------------|------------------|
+| Character | `name` | `archetype` |
+| Location | `name` | - |
+| Scene | `heading`, `title` | `scene_overview` |
+| PlotPoint | `title` | `summary` |
+| Object | `name` | - |
+
+#### Gap Fulfillment
+
+Maps the proposed node type to story tiers and checks which gaps would be addressed:
+
+| Node Type | Tier | Gap Types Fulfilled |
+|-----------|------|---------------------|
+| Logline | premise | Missing logline |
+| Character, Location, Object | foundations | Missing foundations |
+| Beat | structure | Unrealized beats |
+| PlotPoint | plotPoints | Missing plot points |
+| Scene | scenes | Missing scenes, unplaced content |
+
+**Fulfillment Levels:**
+- **Full**: Proposal directly addresses the gap (e.g., "Missing Character" → adding Character)
+- **Partial**: Proposal is in same tier and may help (e.g., adding Location when foundations are incomplete)
+
+#### Connection Suggestions
+
+Suggests existing nodes that could be connected via valid edge types:
+
+**Content-Based Suggestions:**
+Scans the proposal's description for mentions of existing node names.
+```
+"Cain enters the warehouse" → Suggests HAS_CHARACTER edge to "Cain", LOCATED_AT to "warehouse"
+```
+
+**Type-Based Suggestions:**
+Based on valid edge rules for the node type:
+
+| Proposal Type | Suggested Edges | Target Types |
+|---------------|-----------------|--------------|
+| Scene | HAS_CHARACTER | Characters |
+| Scene | LOCATED_AT | Locations |
+| Scene | FEATURES_OBJECT | Objects |
+| PlotPoint | PRECEDES | Other PlotPoints |
+| PlotPoint | ALIGNS_WITH | Beats |
+| PlotPoint | ADVANCES | Character Arcs |
+| Character | HAS_ARC | Character Arcs |
+| Location | PART_OF | Settings |
+
+### 13.4 Validation Response Schema
+
+```typescript
+interface ProposalValidation {
+  similarities: SimilarityMatch[];
+  fulfillsGaps: GapMatch[];
+  suggestedConnections: ConnectionSuggestion[];
+  warnings: ProposalWarning[];
+  score: number;  // 0-1, higher is better
+}
+
+interface SimilarityMatch {
+  existingNodeId: string;
+  existingNodeType: string;
+  existingNodeName: string;
+  matchedField: string;
+  similarity: number;        // 0-1
+  type: 'exact' | 'fuzzy' | 'partial';
+}
+
+interface GapMatch {
+  gapId: string;
+  gapTitle: string;
+  gapTier: GapTier;
+  fulfillment: 'full' | 'partial';
+  reason: string;
+}
+
+interface ConnectionSuggestion {
+  nodeId: string;
+  nodeType: string;
+  nodeName: string;
+  edgeType: EdgeType;
+  direction: 'from' | 'to';  // 'from' = new node → existing
+  reason: string;
+  confidence: number;
+}
+
+interface ProposalWarning {
+  code: string;
+  severity: 'info' | 'warning' | 'error';
+  message: string;
+  suggestion?: string;
+}
+```
+
+### 13.5 Warning Codes
+
+| Code | Severity | Trigger | User Action |
+|------|----------|---------|-------------|
+| `EXACT_DUPLICATE` | error | ≥95% name match | Shown "Accept Anyway" button |
+| `SIMILAR_EXISTS` | warning | 60-95% match | Review existing nodes |
+| `NO_GAP_MATCH` | info | No gaps fulfilled | Informational only |
+| `CONNECTION_AVAILABLE` | info | Connections possible | Consider adding edges |
+
+### 13.6 Score Calculation
+
+The validation score (0-1) summarizes the proposal's fit:
+
+```
+score = 1.0
+  - (exact_matches × 0.3)      // Penalty for duplicates
+  - (high_similarity × 0.1)    // Penalty for similar nodes
+  + (full_fulfillment × 0.1)   // Bonus for filling gaps
+  - (error_warnings × 0.2)     // Penalty for errors
+```
+
+**Score Interpretation:**
+| Score | Meaning |
+|-------|---------|
+| 0.9-1.0 | Excellent fit, no conflicts |
+| 0.7-0.9 | Good fit, minor concerns |
+| 0.5-0.7 | Acceptable, review warnings |
+| <0.5 | Potential issues, review carefully |
+
+### 13.7 UI Display
+
+Validation results are shown automatically with each proposal (no "Check" button needed):
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ PLOTPOINT                                              add  │
+│                                                             │
+│ Cain discovers police corruption                            │
+│ Cain realizes that the cops are somehow connected...        │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ This is a significant narrative event...                │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ Related to: char_protagonist, pp_extracted_123              │
+│                                                             │
+│ ┌─ Validation Results ────────────────────────────────────┐ │
+│ │ ⚠️ Similar to: Police corruption revealed (72%)         │ │
+│ │ ✓ Fills gaps: Missing PlotPoint in Act 2               │ │
+│ │ 💡 Possible connections:                                │ │
+│ │    Could precede "Cain gets arrested"                  │ │
+│ │    Could advance "Cain's moral arc"                    │ │
+│ │                                            Score: 85%   │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│                                              [Accept]       │
+│                      (or if errors:)  [Accept Anyway]       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 14. Comparison: Validation vs Lint
+
+| Aspect | Proposal Validation | Lint System |
+|--------|---------------------|-------------|
+| **When** | Before acceptance | After changes applied |
+| **What** | Single proposal | Entire graph |
+| **Focus** | Conflicts, fit, connections | Structural rules |
+| **Blocking** | Warnings only | Hard rules block commit |
+| **API** | Part of `/proposal-to-package` | `POST /lint` |
+
+Both systems are complementary:
+- **Validation** catches conflicts before they enter the graph
+- **Lint** ensures graph integrity after changes
+
+---
+
+## 15. Summary
 The AI integration provides three phases of assistance:
 
 Interpretation: Transforms freeform input into structured proposals

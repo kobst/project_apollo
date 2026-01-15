@@ -159,18 +159,9 @@ export function proposalToPackage(
       data: proposal.data,
     });
 
-    // Add edges if relates_to is specified
-    if (proposal.relates_to && proposal.relates_to.length > 0) {
-      for (const relatedId of proposal.relates_to) {
-        // Determine edge type based on node types (simplified)
-        changes.edges.push({
-          operation: 'add',
-          edge_type: 'RELATES_TO', // Generic edge, may need refinement
-          from: nodeId,
-          to: relatedId,
-        });
-      }
-    }
+    // Note: relates_to is informational only - we don't create edges here
+    // because we can't determine the correct edge type without knowing
+    // the types of the related nodes. Users can add edges manually.
   } else if (proposal.type === 'storyContext') {
     changes.storyContext = [
       {

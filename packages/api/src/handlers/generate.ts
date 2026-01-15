@@ -16,6 +16,7 @@ import {
   applyPatch,
   validatePatch,
   generateEdgeId,
+  computeCoverage,
   type Patch,
   type PatchOp,
   type NodeType,
@@ -24,6 +25,7 @@ import {
 import type { StorageContext } from '../config.js';
 import {
   loadVersionedStateById,
+  loadGraphById,
   deserializeGraph,
   updateGraphById,
 } from '../storage.js';
@@ -69,6 +71,8 @@ interface InterpretResponseData {
     confidence: number;
   };
   proposals: ai.InterpretationProposal[];
+  /** Pre-computed validation for each proposal (by index) */
+  validations: Record<number, ai.ProposalValidation>;
   alternatives?: Array<{
     summary: string;
     confidence: number;
@@ -128,7 +132,17 @@ export function createInterpretHandler(ctx: StorageContext) {
           streamCallbacks
         );
 
-        res.write(`data: ${JSON.stringify({ type: 'result', data: result })}\n\n`);
+        // Auto-validate each proposal against the graph
+        const graph = await loadGraphById(id, ctx);
+        const validations: Record<number, ai.ProposalValidation> = {};
+        if (graph && result.proposals) {
+          const { gaps } = computeCoverage(graph);
+          result.proposals.forEach((proposal, index) => {
+            validations[index] = ai.validateProposal(graph, proposal, gaps);
+          });
+        }
+
+        res.write(`data: ${JSON.stringify({ type: 'result', data: { ...result, validations } })}\n\n`);
         res.write('data: [DONE]\n\n');
         res.end();
       } else {
@@ -141,9 +155,19 @@ export function createInterpretHandler(ctx: StorageContext) {
           llmClient
         );
 
+        // Auto-validate each proposal against the graph
+        const graph = await loadGraphById(id, ctx);
+        const validations: Record<number, ai.ProposalValidation> = {};
+        if (graph && result.proposals) {
+          const { gaps } = computeCoverage(graph);
+          result.proposals.forEach((proposal, index) => {
+            validations[index] = ai.validateProposal(graph, proposal, gaps);
+          });
+        }
+
         res.json({
           success: true,
-          data: result,
+          data: { ...result, validations },
         });
       }
     } catch (error) {
@@ -492,26 +516,40 @@ export function createDeleteSessionHandler(ctx: StorageContext) {
 
 interface ConvertProposalResponseData {
   package: ai.NarrativePackage;
+  validation: ai.ProposalValidation;
 }
 
-export function createConvertProposalHandler(_ctx: StorageContext) {
+export function createConvertProposalHandler(ctx: StorageContext) {
   return async (
     req: Request<{ id: string }, unknown, { proposal: ai.InterpretationProposal }>,
     res: Response<APIResponse<ConvertProposalResponseData>>,
     next: NextFunction
   ): Promise<void> => {
     try {
+      const { id } = req.params;
       const { proposal } = req.body;
 
       if (!proposal) {
         throw new BadRequestError('proposal is required');
       }
 
+      // Load graph and compute gaps for validation
+      const graph = await loadGraphById(id, ctx);
+      if (!graph) {
+        throw new NotFoundError(`Story "${id}"`);
+      }
+
+      const { gaps } = computeCoverage(graph);
+
+      // Validate proposal against graph
+      const validation = ai.validateProposal(graph, proposal, gaps);
+
+      // Convert to package
       const pkg = proposalToPackage(proposal);
 
       res.json({
         success: true,
-        data: { package: pkg },
+        data: { package: pkg, validation },
       });
     } catch (error) {
       next(error);
@@ -625,6 +663,87 @@ function packageToPatch(
 //   currentContext: string | undefined,
 //   changes: ai.StoryContextChange[]
 // ): string { ... }
+
+/**
+ * Apply a package directly (without needing a session).
+ * Used for interpretation proposals that aren't part of a generation session.
+ */
+export function createApplyPackageHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string }, unknown, { package: ai.NarrativePackage }>,
+    res: Response<APIResponse<AcceptPackageResponseData>>,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const pkg = req.body.package;
+
+      if (!pkg || !pkg.id) {
+        throw new BadRequestError('package is required');
+      }
+
+      // Load current graph state
+      const state = await loadVersionedStateById(id, ctx);
+      if (!state) {
+        throw new NotFoundError(`Story "${id}"`);
+      }
+
+      const currentVersion = state.history.versions[state.history.currentVersionId];
+      if (!currentVersion) {
+        throw new NotFoundError('Current version');
+      }
+
+      let graph = deserializeGraph(currentVersion.graph);
+
+      // Convert package to patch
+      const patch = packageToPatch(pkg, state.history.currentVersionId);
+
+      // Validate patch
+      const validation = validatePatch(graph, patch);
+      if (!validation.success) {
+        throw new BadRequestError(
+          'Package validation failed',
+          validation.errors.map((e) => e.message).join('; ')
+        );
+      }
+
+      // Apply patch
+      graph = applyPatch(graph, patch);
+
+      // Save updated graph
+      const newVersionId = await updateGraphById(
+        id,
+        graph,
+        `Apply package: ${pkg.title}`,
+        undefined,
+        ctx
+      );
+
+      // Compute stats
+      const stats = {
+        nodesAdded: pkg.changes.nodes.filter((n) => n.operation === 'add').length,
+        nodesModified: pkg.changes.nodes.filter((n) => n.operation === 'modify').length,
+        nodesDeleted: pkg.changes.nodes.filter((n) => n.operation === 'delete').length,
+        edgesAdded: pkg.changes.edges.filter((e) => e.operation === 'add').length,
+        edgesDeleted: pkg.changes.edges.filter((e) => e.operation === 'delete').length,
+      };
+
+      res.json({
+        success: true,
+        data: {
+          packageId: pkg.id,
+          title: pkg.title,
+          newVersionId,
+          patchOpsApplied: patch.ops.length,
+          ...stats,
+          storyContextUpdated: Boolean(pkg.changes.storyContext?.length),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+}
 
 export function createAcceptPackageHandler(ctx: StorageContext) {
   return async (

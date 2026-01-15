@@ -76,12 +76,15 @@ import type {
   // AI Generation types
   InterpretRequest,
   InterpretResponseData,
+  InterpretationProposal,
   GenerateRequest,
   GenerateResponseData,
   RefineRequest,
   RefineResponseData,
   SessionResponseData,
   AcceptPackageResponseData,
+  NarrativePackage,
+  ConvertProposalResponseData,
 } from './types';
 
 const API_BASE = '/api';
@@ -370,7 +373,19 @@ export const api = {
     DELETE<{ abandoned: boolean }>(`/stories/${storyId}/session`),
 
   /**
-   * Accept a package and apply its changes to the graph
+   * Convert an interpretation proposal to a narrative package (with validation)
+   */
+  convertProposal: (storyId: string, proposal: InterpretationProposal) =>
+    POST<ConvertProposalResponseData>(`/stories/${storyId}/proposal-to-package`, { proposal }),
+
+  /**
+   * Apply a package directly (without needing a session)
+   */
+  applyPackage: (storyId: string, pkg: NarrativePackage) =>
+    POST<AcceptPackageResponseData>(`/stories/${storyId}/apply-package`, { package: pkg }),
+
+  /**
+   * Accept a package from a session and apply its changes to the graph
    */
   acceptPackage: (storyId: string, packageId: string) =>
     POST<AcceptPackageResponseData>(`/stories/${storyId}/accept-package`, { packageId }),

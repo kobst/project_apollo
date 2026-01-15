@@ -55,7 +55,14 @@ ${recentNodes?.length ? `## Recently Modified Nodes\n${recentNodes.join('\n')}` 
 
 ## Output Format
 
-Respond with a JSON object matching this schema:
+**CRITICAL: You MUST output valid, parseable JSON. Follow these rules strictly:**
+
+1. **NO newlines inside strings** - Use spaces instead
+2. **Escape special characters** - Use \\" for quotes, \\\\ for backslashes
+3. **NO trailing commas** - Last item in arrays/objects must NOT have a comma after it
+4. **Keep strings concise** - Descriptions should be 1-2 sentences max
+
+Schema:
 
 \`\`\`json
 {
@@ -69,8 +76,8 @@ Respond with a JSON object matching this schema:
       "operation": "add",
       "target_type": "Character",
       "data": {
-        "name": "...",
-        "description": "..."
+        "name": "Character Name",
+        "description": "Brief description."
       },
       "rationale": "Why this interpretation makes sense",
       "relates_to": ["existing_node_id"]
@@ -94,5 +101,5 @@ Respond with a JSON object matching this schema:
 - Reference existing nodes when the input relates to them
 - Confidence should reflect how certain you are about the interpretation
 
-Respond with only the JSON object.`;
+Output ONLY the JSON object, no markdown code blocks, no explanation.`;
 }

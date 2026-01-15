@@ -148,3 +148,36 @@ export {
   buildGenerationPrompt,
   buildRefinementPrompt,
 } from './prompts/index.js';
+
+// =============================================================================
+// Text Similarity
+// =============================================================================
+
+export {
+  normalizeText,
+  levenshteinDistance,
+  calculateSimilarity,
+  isSimilar,
+  findSimilarStrings,
+  findMentions,
+} from './textSimilarity.js';
+export type { SimilarityType, SimilarityResult, ComparisonResult } from './textSimilarity.js';
+
+// =============================================================================
+// Proposal Validation
+// =============================================================================
+
+export {
+  validateProposal,
+  findSimilarNodes,
+  checkGapFulfillment,
+  suggestConnections,
+  generateWarnings,
+} from './proposalValidator.js';
+export type {
+  ProposalValidation,
+  SimilarityMatch,
+  GapMatch,
+  ConnectionSuggestion,
+  ProposalWarning,
+} from './proposalValidator.js';
