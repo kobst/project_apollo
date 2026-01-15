@@ -27,11 +27,14 @@
     "lint": "eslint src --ext .ts"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "typescript": "^5.3.0",
-    "vitest": "^2.0.0",
-    "@types/node": "^20.0.0"
+    "vitest": "^2.0.0"
   },
   "files": [
     "dist"
-  ]
+  ],
+  "dependencies": {
+    "jsonrepair": "^3.13.2"
+  }
 }

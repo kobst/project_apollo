@@ -3,11 +3,13 @@
  *
  * Handles:
  * - JSON extraction from markdown code blocks
+ * - Robust JSON repair for malformed LLM outputs
  * - Schema validation
  * - Normalization of package data
  * - ID validation and regeneration
  */
 
+import { jsonrepair } from 'jsonrepair';
 import type {
   InterpretationResult,
   GenerationResult,
@@ -51,7 +53,7 @@ export class ParseError extends Error {
  */
 export function parseInterpretationResponse(raw: string): InterpretationResult {
   const json = extractJson(raw);
-  const parsed = JSON.parse(json);
+  const parsed = safeJsonParse(json);
 
   validateInterpretationSchema(parsed);
 
@@ -67,18 +69,20 @@ export function parseInterpretationResponse(raw: string): InterpretationResult {
  */
 export function parseGenerationResponse(raw: string): GenerationResult {
   const json = extractJson(raw);
-  const parsed = JSON.parse(json);
+  const parsed = safeJsonParse(json);
 
   validateGenerationSchema(parsed);
 
   // Normalize packages
-  const packages = (parsed.packages ?? []).map(normalizePackage);
+  const packages = ((parsed as Record<string, unknown>).packages as unknown[] ?? []).map(
+    (pkg) => normalizePackage(pkg as Record<string, unknown>)
+  );
 
   return { packages };
 }
 
 // =============================================================================
-// JSON Extraction
+// JSON Extraction & Parsing
 // =============================================================================
 
 /**
@@ -107,6 +111,46 @@ function extractJson(raw: string): string {
   }
 
   throw new ParseError('No JSON found in response', raw);
+}
+
+/**
+ * Safely parse JSON with automatic repair for malformed LLM outputs.
+ *
+ * Strategy:
+ * 1. Try standard JSON.parse first (fastest path for valid JSON)
+ * 2. If that fails, use jsonrepair to fix common LLM errors
+ * 3. Log when repairs are needed for monitoring
+ *
+ * @param jsonStr - JSON string to parse
+ * @returns Parsed JavaScript object
+ * @throws ParseError if JSON cannot be repaired
+ */
+function safeJsonParse(jsonStr: string): unknown {
+  // First, try standard parsing (most responses are valid)
+  try {
+    return JSON.parse(jsonStr);
+  } catch (initialError) {
+    // JSON.parse failed, try to repair
+    console.warn(
+      '[outputParser] JSON.parse failed, attempting repair:',
+      initialError instanceof Error ? initialError.message : String(initialError)
+    );
+
+    try {
+      const repaired = jsonrepair(jsonStr);
+      const result = JSON.parse(repaired);
+      console.log('[outputParser] JSON successfully repaired');
+      return result;
+    } catch (repairError) {
+      // Log both errors for debugging
+      console.error('[outputParser] JSON repair also failed:', repairError);
+      console.error('[outputParser] Original JSON (first 1000 chars):', jsonStr.slice(0, 1000));
+      throw new ParseError(
+        `Failed to parse JSON: ${initialError instanceof Error ? initialError.message : String(initialError)}`,
+        jsonStr
+      );
+    }
+  }
 }
 
 /**
