@@ -14,11 +14,13 @@ import styles from './GenerationSidebar.module.css';
 
 interface GenerationSidebarProps {
   selectedPackageId: string | null;
-  onSelectPackage: (packageId: string) => void;
+  onSelectPackage: (packageId: string | null) => void;
   savedPackages?: SavedPackageData[];
   savedPackagesLoading?: boolean;
   onApplySavedPackage?: (savedPackageId: string) => void;
   onDeleteSavedPackage?: (savedPackageId: string) => void;
+  onViewSavedPackage?: (savedPkg: SavedPackageData) => void;
+  viewingSavedPackageId?: string | null;
 }
 
 // Entry point options
@@ -81,6 +83,8 @@ export function GenerationSidebar({
   savedPackagesLoading = false,
   onApplySavedPackage,
   onDeleteSavedPackage,
+  onViewSavedPackage,
+  viewingSavedPackageId,
 }: GenerationSidebarProps) {
   const { currentStoryId } = useStory();
   const { session, loading, startGeneration } = useGeneration();
@@ -171,12 +175,14 @@ export function GenerationSidebar({
       )}
 
       {/* Saved Packages Section */}
-      {savedPackages.length > 0 && onApplySavedPackage && onDeleteSavedPackage && (
+      {savedPackages.length > 0 && onApplySavedPackage && onDeleteSavedPackage && onViewSavedPackage && (
         <SavedPackagesPanel
           packages={savedPackages}
           loading={savedPackagesLoading}
           onApply={onApplySavedPackage}
           onDelete={onDeleteSavedPackage}
+          onView={onViewSavedPackage}
+          viewingPackageId={viewingSavedPackageId}
         />
       )}
 

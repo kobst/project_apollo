@@ -4,7 +4,7 @@ import { useStory } from '../../context/StoryContext';
 import { useSavedPackages } from '../../context/SavedPackagesContext';
 import { GenerationSidebar } from './GenerationSidebar';
 import { PackageDetail } from './PackageDetail';
-import type { RefineRequest } from '../../api/types';
+import type { RefineRequest, SavedPackageData } from '../../api/types';
 import styles from './GenerationView.module.css';
 
 export function GenerationView() {
@@ -33,6 +33,9 @@ export function GenerationView() {
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(
     session?.packages[0]?.id ?? null
   );
+
+  // Track if viewing a saved package (separate from session packages)
+  const [viewingSavedPackage, setViewingSavedPackage] = useState<SavedPackageData | null>(null);
 
   // Load saved packages when story changes
   useEffect(() => {
@@ -166,7 +169,28 @@ export function GenerationView() {
   const handleDeleteSavedPackage = useCallback(async (savedPackageId: string) => {
     if (!currentStoryId) return;
     await deleteSavedPackage(currentStoryId, savedPackageId);
-  }, [currentStoryId, deleteSavedPackage]);
+    // Clear view if we deleted the one we're viewing
+    if (viewingSavedPackage?.id === savedPackageId) {
+      setViewingSavedPackage(null);
+    }
+  }, [currentStoryId, deleteSavedPackage, viewingSavedPackage?.id]);
+
+  // View saved package handler - shows it in the main content area
+  const handleViewSavedPackage = useCallback((savedPkg: SavedPackageData) => {
+    setViewingSavedPackage(savedPkg);
+    setSelectedPackageId(null); // Deselect session package
+  }, []);
+
+  // Handle selecting a session package (clears saved package view)
+  const handleSelectSessionPackage = useCallback((packageId: string | null) => {
+    setSelectedPackageId(packageId);
+    setViewingSavedPackage(null); // Clear saved package view
+  }, []);
+
+  // Close saved package view
+  const handleCloseSavedPackageView = useCallback(() => {
+    setViewingSavedPackage(null);
+  }, []);
 
   // Empty state - no story selected
   if (!currentStoryId) {
@@ -185,11 +209,13 @@ export function GenerationView() {
       {/* Sidebar */}
       <GenerationSidebar
         selectedPackageId={selectedPackageId}
-        onSelectPackage={setSelectedPackageId}
+        onSelectPackage={handleSelectSessionPackage}
         savedPackages={savedPackages}
         savedPackagesLoading={savedPackagesLoading}
         onApplySavedPackage={handleApplySavedPackage}
         onDeleteSavedPackage={handleDeleteSavedPackage}
+        onViewSavedPackage={handleViewSavedPackage}
+        viewingSavedPackageId={viewingSavedPackage?.id ?? null}
       />
 
       {/* Main Content */}
@@ -203,7 +229,23 @@ export function GenerationView() {
         )}
 
         {/* Content */}
-        {selectedPackage && currentStoryId ? (
+        {viewingSavedPackage && currentStoryId ? (
+          // Viewing a saved package
+          <PackageDetail
+            package={viewingSavedPackage.package}
+            storyId={currentStoryId}
+            onAccept={() => handleApplySavedPackage(viewingSavedPackage.id)}
+            onRefine={handleCloseSavedPackageView} // Back to normal view
+            onReject={() => handleDeleteSavedPackage(viewingSavedPackage.id)}
+            onRegenerateElement={handleRegenerateElement}
+            onApplyElementOption={handleApplyElementOption}
+            onUpdateElement={handleUpdateElement}
+            loading={loading || savedPackagesLoading}
+            isSavedPackage
+            savedPackageData={viewingSavedPackage}
+            onClose={handleCloseSavedPackageView}
+          />
+        ) : selectedPackage && currentStoryId ? (
           <PackageDetail
             package={selectedPackage}
             storyId={currentStoryId}

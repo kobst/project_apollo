@@ -8,23 +8,30 @@ interface SavedPackagesPanelProps {
   loading?: boolean;
   onApply: (savedPackageId: string) => void;
   onDelete: (savedPackageId: string) => void;
+  onView: (savedPkg: SavedPackageData) => void;
+  viewingPackageId?: string | null | undefined;
 }
 
 export function SavedPackagesPanel({
   packages,
-  loading = false,
-  onApply,
-  onDelete,
+  loading: _loading = false,
+  onApply: _onApply,
+  onDelete: _onDelete,
+  onView,
+  viewingPackageId,
 }: SavedPackagesPanelProps) {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  // These props are kept for API compatibility but actions are now in the main view
+  void _loading;
+  void _onApply;
+  void _onDelete;
   const [isOpen, setIsOpen] = useState(false);
 
   if (packages.length === 0) {
     return null;
   }
 
-  const toggleExpanded = (id: string) => {
-    setExpandedId((prev) => (prev === id ? null : id));
+  const handleClick = (pkg: SavedPackageData) => {
+    onView(pkg);
   };
 
   return (
@@ -44,76 +51,36 @@ export function SavedPackagesPanel({
 
       {isOpen && (
         <div className={styles.list}>
-          {packages.map((pkg) => (
-            <div
-              key={pkg.id}
-              className={`${styles.item} ${expandedId === pkg.id ? styles.itemExpanded : ''}`}
-            >
+          {packages.map((pkg) => {
+            const isViewing = viewingPackageId === pkg.id;
+            const confidence = Math.round(pkg.package.confidence * 100);
+            const hasIssue = pkg.compatibility.status !== 'compatible';
+            return (
               <button
-                className={styles.itemHeader}
-                onClick={() => toggleExpanded(pkg.id)}
+                key={pkg.id}
+                className={`${styles.item} ${isViewing ? styles.itemViewing : ''}`}
+                onClick={() => handleClick(pkg)}
                 type="button"
               >
                 <div className={styles.itemInfo}>
+                  <span className={styles.itemIndicator}>
+                    {isViewing ? '●' : '○'}
+                  </span>
                   <span className={styles.itemTitle}>
-                    {pkg.package.title.length > 30
-                      ? `${pkg.package.title.slice(0, 30)}...`
+                    {pkg.package.title.length > 18
+                      ? `${pkg.package.title.slice(0, 18)}...`
                       : pkg.package.title}
                   </span>
-                  <span className={styles.itemMeta}>
-                    v{pkg.sourceVersionLabel}
-                  </span>
                 </div>
-                <CompatibilityBadge
-                  compatibility={pkg.compatibility}
-                  showDetails={expandedId === pkg.id}
-                />
-              </button>
-
-              {expandedId === pkg.id && (
-                <div className={styles.itemDetails}>
-                  <p className={styles.description}>
-                    {pkg.package.rationale}
-                  </p>
-                  {pkg.userNote && (
-                    <p className={styles.note}>
-                      <strong>Note:</strong> {pkg.userNote}
-                    </p>
+                <div className={styles.itemRight}>
+                  <span className={styles.confidence}>{confidence}%</span>
+                  {hasIssue && (
+                    <CompatibilityBadge compatibility={pkg.compatibility} />
                   )}
-                  <div className={styles.itemMeta}>
-                    Saved {new Date(pkg.savedAt).toLocaleDateString()}
-                    {pkg.compatibility.status === 'outdated' && (
-                      <span> | {pkg.compatibility.versionsBehind} versions behind</span>
-                    )}
-                  </div>
-                  <div className={styles.itemActions}>
-                    <button
-                      className={styles.deleteBtn}
-                      onClick={() => onDelete(pkg.id)}
-                      disabled={loading}
-                      type="button"
-                    >
-                      Delete
-                    </button>
-                    <button
-                      className={`${styles.applyBtn} ${
-                        pkg.compatibility.status === 'conflicting'
-                          ? styles.applyBtnWarning
-                          : ''
-                      }`}
-                      onClick={() => onApply(pkg.id)}
-                      disabled={loading}
-                      type="button"
-                    >
-                      {pkg.compatibility.status === 'conflicting'
-                        ? 'Apply Anyway'
-                        : 'Apply'}
-                    </button>
-                  </div>
                 </div>
-              )}
-            </div>
-          ))}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

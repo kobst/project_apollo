@@ -6,6 +6,7 @@ import type {
   StoryContextChange,
   PackageElementType,
   GenerationCount,
+  SavedPackageData,
 } from '../../api/types';
 import { EditableElement } from './EditableElement';
 import styles from './PackageDetail.module.css';
@@ -37,6 +38,10 @@ interface PackageDetailProps {
     updatedElement: NodeChangeAI | EdgeChangeAI | StoryContextChange
   ) => Promise<void>;
   loading?: boolean;
+  // Saved package mode
+  isSavedPackage?: boolean;
+  savedPackageData?: SavedPackageData;
+  onClose?: () => void;
 }
 
 // Categorize nodes
@@ -77,6 +82,9 @@ export function PackageDetail({
   onApplyElementOption,
   onUpdateElement,
   loading = false,
+  isSavedPackage = false,
+  savedPackageData,
+  onClose,
 }: PackageDetailProps) {
   // storyId is passed for potential future use but not currently needed in component
   void _storyId;
@@ -193,6 +201,39 @@ export function PackageDetail({
             ))}
           </div>
         )}
+        {/* Saved package info */}
+        {isSavedPackage && savedPackageData && (
+          <div className={styles.savedInfo}>
+            <span className={styles.savedLabel}>
+              Saved {new Date(savedPackageData.savedAt).toLocaleDateString()}
+            </span>
+            <span className={styles.savedVersion}>
+              v{savedPackageData.sourceVersionLabel}
+            </span>
+            {savedPackageData.compatibility.status === 'outdated' && (
+              <span className={styles.savedOutdated}>
+                {savedPackageData.compatibility.versionsBehind} versions behind
+              </span>
+            )}
+          </div>
+        )}
+        {/* Conflicts warning for saved packages */}
+        {isSavedPackage &&
+          savedPackageData?.compatibility.status === 'conflicting' &&
+          savedPackageData.compatibility.conflicts.length > 0 && (
+            <div className={styles.conflictsWarning}>
+              <div className={styles.conflictsTitle}>
+                ⚠ This package has conflicts with the current graph:
+              </div>
+              <ul className={styles.conflictsList}>
+                {savedPackageData.compatibility.conflicts.map((conflict, i) => (
+                  <li key={i} className={styles.conflictItem}>
+                    {conflict.description}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
       </div>
 
       {/* Content */}
@@ -401,40 +442,83 @@ export function PackageDetail({
 
       {/* Actions */}
       <div className={styles.actions}>
-        <button
-          className={styles.rejectBtn}
-          onClick={onReject}
-          disabled={loading}
-          type="button"
-        >
-          Reject
-        </button>
-        {onSave && (
-          <button
-            className={styles.saveBtn}
-            onClick={onSave}
-            disabled={loading}
-            type="button"
-          >
-            Save for Later
-          </button>
+        {isSavedPackage ? (
+          // Saved package actions
+          <>
+            {onClose && (
+              <button
+                className={styles.closeBtn}
+                onClick={onClose}
+                disabled={loading}
+                type="button"
+              >
+                Back
+              </button>
+            )}
+            <button
+              className={styles.rejectBtn}
+              onClick={onReject}
+              disabled={loading}
+              type="button"
+            >
+              Delete
+            </button>
+            <button
+              className={`${styles.acceptBtn} ${
+                savedPackageData?.compatibility.status === 'conflicting'
+                  ? styles.warningBtn
+                  : ''
+              }`}
+              onClick={onAccept}
+              disabled={loading}
+              type="button"
+            >
+              {loading
+                ? 'Applying...'
+                : savedPackageData?.compatibility.status === 'conflicting'
+                  ? 'Apply Anyway'
+                  : 'Apply'}
+            </button>
+          </>
+        ) : (
+          // Session package actions
+          <>
+            <button
+              className={styles.rejectBtn}
+              onClick={onReject}
+              disabled={loading}
+              type="button"
+            >
+              Reject
+            </button>
+            {onSave && (
+              <button
+                className={styles.saveBtn}
+                onClick={onSave}
+                disabled={loading}
+                type="button"
+              >
+                Save for Later
+              </button>
+            )}
+            <button
+              className={styles.refineBtn}
+              onClick={onRefine}
+              disabled={loading}
+              type="button"
+            >
+              Refine...
+            </button>
+            <button
+              className={styles.acceptBtn}
+              onClick={onAccept}
+              disabled={loading}
+              type="button"
+            >
+              {loading ? 'Accepting...' : 'Accept'}
+            </button>
+          </>
         )}
-        <button
-          className={styles.refineBtn}
-          onClick={onRefine}
-          disabled={loading}
-          type="button"
-        >
-          Refine...
-        </button>
-        <button
-          className={styles.acceptBtn}
-          onClick={onAccept}
-          disabled={loading}
-          type="button"
-        >
-          {loading ? 'Accepting...' : 'Accept'}
-        </button>
       </div>
     </div>
   );

@@ -235,6 +235,46 @@ export async function deleteSavedPackagesFile(
 // =============================================================================
 
 /**
+ * Get a human-readable name for a node from the graph or package.
+ */
+function getNodeDisplayName(
+  nodeId: string,
+  graph: { nodes: Map<string, { id: string; type: string; data: Record<string, unknown> }> },
+  packageNodes: ai.NodeChange[]
+): string {
+  // Try to find in graph first
+  const graphNode = graph.nodes.get(nodeId);
+  if (graphNode) {
+    const name = graphNode.data.name || graphNode.data.heading || graphNode.data.title || graphNode.data.summary;
+    if (name) {
+      return `${graphNode.type}: "${name}"`;
+    }
+    return `${graphNode.type} (${nodeId.slice(0, 20)}...)`;
+  }
+
+  // Try to find in package changes
+  const pkgNode = packageNodes.find((n) => n.node_id === nodeId);
+  if (pkgNode) {
+    const data = pkgNode.data as Record<string, unknown> | undefined;
+    const name = data?.name || data?.heading || data?.title || data?.summary;
+    if (name) {
+      return `${pkgNode.node_type}: "${name}"`;
+    }
+    return `${pkgNode.node_type}`;
+  }
+
+  // Parse from ID pattern: type_timestamp_slug
+  const parts = nodeId.split('_');
+  if (parts.length >= 3) {
+    const type = parts[0];
+    const slug = parts.slice(2).join('_').replace(/_/g, ' ');
+    return `${type}: "${slug}"`;
+  }
+
+  return nodeId;
+}
+
+/**
  * Count versions between two version IDs.
  */
 function countVersionsBetween(
@@ -321,17 +361,23 @@ export async function checkPackageCompatibility(
   }
 
   const conflicts: CompatibilityConflict[] = [];
+  const packageNodes = savedPackage.package.changes.nodes;
+
+  // Track which nodes we've already reported as missing to avoid duplicates
+  const reportedMissingNodes = new Set<string>();
 
   // Check node references in the package
   for (const nodeChange of savedPackage.package.changes.nodes) {
     // For modify/delete operations, the node must exist
     if (nodeChange.operation === 'modify' || nodeChange.operation === 'delete') {
       if (!graph.nodes.has(nodeChange.node_id)) {
+        const displayName = getNodeDisplayName(nodeChange.node_id, graph, packageNodes);
         conflicts.push({
           type: 'node_deleted',
           nodeId: nodeChange.node_id,
-          description: `Node "${nodeChange.node_id}" no longer exists`,
+          description: `${displayName} was deleted from the story`,
         });
+        reportedMissingNodes.add(nodeChange.node_id);
       }
     }
   }
@@ -340,19 +386,31 @@ export async function checkPackageCompatibility(
   for (const edgeChange of savedPackage.package.changes.edges) {
     if (edgeChange.operation === 'add') {
       // For add operations, check that from/to nodes exist
-      if (!graph.nodes.has(edgeChange.from)) {
+      // Skip if the node is being added by this package
+      const fromIsAdded = packageNodes.some(
+        (n) => n.node_id === edgeChange.from && n.operation === 'add'
+      );
+      const toIsAdded = packageNodes.some(
+        (n) => n.node_id === edgeChange.to && n.operation === 'add'
+      );
+
+      if (!graph.nodes.has(edgeChange.from) && !fromIsAdded && !reportedMissingNodes.has(edgeChange.from)) {
+        const displayName = getNodeDisplayName(edgeChange.from, graph, packageNodes);
         conflicts.push({
           type: 'node_deleted',
           nodeId: edgeChange.from,
-          description: `Edge source node "${edgeChange.from}" no longer exists`,
+          description: `${displayName} was deleted (edge source missing)`,
         });
+        reportedMissingNodes.add(edgeChange.from);
       }
-      if (!graph.nodes.has(edgeChange.to)) {
+      if (!graph.nodes.has(edgeChange.to) && !toIsAdded && !reportedMissingNodes.has(edgeChange.to)) {
+        const displayName = getNodeDisplayName(edgeChange.to, graph, packageNodes);
         conflicts.push({
           type: 'node_deleted',
           nodeId: edgeChange.to,
-          description: `Edge target node "${edgeChange.to}" no longer exists`,
+          description: `${displayName} was deleted (edge target missing)`,
         });
+        reportedMissingNodes.add(edgeChange.to);
       }
     } else if (edgeChange.operation === 'delete') {
       // For delete, verify the edge exists
@@ -360,9 +418,11 @@ export async function checkPackageCompatibility(
         (e) => e.from === edgeChange.from && e.to === edgeChange.to
       );
       if (!edgeExists) {
+        const fromName = getNodeDisplayName(edgeChange.from, graph, packageNodes);
+        const toName = getNodeDisplayName(edgeChange.to, graph, packageNodes);
         conflicts.push({
           type: 'edge_deleted',
-          description: `Edge from "${edgeChange.from}" to "${edgeChange.to}" no longer exists`,
+          description: `Relationship from ${fromName} to ${toName} no longer exists`,
         });
       }
     }
