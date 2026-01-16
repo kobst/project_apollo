@@ -264,6 +264,22 @@ function getNodeLabel(node: KGNode): string {
     return 'Genre/Tone';
   }
 
+  // For Scene nodes, combine heading with title or truncated overview
+  if (node.type === 'Scene') {
+    const heading = nodeRecord.heading as string | undefined;
+    const title = nodeRecord.title as string | undefined;
+    const overview = nodeRecord.scene_overview as string | undefined;
+
+    if (heading) {
+      // Prefer title if set, otherwise use truncated overview
+      const content = title ?? (overview ? (overview.length > 30 ? overview.slice(0, 30) + '...' : overview) : null);
+      if (content) {
+        return `${heading}: ${content}`;
+      }
+      return heading;
+    }
+  }
+
   // Check for common label properties
   const labelProps = ['name', 'title', 'label', 'beatName', 'heading', 'statement'];
   for (const prop of labelProps) {
@@ -274,14 +290,6 @@ function getNodeLabel(node: KGNode): string {
         return value.slice(0, 57) + '...';
       }
       return value;
-    }
-  }
-
-  // For Scene nodes, try scene_overview truncated as fallback
-  if (node.type === 'Scene' && 'scene_overview' in nodeRecord) {
-    const overview = nodeRecord.scene_overview as string;
-    if (overview) {
-      return overview.slice(0, 50) + (overview.length > 50 ? '...' : '');
     }
   }
 

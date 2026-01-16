@@ -9,7 +9,7 @@
 
 import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
-import type { ai } from '@apollo/core';
+import type { ai, GraphState } from '@apollo/core';
 import type { StorageContext } from './config.js';
 import {
   loadVersionedStateById,
@@ -235,17 +235,42 @@ export async function deleteSavedPackagesFile(
 // =============================================================================
 
 /**
+ * Truncate text to a maximum length with ellipsis.
+ */
+function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength).trim() + '...';
+}
+
+/**
  * Get a human-readable name for a node from the graph or package.
  */
 function getNodeDisplayName(
   nodeId: string,
-  graph: { nodes: Map<string, { id: string; type: string; data: Record<string, unknown> }> },
+  graph: GraphState,
   packageNodes: ai.NodeChange[]
 ): string {
   // Try to find in graph first
   const graphNode = graph.nodes.get(nodeId);
   if (graphNode) {
-    const name = graphNode.data.name || graphNode.data.heading || graphNode.data.title || graphNode.data.summary;
+    // KGNode properties are directly on the node, not nested under 'data'
+    const node = graphNode as unknown as Record<string, unknown>;
+
+    // Special handling for Scene nodes - combine heading with content
+    if (graphNode.type === 'Scene') {
+      const heading = node.heading as string | undefined;
+      const title = node.title as string | undefined;
+      const overview = node.scene_overview as string | undefined;
+      if (heading) {
+        const content = title ?? (overview ? truncateText(overview, 30) : null);
+        if (content) {
+          return `Scene: "${heading}: ${content}"`;
+        }
+        return `Scene: "${heading}"`;
+      }
+    }
+
+    const name = node.name || node.heading || node.title || node.summary || node.text;
     if (name) {
       return `${graphNode.type}: "${name}"`;
     }
@@ -256,6 +281,21 @@ function getNodeDisplayName(
   const pkgNode = packageNodes.find((n) => n.node_id === nodeId);
   if (pkgNode) {
     const data = pkgNode.data as Record<string, unknown> | undefined;
+
+    // Special handling for Scene nodes - combine heading with content
+    if (pkgNode.node_type === 'Scene' && data) {
+      const heading = data.heading as string | undefined;
+      const title = data.title as string | undefined;
+      const overview = data.scene_overview as string | undefined;
+      if (heading) {
+        const content = title ?? (overview ? truncateText(overview, 30) : null);
+        if (content) {
+          return `Scene: "${heading}: ${content}"`;
+        }
+        return `Scene: "${heading}"`;
+      }
+    }
+
     const name = data?.name || data?.heading || data?.title || data?.summary;
     if (name) {
       return `${pkgNode.node_type}: "${name}"`;

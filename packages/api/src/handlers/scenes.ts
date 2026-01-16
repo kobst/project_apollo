@@ -56,7 +56,17 @@ interface DeleteSceneData {
 // =============================================================================
 
 function getSceneLabel(scene: Scene): string {
-  return scene.heading || scene.title || `Scene:${scene.id.slice(0, 8)}`;
+  if (scene.heading) {
+    // Prefer title if set, otherwise use truncated scene_overview
+    const content = scene.title ?? (scene.scene_overview
+      ? (scene.scene_overview.length > 30 ? scene.scene_overview.slice(0, 30) + '...' : scene.scene_overview)
+      : null);
+    if (content) {
+      return `${scene.heading}: ${content}`;
+    }
+    return scene.heading;
+  }
+  return scene.title || `Scene:${scene.id.slice(0, 8)}`;
 }
 
 function sanitizeSceneData(scene: Scene): Record<string, unknown> {

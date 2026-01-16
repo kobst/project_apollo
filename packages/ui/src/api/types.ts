@@ -917,6 +917,10 @@ export interface EdgeChangeAI {
   edge_type: string;
   from: string;
   to: string;
+  /** Human-readable name of the 'from' node (resolved from graph) */
+  from_name?: string;
+  /** Human-readable name of the 'to' node (resolved from graph) */
+  to_name?: string;
   properties?: Record<string, unknown>;
 }
 

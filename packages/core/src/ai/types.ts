@@ -133,6 +133,10 @@ export interface EdgeChange {
   from: string;
   /** Target node ID */
   to: string;
+  /** Human-readable name of source node (resolved from graph) */
+  from_name?: string;
+  /** Human-readable name of target node (resolved from graph) */
+  to_name?: string;
   /** Optional edge properties */
   properties?: Record<string, unknown>;
 }

@@ -17,10 +17,12 @@ import {
   validatePatch,
   generateEdgeId,
   computeCoverage,
+  getNode,
   type Patch,
   type PatchOp,
   type NodeType,
   type EdgeType,
+  type GraphState,
 } from '@apollo/core';
 import type { StorageContext } from '../config.js';
 import {
@@ -254,15 +256,29 @@ export function createGenerateHandler(ctx: StorageContext) {
 
         const result = await generatePackages(id, request, ctx, llmClient, streamCallbacks);
 
-        res.write(`data: ${JSON.stringify({ type: 'result', data: result })}\n\n`);
+        // Enrich packages with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
+        res.write(`data: ${JSON.stringify({ type: 'result', data: enrichedResult })}\n\n`);
         res.write('data: [DONE]\n\n');
         res.end();
       } else {
         const result = await generatePackages(id, request, ctx, llmClient);
 
+        // Enrich packages with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
         res.json({
           success: true,
-          data: result,
+          data: enrichedResult,
         });
       }
     } catch (error) {
@@ -314,15 +330,29 @@ export function createRegenerateHandler(ctx: StorageContext) {
 
         const result = await regenerateAll(id, ctx, llmClient, streamCallbacks);
 
-        res.write(`data: ${JSON.stringify({ type: 'result', data: result })}\n\n`);
+        // Enrich packages with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
+        res.write(`data: ${JSON.stringify({ type: 'result', data: enrichedResult })}\n\n`);
         res.write('data: [DONE]\n\n');
         res.end();
       } else {
         const result = await regenerateAll(id, ctx, llmClient);
 
+        // Enrich packages with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
         res.json({
           success: true,
-          data: result,
+          data: enrichedResult,
         });
       }
     } catch (error) {
@@ -411,15 +441,29 @@ export function createRefineHandler(ctx: StorageContext) {
 
         const result = await refinePackage(id, request, ctx, llmClient, streamCallbacks);
 
-        res.write(`data: ${JSON.stringify({ type: 'result', data: result })}\n\n`);
+        // Enrich variations with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          variations: result.variations.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
+        res.write(`data: ${JSON.stringify({ type: 'result', data: enrichedResult })}\n\n`);
         res.write('data: [DONE]\n\n');
         res.end();
       } else {
         const result = await refinePackage(id, request, ctx, llmClient);
 
+        // Enrich variations with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          variations: result.variations.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
         res.json({
           success: true,
-          data: result,
+          data: enrichedResult,
         });
       }
     } catch (error) {
@@ -462,10 +506,18 @@ export function createGetSessionHandler(ctx: StorageContext) {
         );
       }
 
+      // Load graph to resolve edge names
+      const graph = await loadGraphById(id, ctx);
+
+      // Enrich packages with resolved edge names
+      const enrichedPackages = session.packages.map((pkg) =>
+        resolveEdgeNames(pkg, graph)
+      );
+
       // Include refinable elements for current package if present
       let refinableElements: ReturnType<typeof getRefinableElements> | undefined;
       if (session.currentPackageId) {
-        const currentPkg = session.packages.find((p) => p.id === session.currentPackageId);
+        const currentPkg = enrichedPackages.find((p) => p.id === session.currentPackageId);
         if (currentPkg) {
           refinableElements = getRefinableElements(currentPkg);
         }
@@ -473,6 +525,7 @@ export function createGetSessionHandler(ctx: StorageContext) {
 
       const responseData: SessionResponseData = {
         ...session,
+        packages: enrichedPackages,
       };
       if (refinableElements) {
         responseData.refinableElements = refinableElements;
@@ -578,6 +631,113 @@ interface AcceptPackageResponseData {
   edgesAdded: number;
   edgesDeleted: number;
   storyContextUpdated: boolean;
+}
+
+/**
+ * Truncate text to a maximum length with ellipsis.
+ */
+function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength).trim() + '...';
+}
+
+/**
+ * Get a human-readable name for a node.
+ * For Scene nodes, combines heading with title or truncated scene_overview.
+ */
+function getNodeName(nodeData: Record<string, unknown>, nodeType?: string): string | null {
+  // Special handling for Scene nodes - combine heading with content
+  if (nodeType === 'Scene') {
+    const heading = nodeData.heading as string | undefined;
+    const title = nodeData.title as string | undefined;
+    const overview = nodeData.scene_overview as string | undefined;
+
+    if (heading) {
+      // Prefer title if set, otherwise use truncated overview
+      const content = title ?? (overview ? truncate(overview, 30) : null);
+      if (content) {
+        return `${heading}: ${content}`;
+      }
+      return heading;
+    }
+  }
+
+  // Standard name extraction for other node types
+  const name = nodeData.name ?? nodeData.title ?? nodeData.heading ?? nodeData.text;
+  if (name && typeof name === 'string' && name.trim()) {
+    return name.trim();
+  }
+  return null;
+}
+
+/**
+ * Resolve edge IDs to human-readable names.
+ * Looks up nodes in both the existing graph and new nodes in the package.
+ */
+export function resolveEdgeNames(
+  pkg: ai.NarrativePackage,
+  graph: GraphState | null
+): ai.NarrativePackage {
+  // Build a lookup of new node IDs to names from the package
+  const newNodeNames = new Map<string, string>();
+  for (const nodeChange of pkg.changes.nodes) {
+    if (nodeChange.data) {
+      const name = getNodeName(
+        nodeChange.data as Record<string, unknown>,
+        nodeChange.node_type
+      );
+      if (name) {
+        newNodeNames.set(nodeChange.node_id, name);
+      }
+    }
+  }
+
+  // Resolve names for each edge
+  const enrichedEdges = pkg.changes.edges.map((edge) => {
+    let fromName: string | undefined;
+    let toName: string | undefined;
+
+    // Try new nodes first, then existing graph
+    fromName = newNodeNames.get(edge.from);
+    if (!fromName && graph) {
+      const fromNode = getNode(graph, edge.from);
+      if (fromNode) {
+        fromName = getNodeName(
+          fromNode as unknown as Record<string, unknown>,
+          fromNode.type
+        ) ?? undefined;
+      }
+    }
+
+    toName = newNodeNames.get(edge.to);
+    if (!toName && graph) {
+      const toNode = getNode(graph, edge.to);
+      if (toNode) {
+        toName = getNodeName(
+          toNode as unknown as Record<string, unknown>,
+          toNode.type
+        ) ?? undefined;
+      }
+    }
+
+    // Only include name properties if defined (exactOptionalPropertyTypes compliance)
+    const result = { ...edge };
+    if (fromName !== undefined) {
+      result.from_name = fromName;
+    }
+    if (toName !== undefined) {
+      result.to_name = toName;
+    }
+    return result;
+  });
+
+  return {
+    ...pkg,
+    changes: {
+      ...pkg.changes,
+      edges: enrichedEdges,
+    },
+  };
 }
 
 /**

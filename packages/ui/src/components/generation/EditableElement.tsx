@@ -33,6 +33,74 @@ function getOpDisplay(op: string): { icon: string; className: string } {
   }
 }
 
+/**
+ * Format an edge relationship in human-readable form.
+ * Instead of "HAS_CHARACTER: Scene → Character", shows "Character in Scene"
+ */
+function formatEdgeRelationship(
+  edgeType: string,
+  fromName: string,
+  toName: string
+): { label: string; description: string } {
+  switch (edgeType) {
+    case 'HAS_CHARACTER':
+      return {
+        label: `${toName} in ${fromName}`,
+        description: 'Character appears in scene',
+      };
+    case 'LOCATED_AT':
+      return {
+        label: `${fromName} at ${toName}`,
+        description: 'Scene takes place at location',
+      };
+    case 'FEATURES_OBJECT':
+      return {
+        label: `${toName} in ${fromName}`,
+        description: 'Object appears in scene',
+      };
+    case 'SATISFIED_BY':
+      return {
+        label: `${fromName} realized by ${toName}`,
+        description: 'PlotPoint realized by scene',
+      };
+    case 'ALIGNS_WITH':
+      return {
+        label: `${fromName} aligns with ${toName}`,
+        description: 'PlotPoint aligns with beat',
+      };
+    case 'PRECEDES':
+      return {
+        label: `${fromName} before ${toName}`,
+        description: 'Causal ordering of plot points',
+      };
+    case 'ADVANCES':
+      return {
+        label: `${fromName} advances ${toName}`,
+        description: 'PlotPoint advances character arc',
+      };
+    case 'PART_OF':
+      return {
+        label: `${fromName} part of ${toName}`,
+        description: 'Location is part of setting',
+      };
+    case 'SET_IN':
+      return {
+        label: `${fromName} set in ${toName}`,
+        description: 'Scene set in setting',
+      };
+    case 'HAS_ARC':
+      return {
+        label: `${toName} for ${fromName}`,
+        description: 'Character has arc',
+      };
+    default:
+      return {
+        label: `${fromName} → ${toName}`,
+        description: edgeType,
+      };
+  }
+}
+
 export function EditableElement({
   elementType,
   element,
@@ -458,13 +526,21 @@ function renderEdgeElement(
   icon: string,
   className: string
 ) {
+  const fromName = element.from_name ?? element.from;
+  const toName = element.to_name ?? element.to;
+  const { label: edgeLabel, description: edgeDescription } = formatEdgeRelationship(
+    element.edge_type,
+    fromName,
+    toName
+  );
+
   return (
     <div className={`${styles.container} ${className}`}>
       <div className={styles.header}>
         <span className={styles.opIcon}>{icon}</span>
-        <span className={styles.type}>{element.edge_type}:</span>
-        <span className={styles.label}>
-          {element.from} → {element.to}
+        <span className={styles.type} title={edgeDescription}>{element.edge_type}:</span>
+        <span className={styles.label} title={`${fromName} → ${toName}`}>
+          {edgeLabel}
         </span>
         <div className={styles.actions}>
           {mode === 'view' && (
@@ -582,7 +658,7 @@ function renderEdgeElement(
               type="button"
             >
               <span className={styles.optionLabel}>
-                {opt.from} → {opt.to}
+                {opt.from_name ?? opt.from} → {opt.to_name ?? opt.to}
               </span>
             </button>
           ))}
