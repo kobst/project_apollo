@@ -1,30 +1,47 @@
-import { useState } from 'react';
+/**
+ * WorkspaceView - Main workspace with 3-zone layout:
+ * 1. PremiseHeader (top) - Story title, logline, genre/tone, setting
+ * 2. ElementsPanel (left) - Characters, Locations, Objects + extraction
+ * 3. StructureBoard (main) - Always-visible outline with inline expansion
+ */
+
+import { useState, useCallback } from 'react';
 import { useStory } from '../../context/StoryContext';
-import { StoryMap, type StoryMapCategory } from './StoryMap';
-import { FoundationsPanel } from './FoundationsPanel';
-import { OutlineView } from '../outline/OutlineView';
-import { StoryContextEditor } from '../context/StoryContextEditor';
+import { PremiseHeader } from './PremiseHeader';
+import { PremiseEditModal } from './PremiseEditModal';
+import { ElementsPanel } from './ElementsPanel';
+import { StructureBoard } from './StructureBoard';
+import { StoryContextModal } from '../context/StoryContextModal';
 import styles from './WorkspaceView.module.css';
 
-// Map StoryMapCategory to node types for the foundations panel
-// null values indicate special categories that don't use FoundationsPanel
-const CATEGORY_TO_NODE_TYPE: Record<StoryMapCategory, string | null> = {
-  storyContext: null, // Special: uses StoryContextEditor
-  logline: 'Logline',
-  genreTone: 'GenreTone',
-  setting: 'Setting',
-  characters: 'Character',
-  locations: 'Location',
-  objects: 'Object',
-  board: null, // Special: uses OutlineView
-  plotPoints: 'PlotPoint',
-  scenes: 'Scene',
-  unassigned: null, // Special: staging area (will use OutlineView)
-};
-
 export function WorkspaceView() {
-  const { currentStoryId, status } = useStory();
-  const [selectedCategory, setSelectedCategory] = useState<StoryMapCategory>('logline');
+  const { currentStoryId, refreshStatus } = useStory();
+
+  // Panel collapse state
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+
+  // Modal states
+  const [premiseModalOpen, setPremiseModalOpen] = useState(false);
+  const [storyContextModalOpen, setStoryContextModalOpen] = useState(false);
+
+  // Handle node click from ElementsPanel
+  // TODO: Implement node detail modal - for now just log
+  const handleNodeClick = useCallback((nodeId: string) => {
+    console.log('Node clicked:', nodeId);
+    // Future: Open a simplified node detail modal or inline editor
+  }, []);
+
+  // Handle save from modals (refresh data)
+  const handlePremiseSave = useCallback(() => {
+    void refreshStatus();
+  }, [refreshStatus]);
+
+  // Handle add element (placeholder - could open a create modal)
+  const handleAddElement = useCallback((type: 'Character' | 'Location' | 'Object') => {
+    // For now, just log - could open a create modal in future
+    console.log('Add element:', type);
+    // TODO: Open a create modal for the specific type
+  }, []);
 
   if (!currentStoryId) {
     return (
@@ -37,47 +54,34 @@ export function WorkspaceView() {
     );
   }
 
-  // Determine what to render in the main panel
-  const renderMainPanel = () => {
-    // Story Context uses a dedicated editor
-    if (selectedCategory === 'storyContext') {
-      return <StoryContextEditor />;
-    }
-
-    // Board and Unassigned use the OutlineView
-    if (selectedCategory === 'board' || selectedCategory === 'unassigned') {
-      return <OutlineView />;
-    }
-
-    // All other categories use the FoundationsPanel (list + editor)
-    const nodeType = CATEGORY_TO_NODE_TYPE[selectedCategory];
-    if (!nodeType) {
-      return <div>Unknown category</div>;
-    }
-
-    return (
-      <FoundationsPanel
-        key={selectedCategory}
-        category={selectedCategory}
-        nodeType={nodeType}
-      />
-    );
-  };
-
   return (
     <div className={styles.container}>
-      <StoryMap
-        selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
-      />
-      <div className={styles.mainPanel}>
-        <div className={styles.mainHeader}>
-          <h2 className={styles.storyTitle}>{status?.name || currentStoryId}</h2>
-        </div>
-        <div className={styles.mainContent}>
-          {renderMainPanel()}
-        </div>
+      {/* Top: Premise Header */}
+      <PremiseHeader onEditPremise={() => setPremiseModalOpen(true)} />
+
+      {/* Main Area: Elements Panel + Structure Board */}
+      <div className={styles.mainArea}>
+        <ElementsPanel
+          isCollapsed={isPanelCollapsed}
+          onToggleCollapse={() => setIsPanelCollapsed(!isPanelCollapsed)}
+          onNodeClick={handleNodeClick}
+          onStoryContextClick={() => setStoryContextModalOpen(true)}
+          onAddElement={handleAddElement}
+        />
+        <StructureBoard />
       </div>
+
+      {/* Modals */}
+      {premiseModalOpen && (
+        <PremiseEditModal
+          onClose={() => setPremiseModalOpen(false)}
+          onSave={handlePremiseSave}
+        />
+      )}
+
+      {storyContextModalOpen && (
+        <StoryContextModal onClose={() => setStoryContextModalOpen(false)} />
+      )}
     </div>
   );
 }

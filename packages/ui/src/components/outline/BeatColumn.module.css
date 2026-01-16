@@ -223,3 +223,12 @@
 .notes:hover {
   color: #888;
 }
+
+/* PlotPoint header clickable */
+.plotPointHeader {
+  cursor: pointer;
+}
+
+.plotPointHeader:hover {
+  background: #35355a;
+}

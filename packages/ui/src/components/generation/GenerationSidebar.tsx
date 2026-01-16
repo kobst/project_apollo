@@ -33,17 +33,18 @@ const ENTRY_POINTS = [
   { type: 'idea' as const, label: 'Idea' },
 ];
 
-const DEPTH_OPTIONS: { value: GenerationDepth; label: string }[] = [
-  { value: 'narrow', label: 'Focused' },
-  { value: 'medium', label: 'Standard' },
-  { value: 'wide', label: 'Expansive' },
-];
+// Map numeric values to API enums
+function nodesToDepth(nodes: number): GenerationDepth {
+  if (nodes <= 5) return 'narrow';
+  if (nodes <= 10) return 'medium';
+  return 'wide';
+}
 
-const COUNT_OPTIONS: { value: GenerationCount; label: string; count: string }[] = [
-  { value: 'few', label: 'Quick', count: '3' },
-  { value: 'standard', label: 'Explore', count: '5' },
-  { value: 'many', label: 'Deep', count: '8' },
-];
+function packagesToCount(packages: number): GenerationCount {
+  if (packages <= 3) return 'few';
+  if (packages <= 6) return 'standard';
+  return 'many';
+}
 
 // Build tree structure from packages
 interface PackageNode {
@@ -91,8 +92,8 @@ export function GenerationSidebar({
 
   // Generation controls state
   const [entryType, setEntryType] = useState<GenerationEntryPoint['type']>('naked');
-  const [depth, setDepth] = useState<GenerationDepth>('medium');
-  const [count, setCount] = useState<GenerationCount>('standard');
+  const [nodesPerPackage, setNodesPerPackage] = useState(8);
+  const [packageCount, setPackageCount] = useState(5);
   const [direction, setDirection] = useState('');
 
   const handleGenerate = useCallback(async () => {
@@ -101,15 +102,15 @@ export function GenerationSidebar({
     const entryPoint: GenerationEntryPoint = { type: entryType };
     const request: GenerateRequest = {
       entryPoint,
-      depth,
-      count,
+      depth: nodesToDepth(nodesPerPackage),
+      count: packagesToCount(packageCount),
     };
     const trimmedDirection = direction.trim();
     if (trimmedDirection) {
       request.direction = trimmedDirection;
     }
     await startGeneration(currentStoryId, request);
-  }, [currentStoryId, entryType, depth, count, direction, startGeneration]);
+  }, [currentStoryId, entryType, nodesPerPackage, packageCount, direction, startGeneration]);
 
   const packageTree = session ? buildPackageTree(session.packages) : [];
 
@@ -210,68 +211,38 @@ export function GenerationSidebar({
           </select>
         </div>
 
-        {/* Depth */}
+        {/* Nodes per Package */}
         <div className={styles.control}>
-          <label className={styles.controlLabel}>Depth</label>
-          <div className={styles.radioGroup}>
-            {DEPTH_OPTIONS.map((opt) => (
-              <label
-                key={opt.value}
-                className={`${styles.radioOption} ${depth === opt.value ? styles.selected : ''} ${loading ? styles.disabled : ''}`}
-                onClick={(e) => {
-                  if (loading) {
-                    e.preventDefault();
-                    return;
-                  }
-                  setDepth(opt.value);
-                }}
-              >
-                <input
-                  type="radio"
-                  name="depth"
-                  value={opt.value}
-                  checked={depth === opt.value}
-                  onChange={() => {}}
-                  disabled={loading}
-                  className={styles.radioInput}
-                />
-                <span className={styles.radioLabel}>{opt.label}</span>
-              </label>
-            ))}
+          <div className={styles.sliderHeader}>
+            <label className={styles.controlLabel}>Nodes per Package</label>
+            <span className={styles.sliderValue}>{nodesPerPackage}</span>
           </div>
+          <input
+            type="range"
+            min="3"
+            max="15"
+            value={nodesPerPackage}
+            onChange={(e) => setNodesPerPackage(Number(e.target.value))}
+            disabled={loading}
+            className={styles.slider}
+          />
         </div>
 
-        {/* Count */}
+        {/* Package Options */}
         <div className={styles.control}>
-          <label className={styles.controlLabel}>Options</label>
-          <div className={styles.radioGroup}>
-            {COUNT_OPTIONS.map((opt) => (
-              <label
-                key={opt.value}
-                className={`${styles.radioOption} ${count === opt.value ? styles.selected : ''} ${loading ? styles.disabled : ''}`}
-                onClick={(e) => {
-                  if (loading) {
-                    e.preventDefault();
-                    return;
-                  }
-                  setCount(opt.value);
-                }}
-              >
-                <input
-                  type="radio"
-                  name="count"
-                  value={opt.value}
-                  checked={count === opt.value}
-                  onChange={() => {}}
-                  disabled={loading}
-                  className={styles.radioInput}
-                />
-                <span className={styles.radioLabel}>
-                  {opt.label} ({opt.count})
-                </span>
-              </label>
-            ))}
+          <div className={styles.sliderHeader}>
+            <label className={styles.controlLabel}>Package Options</label>
+            <span className={styles.sliderValue}>{packageCount}</span>
           </div>
+          <input
+            type="range"
+            min="1"
+            max="10"
+            value={packageCount}
+            onChange={(e) => setPackageCount(Number(e.target.value))}
+            disabled={loading}
+            className={styles.slider}
+          />
         </div>
 
         {/* Direction */}

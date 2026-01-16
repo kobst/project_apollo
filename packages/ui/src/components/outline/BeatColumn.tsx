@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import type { OutlineBeat, OutlinePlotPoint, CreatePlotPointRequest } from '../../api/types';
 import { useStory } from '../../context/StoryContext';
 import { usePlotPoints } from '../../hooks/usePlotPoints';
+import { useEdit } from '../workspace/StructureBoard';
 import { SceneCard } from './SceneCard';
 import { EmptyBeatSlot } from './EmptyBeatSlot';
 import { AddPlotPointModal } from './AddPlotPointModal';
@@ -22,11 +23,16 @@ function formatBeatType(beatType: string): string {
 
 // Render a single PlotPoint with its nested scenes
 function PlotPointContainer({ pp, beatId }: { pp: OutlinePlotPoint; beatId: string }) {
+  const { onEditPlotPoint } = useEdit();
   const hasScenes = pp.scenes.length > 0;
+
+  const handleClick = () => {
+    onEditPlotPoint(pp);
+  };
 
   return (
     <div className={styles.plotPointContainer}>
-      <div className={styles.plotPointHeader}>
+      <div className={styles.plotPointHeader} onClick={handleClick}>
         <span className={styles.plotPointTitle}>{pp.title}</span>
         <span className={`${styles.plotPointIntent} ${styles[pp.intent]}`}>
           {pp.intent}

@@ -1,24 +1,24 @@
 import type { OutlineScene } from '../../api/types';
+import { useEdit } from '../workspace/StructureBoard';
 import styles from './SceneCard.module.css';
 
 interface SceneCardProps {
   scene: OutlineScene;
   beatId: string;
+  onUpdate?: () => void;
 }
 
 export function SceneCard({ scene, beatId: _beatId }: SceneCardProps) {
-  // Format heading for display
-  const displayHeading = scene.heading || 'Untitled Scene';
+  const { onEditScene } = useEdit();
 
-  // Truncate overview if too long
+  const displayHeading = scene.heading || 'Untitled Scene';
   const maxOverview = 60;
   const displayOverview = scene.overview.length > maxOverview
     ? scene.overview.slice(0, maxOverview) + '...'
     : scene.overview;
 
   const handleClick = () => {
-    // TODO: Navigate to Explore view with this scene selected
-    console.log('Navigate to scene:', scene.id);
+    onEditScene(scene);
   };
 
   return (
