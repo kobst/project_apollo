@@ -81,4 +81,16 @@ export {
   createConvertProposalHandler,
   createApplyPackageHandler,
   createAcceptPackageHandler,
+  createRegenerateElementHandler,
+  createApplyElementOptionHandler,
+  createValidatePackageHandler,
+  createUpdatePackageElementHandler,
 } from './generate.js';
+export {
+  createListSavedPackagesHandler,
+  createGetSavedPackageHandler,
+  createSavePackageHandler,
+  createUpdateSavedPackageHandler,
+  createDeleteSavedPackageHandler,
+  createApplySavedPackageHandler,
+} from './savedPackages.js';

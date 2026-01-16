@@ -7,12 +7,18 @@ import type {
   GenerationCount,
   GenerateRequest,
   NarrativePackage,
+  SavedPackageData,
 } from '../../api/types';
+import { SavedPackagesPanel } from './SavedPackagesPanel';
 import styles from './GenerationSidebar.module.css';
 
 interface GenerationSidebarProps {
   selectedPackageId: string | null;
   onSelectPackage: (packageId: string) => void;
+  savedPackages?: SavedPackageData[];
+  savedPackagesLoading?: boolean;
+  onApplySavedPackage?: (savedPackageId: string) => void;
+  onDeleteSavedPackage?: (savedPackageId: string) => void;
 }
 
 // Entry point options
@@ -71,6 +77,10 @@ function buildPackageTree(packages: NarrativePackage[]): PackageNode[] {
 export function GenerationSidebar({
   selectedPackageId,
   onSelectPackage,
+  savedPackages = [],
+  savedPackagesLoading = false,
+  onApplySavedPackage,
+  onDeleteSavedPackage,
 }: GenerationSidebarProps) {
   const { currentStoryId } = useStory();
   const { session, loading, startGeneration } = useGeneration();
@@ -158,6 +168,16 @@ export function GenerationSidebar({
             {packageTree.map((node) => renderPackageNode(node))}
           </div>
         </div>
+      )}
+
+      {/* Saved Packages Section */}
+      {savedPackages.length > 0 && onApplySavedPackage && onDeleteSavedPackage && (
+        <SavedPackagesPanel
+          packages={savedPackages}
+          loading={savedPackagesLoading}
+          onApply={onApplySavedPackage}
+          onDelete={onDeleteSavedPackage}
+        />
       )}
 
       {/* Divider */}

@@ -68,6 +68,16 @@ import {
   createConvertProposalHandler,
   createApplyPackageHandler,
   createAcceptPackageHandler,
+  createRegenerateElementHandler,
+  createApplyElementOptionHandler,
+  createValidatePackageHandler,
+  createUpdatePackageElementHandler,
+  createListSavedPackagesHandler,
+  createGetSavedPackageHandler,
+  createSavePackageHandler,
+  createUpdateSavedPackageHandler,
+  createDeleteSavedPackageHandler,
+  createApplySavedPackageHandler,
 } from '../handlers/index.js';
 
 export function createStoriesRouter(ctx: StorageContext): Router {
@@ -170,6 +180,20 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.post('/:id/proposal-to-package', createConvertProposalHandler(ctx));
   router.post('/:id/apply-package', createApplyPackageHandler(ctx));
   router.post('/:id/accept-package', createAcceptPackageHandler(ctx));
+
+  // Package Editing endpoints
+  router.post('/:id/regenerate-element', createRegenerateElementHandler(ctx));
+  router.post('/:id/apply-element-option', createApplyElementOptionHandler(ctx));
+  router.post('/:id/validate-package', createValidatePackageHandler(ctx));
+  router.post('/:id/update-package-element', createUpdatePackageElementHandler(ctx));
+
+  // Saved Packages endpoints
+  router.get('/:id/saved-packages', createListSavedPackagesHandler(ctx));
+  router.get('/:id/saved-packages/:spId', createGetSavedPackageHandler(ctx));
+  router.post('/:id/saved-packages', createSavePackageHandler(ctx));
+  router.patch('/:id/saved-packages/:spId', createUpdateSavedPackageHandler(ctx));
+  router.delete('/:id/saved-packages/:spId', createDeleteSavedPackageHandler(ctx));
+  router.post('/:id/saved-packages/:spId/apply', createApplySavedPackageHandler(ctx));
 
   return router;
 }

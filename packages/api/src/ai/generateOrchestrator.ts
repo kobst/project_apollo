@@ -19,8 +19,10 @@ import {
   createGenerationSession,
   addPackagesToSession,
   loadGenerationSession,
+  markSessionArchived,
   type GenerationEntryPoint,
 } from '../session.js';
+import { getCurrentVersionInfo } from '../savedPackages.js';
 import { LLMClient, type StreamCallbacks } from './llmClient.js';
 
 // =============================================================================
@@ -158,6 +160,9 @@ export async function generatePackages(
   // 10. Create or update session
   let session = await loadGenerationSession(storyId, ctx);
 
+  // Get current version info for anchoring
+  const versionInfo = await getCurrentVersionInfo(storyId, ctx);
+
   if (!session || session.status !== 'active') {
     // Create new session
     const sessionParams: { depth: ai.GenerationDepth; count: ai.GenerationCount; direction?: string } = { depth, count };
@@ -166,7 +171,22 @@ export async function generatePackages(
       storyId,
       entryPoint,
       sessionParams,
-      ctx
+      ctx,
+      versionInfo ?? undefined
+    );
+  } else {
+    // Archive existing active session before replacing
+    await markSessionArchived(storyId, ctx);
+
+    // Create new session
+    const sessionParams: { depth: ai.GenerationDepth; count: ai.GenerationCount; direction?: string } = { depth, count };
+    if (direction) sessionParams.direction = direction;
+    session = await createGenerationSession(
+      storyId,
+      entryPoint,
+      sessionParams,
+      ctx,
+      versionInfo ?? undefined
     );
   }
 

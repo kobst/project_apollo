@@ -85,6 +85,19 @@ import type {
   AcceptPackageResponseData,
   NarrativePackage,
   ConvertProposalResponseData,
+  // Saved Packages types
+  SavedPackagesListData,
+  SavedPackageResponseData,
+  SavePackageRequest,
+  ApplySavedPackageResponseData,
+  // Package Editing types
+  RegenerateElementRequest,
+  RegenerateElementResponseData,
+  ApplyElementOptionRequest,
+  ApplyElementOptionResponseData,
+  ValidatePackageResponseData,
+  UpdatePackageElementRequest,
+  UpdatePackageElementResponseData,
 } from './types';
 
 const API_BASE = '/api';
@@ -389,6 +402,74 @@ export const api = {
    */
   acceptPackage: (storyId: string, packageId: string) =>
     POST<AcceptPackageResponseData>(`/stories/${storyId}/accept-package`, { packageId }),
+
+  // =========================================================================
+  // Saved Packages
+  // =========================================================================
+
+  /**
+   * List all saved packages for a story with compatibility status
+   */
+  listSavedPackages: (storyId: string) =>
+    GET<SavedPackagesListData>(`/stories/${storyId}/saved-packages`),
+
+  /**
+   * Get a single saved package with compatibility status
+   */
+  getSavedPackage: (storyId: string, savedPackageId: string) =>
+    GET<SavedPackageResponseData>(`/stories/${storyId}/saved-packages/${savedPackageId}`),
+
+  /**
+   * Save a package from the current session to the library
+   */
+  savePackage: (storyId: string, data: SavePackageRequest) =>
+    POST<SavedPackageResponseData>(`/stories/${storyId}/saved-packages`, data),
+
+  /**
+   * Update a saved package's user note
+   */
+  updateSavedPackage: (storyId: string, savedPackageId: string, userNote?: string) =>
+    PATCH<SavedPackageResponseData>(`/stories/${storyId}/saved-packages/${savedPackageId}`, { userNote }),
+
+  /**
+   * Delete a saved package
+   */
+  deleteSavedPackage: (storyId: string, savedPackageId: string) =>
+    DELETE<{ deleted: boolean }>(`/stories/${storyId}/saved-packages/${savedPackageId}`),
+
+  /**
+   * Apply a saved package to the current graph
+   */
+  applySavedPackage: (storyId: string, savedPackageId: string) =>
+    POST<ApplySavedPackageResponseData>(`/stories/${storyId}/saved-packages/${savedPackageId}/apply`),
+
+  // =========================================================================
+  // Package Editing
+  // =========================================================================
+
+  /**
+   * Regenerate a single element within a package, returning multiple options
+   */
+  regenerateElement: (storyId: string, data: RegenerateElementRequest) =>
+    POST<RegenerateElementResponseData>(`/stories/${storyId}/regenerate-element`, data),
+
+  /**
+   * Apply a selected regeneration option to a package element
+   */
+  applyElementOption: (storyId: string, data: ApplyElementOptionRequest) =>
+    POST<ApplyElementOptionResponseData>(`/stories/${storyId}/apply-element-option`, data),
+
+  /**
+   * Validate a package against the current graph state
+   */
+  validatePackage: (storyId: string, pkg: NarrativePackage) =>
+    POST<ValidatePackageResponseData>(`/stories/${storyId}/validate-package`, { package: pkg }),
+
+  /**
+   * Update a single element within a package (manual edit)
+   */
+  updatePackageElement: (storyId: string, data: UpdatePackageElementRequest) =>
+    POST<UpdatePackageElementResponseData>(`/stories/${storyId}/update-package-element`, data),
 };
 
 // =============================================================================

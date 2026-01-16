@@ -1,9 +1,9 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useGeneration } from '../../context/GenerationContext';
 import { useStory } from '../../context/StoryContext';
+import { useSavedPackages } from '../../context/SavedPackagesContext';
 import { GenerationSidebar } from './GenerationSidebar';
 import { PackageDetail } from './PackageDetail';
-import { RefineModal } from './RefineModal';
 import type { RefineRequest } from '../../api/types';
 import styles from './GenerationView.module.css';
 
@@ -16,13 +16,30 @@ export function GenerationView() {
     acceptPackage,
     refinePackage,
     rejectPackage,
-    refinableElements,
+    regenerateElement,
+    applyElementOption,
+    updatePackageElement,
   } = useGeneration();
+
+  const {
+    savedPackages,
+    loading: savedPackagesLoading,
+    loadSavedPackages,
+    savePackage,
+    deleteSavedPackage,
+    applySavedPackage,
+  } = useSavedPackages();
 
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(
     session?.packages[0]?.id ?? null
   );
-  const [refineModalOpen, setRefineModalOpen] = useState(false);
+
+  // Load saved packages when story changes
+  useEffect(() => {
+    if (currentStoryId) {
+      loadSavedPackages(currentStoryId);
+    }
+  }, [currentStoryId, loadSavedPackages]);
 
   // Get selected package
   const selectedPackage = useMemo(
@@ -43,17 +60,83 @@ export function GenerationView() {
     await acceptPackage(currentStoryId, selectedPackageId);
   }, [currentStoryId, selectedPackageId, acceptPackage]);
 
-  const handleRefineClick = useCallback(() => {
-    setRefineModalOpen(true);
-  }, []);
-
   const handleRefine = useCallback(
     async (request: RefineRequest) => {
       if (!currentStoryId) return;
       await refinePackage(currentStoryId, request);
-      setRefineModalOpen(false);
     },
     [currentStoryId, refinePackage]
+  );
+
+  // Handler for opening refine - now just starts a refine with empty guidance
+  const handleRefineClick = useCallback(() => {
+    if (!selectedPackageId) return;
+    handleRefine({
+      basePackageId: selectedPackageId,
+      guidance: 'Generate variations with different approaches',
+    });
+  }, [selectedPackageId, handleRefine]);
+
+  // Element regeneration handler
+  const handleRegenerateElement = useCallback(
+    async (
+      packageId: string,
+      elementType: 'node' | 'edge' | 'storyContext',
+      elementIndex: number,
+      guidance?: string,
+      count?: 'few' | 'standard' | 'many'
+    ) => {
+      if (!currentStoryId) throw new Error('No story selected');
+      return regenerateElement(
+        currentStoryId,
+        packageId,
+        elementType,
+        elementIndex,
+        guidance,
+        count
+      );
+    },
+    [currentStoryId, regenerateElement]
+  );
+
+  // Apply element option handler
+  const handleApplyElementOption = useCallback(
+    async (
+      packageId: string,
+      elementType: 'node' | 'edge' | 'storyContext',
+      elementIndex: number,
+      newElement: unknown
+    ) => {
+      if (!currentStoryId) return;
+      await applyElementOption(
+        currentStoryId,
+        packageId,
+        elementType,
+        elementIndex,
+        newElement as Parameters<typeof applyElementOption>[4]
+      );
+    },
+    [currentStoryId, applyElementOption]
+  );
+
+  // Update element handler (manual edit)
+  const handleUpdateElement = useCallback(
+    async (
+      packageId: string,
+      elementType: 'node' | 'edge' | 'storyContext',
+      elementIndex: number,
+      updatedElement: unknown
+    ) => {
+      if (!currentStoryId) return;
+      await updatePackageElement(
+        currentStoryId,
+        packageId,
+        elementType,
+        elementIndex,
+        updatedElement as Parameters<typeof updatePackageElement>[4]
+      );
+    },
+    [currentStoryId, updatePackageElement]
   );
 
   const handleReject = useCallback(() => {
@@ -66,6 +149,24 @@ export function GenerationView() {
       setSelectedPackageId(remaining[0]?.id ?? null);
     }
   }, [selectedPackageId, rejectPackage, session]);
+
+  // Save package handler
+  const handleSave = useCallback(async () => {
+    if (!currentStoryId || !selectedPackageId) return;
+    await savePackage(currentStoryId, selectedPackageId);
+  }, [currentStoryId, selectedPackageId, savePackage]);
+
+  // Apply saved package handler
+  const handleApplySavedPackage = useCallback(async (savedPackageId: string) => {
+    if (!currentStoryId) return;
+    await applySavedPackage(currentStoryId, savedPackageId);
+  }, [currentStoryId, applySavedPackage]);
+
+  // Delete saved package handler
+  const handleDeleteSavedPackage = useCallback(async (savedPackageId: string) => {
+    if (!currentStoryId) return;
+    await deleteSavedPackage(currentStoryId, savedPackageId);
+  }, [currentStoryId, deleteSavedPackage]);
 
   // Empty state - no story selected
   if (!currentStoryId) {
@@ -85,6 +186,10 @@ export function GenerationView() {
       <GenerationSidebar
         selectedPackageId={selectedPackageId}
         onSelectPackage={setSelectedPackageId}
+        savedPackages={savedPackages}
+        savedPackagesLoading={savedPackagesLoading}
+        onApplySavedPackage={handleApplySavedPackage}
+        onDeleteSavedPackage={handleDeleteSavedPackage}
       />
 
       {/* Main Content */}
@@ -98,12 +203,17 @@ export function GenerationView() {
         )}
 
         {/* Content */}
-        {selectedPackage ? (
+        {selectedPackage && currentStoryId ? (
           <PackageDetail
             package={selectedPackage}
+            storyId={currentStoryId}
             onAccept={handleAccept}
             onRefine={handleRefineClick}
             onReject={handleReject}
+            onSave={handleSave}
+            onRegenerateElement={handleRegenerateElement}
+            onApplyElementOption={handleApplyElementOption}
+            onUpdateElement={handleUpdateElement}
             loading={loading}
           />
         ) : session && session.packages.length === 0 ? (
@@ -140,16 +250,6 @@ export function GenerationView() {
         )}
       </div>
 
-      {/* Refine Modal */}
-      {refineModalOpen && selectedPackage && refinableElements && (
-        <RefineModal
-          package={selectedPackage}
-          refinableElements={refinableElements}
-          onRefine={handleRefine}
-          onClose={() => setRefineModalOpen(false)}
-          loading={loading}
-        />
-      )}
     </div>
   );
 }

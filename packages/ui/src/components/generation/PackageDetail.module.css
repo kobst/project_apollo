@@ -316,6 +316,28 @@
   cursor: not-allowed;
 }
 
+.saveBtn {
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid #6a5a3a;
+  border-radius: 6px;
+  color: #c9a855;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.saveBtn:hover:not(:disabled) {
+  background: rgba(201, 168, 85, 0.1);
+  border-color: #c9a855;
+}
+
+.saveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .refineBtn {
   padding: 10px 20px;
   background: transparent;

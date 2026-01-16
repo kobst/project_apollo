@@ -25,6 +25,10 @@ Implement UI components to expose the AI generation capabilities defined in `aiI
 | `DELETE /stories/:id/session` | session.ts | Abandon session |
 | `POST /stories/:id/proposal-to-package` | - | Convert proposal to package |
 | `POST /stories/:id/accept-package` | - | Apply package to graph |
+| `POST /stories/:id/regenerate-element` | `regenerateElementOrchestrator` | Regenerate single element → N options |
+| `POST /stories/:id/apply-element-option` | - | Apply selected option to package |
+| `POST /stories/:id/update-package-element` | - | Manual edit of element |
+| `POST /stories/:id/validate-package` | - | Validate package against graph |
 
 ### Existing UI Components
 - `InputPanel.tsx` - Basic extraction (non-AI, uses `/extract`)
@@ -227,38 +231,65 @@ Main view for browsing generated packages with tree navigation.
 - Navigation path (breadcrumb)
 - Loading states
 
-#### 2.4 RefineModal Component
-**File:** `packages/ui/src/components/generation/RefineModal.tsx`
+#### 2.4 EditableElement Component
+**File:** `packages/ui/src/components/generation/EditableElement.tsx`
 
-Modal for refining a selected package.
+Inline editing component for individual package elements (nodes, edges, story context).
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│ REFINE: "The Corruption Reveal"                               [x]  │
-├─────────────────────────────────────────────────────────────────────┤
-│ Current package contains:                                           │
-│ ☑ PlotPoint: Mike discovers partner's betrayal                     │
-│ ☐ Character: Agent Torres (Internal Affairs)                       │
-│ ☐ Location: Police Evidence Room                                   │
-│ ☑ Story Context: Theme addition                                    │
-│                                                                     │
-│ What would you like to change?                                      │
+│ + Character: Agent Torres                          [Edit] [Regenerate]│
+│   role: "Internal Affairs"                                          │
+│   description: "A seasoned investigator..."                         │
+└─────────────────────────────────────────────────────────────────────┘
+
+Edit Mode:
+┌─────────────────────────────────────────────────────────────────────┐
+│ + Character: Agent Torres                                           │
 │ ┌─────────────────────────────────────────────────────────────────┐ │
-│ │ Make Torres more sympathetic - maybe a former friend of Mike's  │ │
+│ │ Name: [Agent Torres___________]                                 │ │
+│ │ Role: [Internal Affairs______]                                  │ │
+│ │ Description: [________________]                                 │ │
 │ └─────────────────────────────────────────────────────────────────┘ │
+│                                           [Cancel] [Save]           │
+└─────────────────────────────────────────────────────────────────────┘
+
+Regenerate Mode:
+┌─────────────────────────────────────────────────────────────────────┐
+│ + Character: Agent Torres                                           │
+│ ┌─────────────────────────────────────────────────────────────────┐ │
+│ │ Guidance: [Make more sympathetic_________________]              │ │
+│ │ Options: [Few (3) ▼]                                            │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+│                                    [Cancel] [Generate Options]      │
 │                                                                     │
-│ Generate: [4 ▼] variations    Depth: [Standard ▼]                  │
-│                                                                     │
-│                                        [Generate Variations] [Cancel]│
+│ Choose an option:                                                   │
+│ ┌─────────────────────────────────────────────────────────────────┐ │
+│ │ "Agent Torres (former partner)"                                 │ │
+│ │ A former friend who was reassigned...                           │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────────────────────────────┐ │
+│ │ "Agent Torres (reluctant investigator)"                         │ │
+│ │ Assigned against his wishes...                                  │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+│                                              [Keep Original]        │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
 **Props:**
-- `package: NarrativePackage`
-- `refinableElements: RefinableElement[]`
-- `onRefine: (request: RefineRequest) => void`
-- `onClose: () => void`
+- `elementType: 'node' | 'edge' | 'storyContext'`
+- `elementIndex: number`
+- `element: NodeChangeAI | EdgeChangeAI | StoryContextChange`
+- `onEdit: (updated) => void`
+- `onRegenerate: (guidance, count) => void`
 - `loading?: boolean`
+- `regenerateOptions?: Array<...>` - Options returned from regeneration
+- `onSelectOption?: (option) => void`
+
+**Features:**
+- **View Mode**: Displays element summary with Edit/Regenerate buttons
+- **Edit Mode**: Type-specific inline form (Character fields, Scene fields, etc.)
+- **Regenerate Mode**: Guidance input, count selector, displays multiple options to choose from
 
 ---
 

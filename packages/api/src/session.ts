@@ -294,6 +294,10 @@ export interface GenerationSession {
   entryPoint: GenerationEntryPoint;
   initialParams: GenerationSessionParams;
 
+  // Version anchoring - track which story version packages were generated against
+  sourceVersionId?: string;
+  sourceVersionLabel?: string;
+
   // Package tree
   packages: ai.NarrativePackage[];
 
@@ -303,6 +307,9 @@ export interface GenerationSession {
   // Status
   status: 'active' | 'accepted' | 'abandoned';
   acceptedPackageId?: string;
+
+  // Archive tracking - set when session is auto-archived by new generation
+  archivedAt?: string;
 }
 
 // =============================================================================
@@ -322,7 +329,8 @@ export async function createGenerationSession(
   storyId: string,
   entryPoint: GenerationEntryPoint,
   params: GenerationSessionParams,
-  ctx: StorageContext
+  ctx: StorageContext,
+  versionInfo?: { versionId: string; versionLabel: string }
 ): Promise<GenerationSession> {
   const now = new Date().toISOString();
   const sessionId = `gs_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -338,8 +346,33 @@ export async function createGenerationSession(
     status: 'active',
   };
 
+  // Only set optional properties if they have values
+  if (versionInfo?.versionId) {
+    session.sourceVersionId = versionInfo.versionId;
+  }
+  if (versionInfo?.versionLabel) {
+    session.sourceVersionLabel = versionInfo.versionLabel;
+  }
+
   await saveGenerationSession(storyId, session, ctx);
   return session;
+}
+
+/**
+ * Mark session as archived (when replaced by new generation).
+ */
+export async function markSessionArchived(
+  storyId: string,
+  ctx: StorageContext
+): Promise<void> {
+  const session = await loadGenerationSession(storyId, ctx);
+  if (!session || session.status !== 'active') {
+    return; // Nothing to archive
+  }
+
+  session.archivedAt = new Date().toISOString();
+  session.updatedAt = new Date().toISOString();
+  await saveGenerationSession(storyId, session, ctx);
 }
 
 /**
@@ -436,6 +469,30 @@ export async function findPackageInSession(
   }
 
   return session.packages.find((p) => p.id === packageId) ?? null;
+}
+
+/**
+ * Update a package in the session.
+ */
+export async function updatePackageInSession(
+  storyId: string,
+  packageId: string,
+  updatedPackage: ai.NarrativePackage,
+  ctx: StorageContext
+): Promise<void> {
+  const session = await loadGenerationSession(storyId, ctx);
+  if (!session) {
+    throw new Error(`No active generation session for story ${storyId}`);
+  }
+
+  const packageIndex = session.packages.findIndex((p) => p.id === packageId);
+  if (packageIndex === -1) {
+    throw new Error(`Package ${packageId} not found in session`);
+  }
+
+  session.packages[packageIndex] = updatedPackage;
+  session.updatedAt = new Date().toISOString();
+  await saveGenerationSession(storyId, session, ctx);
 }
 
 /**

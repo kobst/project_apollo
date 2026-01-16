@@ -1,0 +1,170 @@
+.container {
+  border-top: 1px solid #2a2a4a;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  background: #1a1a2e;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.header:hover {
+  background: #1e1e32;
+}
+
+.headerTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #c9a855;
+}
+
+.chevron {
+  font-size: 10px;
+  color: #666;
+  transition: transform 0.15s ease;
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+.list {
+  background: #16162a;
+  border-top: 1px solid #2a2a4a;
+}
+
+.item {
+  border-bottom: 1px solid #2a2a4a;
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.itemHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.itemHeader:hover {
+  background: #1e1e32;
+}
+
+.itemExpanded .itemHeader {
+  background: #1e1e32;
+}
+
+.itemInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.itemTitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: #ccc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemMeta {
+  font-size: 10px;
+  color: #666;
+}
+
+.itemDetails {
+  padding: 12px 16px;
+  background: #1a1a2e;
+  border-top: 1px solid #2a2a4a;
+}
+
+.description {
+  font-size: 12px;
+  color: #999;
+  line-height: 1.5;
+  margin: 0 0 8px 0;
+}
+
+.note {
+  font-size: 11px;
+  color: #888;
+  font-style: italic;
+  margin: 0 0 8px 0;
+}
+
+.note strong {
+  color: #aaa;
+  font-style: normal;
+}
+
+.itemActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.deleteBtn,
+.applyBtn {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.deleteBtn {
+  background: transparent;
+  border: 1px solid #5a4a4a;
+  color: #a77;
+}
+
+.deleteBtn:hover:not(:disabled) {
+  background: rgba(170, 119, 119, 0.1);
+}
+
+.deleteBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.applyBtn {
+  background: linear-gradient(135deg, #4a7c59 0%, #3a6c49 100%);
+  border: none;
+  color: #fff;
+  font-weight: 500;
+}
+
+.applyBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5a8c69 0%, #4a7c59 100%);
+}
+
+.applyBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.applyBtnWarning {
+  background: linear-gradient(135deg, #8a6a3a 0%, #7a5a2a 100%);
+}
+
+.applyBtnWarning:hover:not(:disabled) {
+  background: linear-gradient(135deg, #9a7a4a 0%, #8a6a3a 100%);
+}

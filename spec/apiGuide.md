@@ -896,6 +896,187 @@ curl http://localhost:3000/stories/my-story/lint/precommit
 
 ---
 
+## AI Package Editing
+
+These endpoints allow fine-grained editing and regeneration of individual elements within AI-generated packages.
+
+### Regenerate Element
+
+```
+POST /stories/:id/regenerate-element
+```
+
+Regenerates a single element within a package, returning multiple options to choose from.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `packageId` | string | Yes | The package containing the element |
+| `elementType` | string | Yes | `node`, `edge`, or `storyContext` |
+| `elementIndex` | number | Yes | Index of the element within its array |
+| `guidance` | string | No | Optional guidance for regeneration |
+| `count` | string | No | Number of options: `few` (3), `standard` (5), `many` (7) |
+
+```bash
+curl -X POST http://localhost:3000/stories/my-story/regenerate-element \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "packageId": "pkg_abc123",
+    "elementType": "node",
+    "elementIndex": 0,
+    "guidance": "Make the character more sympathetic",
+    "count": "few"
+  }'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "options": [
+      {
+        "operation": "add",
+        "node_type": "Character",
+        "node_id": "char_123",
+        "data": { "name": "Agent Torres", "role": "Reluctant investigator", ... }
+      },
+      {
+        "operation": "add",
+        "node_type": "Character",
+        "node_id": "char_123",
+        "data": { "name": "Agent Torres", "role": "Former friend", ... }
+      },
+      ...
+    ]
+  }
+}
+```
+
+---
+
+### Apply Element Option
+
+```
+POST /stories/:id/apply-element-option
+```
+
+Applies a selected regeneration option to replace an element in a package.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `packageId` | string | Yes | The package to update |
+| `elementType` | string | Yes | `node`, `edge`, or `storyContext` |
+| `elementIndex` | number | Yes | Index of the element to replace |
+| `newElement` | object | Yes | The selected element option |
+
+```bash
+curl -X POST http://localhost:3000/stories/my-story/apply-element-option \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "packageId": "pkg_abc123",
+    "elementType": "node",
+    "elementIndex": 0,
+    "newElement": { "operation": "add", "node_type": "Character", ... }
+  }'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "package": { ... }
+  }
+}
+```
+
+---
+
+### Update Package Element
+
+```
+POST /stories/:id/update-package-element
+```
+
+Updates a single element within a package (for manual edits).
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `packageId` | string | Yes | The package to update |
+| `elementType` | string | Yes | `node`, `edge`, or `storyContext` |
+| `elementIndex` | number | Yes | Index of the element to update |
+| `updatedElement` | object | Yes | The updated element data |
+
+```bash
+curl -X POST http://localhost:3000/stories/my-story/update-package-element \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "packageId": "pkg_abc123",
+    "elementType": "node",
+    "elementIndex": 0,
+    "updatedElement": {
+      "operation": "add",
+      "node_type": "Character",
+      "node_id": "char_123",
+      "data": { "name": "Agent Torres (updated)", "role": "Lead Investigator" }
+    }
+  }'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "package": { ... }
+  }
+}
+```
+
+---
+
+### Validate Package
+
+```
+POST /stories/:id/validate-package
+```
+
+Validates a package against the current graph state.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `package` | object | Yes | The complete NarrativePackage to validate |
+
+```bash
+curl -X POST http://localhost:3000/stories/my-story/validate-package \
+  -H 'Content-Type: application/json' \
+  -d '{"package": { "id": "pkg_abc123", ... }}'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "valid": false,
+    "errors": [
+      {
+        "type": "edge",
+        "index": 0,
+        "field": "from",
+        "message": "Source node \"char_nonexistent\" does not exist"
+      }
+    ]
+  }
+}
+```
+
+---
+
 ## CLI Interoperability
 
 The API shares storage with the CLI by default (`~/.apollo`). You can:

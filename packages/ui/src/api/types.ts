@@ -1110,3 +1110,111 @@ export interface ConvertProposalResponseData {
   package: NarrativePackage;
   validation: ProposalValidation;
 }
+
+// =============================================================================
+// Saved Packages Types
+// =============================================================================
+
+export type CompatibilityStatus = 'compatible' | 'outdated' | 'conflicting';
+
+export interface CompatibilityConflict {
+  type: 'node_deleted' | 'node_modified' | 'edge_deleted';
+  nodeId?: string;
+  edgeId?: string;
+  description: string;
+}
+
+export interface PackageCompatibility {
+  status: CompatibilityStatus;
+  currentVersionId: string;
+  currentVersionLabel: string;
+  versionsBehind: number;
+  conflicts: CompatibilityConflict[];
+}
+
+export interface SavedPackageData {
+  id: string;
+  storyId: string;
+  package: NarrativePackage;
+  sourceVersionId: string;
+  sourceVersionLabel: string;
+  savedAt: string;
+  userNote?: string;
+  compatibility: PackageCompatibility;
+}
+
+export interface SavedPackagesListData {
+  packages: SavedPackageData[];
+  totalCount: number;
+}
+
+export interface SavePackageRequest {
+  packageId: string;
+  userNote?: string;
+}
+
+export interface SavedPackageResponseData {
+  savedPackage: SavedPackageData;
+}
+
+export interface ApplySavedPackageResponseData {
+  success: boolean;
+  newVersionId: string;
+  patchOpsApplied: number;
+}
+
+// =============================================================================
+// Package Editing Types
+// =============================================================================
+
+export type PackageElementType = 'node' | 'edge' | 'storyContext';
+
+export interface RegenerateElementRequest {
+  packageId: string;
+  elementType: PackageElementType;
+  elementIndex: number;
+  guidance?: string;
+  count?: GenerationCount;
+}
+
+export interface RegenerateElementResponseData {
+  options: Array<NodeChangeAI | EdgeChangeAI | StoryContextChange>;
+}
+
+export interface ApplyElementOptionRequest {
+  packageId: string;
+  elementType: PackageElementType;
+  elementIndex: number;
+  newElement: NodeChangeAI | EdgeChangeAI | StoryContextChange;
+}
+
+export interface ApplyElementOptionResponseData {
+  package: NarrativePackage;
+}
+
+export interface ValidatePackageRequest {
+  package: NarrativePackage;
+}
+
+export interface PackageValidationError {
+  type: PackageElementType;
+  index: number;
+  field?: string;
+  message: string;
+}
+
+export interface ValidatePackageResponseData {
+  valid: boolean;
+  errors: PackageValidationError[];
+}
+
+export interface UpdatePackageElementRequest {
+  packageId: string;
+  elementType: PackageElementType;
+  elementIndex: number;
+  updatedElement: NodeChangeAI | EdgeChangeAI | StoryContextChange;
+}
+
+export interface UpdatePackageElementResponseData {
+  package: NarrativePackage;
+}

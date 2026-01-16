@@ -53,6 +53,12 @@ import {
   type RefineRequest,
 } from '../ai/refineOrchestrator.js';
 import {
+  regenerateElement,
+  applyElementOption,
+  type ElementType,
+  type RegenerateElementRequest,
+} from '../ai/regenerateElementOrchestrator.js';
+import {
   createLLMClient,
   isLLMConfigured,
   getMissingKeyError,
@@ -577,7 +583,7 @@ interface AcceptPackageResponseData {
 /**
  * Convert a NarrativePackage to a Patch that can be applied to the graph.
  */
-function packageToPatch(
+export function packageToPatch(
   pkg: ai.NarrativePackage,
   baseVersionId: string
 ): Patch {
@@ -850,6 +856,451 @@ export function createAcceptPackageHandler(ctx: StorageContext) {
           ...stats,
           storyContextUpdated,
         },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+// =============================================================================
+// Regenerate Element Handler
+// =============================================================================
+
+interface RegenerateElementRequestBody {
+  packageId: string;
+  elementType: ElementType;
+  elementIndex: number;
+  guidance?: string;
+  count?: ai.GenerationCount;
+}
+
+interface RegenerateElementResponseData {
+  options: Array<ai.NodeChange | ai.EdgeChange | ai.StoryContextChange>;
+}
+
+export function createRegenerateElementHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string }, unknown, RegenerateElementRequestBody>,
+    res: Response<APIResponse<RegenerateElementResponseData>>,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { packageId, elementType, elementIndex, guidance, count = 'few' } = req.body;
+
+      if (!packageId) {
+        throw new BadRequestError('packageId is required');
+      }
+      if (!elementType) {
+        throw new BadRequestError('elementType is required');
+      }
+      if (elementIndex === undefined || elementIndex < 0) {
+        throw new BadRequestError('elementIndex must be a non-negative number');
+      }
+      if (!['node', 'edge', 'storyContext'].includes(elementType)) {
+        throw new BadRequestError('elementType must be "node", "edge", or "storyContext"');
+      }
+
+      if (!isLLMConfigured()) {
+        const { message, suggestion } = getMissingKeyError();
+        throw new BadRequestError(message, suggestion);
+      }
+
+      const llmClient = createLLMClient();
+
+      const request: RegenerateElementRequest = {
+        packageId,
+        elementType,
+        elementIndex,
+        count,
+      };
+      if (guidance) {
+        request.guidance = guidance;
+      }
+
+      // Check for streaming request
+      const wantsStream = req.headers.accept === 'text/event-stream';
+
+      if (wantsStream) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.flushHeaders();
+
+        const streamCallbacks: StreamCallbacks = {
+          onToken: (token) => {
+            res.write(`data: ${JSON.stringify({ type: 'token', content: token })}\n\n`);
+          },
+          onComplete: (response) => {
+            res.write(`data: ${JSON.stringify({ type: 'usage', usage: response.usage })}\n\n`);
+          },
+          onError: (error) => {
+            res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+          },
+        };
+
+        const result = await regenerateElement(id, request, ctx, llmClient, streamCallbacks);
+
+        res.write(`data: ${JSON.stringify({ type: 'result', data: result })}\n\n`);
+        res.write('data: [DONE]\n\n');
+        res.end();
+      } else {
+        const result = await regenerateElement(id, request, ctx, llmClient);
+
+        res.json({
+          success: true,
+          data: result,
+        });
+      }
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+// =============================================================================
+// Apply Element Option Handler
+// =============================================================================
+
+interface ApplyElementOptionRequestBody {
+  packageId: string;
+  elementType: ElementType;
+  elementIndex: number;
+  newElement: ai.NodeChange | ai.EdgeChange | ai.StoryContextChange;
+}
+
+interface ApplyElementOptionResponseData {
+  package: ai.NarrativePackage;
+}
+
+export function createApplyElementOptionHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string }, unknown, ApplyElementOptionRequestBody>,
+    res: Response<APIResponse<ApplyElementOptionResponseData>>,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { packageId, elementType, elementIndex, newElement } = req.body;
+
+      if (!packageId) {
+        throw new BadRequestError('packageId is required');
+      }
+      if (!elementType) {
+        throw new BadRequestError('elementType is required');
+      }
+      if (elementIndex === undefined || elementIndex < 0) {
+        throw new BadRequestError('elementIndex must be a non-negative number');
+      }
+      if (!newElement) {
+        throw new BadRequestError('newElement is required');
+      }
+      if (!['node', 'edge', 'storyContext'].includes(elementType)) {
+        throw new BadRequestError('elementType must be "node", "edge", or "storyContext"');
+      }
+
+      const updatedPackage = await applyElementOption(
+        id,
+        packageId,
+        elementType,
+        elementIndex,
+        newElement,
+        ctx
+      );
+
+      res.json({
+        success: true,
+        data: { package: updatedPackage },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+// =============================================================================
+// Validate Package Handler
+// =============================================================================
+
+interface ValidatePackageRequestBody {
+  package: ai.NarrativePackage;
+}
+
+interface ValidationError {
+  type: 'node' | 'edge' | 'storyContext';
+  index: number;
+  field?: string;
+  message: string;
+}
+
+interface ValidatePackageResponseData {
+  valid: boolean;
+  errors: ValidationError[];
+}
+
+export function createValidatePackageHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string }, unknown, ValidatePackageRequestBody>,
+    res: Response<APIResponse<ValidatePackageResponseData>>,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const pkg = req.body.package;
+
+      if (!pkg || !pkg.id) {
+        throw new BadRequestError('package is required');
+      }
+
+      // Load current graph state
+      const state = await loadVersionedStateById(id, ctx);
+      if (!state) {
+        throw new NotFoundError(`Story "${id}"`);
+      }
+
+      const currentVersion = state.history.versions[state.history.currentVersionId];
+      if (!currentVersion) {
+        throw new NotFoundError('Current version');
+      }
+
+      const graph = deserializeGraph(currentVersion.graph);
+      const errors: ValidationError[] = [];
+
+      // Convert package to patch for validation
+      const patch = packageToPatch(pkg, state.history.currentVersionId);
+
+      // Run patch validation
+      const validation = validatePatch(graph, patch);
+      if (!validation.success) {
+        // Map patch errors back to package elements
+        for (const err of validation.errors) {
+          // Try to identify which element caused the error
+          const nodeMatch = err.message.match(/node[:\s]+["']?([^"'\s]+)["']?/i);
+          const edgeMatch = err.message.match(/edge/i);
+
+          if (nodeMatch) {
+            const nodeId = nodeMatch[1];
+            const nodeIndex = pkg.changes.nodes.findIndex((n) => n.node_id === nodeId);
+            if (nodeIndex >= 0) {
+              errors.push({
+                type: 'node',
+                index: nodeIndex,
+                message: err.message,
+              });
+              continue;
+            }
+          }
+
+          if (edgeMatch) {
+            // Generic edge error - hard to map back precisely
+            errors.push({
+              type: 'edge',
+              index: 0,
+              message: err.message,
+            });
+            continue;
+          }
+
+          // General error
+          errors.push({
+            type: 'node',
+            index: 0,
+            message: err.message,
+          });
+        }
+      }
+
+      // Validate node changes have required fields
+      for (let i = 0; i < pkg.changes.nodes.length; i++) {
+        const node = pkg.changes.nodes[i]!;
+        if (!node.node_id) {
+          errors.push({
+            type: 'node',
+            index: i,
+            field: 'node_id',
+            message: 'Node ID is required',
+          });
+        }
+        if (!node.node_type) {
+          errors.push({
+            type: 'node',
+            index: i,
+            field: 'node_type',
+            message: 'Node type is required',
+          });
+        }
+        if (!node.operation) {
+          errors.push({
+            type: 'node',
+            index: i,
+            field: 'operation',
+            message: 'Operation is required',
+          });
+        }
+      }
+
+      // Validate edge changes have required fields
+      for (let i = 0; i < pkg.changes.edges.length; i++) {
+        const edge = pkg.changes.edges[i]!;
+        if (!edge.edge_type) {
+          errors.push({
+            type: 'edge',
+            index: i,
+            field: 'edge_type',
+            message: 'Edge type is required',
+          });
+        }
+        if (!edge.from) {
+          errors.push({
+            type: 'edge',
+            index: i,
+            field: 'from',
+            message: 'From node is required',
+          });
+        }
+        if (!edge.to) {
+          errors.push({
+            type: 'edge',
+            index: i,
+            field: 'to',
+            message: 'To node is required',
+          });
+        }
+        if (!edge.operation) {
+          errors.push({
+            type: 'edge',
+            index: i,
+            field: 'operation',
+            message: 'Operation is required',
+          });
+        }
+
+        // Check if from/to nodes exist (for add operations, the node might be in the package)
+        if (edge.operation === 'add') {
+          const fromExists =
+            graph.nodes.has(edge.from) ||
+            pkg.changes.nodes.some((n) => n.node_id === edge.from && n.operation === 'add');
+          const toExists =
+            graph.nodes.has(edge.to) ||
+            pkg.changes.nodes.some((n) => n.node_id === edge.to && n.operation === 'add');
+
+          if (!fromExists) {
+            errors.push({
+              type: 'edge',
+              index: i,
+              field: 'from',
+              message: `Source node "${edge.from}" does not exist`,
+            });
+          }
+          if (!toExists) {
+            errors.push({
+              type: 'edge',
+              index: i,
+              field: 'to',
+              message: `Target node "${edge.to}" does not exist`,
+            });
+          }
+        }
+      }
+
+      // Validate story context changes
+      const storyContextChanges = pkg.changes.storyContext ?? [];
+      for (let i = 0; i < storyContextChanges.length; i++) {
+        const sc = storyContextChanges[i]!;
+        if (!sc.section) {
+          errors.push({
+            type: 'storyContext',
+            index: i,
+            field: 'section',
+            message: 'Section is required',
+          });
+        }
+        if (!sc.content && sc.operation !== 'delete') {
+          errors.push({
+            type: 'storyContext',
+            index: i,
+            field: 'content',
+            message: 'Content is required for add/modify operations',
+          });
+        }
+        if (!sc.operation) {
+          errors.push({
+            type: 'storyContext',
+            index: i,
+            field: 'operation',
+            message: 'Operation is required',
+          });
+        }
+      }
+
+      res.json({
+        success: true,
+        data: {
+          valid: errors.length === 0,
+          errors,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+// =============================================================================
+// Update Package Element Handler (for manual edits)
+// =============================================================================
+
+interface UpdatePackageElementRequestBody {
+  packageId: string;
+  elementType: ElementType;
+  elementIndex: number;
+  updatedElement: ai.NodeChange | ai.EdgeChange | ai.StoryContextChange;
+}
+
+interface UpdatePackageElementResponseData {
+  package: ai.NarrativePackage;
+}
+
+export function createUpdatePackageElementHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string }, unknown, UpdatePackageElementRequestBody>,
+    res: Response<APIResponse<UpdatePackageElementResponseData>>,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { packageId, elementType, elementIndex, updatedElement } = req.body;
+
+      if (!packageId) {
+        throw new BadRequestError('packageId is required');
+      }
+      if (!elementType) {
+        throw new BadRequestError('elementType is required');
+      }
+      if (elementIndex === undefined || elementIndex < 0) {
+        throw new BadRequestError('elementIndex must be a non-negative number');
+      }
+      if (!updatedElement) {
+        throw new BadRequestError('updatedElement is required');
+      }
+      if (!['node', 'edge', 'storyContext'].includes(elementType)) {
+        throw new BadRequestError('elementType must be "node", "edge", or "storyContext"');
+      }
+
+      // Use applyElementOption to update the element
+      const updatedPackage = await applyElementOption(
+        id,
+        packageId,
+        elementType,
+        elementIndex,
+        updatedElement,
+        ctx
+      );
+
+      res.json({
+        success: true,
+        data: { package: updatedPackage },
       });
     } catch (error) {
       next(error);

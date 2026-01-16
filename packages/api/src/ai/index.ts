@@ -39,3 +39,12 @@ export {
   type RefineRequest,
   type RefineResponse,
 } from './refineOrchestrator.js';
+
+// Element Regeneration Phase
+export {
+  regenerateElement,
+  applyElementOption,
+  type ElementType,
+  type RegenerateElementRequest,
+  type RegenerateElementResponse,
+} from './regenerateElementOrchestrator.js';

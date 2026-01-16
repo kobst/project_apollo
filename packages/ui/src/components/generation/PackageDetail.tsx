@@ -1,16 +1,41 @@
+import { useState, useCallback } from 'react';
 import type {
   NarrativePackage,
   NodeChangeAI,
   EdgeChangeAI,
   StoryContextChange,
+  PackageElementType,
+  GenerationCount,
 } from '../../api/types';
+import { EditableElement } from './EditableElement';
 import styles from './PackageDetail.module.css';
 
 interface PackageDetailProps {
   package: NarrativePackage;
+  storyId: string;
   onAccept: () => void;
   onRefine: () => void;
   onReject: () => void;
+  onSave?: () => void;
+  onRegenerateElement: (
+    packageId: string,
+    elementType: PackageElementType,
+    elementIndex: number,
+    guidance?: string,
+    count?: GenerationCount
+  ) => Promise<Array<NodeChangeAI | EdgeChangeAI | StoryContextChange>>;
+  onApplyElementOption: (
+    packageId: string,
+    elementType: PackageElementType,
+    elementIndex: number,
+    newElement: NodeChangeAI | EdgeChangeAI | StoryContextChange
+  ) => Promise<void>;
+  onUpdateElement: (
+    packageId: string,
+    elementType: PackageElementType,
+    elementIndex: number,
+    updatedElement: NodeChangeAI | EdgeChangeAI | StoryContextChange
+  ) => Promise<void>;
   loading?: boolean;
 }
 
@@ -38,56 +63,107 @@ function categorizeNodes(nodes: NodeChangeAI[]): {
   return { storyElements, outline, other };
 }
 
-// Get operation display
-function getOpDisplay(op: string): { icon: string; className: string } {
-  switch (op) {
-    case 'add':
-      return { icon: '+', className: styles.opAdd ?? '' };
-    case 'modify':
-      return { icon: '~', className: styles.opModify ?? '' };
-    case 'delete':
-      return { icon: '-', className: styles.opDelete ?? '' };
-    default:
-      return { icon: '?', className: '' };
-  }
-}
-
-// Get node label
-function getNodeLabel(node: NodeChangeAI): string {
-  const data = node.data ?? {};
-  return (
-    (data.name as string) ??
-    (data.title as string) ??
-    (data.heading as string) ??
-    node.node_id
-  );
-}
-
-// Get node description
-function getNodeDescription(node: NodeChangeAI): string | null {
-  const data = node.data ?? {};
-  return (
-    (data.description as string) ??
-    (data.summary as string) ??
-    (data.scene_overview as string) ??
-    (data.intent as string) ??
-    null
-  );
-}
+// Element key for tracking regenerate options
+type ElementKey = `${PackageElementType}-${number}`;
 
 export function PackageDetail({
   package: pkg,
+  storyId: _storyId,
   onAccept,
   onRefine,
   onReject,
+  onSave,
+  onRegenerateElement,
+  onApplyElementOption,
+  onUpdateElement,
   loading = false,
 }: PackageDetailProps) {
+  // storyId is passed for potential future use but not currently needed in component
+  void _storyId;
+
   const { storyElements, outline, other } = categorizeNodes(pkg.changes.nodes);
   const confidence = Math.round(pkg.confidence * 100);
 
-  // Find related edges for a node
-  const getRelatedEdges = (nodeId: string): EdgeChangeAI[] =>
-    pkg.changes.edges.filter((e) => e.from === nodeId || e.to === nodeId);
+  // Track regenerate options per element
+  const [regenerateOptions, setRegenerateOptions] = useState<
+    Record<ElementKey, Array<NodeChangeAI | EdgeChangeAI | StoryContextChange>>
+  >({});
+  const [regeneratingElement, setRegeneratingElement] = useState<ElementKey | null>(null);
+
+  // Get element key
+  const getElementKey = (type: PackageElementType, index: number): ElementKey =>
+    `${type}-${index}`;
+
+  // Get index within the category for node elements
+  const getNodeIndex = (node: NodeChangeAI): number =>
+    pkg.changes.nodes.findIndex((n) => n.node_id === node.node_id);
+
+  // Handle regenerate for an element
+  const handleRegenerate = useCallback(
+    async (
+      elementType: PackageElementType,
+      elementIndex: number,
+      guidance: string,
+      count: GenerationCount
+    ) => {
+      const key = getElementKey(elementType, elementIndex);
+      setRegeneratingElement(key);
+      try {
+        const options = await onRegenerateElement(
+          pkg.id,
+          elementType,
+          elementIndex,
+          guidance,
+          count
+        );
+        setRegenerateOptions((prev) => ({ ...prev, [key]: options }));
+      } catch {
+        // Error handled by context
+      } finally {
+        setRegeneratingElement(null);
+      }
+    },
+    [pkg.id, onRegenerateElement]
+  );
+
+  // Handle selecting an option
+  const handleSelectOption = useCallback(
+    async (
+      elementType: PackageElementType,
+      elementIndex: number,
+      option: NodeChangeAI | EdgeChangeAI | StoryContextChange
+    ) => {
+      const key = getElementKey(elementType, elementIndex);
+      try {
+        await onApplyElementOption(pkg.id, elementType, elementIndex, option);
+        // Clear options after selection
+        setRegenerateOptions((prev) => {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        });
+      } catch {
+        // Error handled by context
+      }
+    },
+    [pkg.id, onApplyElementOption]
+  );
+
+  // Handle manual edit
+  const handleEdit = useCallback(
+    async (
+      elementType: PackageElementType,
+      elementIndex: number,
+      updated: NodeChangeAI | EdgeChangeAI | StoryContextChange
+    ) => {
+      try {
+        await onUpdateElement(pkg.id, elementType, elementIndex, updated);
+      } catch {
+        // Error handled by context
+      }
+    },
+    [pkg.id, onUpdateElement]
+  );
 
   return (
     <div className={styles.container}>
@@ -126,9 +202,28 @@ export function PackageDetail({
           <section className={styles.section}>
             <h3 className={styles.sectionTitle}>Story Context</h3>
             <div className={styles.sectionContent}>
-              {pkg.changes.storyContext.map((change, idx) => (
-                <StoryContextItem key={idx} change={change} />
-              ))}
+              {pkg.changes.storyContext.map((change, idx) => {
+                const key = getElementKey('storyContext', idx);
+                return (
+                  <EditableElement
+                    key={idx}
+                    elementType="storyContext"
+                    elementIndex={idx}
+                    element={change}
+                    onEdit={(updated) =>
+                      handleEdit('storyContext', idx, updated)
+                    }
+                    onRegenerate={(guidance, count) =>
+                      handleRegenerate('storyContext', idx, guidance, count)
+                    }
+                    loading={regeneratingElement === key || loading}
+                    regenerateOptions={regenerateOptions[key] as StoryContextChange[] | undefined}
+                    onSelectOption={(opt) =>
+                      handleSelectOption('storyContext', idx, opt)
+                    }
+                  />
+                );
+              })}
             </div>
           </section>
         )}
@@ -138,13 +233,29 @@ export function PackageDetail({
           <section className={styles.section}>
             <h3 className={styles.sectionTitle}>Story Elements</h3>
             <div className={styles.sectionContent}>
-              {storyElements.map((node) => (
-                <NodeItem
-                  key={node.node_id}
-                  node={node}
-                  edges={getRelatedEdges(node.node_id)}
-                />
-              ))}
+              {storyElements.map((node) => {
+                const nodeIndex = getNodeIndex(node);
+                const key = getElementKey('node', nodeIndex);
+                return (
+                  <EditableElement
+                    key={node.node_id}
+                    elementType="node"
+                    elementIndex={nodeIndex}
+                    element={node}
+                    onEdit={(updated) =>
+                      handleEdit('node', nodeIndex, updated)
+                    }
+                    onRegenerate={(guidance, count) =>
+                      handleRegenerate('node', nodeIndex, guidance, count)
+                    }
+                    loading={regeneratingElement === key || loading}
+                    regenerateOptions={regenerateOptions[key] as NodeChangeAI[] | undefined}
+                    onSelectOption={(opt) =>
+                      handleSelectOption('node', nodeIndex, opt)
+                    }
+                  />
+                );
+              })}
             </div>
           </section>
         )}
@@ -154,14 +265,29 @@ export function PackageDetail({
           <section className={styles.section}>
             <h3 className={styles.sectionTitle}>Outline</h3>
             <div className={styles.sectionContent}>
-              {outline.map((node) => (
-                <NodeItem
-                  key={node.node_id}
-                  node={node}
-                  edges={getRelatedEdges(node.node_id)}
-                  expanded
-                />
-              ))}
+              {outline.map((node) => {
+                const nodeIndex = getNodeIndex(node);
+                const key = getElementKey('node', nodeIndex);
+                return (
+                  <EditableElement
+                    key={node.node_id}
+                    elementType="node"
+                    elementIndex={nodeIndex}
+                    element={node}
+                    onEdit={(updated) =>
+                      handleEdit('node', nodeIndex, updated)
+                    }
+                    onRegenerate={(guidance, count) =>
+                      handleRegenerate('node', nodeIndex, guidance, count)
+                    }
+                    loading={regeneratingElement === key || loading}
+                    regenerateOptions={regenerateOptions[key] as NodeChangeAI[] | undefined}
+                    onSelectOption={(opt) =>
+                      handleSelectOption('node', nodeIndex, opt)
+                    }
+                  />
+                );
+              })}
             </div>
           </section>
         )}
@@ -171,13 +297,60 @@ export function PackageDetail({
           <section className={styles.section}>
             <h3 className={styles.sectionTitle}>Other</h3>
             <div className={styles.sectionContent}>
-              {other.map((node) => (
-                <NodeItem
-                  key={node.node_id}
-                  node={node}
-                  edges={getRelatedEdges(node.node_id)}
-                />
-              ))}
+              {other.map((node) => {
+                const nodeIndex = getNodeIndex(node);
+                const key = getElementKey('node', nodeIndex);
+                return (
+                  <EditableElement
+                    key={node.node_id}
+                    elementType="node"
+                    elementIndex={nodeIndex}
+                    element={node}
+                    onEdit={(updated) =>
+                      handleEdit('node', nodeIndex, updated)
+                    }
+                    onRegenerate={(guidance, count) =>
+                      handleRegenerate('node', nodeIndex, guidance, count)
+                    }
+                    loading={regeneratingElement === key || loading}
+                    regenerateOptions={regenerateOptions[key] as NodeChangeAI[] | undefined}
+                    onSelectOption={(opt) =>
+                      handleSelectOption('node', nodeIndex, opt)
+                    }
+                  />
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Edges (standalone) */}
+        {pkg.changes.edges.length > 0 && (
+          <section className={styles.section}>
+            <h3 className={styles.sectionTitle}>Relationships</h3>
+            <div className={styles.sectionContent}>
+              {pkg.changes.edges.map((edge, idx) => {
+                const key = getElementKey('edge', idx);
+                return (
+                  <EditableElement
+                    key={`${edge.edge_type}-${edge.from}-${edge.to}`}
+                    elementType="edge"
+                    elementIndex={idx}
+                    element={edge}
+                    onEdit={(updated) =>
+                      handleEdit('edge', idx, updated)
+                    }
+                    onRegenerate={(guidance, count) =>
+                      handleRegenerate('edge', idx, guidance, count)
+                    }
+                    loading={regeneratingElement === key || loading}
+                    regenerateOptions={regenerateOptions[key] as EdgeChangeAI[] | undefined}
+                    onSelectOption={(opt) =>
+                      handleSelectOption('edge', idx, opt)
+                    }
+                  />
+                );
+              })}
             </div>
           </section>
         )}
@@ -236,6 +409,16 @@ export function PackageDetail({
         >
           Reject
         </button>
+        {onSave && (
+          <button
+            className={styles.saveBtn}
+            onClick={onSave}
+            disabled={loading}
+            type="button"
+          >
+            Save for Later
+          </button>
+        )}
         <button
           className={styles.refineBtn}
           onClick={onRefine}
@@ -257,57 +440,3 @@ export function PackageDetail({
   );
 }
 
-// Story Context Item Component
-function StoryContextItem({ change }: { change: StoryContextChange }) {
-  const { icon, className } = getOpDisplay(change.operation);
-
-  return (
-    <div className={`${styles.itemCard} ${className}`}>
-      <div className={styles.itemHeader}>
-        <span className={styles.opIcon}>{icon}</span>
-        <span className={styles.itemType}>{change.section}</span>
-      </div>
-      <p className={styles.itemContent}>"{change.content}"</p>
-    </div>
-  );
-}
-
-// Node Item Component
-function NodeItem({
-  node,
-  edges,
-  expanded = false,
-}: {
-  node: NodeChangeAI;
-  edges: EdgeChangeAI[];
-  expanded?: boolean;
-}) {
-  const { icon, className } = getOpDisplay(node.operation);
-  const label = getNodeLabel(node);
-  const description = expanded ? getNodeDescription(node) : null;
-
-  return (
-    <div className={`${styles.itemCard} ${className}`}>
-      <div className={styles.itemHeader}>
-        <span className={styles.opIcon}>{icon}</span>
-        <span className={styles.itemType}>{node.node_type}:</span>
-        <span className={styles.itemLabel}>{label}</span>
-      </div>
-      {description && <p className={styles.itemDescription}>{description}</p>}
-      {edges.length > 0 && (
-        <div className={styles.edges}>
-          {edges.map((edge, idx) => (
-            <div key={idx} className={styles.edge}>
-              <span className={styles.edgeIcon}>└─</span>
-              <span className={styles.edgeType}>{edge.edge_type}</span>
-              <span className={styles.edgeArrow}>→</span>
-              <span className={styles.edgeTarget}>
-                {edge.from === node.node_id ? edge.to : edge.from}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}

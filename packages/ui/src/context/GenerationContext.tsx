@@ -12,6 +12,11 @@ import type {
   RefineRequest,
   NarrativePackage,
   RefinableElements,
+  PackageElementType,
+  GenerationCount,
+  NodeChangeAI,
+  EdgeChangeAI,
+  StoryContextChange,
 } from '../api/types';
 
 interface GenerationContextValue {
@@ -53,6 +58,35 @@ interface GenerationContextValue {
   selectPackage: (packageId: string) => void;
   /** Get refinable elements for current package */
   refinableElements: RefinableElements | null;
+
+  // Element editing
+  /** Regenerate a single element within a package */
+  regenerateElement: (
+    storyId: string,
+    packageId: string,
+    elementType: PackageElementType,
+    elementIndex: number,
+    guidance?: string,
+    count?: GenerationCount
+  ) => Promise<Array<NodeChangeAI | EdgeChangeAI | StoryContextChange>>;
+  /** Apply a selected element option to the package */
+  applyElementOption: (
+    storyId: string,
+    packageId: string,
+    elementType: PackageElementType,
+    elementIndex: number,
+    newElement: NodeChangeAI | EdgeChangeAI | StoryContextChange
+  ) => Promise<void>;
+  /** Update an element manually (inline edit) */
+  updatePackageElement: (
+    storyId: string,
+    packageId: string,
+    elementType: PackageElementType,
+    elementIndex: number,
+    updatedElement: NodeChangeAI | EdgeChangeAI | StoryContextChange
+  ) => Promise<void>;
+  /** Validate a package */
+  validatePackage: (storyId: string, pkg: NarrativePackage) => Promise<{ valid: boolean; errors: Array<{ type: PackageElementType; index: number; field?: string; message: string }> }>;
 }
 
 const GenerationContext = createContext<GenerationContextValue | null>(null);
@@ -274,6 +308,136 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     setSelectedPackageId(packageId);
   }, []);
 
+  // Regenerate a single element
+  const regenerateElement = useCallback(
+    async (
+      storyId: string,
+      packageId: string,
+      elementType: PackageElementType,
+      elementIndex: number,
+      guidance?: string,
+      count?: GenerationCount
+    ): Promise<Array<NodeChangeAI | EdgeChangeAI | StoryContextChange>> => {
+      try {
+        setLoading(true);
+        setError(null);
+        const request: { packageId: string; elementType: PackageElementType; elementIndex: number; guidance?: string; count?: GenerationCount } = {
+          packageId,
+          elementType,
+          elementIndex,
+        };
+        if (guidance) {
+          request.guidance = guidance;
+        }
+        if (count) {
+          request.count = count;
+        }
+        const data = await api.regenerateElement(storyId, request);
+        return data.options;
+      } catch (err) {
+        setError((err as Error).message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  // Apply a selected element option
+  const applyElementOption = useCallback(
+    async (
+      storyId: string,
+      packageId: string,
+      elementType: PackageElementType,
+      elementIndex: number,
+      newElement: NodeChangeAI | EdgeChangeAI | StoryContextChange
+    ): Promise<void> => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await api.applyElementOption(storyId, {
+          packageId,
+          elementType,
+          elementIndex,
+          newElement,
+        });
+
+        // Update the package in session
+        setSession((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            packages: prev.packages.map((p) =>
+              p.id === packageId ? data.package : p
+            ),
+            updatedAt: new Date().toISOString(),
+          };
+        });
+      } catch (err) {
+        setError((err as Error).message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  // Update an element manually
+  const updatePackageElement = useCallback(
+    async (
+      storyId: string,
+      packageId: string,
+      elementType: PackageElementType,
+      elementIndex: number,
+      updatedElement: NodeChangeAI | EdgeChangeAI | StoryContextChange
+    ): Promise<void> => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await api.updatePackageElement(storyId, {
+          packageId,
+          elementType,
+          elementIndex,
+          updatedElement,
+        });
+
+        // Update the package in session
+        setSession((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            packages: prev.packages.map((p) =>
+              p.id === packageId ? data.package : p
+            ),
+            updatedAt: new Date().toISOString(),
+          };
+        });
+      } catch (err) {
+        setError((err as Error).message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  // Validate a package
+  const validatePackage = useCallback(
+    async (storyId: string, pkg: NarrativePackage) => {
+      try {
+        const data = await api.validatePackage(storyId, pkg);
+        return data;
+      } catch (err) {
+        setError((err as Error).message);
+        throw err;
+      }
+    },
+    []
+  );
+
   const value: GenerationContextValue = {
     session,
     loading,
@@ -291,6 +455,10 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     selectedPackageId,
     selectPackage,
     refinableElements,
+    regenerateElement,
+    applyElementOption,
+    updatePackageElement,
+    validatePackage,
   };
 
   return (

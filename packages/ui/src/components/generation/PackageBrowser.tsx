@@ -12,6 +12,8 @@ interface PackageBrowserProps {
   onRefine: (packageId: string) => void;
   /** Called when user rejects a package */
   onReject: (packageId: string) => void;
+  /** Called when user saves a package for later */
+  onSave?: (packageId: string) => void;
   /** Called when user wants to regenerate all packages */
   onRegenerate: () => void;
   /** Called when user abandons the session */
@@ -97,6 +99,7 @@ export function PackageBrowser({
   onAccept,
   onRefine,
   onReject,
+  onSave,
   onRegenerate,
   onAbandon,
   loading = false,
@@ -170,6 +173,12 @@ export function PackageBrowser({
       }
     }
   }, [selectedId, onReject, siblings, selectedPackage, session.packages]);
+
+  const handleSave = useCallback(() => {
+    if (selectedId && onSave) {
+      onSave(selectedId);
+    }
+  }, [selectedId, onSave]);
 
   if (session.packages.length === 0) {
     return (
@@ -312,6 +321,16 @@ export function PackageBrowser({
         >
           Reject
         </button>
+        {onSave && (
+          <button
+            className={styles.saveBtn}
+            onClick={handleSave}
+            disabled={loading || !selectedId}
+            type="button"
+          >
+            Save for Later
+          </button>
+        )}
         <button
           className={styles.refineBtn}
           onClick={handleRefine}
