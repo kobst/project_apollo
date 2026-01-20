@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type {
   NarrativePackage,
   NodeChangeAI,
@@ -91,6 +91,23 @@ export function PackageDetail({
 
   const { storyElements, outline, other } = categorizeNodes(pkg.changes.nodes);
   const confidence = Math.round(pkg.confidence * 100);
+
+  // Build node name lookup for edge display
+  const nodeNameLookup = useMemo(() => {
+    const lookup = new Map<string, string>();
+    for (const node of pkg.changes.nodes) {
+      const data = node.data ?? {};
+      const name =
+        (data.name as string) ??
+        (data.title as string) ??
+        (data.heading as string) ??
+        null;
+      if (name) {
+        lookup.set(node.node_id, name);
+      }
+    }
+    return lookup;
+  }, [pkg.changes.nodes]);
 
   // Track regenerate options per element
   const [regenerateOptions, setRegenerateOptions] = useState<
@@ -490,6 +507,7 @@ export function PackageDetail({
                     onRemove={() => handleRemove('edge', idx)}
                     isRemoved={isElementRemoved('edge', idx)}
                     onUndoRemove={() => handleUndoRemove('edge', idx)}
+                    nodeNameLookup={nodeNameLookup}
                   />
                 );
               })}

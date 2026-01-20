@@ -20,6 +20,8 @@ interface EditableElementProps {
   onRemove?: () => void;
   isRemoved?: boolean;
   onUndoRemove?: () => void;
+  /** Lookup map from node IDs to human-readable names (for edge display) */
+  nodeNameLookup?: Map<string, string>;
 }
 
 // Get operation display
@@ -115,6 +117,7 @@ export function EditableElement({
   onRemove,
   isRemoved = false,
   onUndoRemove,
+  nodeNameLookup,
 }: EditableElementProps) {
   const [mode, setMode] = useState<'view' | 'edit' | 'regenerate'>('view');
   const [editedElement, setEditedElement] = useState(element);
@@ -214,7 +217,8 @@ export function EditableElement({
       className,
       onRemove,
       isRemoved,
-      onUndoRemove
+      onUndoRemove,
+      nodeNameLookup
     );
   }
 
@@ -590,10 +594,42 @@ function renderEdgeElement(
   className: string,
   onRemove?: () => void,
   isRemoved?: boolean,
-  onUndoRemove?: () => void
+  onUndoRemove?: () => void,
+  nodeNameLookup?: Map<string, string>
 ) {
-  const fromName = element.from_name ?? element.from;
-  const toName = element.to_name ?? element.to;
+  // Convert camelCase/PascalCase to Title Case (e.g., "FunAndGames" → "Fun And Games")
+  const formatCamelCase = (str: string): string => {
+    return str
+      .replace(/([a-z])([A-Z])/g, '$1 $2') // Add space before capitals
+      .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2') // Handle consecutive caps
+      .replace(/^./, (c) => c.toUpperCase()); // Capitalize first letter
+  };
+
+  // Extract readable name from node ID (e.g., "pp_1768500123_introduction" → "Introduction")
+  const extractNameFromId = (nodeId: string): string => {
+    // Try to extract the last segment after underscore (often the name)
+    const parts = nodeId.split('_');
+    if (parts.length >= 2) {
+      // Get the last part
+      const name = parts[parts.length - 1];
+      if (name && !/^\d+$/.test(name)) {
+        // Not purely numeric, format and use it as name
+        return formatCamelCase(name);
+      }
+      // If last part is numeric, try second-to-last
+      if (parts.length >= 3) {
+        const altName = parts[parts.length - 2];
+        if (altName && !/^\d+$/.test(altName)) {
+          return formatCamelCase(altName);
+        }
+      }
+    }
+    return nodeId; // Fallback to original
+  };
+
+  // Resolve human-readable names: prefer from_name/to_name, then lookup, then extract from ID
+  const fromName = element.from_name ?? nodeNameLookup?.get(element.from) ?? extractNameFromId(element.from);
+  const toName = element.to_name ?? nodeNameLookup?.get(element.to) ?? extractNameFromId(element.to);
   const { label: edgeLabel, description: edgeDescription } = formatEdgeRelationship(
     element.edge_type,
     fromName,
