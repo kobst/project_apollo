@@ -4,7 +4,7 @@ import { useStory } from '../../context/StoryContext';
 import { useSavedPackages } from '../../context/SavedPackagesContext';
 import { GenerationSidebar } from './GenerationSidebar';
 import { PackageDetail } from './PackageDetail';
-import type { RefineRequest, SavedPackageData } from '../../api/types';
+import type { RefineRequest, SavedPackageData, NarrativePackage } from '../../api/types';
 import styles from './GenerationView.module.css';
 
 export function GenerationView() {
@@ -19,6 +19,7 @@ export function GenerationView() {
     regenerateElement,
     applyElementOption,
     updatePackageElement,
+    applyFilteredPackage,
   } = useGeneration();
 
   const {
@@ -58,10 +59,17 @@ export function GenerationView() {
   }, [session, selectedPackageId]);
 
   // Handlers
-  const handleAccept = useCallback(async () => {
+  const handleAccept = useCallback(async (filteredPackage?: NarrativePackage) => {
     if (!currentStoryId || !selectedPackageId) return;
-    await acceptPackage(currentStoryId, selectedPackageId);
-  }, [currentStoryId, selectedPackageId, acceptPackage]);
+
+    if (filteredPackage) {
+      // Apply filtered package directly
+      await applyFilteredPackage(currentStoryId, filteredPackage);
+    } else {
+      // No filtering - use standard accept
+      await acceptPackage(currentStoryId, selectedPackageId);
+    }
+  }, [currentStoryId, selectedPackageId, acceptPackage, applyFilteredPackage]);
 
   const handleRefine = useCallback(
     async (request: RefineRequest) => {

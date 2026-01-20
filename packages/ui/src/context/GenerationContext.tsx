@@ -85,6 +85,8 @@ interface GenerationContextValue {
   ) => Promise<void>;
   /** Validate a package */
   validatePackage: (storyId: string, pkg: NarrativePackage) => Promise<{ valid: boolean; errors: Array<{ type: PackageElementType; index: number; field?: string; message: string }> }>;
+  /** Apply a filtered package directly (bypassing session) */
+  applyFilteredPackage: (storyId: string, pkg: NarrativePackage) => Promise<void>;
 }
 
 const GenerationContext = createContext<GenerationContextValue | null>(null);
@@ -428,6 +430,36 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  // Apply a filtered package directly (bypassing session)
+  const applyFilteredPackage = useCallback(
+    async (storyId: string, pkg: NarrativePackage) => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Use existing applyPackage endpoint
+        await api.applyPackage(storyId, pkg);
+
+        // Mark session as accepted
+        setSession((prev) => {
+          if (!prev) return prev;
+          return { ...prev, status: 'accepted', acceptedPackageId: pkg.id };
+        });
+
+        // Close panel after short delay
+        setTimeout(() => {
+          setIsOpen(false);
+          setSession(null);
+        }, 500);
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
   const value: GenerationContextValue = {
     session,
     loading,
@@ -448,6 +480,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     applyElementOption,
     updatePackageElement,
     validatePackage,
+    applyFilteredPackage,
   };
 
   return (

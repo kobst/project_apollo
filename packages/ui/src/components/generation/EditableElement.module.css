@@ -348,3 +348,63 @@
   color: #aaa;
   font-style: italic;
 }
+
+/* Removed state */
+.container.removed {
+  opacity: 0.5;
+  position: relative;
+}
+
+.container.removed .header {
+  text-decoration: line-through;
+}
+
+.removeBtn {
+  padding: 4px 12px;
+  background: transparent;
+  border: 1px solid #3a3a5a;
+  border-radius: 4px;
+  color: #888;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.removeBtn:hover:not(:disabled) {
+  background: rgba(229, 115, 115, 0.1);
+  border-color: #e57373;
+  color: #e57373;
+}
+
+.removeBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.removedOverlay {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: rgba(229, 115, 115, 0.1);
+  border-radius: 4px;
+  font-size: 12px;
+  color: #e57373;
+}
+
+.removedOverlay button {
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid #e57373;
+  border-radius: 4px;
+  color: #e57373;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.removedOverlay button:hover {
+  background: rgba(229, 115, 115, 0.2);
+}

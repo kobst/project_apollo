@@ -14,7 +14,7 @@ import styles from './PackageDetail.module.css';
 interface PackageDetailProps {
   package: NarrativePackage;
   storyId: string;
-  onAccept: () => void;
+  onAccept: (filteredPackage?: NarrativePackage) => void;
   onRefine: () => void;
   onReject: () => void;
   onSave?: () => void;
@@ -97,6 +97,92 @@ export function PackageDetail({
     Record<ElementKey, Array<NodeChangeAI | EdgeChangeAI | StoryContextChange>>
   >({});
   const [regeneratingElement, setRegeneratingElement] = useState<ElementKey | null>(null);
+
+  // Track removed elements by type and index
+  const [removedElements, setRemovedElements] = useState<Set<string>>(new Set());
+
+  // Check if element is removed
+  const isElementRemoved = (type: PackageElementType, index: number) =>
+    removedElements.has(`${type}-${index}`);
+
+  // Handle remove
+  const handleRemove = (type: PackageElementType, index: number) => {
+    const key = `${type}-${index}`;
+    setRemovedElements((prev) => new Set([...prev, key]));
+
+    // If removing a node, also remove dependent edges
+    if (type === 'node') {
+      const nodeId = pkg.changes.nodes[index]?.node_id;
+      if (nodeId) {
+        // Find edges that reference this node
+        pkg.changes.edges.forEach((edge, edgeIdx) => {
+          if (edge.from === nodeId || edge.to === nodeId) {
+            const edgeKey = `edge-${edgeIdx}`;
+            setRemovedElements((prev) => new Set([...prev, edgeKey]));
+          }
+        });
+      }
+    }
+  };
+
+  // Handle undo remove
+  const handleUndoRemove = (type: PackageElementType, index: number) => {
+    const key = `${type}-${index}`;
+    setRemovedElements((prev) => {
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+  };
+
+  // Build filtered package and accept
+  const handleAcceptWithFiltering = () => {
+    // Check if any elements removed
+    if (removedElements.size === 0) {
+      onAccept(); // No filtering needed
+      return;
+    }
+
+    // Filter nodes
+    const filteredNodes = pkg.changes.nodes.filter(
+      (_, i) => !isElementRemoved('node', i)
+    );
+
+    // Filter edges
+    const filteredEdges = pkg.changes.edges.filter(
+      (_, i) => !isElementRemoved('edge', i)
+    );
+
+    // Filter story context
+    const filteredStoryContext = (pkg.changes.storyContext ?? []).filter(
+      (_, i) => !isElementRemoved('storyContext', i)
+    );
+
+    // Check if package would be empty
+    if (
+      filteredNodes.length === 0 &&
+      filteredEdges.length === 0 &&
+      filteredStoryContext.length === 0
+    ) {
+      // Package would be empty - don't allow
+      return;
+    }
+
+    // Build filtered package
+    const filteredPackage: NarrativePackage = {
+      ...pkg,
+      changes: {
+        ...pkg.changes,
+        nodes: filteredNodes,
+        edges: filteredEdges,
+        ...(filteredStoryContext.length > 0
+          ? { storyContext: filteredStoryContext }
+          : {}),
+      },
+    };
+
+    onAccept(filteredPackage);
+  };
 
   // Get element key
   const getElementKey = (type: PackageElementType, index: number): ElementKey =>
@@ -262,6 +348,9 @@ export function PackageDetail({
                     onSelectOption={(opt) =>
                       handleSelectOption('storyContext', idx, opt)
                     }
+                    onRemove={() => handleRemove('storyContext', idx)}
+                    isRemoved={isElementRemoved('storyContext', idx)}
+                    onUndoRemove={() => handleUndoRemove('storyContext', idx)}
                   />
                 );
               })}
@@ -294,6 +383,9 @@ export function PackageDetail({
                     onSelectOption={(opt) =>
                       handleSelectOption('node', nodeIndex, opt)
                     }
+                    onRemove={() => handleRemove('node', nodeIndex)}
+                    isRemoved={isElementRemoved('node', nodeIndex)}
+                    onUndoRemove={() => handleUndoRemove('node', nodeIndex)}
                   />
                 );
               })}
@@ -326,6 +418,9 @@ export function PackageDetail({
                     onSelectOption={(opt) =>
                       handleSelectOption('node', nodeIndex, opt)
                     }
+                    onRemove={() => handleRemove('node', nodeIndex)}
+                    isRemoved={isElementRemoved('node', nodeIndex)}
+                    onUndoRemove={() => handleUndoRemove('node', nodeIndex)}
                   />
                 );
               })}
@@ -358,6 +453,9 @@ export function PackageDetail({
                     onSelectOption={(opt) =>
                       handleSelectOption('node', nodeIndex, opt)
                     }
+                    onRemove={() => handleRemove('node', nodeIndex)}
+                    isRemoved={isElementRemoved('node', nodeIndex)}
+                    onUndoRemove={() => handleUndoRemove('node', nodeIndex)}
                   />
                 );
               })}
@@ -389,6 +487,9 @@ export function PackageDetail({
                     onSelectOption={(opt) =>
                       handleSelectOption('edge', idx, opt)
                     }
+                    onRemove={() => handleRemove('edge', idx)}
+                    isRemoved={isElementRemoved('edge', idx)}
+                    onUndoRemove={() => handleUndoRemove('edge', idx)}
                   />
                 );
               })}
@@ -440,6 +541,22 @@ export function PackageDetail({
         </section>
       </div>
 
+      {/* Removed Summary */}
+      {removedElements.size > 0 && (
+        <div className={styles.removedSummary}>
+          <span>
+            {removedElements.size} element
+            {removedElements.size !== 1 ? 's' : ''} removed
+          </span>
+          <button
+            onClick={() => setRemovedElements(new Set())}
+            type="button"
+          >
+            Restore All
+          </button>
+        </div>
+      )}
+
       {/* Actions */}
       <div className={styles.actions}>
         {isSavedPackage ? (
@@ -469,7 +586,7 @@ export function PackageDetail({
                   ? styles.warningBtn
                   : ''
               }`}
-              onClick={onAccept}
+              onClick={handleAcceptWithFiltering}
               disabled={loading}
               type="button"
             >
@@ -511,7 +628,7 @@ export function PackageDetail({
             </button>
             <button
               className={styles.acceptBtn}
-              onClick={onAccept}
+              onClick={handleAcceptWithFiltering}
               disabled={loading}
               type="button"
             >

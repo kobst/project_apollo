@@ -17,6 +17,9 @@ interface EditableElementProps {
   loading?: boolean | undefined;
   regenerateOptions?: Array<NodeChangeAI | EdgeChangeAI | StoryContextChange> | undefined;
   onSelectOption?: ((option: NodeChangeAI | EdgeChangeAI | StoryContextChange) => void) | undefined;
+  onRemove?: () => void;
+  isRemoved?: boolean;
+  onUndoRemove?: () => void;
 }
 
 // Get operation display
@@ -109,6 +112,9 @@ export function EditableElement({
   loading = false,
   regenerateOptions,
   onSelectOption,
+  onRemove,
+  isRemoved = false,
+  onUndoRemove,
 }: EditableElementProps) {
   const [mode, setMode] = useState<'view' | 'edit' | 'regenerate'>('view');
   const [editedElement, setEditedElement] = useState(element);
@@ -155,7 +161,10 @@ export function EditableElement({
       loading,
       regenerateOptions as StoryContextChange[] | undefined,
       icon,
-      className
+      className,
+      onRemove,
+      isRemoved,
+      onUndoRemove
     );
   }
 
@@ -177,7 +186,10 @@ export function EditableElement({
       loading,
       regenerateOptions as NodeChangeAI[] | undefined,
       icon,
-      className
+      className,
+      onRemove,
+      isRemoved,
+      onUndoRemove
     );
   }
 
@@ -199,7 +211,10 @@ export function EditableElement({
       loading,
       regenerateOptions as EdgeChangeAI[] | undefined,
       icon,
-      className
+      className,
+      onRemove,
+      isRemoved,
+      onUndoRemove
     );
   }
 
@@ -224,15 +239,18 @@ function renderStoryContextElement(
   loading: boolean,
   regenerateOptions: StoryContextChange[] | undefined,
   icon: string,
-  className: string
+  className: string,
+  onRemove?: () => void,
+  isRemoved?: boolean,
+  onUndoRemove?: () => void
 ) {
   return (
-    <div className={`${styles.container} ${className}`}>
+    <div className={`${styles.container} ${className} ${isRemoved ? styles.removed : ''}`}>
       <div className={styles.header}>
         <span className={styles.opIcon}>{icon}</span>
         <span className={styles.type}>{element.section}</span>
         <div className={styles.actions}>
-          {mode === 'view' && (
+          {mode === 'view' && !isRemoved && (
             <>
               <button
                 className={styles.actionBtn}
@@ -250,12 +268,33 @@ function renderStoryContextElement(
               >
                 Regenerate
               </button>
+              {onRemove && (
+                <button
+                  className={styles.removeBtn}
+                  onClick={onRemove}
+                  disabled={loading}
+                  type="button"
+                >
+                  Remove
+                </button>
+              )}
             </>
           )}
         </div>
       </div>
 
-      {mode === 'view' && (
+      {isRemoved && (
+        <div className={styles.removedOverlay}>
+          <span>Will not be added</span>
+          {onUndoRemove && (
+            <button onClick={onUndoRemove} type="button">
+              Undo
+            </button>
+          )}
+        </div>
+      )}
+
+      {mode === 'view' && !isRemoved && (
         <p className={styles.content}>"{element.content}"</p>
       )}
 
@@ -372,19 +411,22 @@ function renderNodeElement(
   loading: boolean,
   regenerateOptions: NodeChangeAI[] | undefined,
   icon: string,
-  className: string
+  className: string,
+  onRemove?: () => void,
+  isRemoved?: boolean,
+  onUndoRemove?: () => void
 ) {
   const label = getNodeLabel(element);
   const description = getNodeDescription(element);
 
   return (
-    <div className={`${styles.container} ${className}`}>
+    <div className={`${styles.container} ${className} ${isRemoved ? styles.removed : ''}`}>
       <div className={styles.header}>
         <span className={styles.opIcon}>{icon}</span>
         <span className={styles.type}>{element.node_type}:</span>
         <span className={styles.label}>{label}</span>
         <div className={styles.actions}>
-          {mode === 'view' && (
+          {mode === 'view' && !isRemoved && (
             <>
               <button
                 className={styles.actionBtn}
@@ -402,12 +444,33 @@ function renderNodeElement(
               >
                 Regenerate
               </button>
+              {onRemove && (
+                <button
+                  className={styles.removeBtn}
+                  onClick={onRemove}
+                  disabled={loading}
+                  type="button"
+                >
+                  Remove
+                </button>
+              )}
             </>
           )}
         </div>
       </div>
 
-      {mode === 'view' && description && (
+      {isRemoved && (
+        <div className={styles.removedOverlay}>
+          <span>Will not be added</span>
+          {onUndoRemove && (
+            <button onClick={onUndoRemove} type="button">
+              Undo
+            </button>
+          )}
+        </div>
+      )}
+
+      {mode === 'view' && !isRemoved && description && (
         <p className={styles.description}>{description}</p>
       )}
 
@@ -524,7 +587,10 @@ function renderEdgeElement(
   loading: boolean,
   regenerateOptions: EdgeChangeAI[] | undefined,
   icon: string,
-  className: string
+  className: string,
+  onRemove?: () => void,
+  isRemoved?: boolean,
+  onUndoRemove?: () => void
 ) {
   const fromName = element.from_name ?? element.from;
   const toName = element.to_name ?? element.to;
@@ -535,7 +601,7 @@ function renderEdgeElement(
   );
 
   return (
-    <div className={`${styles.container} ${className}`}>
+    <div className={`${styles.container} ${className} ${isRemoved ? styles.removed : ''}`}>
       <div className={styles.header}>
         <span className={styles.opIcon}>{icon}</span>
         <span className={styles.type} title={edgeDescription}>{element.edge_type}:</span>
@@ -543,7 +609,7 @@ function renderEdgeElement(
           {edgeLabel}
         </span>
         <div className={styles.actions}>
-          {mode === 'view' && (
+          {mode === 'view' && !isRemoved && (
             <>
               <button
                 className={styles.actionBtn}
@@ -561,12 +627,33 @@ function renderEdgeElement(
               >
                 Regenerate
               </button>
+              {onRemove && (
+                <button
+                  className={styles.removeBtn}
+                  onClick={onRemove}
+                  disabled={loading}
+                  type="button"
+                >
+                  Remove
+                </button>
+              )}
             </>
           )}
         </div>
       </div>
 
-      {mode === 'edit' && (
+      {isRemoved && (
+        <div className={styles.removedOverlay}>
+          <span>Will not be added</span>
+          {onUndoRemove && (
+            <button onClick={onUndoRemove} type="button">
+              Undo
+            </button>
+          )}
+        </div>
+      )}
+
+      {mode === 'edit' && !isRemoved && (
         <div className={styles.editForm}>
           <div className={styles.formRow}>
             <label>From:</label>
