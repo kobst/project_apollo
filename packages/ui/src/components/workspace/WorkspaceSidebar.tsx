@@ -54,6 +54,15 @@ export function WorkspaceSidebar({
 
       <nav className={styles.nav}>
         <button
+          className={`${styles.navItem} ${activeView === 'premise' ? styles.active : ''}`}
+          onClick={() => onViewChange('premise')}
+          type="button"
+        >
+          <span className={styles.navIcon}>📝</span>
+          <span className={styles.navLabel}>Premise</span>
+        </button>
+
+        <button
           className={`${styles.navItem} ${activeView === 'structure' ? styles.active : ''}`}
           onClick={() => onViewChange('structure')}
           type="button"

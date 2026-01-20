@@ -1,17 +1,17 @@
 /**
  * WorkspaceView - Main workspace with sidebar navigation + main content layout:
- * 1. PremiseHeader (top) - Story title, logline, genre/tone, setting
- * 2. WorkspaceSidebar (left) - Navigation: Structure Board, Elements, Story Context
- * 3. Main content (right) - Structure Board or Elements Board based on selection
+ * 1. PremiseHeader (top) - Story title only
+ * 2. WorkspaceSidebar (left) - Navigation: Premise, Structure Board, Elements, Story Context
+ * 3. Main content (right) - PremisePanel, StructureBoard, or ElementsBoard based on selection
  */
 
 import { useState, useCallback } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { PremiseHeader } from './PremiseHeader';
-import { PremiseEditModal } from './PremiseEditModal';
 import { WorkspaceSidebar } from './WorkspaceSidebar';
 import { StructureBoard } from './StructureBoard';
 import { ElementsBoard } from './ElementsBoard';
+import { PremisePanel } from './PremisePanel';
 import { ElementDetailModal } from './ElementDetailModal';
 import { AddElementModal, type AddElementType } from './AddElementModal';
 import { StoryContextModal } from '../context/StoryContextModal';
@@ -19,7 +19,7 @@ import type { WorkspaceView as WorkspaceViewType, ElementType, ElementModalState
 import styles from './WorkspaceView.module.css';
 
 export function WorkspaceView() {
-  const { currentStoryId, refreshStatus, status } = useStory();
+  const { currentStoryId, status } = useStory();
 
   // Sidebar collapse state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -31,7 +31,6 @@ export function WorkspaceView() {
   const [elementModal, setElementModal] = useState<ElementModalState | null>(null);
 
   // Other modal states
-  const [premiseModalOpen, setPremiseModalOpen] = useState(false);
   const [storyContextModalOpen, setStoryContextModalOpen] = useState(false);
   const [addElementType, setAddElementType] = useState<AddElementType | null>(null);
 
@@ -44,11 +43,6 @@ export function WorkspaceView() {
   const handleCloseElementModal = useCallback(() => {
     setElementModal(null);
   }, []);
-
-  // Handle save from modals (refresh data)
-  const handlePremiseSave = useCallback(() => {
-    void refreshStatus();
-  }, [refreshStatus]);
 
   // Handle add element - open add element modal
   const handleAddElement = useCallback((type: ElementType) => {
@@ -74,7 +68,7 @@ export function WorkspaceView() {
   return (
     <div className={styles.container}>
       {/* Top: Premise Header */}
-      <PremiseHeader onEditPremise={() => setPremiseModalOpen(true)} />
+      <PremiseHeader />
 
       {/* Main Area: Sidebar + Main Content */}
       <div className={styles.mainArea}>
@@ -88,7 +82,9 @@ export function WorkspaceView() {
         />
 
         <div className={styles.mainContent}>
-          {workspaceView === 'structure' ? (
+          {workspaceView === 'premise' ? (
+            <PremisePanel />
+          ) : workspaceView === 'structure' ? (
             <StructureBoard />
           ) : (
             <ElementsBoard
@@ -100,13 +96,6 @@ export function WorkspaceView() {
       </div>
 
       {/* Modals */}
-      {premiseModalOpen && (
-        <PremiseEditModal
-          onClose={() => setPremiseModalOpen(false)}
-          onSave={handlePremiseSave}
-        />
-      )}
-
       {storyContextModalOpen && (
         <StoryContextModal onClose={() => setStoryContextModalOpen(false)} />
       )}
