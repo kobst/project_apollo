@@ -59,10 +59,6 @@ import {
   getIdeaHandler,
   updateIdeaHandler,
   deleteIdeaHandler,
-  createInterpretHandler,
-  createGenerateHandler,
-  createRegenerateHandler,
-  createRefineHandler,
   createGetSessionHandler,
   createDeleteSessionHandler,
   createConvertProposalHandler,
@@ -72,6 +68,12 @@ import {
   createApplyElementOptionHandler,
   createValidatePackageHandler,
   createUpdatePackageElementHandler,
+  // Unified Propose handlers
+  createProposeHandler,
+  createGetActiveProposalHandler,
+  createDiscardProposalHandler,
+  createCommitProposalHandler,
+  createRefineProposalHandler,
   createListSavedPackagesHandler,
   createGetSavedPackageHandler,
   createSavePackageHandler,
@@ -170,13 +172,18 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.patch('/:id/ideas/:ideaId', updateIdeaHandler(ctx));
   router.delete('/:id/ideas/:ideaId', deleteIdeaHandler(ctx));
 
-  // AI Generation endpoints
-  router.post('/:id/interpret', createInterpretHandler(ctx));
-  router.post('/:id/generate', createGenerateHandler(ctx));
-  router.post('/:id/regenerate', createRegenerateHandler(ctx));
-  router.post('/:id/refine', createRefineHandler(ctx));
+  // Unified Propose endpoints (AI pipeline)
+  router.post('/:id/propose', createProposeHandler(ctx));
+  router.get('/:id/propose/active', createGetActiveProposalHandler(ctx));
+  router.delete('/:id/propose/active', createDiscardProposalHandler(ctx));
+  router.post('/:id/propose/commit', createCommitProposalHandler(ctx));
+  router.post('/:id/propose/refine', createRefineProposalHandler(ctx));
+
+  // Session management (for active proposal)
   router.get('/:id/session', createGetSessionHandler(ctx));
   router.delete('/:id/session', createDeleteSessionHandler(ctx));
+
+  // Package utilities
   router.post('/:id/proposal-to-package', createConvertProposalHandler(ctx));
   router.post('/:id/apply-package', createApplyPackageHandler(ctx));
   router.post('/:id/accept-package', createAcceptPackageHandler(ctx));

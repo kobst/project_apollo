@@ -8,8 +8,6 @@ import {
 import { api } from '../api/client';
 import type {
   GenerationSession,
-  GenerateRequest,
-  RefineRequest,
   NarrativePackage,
   RefinableElements,
   PackageElementType,
@@ -17,6 +15,8 @@ import type {
   NodeChangeAI,
   EdgeChangeAI,
   StoryContextChange,
+  ProposeRequest,
+  ProposeResponseData,
 } from '../api/types';
 
 interface GenerationContextValue {
@@ -30,16 +30,14 @@ interface GenerationContextValue {
   isOpen: boolean;
 
   // Actions
-  /** Start a new generation */
-  startGeneration: (storyId: string, request: GenerateRequest) => Promise<void>;
-  /** Refine a package */
-  refinePackage: (storyId: string, request: RefineRequest) => Promise<void>;
+  /** Unified propose (main AI pipeline) */
+  propose: (storyId: string, request: ProposeRequest) => Promise<ProposeResponseData>;
+  /** Refine a package via propose */
+  refinePackage: (storyId: string, packageId: string, guidance: string, creativity?: number) => Promise<void>;
   /** Accept a package and apply to graph */
   acceptPackage: (storyId: string, packageId: string) => Promise<void>;
   /** Reject a package (remove from session) */
   rejectPackage: (packageId: string) => void;
-  /** Regenerate all packages */
-  regenerateAll: (storyId: string) => Promise<void>;
   /** Abandon the session */
   abandonSession: (storyId: string) => Promise<void>;
   /** Load existing session for a story */
@@ -121,13 +119,27 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Start new generation
-  const startGeneration = useCallback(
-    async (storyId: string, request: GenerateRequest) => {
+  // Map ProposeEntryPointType to GenerationEntryPointType
+  const mapProposeToGenerationEntryPointType = (
+    proposeType: 'freeText' | 'node' | 'beat' | 'gap' | 'document'
+  ): 'beat' | 'plotPoint' | 'character' | 'gap' | 'idea' | 'naked' => {
+    switch (proposeType) {
+      case 'freeText': return 'naked';
+      case 'node': return 'character'; // Default node to character
+      case 'beat': return 'beat';
+      case 'gap': return 'gap';
+      case 'document': return 'naked';
+      default: return 'naked';
+    }
+  };
+
+  // Unified propose (main pipeline)
+  const propose = useCallback(
+    async (storyId: string, request: ProposeRequest): Promise<ProposeResponseData> => {
       try {
         setLoading(true);
         setError(null);
-        const data = await api.generate(storyId, request);
+        const data = await api.propose(storyId, request);
 
         // Construct session from response
         const newSession: GenerationSession = {
@@ -135,7 +147,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
           storyId,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          entryPoint: request.entryPoint,
+          entryPoint: { type: mapProposeToGenerationEntryPointType(request.scope.entryPoint) },
           packages: data.packages,
           status: 'active',
         };
@@ -143,8 +155,11 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
         setSession(newSession);
         setSelectedPackageId(data.packages[0]?.id ?? null);
         setIsOpen(true);
+
+        return data;
       } catch (err) {
         setError((err as Error).message);
+        throw err;
       } finally {
         setLoading(false);
       }
@@ -152,28 +167,28 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  // Refine package
+  // Refine package via propose/refine endpoint
   const refinePackage = useCallback(
-    async (storyId: string, request: RefineRequest) => {
+    async (storyId: string, packageId: string, guidance: string, creativity: number = 0.5) => {
       if (!session) return;
 
       try {
         setLoading(true);
         setError(null);
-        const data = await api.refine(storyId, request);
+        const data = await api.refineProposal(storyId, { packageId, guidance, creativity });
 
         // Add variations to session
         setSession((prev) => {
           if (!prev) return prev;
           return {
             ...prev,
-            packages: [...prev.packages, ...data.variations],
+            packages: [...prev.packages, ...data.packages],
             updatedAt: new Date().toISOString(),
           };
         });
 
         // Select first variation
-        const firstVariation = data.variations[0];
+        const firstVariation = data.packages[0];
         if (firstVariation) {
           setSelectedPackageId(firstVariation.id);
         }
@@ -257,31 +272,6 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
       return prev;
     });
   }, [session?.packages]);
-
-  // Regenerate all
-  const regenerateAll = useCallback(async (storyId: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await api.regenerate(storyId);
-
-      // Update session with new packages
-      setSession((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          packages: data.packages,
-          updatedAt: new Date().toISOString(),
-        };
-      });
-
-      setSelectedPackageId(data.packages[0]?.id ?? null);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   // Abandon session
   const abandonSession = useCallback(async (storyId: string) => {
@@ -443,11 +433,10 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     loading,
     error,
     isOpen,
-    startGeneration,
+    propose,
     refinePackage,
     acceptPackage,
     rejectPackage,
-    regenerateAll,
     abandonSession,
     loadSession,
     openPanel,

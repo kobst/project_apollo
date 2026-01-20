@@ -285,3 +285,125 @@ export interface ValidationWarning {
   /** Node ID involved in the warning */
   nodeId?: string;
 }
+
+// =============================================================================
+// Unified Propose Types
+// =============================================================================
+
+/**
+ * Proposal mode - simplified user-facing selector.
+ * - add: Create exactly what is described (low creativity, strict, 1 node)
+ * - expand: Build out from a starting point (medium creativity, 4 nodes)
+ * - explore: Generate creative options (high creativity, 6 nodes)
+ */
+export type ProposalMode = 'add' | 'expand' | 'explore';
+
+/**
+ * Intent for a propose request.
+ * - add: Create new story elements
+ * - edit: Modify existing elements
+ * - expand: Build out from selection
+ * - link: Connect elements together
+ */
+export type ProposeIntent = 'add' | 'edit' | 'expand' | 'link';
+
+/**
+ * Entry point type for propose requests.
+ * Determines routing strategy in the orchestrator.
+ */
+export type ProposeEntryPointType =
+  | 'freeText'    // User typed text (low creativity → interpret path)
+  | 'node'        // Existing node selected
+  | 'beat'        // Beat selected
+  | 'gap'         // Gap selected
+  | 'document';   // Document upload
+
+/**
+ * Scope defines what the propose request is targeting.
+ */
+export interface ProposeScope {
+  /** Entry point type determines routing */
+  entryPoint: ProposeEntryPointType;
+  /** Target node type for 'add' intent */
+  targetType?: string;
+  /** Target node IDs for edit/expand/link intents */
+  targetIds?: string[];
+}
+
+/**
+ * Input data for a propose request.
+ */
+export interface ProposeInput {
+  /** Free-form text description */
+  text?: string;
+  /** Pre-filled structured fields */
+  structured?: Record<string, unknown>;
+  /** Reference to uploaded document */
+  documentId?: string;
+}
+
+/**
+ * Structure respect mode.
+ * - strict: Respect existing act structure exactly
+ * - soft: May suggest minor structural adjustments
+ */
+export type StructureRespect = 'strict' | 'soft';
+
+/**
+ * Constraints for package generation.
+ * All fields are optional - defaults come from mode or system defaults.
+ */
+export interface ProposeConstraints {
+  /** Creativity level (0-1). Lower = conservative, higher = inventive */
+  creativity?: number;
+  /** Whether AI can create new supporting entities */
+  inventNewEntities?: boolean;
+  /** How strictly to respect existing structure */
+  respectStructure?: StructureRespect;
+}
+
+/**
+ * Options for propose request.
+ * All fields are optional - defaults come from mode or system defaults.
+ */
+export interface ProposeOptions {
+  /** Number of package alternatives to generate */
+  packageCount?: number;
+  /** Maximum nodes per package (replaces depth) */
+  maxNodesPerPackage?: number;
+}
+
+/**
+ * Unified propose request.
+ * Replaces separate /interpret, /generate, /refine endpoints.
+ */
+export interface ProposeRequest {
+  /** What action to take */
+  intent: ProposeIntent;
+  /** What is being targeted */
+  scope: ProposeScope;
+  /** User-provided input data */
+  input?: ProposeInput;
+  /** Proposal mode - sets default constraints and options */
+  mode?: ProposalMode;
+  /** Generation constraints (optional - defaults from mode or system) */
+  constraints?: ProposeConstraints;
+  /** Generation options (optional - defaults from mode or system) */
+  options?: ProposeOptions;
+}
+
+/**
+ * Response from a propose request.
+ */
+export interface ProposeResponse {
+  /** Session ID for the generated packages */
+  sessionId: string;
+  /** Generated package alternatives */
+  packages: NarrativePackage[];
+  /** Interpretation summary (for freeText entry point with low creativity) */
+  interpretation?: {
+    summary: string;
+    confidence: number;
+    alternatives?: Array<{ summary: string; confidence: number }>;
+  };
+}

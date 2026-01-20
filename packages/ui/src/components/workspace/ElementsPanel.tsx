@@ -1,14 +1,13 @@
 /**
  * ElementsPanel - Collapsible left sidebar showing story elements.
  * Contains expandable sections for Characters, Locations, Objects,
- * plus Story Context link and InputPanel for extraction.
+ * plus Story Context link.
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { api } from '../../api/client';
 import type { NodeData } from '../../api/types';
-import { InputPanel } from '../input/InputPanel';
 import styles from './ElementsPanel.module.css';
 
 interface ElementsPanelProps {
@@ -231,14 +230,6 @@ export function ElementsPanel({
           </button>
         </div>
 
-        {/* Divider */}
-        <div className={styles.divider} />
-
-        {/* Input Panel for Extraction */}
-        <div className={styles.extractionSection}>
-          <h4 className={styles.extractionTitle}>Extract</h4>
-          <InputPanel />
-        </div>
       </div>
 
       {loading && <div className={styles.loadingOverlay}>Loading...</div>}

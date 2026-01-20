@@ -1,0 +1,74 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.container {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.modeButton {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 16px;
+  background: #1e1e32;
+  border: 2px solid #3a3a5a;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modeButton:hover:not(:disabled) {
+  background: #252545;
+  border-color: #4a4a6a;
+}
+
+.modeButton.selected {
+  background: rgba(90, 124, 165, 0.15);
+  border-color: #5a7ca5;
+}
+
+.modeButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #2a2a4a;
+  font-size: 1.5rem;
+  color: #888;
+}
+
+.modeButton.selected .icon {
+  background: #5a7ca5;
+  color: #fff;
+}
+
+.label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #aaa;
+}
+
+.modeButton.selected .label {
+  color: #7a9cc5;
+}
+
+.description {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #999;
+  text-align: center;
+}

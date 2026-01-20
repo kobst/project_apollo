@@ -4,7 +4,6 @@ import { api } from '../../api/client';
 import type { NodeData } from '../../api/types';
 import { NodeCardGrid } from './NodeCardGrid';
 import { NodeDetailModal } from './NodeDetailModal';
-import { InputPanel } from '../input/InputPanel';
 import type { StoryMapCategory } from './StoryMap';
 import styles from './FoundationsPanel.module.css';
 
@@ -122,11 +121,6 @@ export function FoundationsPanel({ category, nodeType }: FoundationsPanelProps) 
             categoryLabel={getCategoryLabel()}
           />
         )}
-      </div>
-
-      {/* Right: Input Panel */}
-      <div className={styles.inputPane}>
-        <InputPanel />
       </div>
 
       {/* Modal for node detail */}

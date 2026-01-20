@@ -72,10 +72,6 @@ export {
   deleteIdeaHandler,
 } from './ideas.js';
 export {
-  createInterpretHandler,
-  createGenerateHandler,
-  createRegenerateHandler,
-  createRefineHandler,
   createGetSessionHandler,
   createDeleteSessionHandler,
   createConvertProposalHandler,
@@ -85,6 +81,12 @@ export {
   createApplyElementOptionHandler,
   createValidatePackageHandler,
   createUpdatePackageElementHandler,
+  // Unified Propose handlers
+  createProposeHandler,
+  createGetActiveProposalHandler,
+  createDiscardProposalHandler,
+  createCommitProposalHandler,
+  createRefineProposalHandler,
 } from './generate.js';
 export {
   createListSavedPackagesHandler,

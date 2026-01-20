@@ -61,6 +61,11 @@ import {
   type RegenerateElementRequest,
 } from '../ai/regenerateElementOrchestrator.js';
 import {
+  propose,
+  getActiveProposal,
+  discardActiveProposal,
+} from '../ai/proposeOrchestrator.js';
+import {
   createLLMClient,
   isLLMConfigured,
   getMissingKeyError,
@@ -1462,6 +1467,341 @@ export function createUpdatePackageElementHandler(ctx: StorageContext) {
         success: true,
         data: { package: updatedPackage },
       });
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+// =============================================================================
+// Unified Propose Handlers
+// =============================================================================
+
+interface ProposeResponseData {
+  sessionId: string;
+  packages: ai.NarrativePackage[];
+  interpretation?: {
+    summary: string;
+    confidence: number;
+    alternatives?: Array<{ summary: string; confidence: number }>;
+  };
+}
+
+interface ProposeRequestBody {
+  intent: ai.ProposeIntent;
+  scope: ai.ProposeScope;
+  input?: ai.ProposeInput;
+  mode?: ai.ProposalMode;
+  constraints?: ai.ProposeConstraints;
+  options?: ai.ProposeOptions;
+}
+
+/**
+ * POST /stories/:id/propose
+ *
+ * Unified endpoint for all AI-assisted story generation.
+ * Routes to appropriate strategy based on intent, entry point, and creativity.
+ */
+export function createProposeHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string }, unknown, ProposeRequestBody>,
+    res: Response<APIResponse<ProposeResponseData>>,
+    next: NextFunction
+  ): Promise<void> => {
+    console.log('[proposeHandler] Received propose request');
+    try {
+      const { id } = req.params;
+      const { intent, scope, input, mode, constraints, options } = req.body;
+
+      // Validate required fields
+      if (!intent) {
+        throw new BadRequestError('intent is required');
+      }
+      if (!scope?.entryPoint) {
+        throw new BadRequestError('scope.entryPoint is required');
+      }
+      // Either mode or constraints.creativity must be provided
+      if (!mode && constraints?.creativity === undefined) {
+        throw new BadRequestError('Either mode or constraints.creativity is required');
+      }
+
+      console.log(`[proposeHandler] Story: ${id}, intent: ${intent}, entryPoint: ${scope.entryPoint}, mode: ${mode ?? 'none'}, creativity: ${constraints?.creativity ?? 'from mode'}`);
+
+      if (!isLLMConfigured()) {
+        const { message, suggestion } = getMissingKeyError();
+        throw new BadRequestError(message, suggestion);
+      }
+
+      const llmClient = createLLMClient();
+
+      // Build propose request - let orchestrator resolve defaults from mode
+      const proposeRequest: ai.ProposeRequest = {
+        intent,
+        scope,
+      };
+
+      // Add mode if provided
+      if (mode) {
+        proposeRequest.mode = mode;
+      }
+
+      // Add input if provided
+      if (input) {
+        proposeRequest.input = input;
+      }
+
+      // Add constraints if provided (overrides mode defaults)
+      if (constraints) {
+        proposeRequest.constraints = {};
+        if (constraints.creativity !== undefined) {
+          proposeRequest.constraints.creativity = constraints.creativity;
+        }
+        if (constraints.inventNewEntities !== undefined) {
+          proposeRequest.constraints.inventNewEntities = constraints.inventNewEntities;
+        }
+        if (constraints.respectStructure !== undefined) {
+          proposeRequest.constraints.respectStructure = constraints.respectStructure;
+        }
+      }
+
+      // Add options if provided (overrides mode defaults)
+      if (options) {
+        proposeRequest.options = {};
+        if (options.packageCount !== undefined) {
+          proposeRequest.options.packageCount = options.packageCount;
+        }
+        if (options.maxNodesPerPackage !== undefined) {
+          proposeRequest.options.maxNodesPerPackage = options.maxNodesPerPackage;
+        }
+      }
+
+      // Check for streaming request
+      const wantsStream = req.headers.accept === 'text/event-stream';
+
+      if (wantsStream) {
+        // Set up SSE
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.flushHeaders();
+
+        const streamCallbacks: StreamCallbacks = {
+          onToken: (token) => {
+            res.write(`data: ${JSON.stringify({ type: 'token', content: token })}\n\n`);
+          },
+          onComplete: (response) => {
+            res.write(`data: ${JSON.stringify({ type: 'usage', usage: response.usage })}\n\n`);
+          },
+          onError: (error) => {
+            res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+          },
+        };
+
+        const result = await propose(id, proposeRequest, ctx, llmClient, streamCallbacks);
+
+        // Enrich packages with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
+        res.write(`data: ${JSON.stringify({ type: 'result', data: enrichedResult })}\n\n`);
+        res.write('data: [DONE]\n\n');
+        res.end();
+      } else {
+        const result = await propose(id, proposeRequest, ctx, llmClient);
+
+        // Enrich packages with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
+        res.json({
+          success: true,
+          data: enrichedResult,
+        });
+      }
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+/**
+ * GET /stories/:id/propose/active
+ *
+ * Get the active proposal for a story.
+ */
+export function createGetActiveProposalHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string }>,
+    res: Response<APIResponse<ProposeResponseData | null>>,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const result = await getActiveProposal(id, ctx);
+
+      if (!result) {
+        res.json({
+          success: true,
+          data: null,
+        });
+        return;
+      }
+
+      // Enrich packages with edge names
+      const graph = await loadGraphById(id, ctx);
+      const enrichedPackages = result.packages.map((pkg) => resolveEdgeNames(pkg, graph));
+
+      res.json({
+        success: true,
+        data: {
+          sessionId: result.sessionId,
+          packages: enrichedPackages,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+/**
+ * DELETE /stories/:id/propose/active
+ *
+ * Discard the active proposal for a story.
+ */
+export function createDiscardProposalHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string }>,
+    res: Response<APIResponse<{ discarded: boolean }>>,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
+      await discardActiveProposal(id, ctx);
+
+      res.json({
+        success: true,
+        data: { discarded: true },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+/**
+ * POST /stories/:id/propose/commit
+ *
+ * Commit the active proposal (accept a package).
+ * Wrapper around accept-package for the propose pipeline.
+ */
+export function createCommitProposalHandler(ctx: StorageContext) {
+  // Reuse the existing accept package handler
+  return createAcceptPackageHandler(ctx);
+}
+
+/**
+ * POST /stories/:id/propose/refine
+ *
+ * Refine a package in the active proposal.
+ */
+export function createRefineProposalHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string }, unknown, { packageId: string; guidance: string; creativity?: number }>,
+    res: Response<APIResponse<ProposeResponseData>>,
+    next: NextFunction
+  ): Promise<void> => {
+    console.log('[refineProposalHandler] Received refine request');
+    try {
+      const { id } = req.params;
+      const { packageId, guidance, creativity = 0.5 } = req.body;
+
+      if (!packageId) {
+        throw new BadRequestError('packageId is required');
+      }
+      if (!guidance || !guidance.trim()) {
+        throw new BadRequestError('guidance is required');
+      }
+
+      console.log(`[refineProposalHandler] Story: ${id}, packageId: ${packageId}, creativity: ${creativity}`);
+
+      if (!isLLMConfigured()) {
+        const { message, suggestion } = getMissingKeyError();
+        throw new BadRequestError(message, suggestion);
+      }
+
+      const llmClient = createLLMClient();
+
+      // Build propose request for refinement
+      const proposeRequest: ai.ProposeRequest = {
+        intent: 'edit',
+        scope: {
+          entryPoint: 'node',
+          targetIds: [packageId],
+        },
+        input: { text: guidance },
+        constraints: {
+          creativity,
+          inventNewEntities: creativity > 0.5,
+          respectStructure: creativity < 0.5 ? 'strict' : 'soft',
+        },
+        options: { packageCount: 3 },
+      };
+
+      // Check for streaming request
+      const wantsStream = req.headers.accept === 'text/event-stream';
+
+      if (wantsStream) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.flushHeaders();
+
+        const streamCallbacks: StreamCallbacks = {
+          onToken: (token) => {
+            res.write(`data: ${JSON.stringify({ type: 'token', content: token })}\n\n`);
+          },
+          onComplete: (response) => {
+            res.write(`data: ${JSON.stringify({ type: 'usage', usage: response.usage })}\n\n`);
+          },
+          onError: (error) => {
+            res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+          },
+        };
+
+        const result = await propose(id, proposeRequest, ctx, llmClient, streamCallbacks);
+
+        // Enrich packages with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
+        res.write(`data: ${JSON.stringify({ type: 'result', data: enrichedResult })}\n\n`);
+        res.write('data: [DONE]\n\n');
+        res.end();
+      } else {
+        const result = await propose(id, proposeRequest, ctx, llmClient);
+
+        // Enrich packages with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
+        res.json({
+          success: true,
+          data: enrichedResult,
+        });
+      }
     } catch (error) {
       next(error);
     }

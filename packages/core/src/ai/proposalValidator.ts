@@ -308,6 +308,53 @@ export function findSimilarNodes(
 // =============================================================================
 
 /**
+ * Check if a gap title indicates the node type is what's MISSING (primary subject).
+ * Returns true for patterns like "Missing Character", "No Character defined"
+ * Returns false for patterns like "Scene Without Character" (the gap is about Scene, not Character)
+ */
+function gapIndicatesMissingType(gapTitle: string, nodeType: string): boolean {
+  const title = gapTitle.toLowerCase();
+  const type = nodeType.toLowerCase();
+
+  // Patterns where the node type is the PRIMARY missing element
+  const missingPatterns = [
+    new RegExp(`^missing\\s+${type}`, 'i'),      // "Missing Character..."
+    new RegExp(`^no\\s+${type}`, 'i'),           // "No Character..."
+    new RegExp(`^${type}\\s+missing`, 'i'),      // "Character missing..."
+    new RegExp(`^${type}\\s+needed`, 'i'),       // "Character needed..."
+    new RegExp(`^add\\s+${type}`, 'i'),          // "Add Character..."
+    new RegExp(`^create\\s+${type}`, 'i'),       // "Create Character..."
+    new RegExp(`^needs?\\s+${type}$`, 'i'),      // "Need Character" (exact)
+  ];
+
+  for (const pattern of missingPatterns) {
+    if (pattern.test(title)) {
+      return true;
+    }
+  }
+
+  // Patterns where the node type is mentioned but NOT the primary subject
+  // (the gap is about something else that needs/lacks this type)
+  const secondaryPatterns = [
+    new RegExp(`without\\s+${type}`, 'i'),       // "Scene Without Character"
+    new RegExp(`needs?\\s+${type}`, 'i'),        // "Scene Needs Character" (but not "Needs Character" alone)
+    new RegExp(`lacks?\\s+${type}`, 'i'),        // "Scene Lacks Character"
+    new RegExp(`missing\\s+${type}\\s+connection`, 'i'), // "Missing Character Connection"
+  ];
+
+  // If it matches a secondary pattern but NOT a missing pattern, it's not a direct match
+  for (const pattern of secondaryPatterns) {
+    if (pattern.test(title)) {
+      return false;
+    }
+  }
+
+  // Fallback: if the type appears but none of our patterns match,
+  // it's probably not a direct "missing this type" gap
+  return false;
+}
+
+/**
  * Check which gaps would be fulfilled by adding this node.
  */
 export function checkGapFulfillment(
@@ -327,13 +374,13 @@ export function checkGapFulfillment(
   const openGaps = gaps.filter((g) => g.status === 'open');
 
   for (const gap of openGaps) {
-    // Check for direct type match in gap title (e.g., "Missing Character")
-    const typeMatch = gap.title.toLowerCase().includes(nodeType.toLowerCase());
+    // Check if the gap specifically indicates this type is MISSING (primary subject)
+    const typeIsMissing = gapIndicatesMissingType(gap.title, nodeType);
 
     // Check for tier match
     const tierMatch = gap.tier === nodeTier;
 
-    if (typeMatch) {
+    if (typeIsMissing) {
       matches.push({
         gapId: gap.id,
         gapTitle: gap.title,
@@ -342,14 +389,24 @@ export function checkGapFulfillment(
         reason: `Adding a ${nodeType} directly addresses this gap`,
       });
     } else if (tierMatch && gap.type === 'structural') {
-      // Partial match: same tier structural gap
-      matches.push({
-        gapId: gap.id,
-        gapTitle: gap.title,
-        gapTier: gap.tier,
-        fulfillment: 'partial',
-        reason: `This ${nodeType} may help address ${gap.tier} tier gaps`,
-      });
+      // Partial match: same tier structural gap (only if no secondary pattern match)
+      const title = gap.title.toLowerCase();
+      const type = nodeType.toLowerCase();
+      // Skip if this gap is about something ELSE needing this type
+      const isSecondaryReference =
+        title.includes(`without ${type}`) ||
+        title.includes(`needs ${type}`) ||
+        title.includes(`lacks ${type}`);
+
+      if (!isSecondaryReference) {
+        matches.push({
+          gapId: gap.id,
+          gapTitle: gap.title,
+          gapTier: gap.tier,
+          fulfillment: 'partial',
+          reason: `This ${nodeType} may help address ${gap.tier} tier gaps`,
+        });
+      }
     }
   }
 

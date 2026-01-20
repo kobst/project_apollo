@@ -48,3 +48,11 @@ export {
   type RegenerateElementRequest,
   type RegenerateElementResponse,
 } from './regenerateElementOrchestrator.js';
+
+// Unified Propose Phase
+export {
+  propose,
+  proposeRefine,
+  getActiveProposal,
+  discardActiveProposal,
+} from './proposeOrchestrator.js';

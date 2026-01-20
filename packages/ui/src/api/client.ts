@@ -73,14 +73,8 @@ import type {
   CreateIdeaData,
   UpdateIdeaData,
   DeleteIdeaData,
-  // AI Generation types
-  InterpretRequest,
-  InterpretResponseData,
+  // Session & Package types
   InterpretationProposal,
-  GenerateRequest,
-  GenerateResponseData,
-  RefineRequest,
-  RefineResponseData,
   SessionResponseData,
   AcceptPackageResponseData,
   NarrativePackage,
@@ -98,6 +92,10 @@ import type {
   ValidatePackageResponseData,
   UpdatePackageElementRequest,
   UpdatePackageElementResponseData,
+  // Unified Propose types
+  ProposeRequest,
+  ProposeResponseData,
+  ProposeRefineRequest,
 } from './types';
 
 const API_BASE = '/api';
@@ -346,32 +344,8 @@ export const api = {
     DELETE<DeleteIdeaData>(`/stories/${storyId}/ideas/${ideaId}`),
 
   // ==========================================================================
-  // AI Generation
+  // Session Management
   // ==========================================================================
-
-  /**
-   * Interpret freeform user input into structured proposals
-   */
-  interpret: (storyId: string, data: InterpretRequest) =>
-    POST<InterpretResponseData>(`/stories/${storyId}/interpret`, data),
-
-  /**
-   * Generate narrative packages from an entry point
-   */
-  generate: (storyId: string, data: GenerateRequest) =>
-    POST<GenerateResponseData>(`/stories/${storyId}/generate`, data),
-
-  /**
-   * Regenerate packages using the same parameters as the current session
-   */
-  regenerate: (storyId: string) =>
-    POST<GenerateResponseData>(`/stories/${storyId}/regenerate`),
-
-  /**
-   * Refine a package with user guidance to produce variations
-   */
-  refine: (storyId: string, data: RefineRequest) =>
-    POST<RefineResponseData>(`/stories/${storyId}/refine`, data),
 
   /**
    * Get the current generation session for a story
@@ -384,6 +358,10 @@ export const api = {
    */
   deleteSession: (storyId: string) =>
     DELETE<{ abandoned: boolean }>(`/stories/${storyId}/session`),
+
+  // ==========================================================================
+  // Package Utilities
+  // ==========================================================================
 
   /**
    * Convert an interpretation proposal to a narrative package (with validation)
@@ -470,6 +448,41 @@ export const api = {
    */
   updatePackageElement: (storyId: string, data: UpdatePackageElementRequest) =>
     POST<UpdatePackageElementResponseData>(`/stories/${storyId}/update-package-element`, data),
+
+  // =========================================================================
+  // Unified Propose (new pipeline)
+  // =========================================================================
+
+  /**
+   * Unified propose endpoint for all AI-assisted story generation.
+   * Routes to appropriate strategy based on intent, entry point, and creativity.
+   */
+  propose: (storyId: string, data: ProposeRequest) =>
+    POST<ProposeResponseData>(`/stories/${storyId}/propose`, data),
+
+  /**
+   * Get the active proposal for a story
+   */
+  getActiveProposal: (storyId: string) =>
+    GET<ProposeResponseData | null>(`/stories/${storyId}/propose/active`),
+
+  /**
+   * Discard the active proposal for a story
+   */
+  discardProposal: (storyId: string) =>
+    DELETE<{ discarded: boolean }>(`/stories/${storyId}/propose/active`),
+
+  /**
+   * Commit the active proposal (accept a package)
+   */
+  commitProposal: (storyId: string, packageId: string) =>
+    POST<AcceptPackageResponseData>(`/stories/${storyId}/propose/commit`, { packageId }),
+
+  /**
+   * Refine a package in the active proposal
+   */
+  refineProposal: (storyId: string, data: ProposeRefineRequest) =>
+    POST<ProposeResponseData>(`/stories/${storyId}/propose/refine`, data),
 };
 
 // =============================================================================

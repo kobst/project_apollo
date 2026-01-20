@@ -11,7 +11,6 @@ import { CommitPanel } from './CommitPanel';
 import { ClusterCard } from '../clusters/ClusterCard';
 import { PatchPreview } from '../preview/PatchPreview';
 import { ValidationStatus } from '../preview/ValidationStatus';
-import { InputPanel } from '../input/InputPanel';
 import { EditEdgeModal } from './EditEdgeModal';
 import { AddRelationModal } from './AddRelationModal';
 import { DeleteNodeModal } from './DeleteNodeModal';
@@ -566,11 +565,8 @@ export function ExploreView() {
           )}
         </div>
 
-        {/* Right: Input Panel + Cluster + Preview */}
+        {/* Right: Cluster + Preview */}
         <div className={styles.clusterPane}>
-          {/* Input Panel for freeform extraction */}
-          <InputPanel />
-
           {/* Cluster results when available */}
           {hasClusterForNode ? (
             <div className={styles.clusterContent}>

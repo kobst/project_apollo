@@ -81,14 +81,51 @@ export type {
   ValidationResult,
   ValidationError,
   ValidationWarning,
+  // Unified Propose types
+  ProposalMode,
+  ProposeIntent,
+  ProposeEntryPointType,
+  ProposeScope,
+  ProposeInput,
+  StructureRespect,
+  ProposeConstraints,
+  ProposeOptions,
+  ProposeRequest,
+  ProposeResponse,
 } from './types.js';
 
 // =============================================================================
 // Config
 // =============================================================================
 
-export { defaultConfig, getPackageCount, getDepthBudget, exceedsBudget, formatTruncation, DEFAULT_STORY_CONTEXT } from './config.js';
-export type { AIConfig, DepthBudget } from './config.js';
+export {
+  defaultConfig,
+  getPackageCount,
+  getDepthBudget,
+  exceedsBudget,
+  formatTruncation,
+  DEFAULT_STORY_CONTEXT,
+  // Creativity config
+  CREATIVITY_PRESETS,
+  getCreativityConfig,
+  getCreativityLabel,
+  getTemperatureForCreativity,
+} from './config.js';
+export type { AIConfig, DepthBudget, CreativityConfig } from './config.js';
+
+// =============================================================================
+// Mode Defaults
+// =============================================================================
+
+export {
+  MODE_DEFAULTS,
+  SYSTEM_DEFAULTS,
+} from './modeDefaults.js';
+export type {
+  ResolvedConstraints,
+  ResolvedOptions,
+  ModeConfig,
+} from './modeDefaults.js';
 
 // =============================================================================
 // ID Generation

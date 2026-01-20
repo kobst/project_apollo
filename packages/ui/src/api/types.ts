@@ -1222,3 +1222,106 @@ export interface UpdatePackageElementRequest {
 export interface UpdatePackageElementResponseData {
   package: NarrativePackage;
 }
+
+// =============================================================================
+// Unified Propose Types
+// =============================================================================
+
+/**
+ * Proposal mode - simplified user-facing selector.
+ * - add: Create exactly what is described (low creativity, strict, 1 node)
+ * - expand: Build out from a starting point (medium creativity, 4 nodes)
+ * - explore: Generate creative options (high creativity, 6 nodes)
+ */
+export type ProposalMode = 'add' | 'expand' | 'explore';
+
+/**
+ * Intent for a propose request.
+ */
+export type ProposeIntent = 'add' | 'edit' | 'expand' | 'link';
+
+/**
+ * Entry point type for propose requests.
+ */
+export type ProposeEntryPointType =
+  | 'freeText'
+  | 'node'
+  | 'beat'
+  | 'gap'
+  | 'document';
+
+/**
+ * Structure respect mode.
+ */
+export type StructureRespect = 'strict' | 'soft';
+
+/**
+ * Scope defines what the propose request is targeting.
+ */
+export interface ProposeScope {
+  entryPoint: ProposeEntryPointType;
+  targetType?: string;
+  targetIds?: string[];
+}
+
+/**
+ * Input data for a propose request.
+ */
+export interface ProposeInput {
+  text?: string;
+  structured?: Record<string, unknown>;
+  documentId?: string;
+}
+
+/**
+ * Constraints for package generation.
+ * All fields are optional - defaults come from mode or system defaults.
+ */
+export interface ProposeConstraints {
+  creativity?: number;
+  inventNewEntities?: boolean;
+  respectStructure?: StructureRespect;
+}
+
+/**
+ * Options for propose request.
+ * All fields are optional - defaults come from mode or system defaults.
+ */
+export interface ProposeOptions {
+  packageCount?: number;
+  maxNodesPerPackage?: number;
+}
+
+/**
+ * Unified propose request.
+ */
+export interface ProposeRequest {
+  intent: ProposeIntent;
+  scope: ProposeScope;
+  input?: ProposeInput;
+  mode?: ProposalMode;
+  constraints?: ProposeConstraints;
+  options?: ProposeOptions;
+}
+
+/**
+ * Response from a propose request.
+ */
+export interface ProposeResponseData {
+  sessionId: string;
+  packages: NarrativePackage[];
+  interpretation?: {
+    summary: string;
+    confidence: number;
+    alternatives?: Array<{ summary: string; confidence: number }>;
+  };
+}
+
+/**
+ * Request to refine a package in the active proposal.
+ */
+export interface ProposeRefineRequest {
+  packageId: string;
+  guidance: string;
+  creativity?: number;
+}

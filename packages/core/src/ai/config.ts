@@ -169,6 +169,87 @@ export function formatTruncation(
 }
 
 // =============================================================================
+// Creativity Configuration
+// =============================================================================
+
+/**
+ * Configuration derived from creativity level.
+ * Affects temperature, entity invention threshold, and gap weighting.
+ */
+export interface CreativityConfig {
+  /** Temperature range for this creativity level */
+  temperatureScale: { min: number; max: number };
+  /** Threshold for inventing new entities (higher = more conservative) */
+  novelEntityThreshold: number;
+  /** Weight for gap fulfillment vs. invention (higher = prioritize gaps) */
+  gapWeight: number;
+}
+
+/**
+ * Preset configurations for different creativity levels.
+ */
+export const CREATIVITY_PRESETS: Record<'conservative' | 'balanced' | 'inventive', CreativityConfig> = {
+  conservative: {
+    temperatureScale: { min: 0.2, max: 0.4 },
+    novelEntityThreshold: 0.9,
+    gapWeight: 0.8,
+  },
+  balanced: {
+    temperatureScale: { min: 0.5, max: 0.7 },
+    novelEntityThreshold: 0.6,
+    gapWeight: 0.5,
+  },
+  inventive: {
+    temperatureScale: { min: 0.7, max: 0.95 },
+    novelEntityThreshold: 0.3,
+    gapWeight: 0.2,
+  },
+};
+
+/**
+ * Get creativity configuration based on creativity level (0-1).
+ *
+ * @param creativity - Creativity level (0-1)
+ * @returns Creativity configuration
+ */
+export function getCreativityConfig(creativity: number): CreativityConfig {
+  if (creativity < 0.33) return CREATIVITY_PRESETS.conservative;
+  if (creativity < 0.67) return CREATIVITY_PRESETS.balanced;
+  return CREATIVITY_PRESETS.inventive;
+}
+
+/**
+ * Get a human-readable label for creativity level.
+ *
+ * @param creativity - Creativity level (0-1)
+ * @returns Human-readable label
+ */
+export function getCreativityLabel(creativity: number): string {
+  if (creativity < 0.33) return 'conservative';
+  if (creativity < 0.67) return 'balanced';
+  return 'inventive';
+}
+
+/**
+ * Calculate temperature for a given creativity level.
+ * Interpolates within the preset's temperature range.
+ *
+ * @param creativity - Creativity level (0-1)
+ * @returns Temperature value for LLM
+ */
+export function getTemperatureForCreativity(creativity: number): number {
+  const config = getCreativityConfig(creativity);
+  const { min, max } = config.temperatureScale;
+  // Linear interpolation within the range
+  const normalized = creativity < 0.33
+    ? creativity / 0.33
+    : creativity < 0.67
+    ? (creativity - 0.33) / 0.34
+    : (creativity - 0.67) / 0.33;
+  return min + normalized * (max - min);
+}
+
+// =============================================================================
 // Story Context Template
 // =============================================================================
 
