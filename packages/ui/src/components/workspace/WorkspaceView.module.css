@@ -34,8 +34,7 @@
   overflow: hidden;
 }
 
-/* Deprecated styles - kept for reference during transition */
-.mainPanel {
+.mainContent {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -46,20 +45,8 @@
 .mainHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1.5rem;
+  padding: 12px 24px;
   border-bottom: 1px solid var(--border-color, #333);
   background: var(--bg-secondary, #1a1a2e);
-}
-
-.storyTitle {
-  font-size: 1rem;
-  font-weight: 600;
-  margin: 0;
-  color: var(--text-primary, #fff);
-}
-
-.mainContent {
-  flex: 1;
-  overflow: hidden;
+  flex-shrink: 0;
 }

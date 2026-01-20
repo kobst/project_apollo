@@ -1,34 +1,48 @@
 /**
- * WorkspaceView - Main workspace with 3-zone layout:
+ * WorkspaceView - Main workspace with sidebar navigation + main content layout:
  * 1. PremiseHeader (top) - Story title, logline, genre/tone, setting
- * 2. ElementsPanel (left) - Characters, Locations, Objects + extraction
- * 3. StructureBoard (main) - Always-visible outline with inline expansion
+ * 2. WorkspaceSidebar (left) - Navigation: Structure Board, Elements, Story Context
+ * 3. Main content (right) - Structure Board or Elements Board based on selection
  */
 
 import { useState, useCallback } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { PremiseHeader } from './PremiseHeader';
 import { PremiseEditModal } from './PremiseEditModal';
-import { ElementsPanel } from './ElementsPanel';
+import { WorkspaceSidebar } from './WorkspaceSidebar';
 import { StructureBoard } from './StructureBoard';
+import { ElementsBoard } from './ElementsBoard';
+import { ElementDetailModal } from './ElementDetailModal';
+import { AddElementModal, type AddElementType } from './AddElementModal';
 import { StoryContextModal } from '../context/StoryContextModal';
+import type { WorkspaceView as WorkspaceViewType, ElementType, ElementModalState } from './types';
 import styles from './WorkspaceView.module.css';
 
 export function WorkspaceView() {
-  const { currentStoryId, refreshStatus } = useStory();
+  const { currentStoryId, refreshStatus, status } = useStory();
 
-  // Panel collapse state
-  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+  // Sidebar collapse state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  // Modal states
+  // Workspace view state (structure or elements)
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceViewType>('structure');
+
+  // Element detail modal state
+  const [elementModal, setElementModal] = useState<ElementModalState | null>(null);
+
+  // Other modal states
   const [premiseModalOpen, setPremiseModalOpen] = useState(false);
   const [storyContextModalOpen, setStoryContextModalOpen] = useState(false);
+  const [addElementType, setAddElementType] = useState<AddElementType | null>(null);
 
-  // Handle node click from ElementsPanel
-  // TODO: Implement node detail modal - for now just log
-  const handleNodeClick = useCallback((nodeId: string) => {
-    console.log('Node clicked:', nodeId);
-    // Future: Open a simplified node detail modal or inline editor
+  // Handle element click - open detail modal
+  const handleElementClick = useCallback((elementId: string, elementType: ElementType) => {
+    setElementModal({ elementId, elementType });
+  }, []);
+
+  // Handle close element detail modal
+  const handleCloseElementModal = useCallback(() => {
+    setElementModal(null);
   }, []);
 
   // Handle save from modals (refresh data)
@@ -36,11 +50,14 @@ export function WorkspaceView() {
     void refreshStatus();
   }, [refreshStatus]);
 
-  // Handle add element (placeholder - could open a create modal)
-  const handleAddElement = useCallback((type: 'Character' | 'Location' | 'Object') => {
-    // For now, just log - could open a create modal in future
-    console.log('Add element:', type);
-    // TODO: Open a create modal for the specific type
+  // Handle add element - open add element modal
+  const handleAddElement = useCallback((type: ElementType) => {
+    setAddElementType(type as AddElementType);
+  }, []);
+
+  // Handle close add element modal
+  const handleCloseAddElement = useCallback(() => {
+    setAddElementType(null);
   }, []);
 
   if (!currentStoryId) {
@@ -59,16 +76,27 @@ export function WorkspaceView() {
       {/* Top: Premise Header */}
       <PremiseHeader onEditPremise={() => setPremiseModalOpen(true)} />
 
-      {/* Main Area: Elements Panel + Structure Board */}
+      {/* Main Area: Sidebar + Main Content */}
       <div className={styles.mainArea}>
-        <ElementsPanel
-          isCollapsed={isPanelCollapsed}
-          onToggleCollapse={() => setIsPanelCollapsed(!isPanelCollapsed)}
-          onNodeClick={handleNodeClick}
+        <WorkspaceSidebar
+          activeView={workspaceView}
+          onViewChange={setWorkspaceView}
           onStoryContextClick={() => setStoryContextModalOpen(true)}
-          onAddElement={handleAddElement}
+          hasStoryContext={status?.hasStoryContext ?? false}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         />
-        <StructureBoard />
+
+        <div className={styles.mainContent}>
+          {workspaceView === 'structure' ? (
+            <StructureBoard />
+          ) : (
+            <ElementsBoard
+              onElementClick={handleElementClick}
+              onAddElement={handleAddElement}
+            />
+          )}
+        </div>
       </div>
 
       {/* Modals */}
@@ -81,6 +109,23 @@ export function WorkspaceView() {
 
       {storyContextModalOpen && (
         <StoryContextModal onClose={() => setStoryContextModalOpen(false)} />
+      )}
+
+      {elementModal && (
+        <ElementDetailModal
+          elementId={elementModal.elementId}
+          elementType={elementModal.elementType}
+          onClose={handleCloseElementModal}
+          onElementClick={handleElementClick}
+        />
+      )}
+
+      {addElementType && (
+        <AddElementModal
+          elementType={addElementType}
+          onClose={handleCloseAddElement}
+          onSuccess={handleCloseAddElement}
+        />
       )}
     </div>
   );

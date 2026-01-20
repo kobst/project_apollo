@@ -1,0 +1,166 @@
+.container {
+  width: 200px;
+  min-width: 200px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary, #1a1a2e);
+  border-right: 1px solid var(--border-color, #333);
+  transition: width 0.2s ease, min-width 0.2s ease;
+}
+
+.collapsed {
+  width: 32px;
+  min-width: 32px;
+  height: 100%;
+  background: var(--bg-secondary, #1a1a2e);
+  border-right: 1px solid var(--border-color, #333);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12px;
+}
+
+.expandButton {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #888);
+  font-size: 10px;
+  cursor: pointer;
+  padding: 8px;
+  transition: color 0.15s ease;
+}
+
+.expandButton:hover {
+  color: var(--text-primary, #fff);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color, #333);
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.collapseButton {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #888);
+  font-size: 10px;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.15s ease;
+}
+
+.collapseButton:hover {
+  color: var(--text-primary, #fff);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 8px;
+  gap: 4px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.navItem:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.navItem.active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.navIcon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.navLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, #888);
+  transition: color 0.15s ease;
+}
+
+.navItem:hover .navLabel {
+  color: var(--text-primary, #fff);
+}
+
+.navItem.active .navLabel {
+  color: var(--text-primary, #fff);
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-color, #333);
+  margin: 4px 16px;
+}
+
+.section {
+  padding: 12px 16px;
+}
+
+.sectionTitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted, #666);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 8px 0;
+}
+
+.contextButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 4px;
+  color: var(--text-secondary, #aaa);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.contextButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--text-muted, #555);
+}
+
+.contextIcon {
+  font-size: 14px;
+}
+
+.contextCheck {
+  margin-left: auto;
+  color: #4caf50;
+  font-size: 12px;
+}
