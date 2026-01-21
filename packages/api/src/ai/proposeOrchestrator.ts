@@ -417,11 +417,13 @@ export async function propose(
   streamCallbacks?: StreamCallbacks
 ): Promise<ai.ProposeResponse> {
   // 1. Resolve constraints (apply mode defaults + explicit overrides)
+  console.log(`[propose] Incoming request options:`, request.options);
   const resolved = resolveConstraints(request);
 
   console.log(`[propose] Starting propose for story: ${storyId}`);
   console.log(`[propose] Intent: ${resolved.intent}, EntryPoint: ${resolved.scope.entryPoint}`);
-  console.log(`[propose] Mode: ${resolved.mode ?? 'none'}, Creativity: ${resolved.constraints.creativity}, MaxNodes: ${resolved.options.maxNodesPerPackage}`);
+  console.log(`[propose] Mode: ${resolved.mode ?? 'none'}, Creativity: ${resolved.constraints.creativity}`);
+  console.log(`[propose] Options: packageCount=${resolved.options.packageCount}, maxNodesPerPackage=${resolved.options.maxNodesPerPackage}`);
 
   // 2. Auto-discard existing active session
   const existingSession = await loadGenerationSession(storyId, ctx);

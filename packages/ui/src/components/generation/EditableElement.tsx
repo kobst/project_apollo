@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type {
   NodeChangeAI,
   EdgeChangeAI,
@@ -12,7 +12,7 @@ interface EditableElementProps {
   elementType: PackageElementType;
   elementIndex: number;
   element: NodeChangeAI | EdgeChangeAI | StoryContextChange;
-  onEdit: (updated: NodeChangeAI | EdgeChangeAI | StoryContextChange) => void;
+  onEdit: (updated: NodeChangeAI | EdgeChangeAI | StoryContextChange) => Promise<void>;
   onRegenerate: (guidance: string, count: GenerationCount) => void;
   loading?: boolean | undefined;
   regenerateOptions?: Array<NodeChangeAI | EdgeChangeAI | StoryContextChange> | undefined;
@@ -123,12 +123,23 @@ export function EditableElement({
   const [editedElement, setEditedElement] = useState(element);
   const [guidance, setGuidance] = useState('');
   const [count, setCount] = useState<GenerationCount>('few');
+  const [saving, setSaving] = useState(false);
+
+  // Sync editedElement with element prop when prop changes (e.g., after API update)
+  useEffect(() => {
+    setEditedElement(element);
+  }, [element]);
 
   const { icon, className } = getOpDisplay(element.operation);
 
-  const handleSaveEdit = () => {
-    onEdit(editedElement);
-    setMode('view');
+  const handleSaveEdit = async () => {
+    setSaving(true);
+    try {
+      await onEdit(editedElement);
+      setMode('view');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -162,6 +173,7 @@ export function EditableElement({
       count,
       setCount,
       loading,
+      saving,
       regenerateOptions as StoryContextChange[] | undefined,
       icon,
       className,
@@ -187,6 +199,7 @@ export function EditableElement({
       count,
       setCount,
       loading,
+      saving,
       regenerateOptions as NodeChangeAI[] | undefined,
       icon,
       className,
@@ -212,6 +225,7 @@ export function EditableElement({
       count,
       setCount,
       loading,
+      saving,
       regenerateOptions as EdgeChangeAI[] | undefined,
       icon,
       className,
@@ -241,6 +255,7 @@ function renderStoryContextElement(
   count: GenerationCount,
   setCount: (c: GenerationCount) => void,
   loading: boolean,
+  saving: boolean,
   regenerateOptions: StoryContextChange[] | undefined,
   icon: string,
   className: string,
@@ -311,11 +326,13 @@ function renderStoryContextElement(
               setEditedElement({ ...editedElement, content: e.target.value })
             }
             rows={4}
+            disabled={saving}
           />
           <div className={styles.editActions}>
             <button
               className={styles.cancelBtn}
               onClick={handleCancelEdit}
+              disabled={saving}
               type="button"
             >
               Cancel
@@ -323,9 +340,10 @@ function renderStoryContextElement(
             <button
               className={styles.saveBtn}
               onClick={handleSaveEdit}
+              disabled={saving}
               type="button"
             >
-              Save
+              {saving ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>
@@ -413,6 +431,7 @@ function renderNodeElement(
   count: GenerationCount,
   setCount: (c: GenerationCount) => void,
   loading: boolean,
+  saving: boolean,
   regenerateOptions: NodeChangeAI[] | undefined,
   icon: string,
   className: string,
@@ -480,11 +499,12 @@ function renderNodeElement(
 
       {mode === 'edit' && (
         <div className={styles.editForm}>
-          {renderNodeEditFields(element, editedElement, setEditedElement)}
+          {renderNodeEditFields(element, editedElement, setEditedElement, saving)}
           <div className={styles.editActions}>
             <button
               className={styles.cancelBtn}
               onClick={handleCancelEdit}
+              disabled={saving}
               type="button"
             >
               Cancel
@@ -492,9 +512,10 @@ function renderNodeElement(
             <button
               className={styles.saveBtn}
               onClick={handleSaveEdit}
+              disabled={saving}
               type="button"
             >
-              Save
+              {saving ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>
@@ -589,6 +610,7 @@ function renderEdgeElement(
   count: GenerationCount,
   setCount: (c: GenerationCount) => void,
   loading: boolean,
+  saving: boolean,
   regenerateOptions: EdgeChangeAI[] | undefined,
   icon: string,
   className: string,
@@ -627,9 +649,10 @@ function renderEdgeElement(
     return nodeId; // Fallback to original
   };
 
-  // Resolve human-readable names: prefer from_name/to_name, then lookup, then extract from ID
-  const fromName = element.from_name ?? nodeNameLookup?.get(element.from) ?? extractNameFromId(element.from);
-  const toName = element.to_name ?? nodeNameLookup?.get(element.to) ?? extractNameFromId(element.to);
+  // Resolve human-readable names: prefer nodeNameLookup (reflects current edits in package),
+  // then fall back to edge's stored names, then extract from ID
+  const fromName = nodeNameLookup?.get(element.from) ?? element.from_name ?? extractNameFromId(element.from);
+  const toName = nodeNameLookup?.get(element.to) ?? element.to_name ?? extractNameFromId(element.to);
   const { label: edgeLabel, description: edgeDescription } = formatEdgeRelationship(
     element.edge_type,
     fromName,
@@ -699,6 +722,7 @@ function renderEdgeElement(
               onChange={(e) =>
                 setEditedElement({ ...editedElement, from: e.target.value })
               }
+              disabled={saving}
             />
           </div>
           <div className={styles.formRow}>
@@ -709,12 +733,14 @@ function renderEdgeElement(
               onChange={(e) =>
                 setEditedElement({ ...editedElement, to: e.target.value })
               }
+              disabled={saving}
             />
           </div>
           <div className={styles.editActions}>
             <button
               className={styles.cancelBtn}
               onClick={handleCancelEdit}
+              disabled={saving}
               type="button"
             >
               Cancel
@@ -722,9 +748,10 @@ function renderEdgeElement(
             <button
               className={styles.saveBtn}
               onClick={handleSaveEdit}
+              disabled={saving}
               type="button"
             >
-              Save
+              {saving ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>
@@ -802,7 +829,8 @@ function renderEdgeElement(
 function renderNodeEditFields(
   element: NodeChangeAI,
   editedElement: NodeChangeAI,
-  setEditedElement: (e: NodeChangeAI) => void
+  setEditedElement: (e: NodeChangeAI) => void,
+  saving: boolean
 ) {
   const data = (editedElement.data ?? {}) as Record<string, unknown>;
   const nodeType = element.node_type.toLowerCase();
@@ -824,6 +852,7 @@ function renderNodeEditFields(
             type="text"
             value={(data.name as string) ?? ''}
             onChange={(e) => updateData('name', e.target.value)}
+            disabled={saving}
           />
         </div>
         <div className={styles.formRow}>
@@ -832,6 +861,7 @@ function renderNodeEditFields(
             type="text"
             value={(data.role as string) ?? ''}
             onChange={(e) => updateData('role', e.target.value)}
+            disabled={saving}
           />
         </div>
         <div className={styles.formRow}>
@@ -840,6 +870,7 @@ function renderNodeEditFields(
             rows={3}
             value={(data.description as string) ?? ''}
             onChange={(e) => updateData('description', e.target.value)}
+            disabled={saving}
           />
         </div>
         <div className={styles.formRow}>
@@ -848,6 +879,7 @@ function renderNodeEditFields(
             rows={2}
             value={(data.arc_summary as string) ?? ''}
             onChange={(e) => updateData('arc_summary', e.target.value)}
+            disabled={saving}
           />
         </div>
       </>
@@ -863,6 +895,7 @@ function renderNodeEditFields(
             type="text"
             value={(data.title as string) ?? ''}
             onChange={(e) => updateData('title', e.target.value)}
+            disabled={saving}
           />
         </div>
         <div className={styles.formRow}>
@@ -870,6 +903,7 @@ function renderNodeEditFields(
           <select
             value={(data.intent as string) ?? 'plot'}
             onChange={(e) => updateData('intent', e.target.value)}
+            disabled={saving}
           >
             <option value="plot">Plot</option>
             <option value="character">Character</option>
@@ -882,6 +916,7 @@ function renderNodeEditFields(
             rows={3}
             value={(data.summary as string) ?? ''}
             onChange={(e) => updateData('summary', e.target.value)}
+            disabled={saving}
           />
         </div>
       </>
@@ -897,6 +932,7 @@ function renderNodeEditFields(
             type="text"
             value={(data.heading as string) ?? ''}
             onChange={(e) => updateData('heading', e.target.value)}
+            disabled={saving}
           />
         </div>
         <div className={styles.formRow}>
@@ -905,6 +941,7 @@ function renderNodeEditFields(
             rows={3}
             value={(data.scene_overview as string) ?? ''}
             onChange={(e) => updateData('scene_overview', e.target.value)}
+            disabled={saving}
           />
         </div>
         <div className={styles.formRow}>
@@ -913,6 +950,7 @@ function renderNodeEditFields(
             type="text"
             value={(data.tone as string) ?? ''}
             onChange={(e) => updateData('tone', e.target.value)}
+            disabled={saving}
           />
         </div>
       </>
@@ -928,6 +966,7 @@ function renderNodeEditFields(
             type="text"
             value={(data.name as string) ?? ''}
             onChange={(e) => updateData('name', e.target.value)}
+            disabled={saving}
           />
         </div>
         <div className={styles.formRow}>
@@ -936,6 +975,7 @@ function renderNodeEditFields(
             rows={3}
             value={(data.description as string) ?? ''}
             onChange={(e) => updateData('description', e.target.value)}
+            disabled={saving}
           />
         </div>
       </>
@@ -951,6 +991,7 @@ function renderNodeEditFields(
             type="text"
             value={(data.beat_type as string) ?? ''}
             onChange={(e) => updateData('beat_type', e.target.value)}
+            disabled={saving}
           />
         </div>
         <div className={styles.formRow}>
@@ -958,6 +999,7 @@ function renderNodeEditFields(
           <select
             value={(data.act as number) ?? 1}
             onChange={(e) => updateData('act', parseInt(e.target.value, 10))}
+            disabled={saving}
           >
             <option value={1}>Act 1</option>
             <option value={2}>Act 2</option>
@@ -972,6 +1014,7 @@ function renderNodeEditFields(
             rows={2}
             value={(data.guidance as string) ?? ''}
             onChange={(e) => updateData('guidance', e.target.value)}
+            disabled={saving}
           />
         </div>
       </>
@@ -994,6 +1037,7 @@ function renderNodeEditFields(
           }
         }}
         className={styles.jsonEditor}
+        disabled={saving}
       />
     </div>
   );

@@ -25,14 +25,16 @@ export function buildGenerationPrompt(params: GenerationParams): string {
 
   const entryDescription = describeEntryPoint(entryPoint);
 
-  return `You are an AI assistant helping to develop a screenplay. Your task is to generate ${count} complete narrative packages based on the given entry point.
+  return `You are an AI assistant helping to develop a screenplay. Your task is to generate EXACTLY ${count} complete narrative packages based on the given entry point.
+
+**IMPORTANT: You MUST generate exactly ${count} packages. Not fewer, not more. This is a strict requirement.**
 
 ## Your Role
 
 1. Understand the entry point and generation context
 2. Consult the story state for thematic alignment
 3. Review gaps for opportunities to fulfill
-4. Generate ${count} distinct, complete packages
+4. Generate EXACTLY ${count} distinct, complete packages
 5. Each package must be self-contained and ready to apply
 
 ## Entry Point

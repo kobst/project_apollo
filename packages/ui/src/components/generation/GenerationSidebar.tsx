@@ -2,10 +2,8 @@ import { useState, useCallback } from 'react';
 import { useGeneration } from '../../context/GenerationContext';
 import { useStory } from '../../context/StoryContext';
 import type {
-  GenerationEntryPoint,
-  GenerationDepth,
-  GenerationCount,
-  GenerateRequest,
+  ProposeEntryPointType,
+  ProposeRequest,
   NarrativePackage,
   SavedPackageData,
 } from '../../api/types';
@@ -23,28 +21,13 @@ interface GenerationSidebarProps {
   viewingSavedPackageId?: string | null;
 }
 
-// Entry point options
-const ENTRY_POINTS = [
-  { type: 'naked' as const, label: 'Auto (AI decides)' },
-  { type: 'beat' as const, label: 'Beat' },
-  { type: 'plotPoint' as const, label: 'Plot Point' },
-  { type: 'character' as const, label: 'Character' },
-  { type: 'gap' as const, label: 'Gap' },
-  { type: 'idea' as const, label: 'Idea' },
+// Entry point options (mapped to ProposeEntryPointType)
+const ENTRY_POINTS: { type: ProposeEntryPointType; label: string }[] = [
+  { type: 'freeText', label: 'Auto (AI decides)' },
+  { type: 'beat', label: 'Beat' },
+  { type: 'node', label: 'Character' },
+  { type: 'gap', label: 'Gap' },
 ];
-
-// Map numeric values to API enums
-function nodesToDepth(nodes: number): GenerationDepth {
-  if (nodes <= 5) return 'narrow';
-  if (nodes <= 10) return 'medium';
-  return 'wide';
-}
-
-function packagesToCount(packages: number): GenerationCount {
-  if (packages <= 3) return 'few';
-  if (packages <= 6) return 'standard';
-  return 'many';
-}
 
 // Build tree structure from packages
 interface PackageNode {
@@ -88,29 +71,46 @@ export function GenerationSidebar({
   viewingSavedPackageId,
 }: GenerationSidebarProps) {
   const { currentStoryId } = useStory();
-  const { session, loading, startGeneration } = useGeneration();
+  const { session, loading, propose } = useGeneration();
 
   // Generation controls state
-  const [entryType, setEntryType] = useState<GenerationEntryPoint['type']>('naked');
+  const [entryType, setEntryType] = useState<ProposeEntryPointType>('freeText');
   const [nodesPerPackage, setNodesPerPackage] = useState(8);
   const [packageCount, setPackageCount] = useState(5);
+  const [creativity, setCreativity] = useState(0.5);
   const [direction, setDirection] = useState('');
+
+  // Get creativity label
+  const getCreativityLabel = (value: number): string => {
+    if (value < 0.33) return 'Conservative';
+    if (value < 0.67) return 'Balanced';
+    return 'Inventive';
+  };
 
   const handleGenerate = useCallback(async () => {
     if (!currentStoryId) return;
 
-    const entryPoint: GenerationEntryPoint = { type: entryType };
-    const request: GenerateRequest = {
-      entryPoint,
-      depth: nodesToDepth(nodesPerPackage),
-      count: packagesToCount(packageCount),
+    const request: ProposeRequest = {
+      intent: 'add',
+      scope: {
+        entryPoint: entryType,
+      },
+      constraints: {
+        creativity,
+      },
+      options: {
+        packageCount,
+        maxNodesPerPackage: nodesPerPackage,
+      },
     };
+
     const trimmedDirection = direction.trim();
     if (trimmedDirection) {
-      request.direction = trimmedDirection;
+      request.input = { text: trimmedDirection };
     }
-    await startGeneration(currentStoryId, request);
-  }, [currentStoryId, entryType, nodesPerPackage, packageCount, direction, startGeneration]);
+
+    await propose(currentStoryId, request);
+  }, [currentStoryId, entryType, nodesPerPackage, packageCount, creativity, direction, propose]);
 
   const packageTree = session ? buildPackageTree(session.packages) : [];
 
@@ -200,7 +200,7 @@ export function GenerationSidebar({
           <select
             className={styles.select}
             value={entryType}
-            onChange={(e) => setEntryType(e.target.value as GenerationEntryPoint['type'])}
+            onChange={(e) => setEntryType(e.target.value as ProposeEntryPointType)}
             disabled={loading}
           >
             {ENTRY_POINTS.map((ep) => (
@@ -240,6 +240,24 @@ export function GenerationSidebar({
             max="10"
             value={packageCount}
             onChange={(e) => setPackageCount(Number(e.target.value))}
+            disabled={loading}
+            className={styles.slider}
+          />
+        </div>
+
+        {/* Creativity */}
+        <div className={styles.control}>
+          <div className={styles.sliderHeader}>
+            <label className={styles.controlLabel}>Creativity</label>
+            <span className={styles.sliderValue}>{getCreativityLabel(creativity)}</span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.1"
+            value={creativity}
+            onChange={(e) => setCreativity(Number(e.target.value))}
             disabled={loading}
             className={styles.slider}
           />

@@ -4,7 +4,7 @@ import { useStory } from '../../context/StoryContext';
 import { useSavedPackages } from '../../context/SavedPackagesContext';
 import { GenerationSidebar } from './GenerationSidebar';
 import { PackageDetail } from './PackageDetail';
-import type { RefineRequest, SavedPackageData, NarrativePackage } from '../../api/types';
+import type { SavedPackageData, NarrativePackage } from '../../api/types';
 import styles from './GenerationView.module.css';
 
 export function GenerationView() {
@@ -72,20 +72,17 @@ export function GenerationView() {
   }, [currentStoryId, selectedPackageId, acceptPackage, applyFilteredPackage]);
 
   const handleRefine = useCallback(
-    async (request: RefineRequest) => {
+    async (packageId: string, guidance: string, creativity?: number) => {
       if (!currentStoryId) return;
-      await refinePackage(currentStoryId, request);
+      await refinePackage(currentStoryId, packageId, guidance, creativity);
     },
     [currentStoryId, refinePackage]
   );
 
-  // Handler for opening refine - now just starts a refine with empty guidance
+  // Handler for opening refine - now just starts a refine with default guidance
   const handleRefineClick = useCallback(() => {
     if (!selectedPackageId) return;
-    handleRefine({
-      basePackageId: selectedPackageId,
-      guidance: 'Generate variations with different approaches',
-    });
+    handleRefine(selectedPackageId, 'Generate variations with different approaches', 0.5);
   }, [selectedPackageId, handleRefine]);
 
   // Element regeneration handler

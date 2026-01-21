@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import type {
   NarrativePackage,
   NodeChangeAI,
@@ -71,6 +71,101 @@ function categorizeNodes(nodes: NodeChangeAI[]): {
 // Element key for tracking regenerate options
 type ElementKey = `${PackageElementType}-${number}`;
 
+// Escape special regex characters
+const escapeRegex = (str: string): string => {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+// Helper to propagate character name changes to all text fields
+const propagateNameChange = (
+  pkg: NarrativePackage,
+  oldName: string,
+  newName: string,
+  changedNodeId: string
+): { updatedPkg: NarrativePackage; changeCount: number } => {
+  if (!oldName || !newName || oldName === newName) {
+    return { updatedPkg: pkg, changeCount: 0 };
+  }
+
+  let changeCount = 0;
+  const updatedPkg = { ...pkg, changes: { ...pkg.changes } };
+
+  // Helper to replace name in text (case-insensitive, word boundary)
+  const replaceName = (text: string | undefined): string | undefined => {
+    if (!text) return text;
+    // Match whole word only (not "Kanesville" when replacing "Kane")
+    const regex = new RegExp(`\\b${escapeRegex(oldName)}\\b`, 'gi');
+    if (regex.test(text)) {
+      changeCount++;
+      // Need to recreate regex since test() moves lastIndex
+      return text.replace(new RegExp(`\\b${escapeRegex(oldName)}\\b`, 'gi'), newName);
+    }
+    return text;
+  };
+
+  // Update nodes (skip the changed node itself)
+  updatedPkg.changes.nodes = pkg.changes.nodes.map((node) => {
+    if (node.node_id === changedNodeId) return node;
+
+    const data = node.data as Record<string, unknown> | undefined;
+    if (!data) return node;
+
+    // Fields that commonly contain character name references
+    const textFields = [
+      'description',
+      'summary',
+      'scene_overview',
+      'notable_dialogue',
+      'rationale',
+      'title',
+      'content',
+      'heading',
+      'start_state',
+      'end_state',
+    ];
+
+    let hasChanges = false;
+    const newData = { ...data };
+
+    for (const field of textFields) {
+      if (typeof data[field] === 'string') {
+        const updated = replaceName(data[field] as string);
+        if (updated !== data[field]) {
+          newData[field] = updated;
+          hasChanges = true;
+        }
+      }
+    }
+
+    return hasChanges ? { ...node, data: newData } : node;
+  });
+
+  // Update edge names
+  updatedPkg.changes.edges = pkg.changes.edges.map((edge) => {
+    let updated = edge;
+    const updatedFromName = replaceName(edge.from_name);
+    const updatedToName = replaceName(edge.to_name);
+
+    if (updatedFromName !== undefined && updatedFromName !== edge.from_name) {
+      updated = { ...updated, from_name: updatedFromName };
+    }
+    if (updatedToName !== undefined && updatedToName !== edge.to_name) {
+      updated = { ...updated, to_name: updatedToName };
+    }
+    return updated;
+  });
+
+  // Update story context
+  if (pkg.changes.storyContext) {
+    updatedPkg.changes.storyContext = pkg.changes.storyContext.map((ctx) => {
+      const updatedContent = replaceName(ctx.content);
+      return updatedContent !== ctx.content ? { ...ctx, content: updatedContent! } : ctx;
+    });
+  }
+
+  return { updatedPkg, changeCount };
+};
+
 export function PackageDetail({
   package: pkg,
   storyId: _storyId,
@@ -89,13 +184,25 @@ export function PackageDetail({
   // storyId is passed for potential future use but not currently needed in component
   void _storyId;
 
-  const { storyElements, outline, other } = categorizeNodes(pkg.changes.nodes);
-  const confidence = Math.round(pkg.confidence * 100);
+  // For saved packages, maintain a local editable copy
+  // For session packages, use the prop directly (edits go through API)
+  const [localPackage, setLocalPackage] = useState<NarrativePackage>(pkg);
+
+  // Reset local package when the source package changes
+  useEffect(() => {
+    setLocalPackage(pkg);
+  }, [pkg]);
+
+  // Use local package for saved packages, prop for session packages
+  const editablePackage = isSavedPackage ? localPackage : pkg;
+
+  const { storyElements, outline, other } = categorizeNodes(editablePackage.changes.nodes);
+  const confidence = Math.round(editablePackage.confidence * 100);
 
   // Build node name lookup for edge display
   const nodeNameLookup = useMemo(() => {
     const lookup = new Map<string, string>();
-    for (const node of pkg.changes.nodes) {
+    for (const node of editablePackage.changes.nodes) {
       const data = node.data ?? {};
       const name =
         (data.name as string) ??
@@ -107,13 +214,20 @@ export function PackageDetail({
       }
     }
     return lookup;
-  }, [pkg.changes.nodes]);
+  }, [editablePackage.changes.nodes]);
 
   // Track regenerate options per element
   const [regenerateOptions, setRegenerateOptions] = useState<
     Record<ElementKey, Array<NodeChangeAI | EdgeChangeAI | StoryContextChange>>
   >({});
   const [regeneratingElement, setRegeneratingElement] = useState<ElementKey | null>(null);
+
+  // State for name propagation notification
+  const [namePropagation, setNamePropagation] = useState<{
+    oldName: string;
+    newName: string;
+    count: number;
+  } | null>(null);
 
   // Track removed elements by type and index
   const [removedElements, setRemovedElements] = useState<Set<string>>(new Set());
@@ -129,10 +243,10 @@ export function PackageDetail({
 
     // If removing a node, also remove dependent edges
     if (type === 'node') {
-      const nodeId = pkg.changes.nodes[index]?.node_id;
+      const nodeId = editablePackage.changes.nodes[index]?.node_id;
       if (nodeId) {
         // Find edges that reference this node
-        pkg.changes.edges.forEach((edge, edgeIdx) => {
+        editablePackage.changes.edges.forEach((edge, edgeIdx) => {
           if (edge.from === nodeId || edge.to === nodeId) {
             const edgeKey = `edge-${edgeIdx}`;
             setRemovedElements((prev) => new Set([...prev, edgeKey]));
@@ -154,24 +268,27 @@ export function PackageDetail({
 
   // Build filtered package and accept
   const handleAcceptWithFiltering = () => {
+    // For saved packages with local edits but no removals, still pass the edited package
+    const hasLocalEdits = isSavedPackage && localPackage !== pkg;
+
     // Check if any elements removed
-    if (removedElements.size === 0) {
-      onAccept(); // No filtering needed
+    if (removedElements.size === 0 && !hasLocalEdits) {
+      onAccept(); // No filtering or edits needed
       return;
     }
 
     // Filter nodes
-    const filteredNodes = pkg.changes.nodes.filter(
+    const filteredNodes = editablePackage.changes.nodes.filter(
       (_, i) => !isElementRemoved('node', i)
     );
 
     // Filter edges
-    const filteredEdges = pkg.changes.edges.filter(
+    const filteredEdges = editablePackage.changes.edges.filter(
       (_, i) => !isElementRemoved('edge', i)
     );
 
     // Filter story context
-    const filteredStoryContext = (pkg.changes.storyContext ?? []).filter(
+    const filteredStoryContext = (editablePackage.changes.storyContext ?? []).filter(
       (_, i) => !isElementRemoved('storyContext', i)
     );
 
@@ -185,11 +302,11 @@ export function PackageDetail({
       return;
     }
 
-    // Build filtered package
+    // Build filtered package (uses editablePackage which has local edits for saved packages)
     const filteredPackage: NarrativePackage = {
-      ...pkg,
+      ...editablePackage,
       changes: {
-        ...pkg.changes,
+        ...editablePackage.changes,
         nodes: filteredNodes,
         edges: filteredEdges,
         ...(filteredStoryContext.length > 0
@@ -207,7 +324,7 @@ export function PackageDetail({
 
   // Get index within the category for node elements
   const getNodeIndex = (node: NodeChangeAI): number =>
-    pkg.changes.nodes.findIndex((n) => n.node_id === node.node_id);
+    editablePackage.changes.nodes.findIndex((n) => n.node_id === node.node_id);
 
   // Handle regenerate for an element
   const handleRegenerate = useCallback(
@@ -221,7 +338,7 @@ export function PackageDetail({
       setRegeneratingElement(key);
       try {
         const options = await onRegenerateElement(
-          pkg.id,
+          editablePackage.id,
           elementType,
           elementIndex,
           guidance,
@@ -234,10 +351,10 @@ export function PackageDetail({
         setRegeneratingElement(null);
       }
     },
-    [pkg.id, onRegenerateElement]
+    [editablePackage.id, onRegenerateElement]
   );
 
-  // Handle selecting an option
+  // Handle selecting an option - for saved packages, update locally
   const handleSelectOption = useCallback(
     async (
       elementType: PackageElementType,
@@ -245,35 +362,180 @@ export function PackageDetail({
       option: NodeChangeAI | EdgeChangeAI | StoryContextChange
     ) => {
       const key = getElementKey(elementType, elementIndex);
-      try {
-        await onApplyElementOption(pkg.id, elementType, elementIndex, option);
+
+      if (isSavedPackage) {
+        // For saved packages, update local state directly
+        setLocalPackage((prev) => {
+          const updated = { ...prev, changes: { ...prev.changes } };
+          if (elementType === 'node') {
+            updated.changes.nodes = [...prev.changes.nodes];
+            updated.changes.nodes[elementIndex] = option as NodeChangeAI;
+          } else if (elementType === 'edge') {
+            updated.changes.edges = [...prev.changes.edges];
+            updated.changes.edges[elementIndex] = option as EdgeChangeAI;
+          } else if (elementType === 'storyContext') {
+            updated.changes.storyContext = [...(prev.changes.storyContext ?? [])];
+            updated.changes.storyContext[elementIndex] = option as StoryContextChange;
+          }
+          return updated;
+        });
         // Clear options after selection
         setRegenerateOptions((prev) => {
           const next = { ...prev };
           delete next[key];
           return next;
         });
-      } catch {
-        // Error handled by context
+      } else {
+        // For session packages, call API
+        try {
+          await onApplyElementOption(editablePackage.id, elementType, elementIndex, option);
+          // Clear options after selection
+          setRegenerateOptions((prev) => {
+            const next = { ...prev };
+            delete next[key];
+            return next;
+          });
+        } catch {
+          // Error handled by context
+        }
       }
     },
-    [pkg.id, onApplyElementOption]
+    [editablePackage.id, onApplyElementOption, isSavedPackage]
   );
 
-  // Handle manual edit
+  // Handle manual edit - for saved packages, update locally; for session packages, call API
   const handleEdit = useCallback(
     async (
       elementType: PackageElementType,
       elementIndex: number,
       updated: NodeChangeAI | EdgeChangeAI | StoryContextChange
-    ) => {
-      try {
-        await onUpdateElement(pkg.id, elementType, elementIndex, updated);
-      } catch {
-        // Error handled by context
+    ): Promise<void> => {
+      // Helper to check for character name change and apply propagation
+      const applyWithPropagation = (
+        pkg: NarrativePackage,
+        oldNode: NodeChangeAI | undefined,
+        newNode: NodeChangeAI
+      ): NarrativePackage => {
+        // Only propagate for character name changes
+        if (newNode.node_type.toLowerCase() !== 'character') return pkg;
+
+        const oldName = (oldNode?.data as Record<string, unknown>)?.name as string | undefined;
+        const newName = (newNode.data as Record<string, unknown>)?.name as string | undefined;
+
+        if (!oldName || !newName || oldName === newName) return pkg;
+
+        // Propagate name change
+        const { updatedPkg, changeCount } = propagateNameChange(
+          pkg,
+          oldName,
+          newName,
+          newNode.node_id
+        );
+
+        if (changeCount > 0) {
+          setNamePropagation({ oldName, newName, count: changeCount });
+        }
+
+        return updatedPkg;
+      };
+
+      if (isSavedPackage) {
+        // For saved packages, update local state directly (no API call)
+        setLocalPackage((prev) => {
+          let updatedPkg = { ...prev, changes: { ...prev.changes } };
+
+          // Apply the direct edit
+          if (elementType === 'node') {
+            updatedPkg.changes.nodes = [...prev.changes.nodes];
+            updatedPkg.changes.nodes[elementIndex] = updated as NodeChangeAI;
+          } else if (elementType === 'edge') {
+            updatedPkg.changes.edges = [...prev.changes.edges];
+            updatedPkg.changes.edges[elementIndex] = updated as EdgeChangeAI;
+          } else if (elementType === 'storyContext') {
+            updatedPkg.changes.storyContext = [...(prev.changes.storyContext ?? [])];
+            updatedPkg.changes.storyContext[elementIndex] = updated as StoryContextChange;
+          }
+
+          // Apply propagation for character name changes
+          if (elementType === 'node') {
+            const oldNode = prev.changes.nodes[elementIndex];
+            updatedPkg = applyWithPropagation(updatedPkg, oldNode, updated as NodeChangeAI);
+          }
+
+          return updatedPkg;
+        });
+      } else {
+        // For session packages: first call API for the direct edit
+        await onUpdateElement(editablePackage.id, elementType, elementIndex, updated);
+
+        // After API call, check if we need to propagate (for character name changes)
+        if (elementType === 'node') {
+          const oldNode = editablePackage.changes.nodes[elementIndex];
+          const newNode = updated as NodeChangeAI;
+
+          if (newNode.node_type.toLowerCase() === 'character') {
+            const oldName = (oldNode?.data as Record<string, unknown>)?.name as
+              | string
+              | undefined;
+            const newName = (newNode.data as Record<string, unknown>)?.name as
+              | string
+              | undefined;
+
+            if (oldName && newName && oldName !== newName) {
+              // Build package with the update applied
+              const pkgWithUpdate = {
+                ...editablePackage,
+                changes: {
+                  ...editablePackage.changes,
+                  nodes: editablePackage.changes.nodes.map((n, i) =>
+                    i === elementIndex ? newNode : n
+                  ),
+                },
+              };
+
+              // Propagate to other elements
+              const { updatedPkg, changeCount } = propagateNameChange(
+                pkgWithUpdate,
+                oldName,
+                newName,
+                newNode.node_id
+              );
+
+              if (changeCount > 0) {
+                setNamePropagation({ oldName, newName, count: changeCount });
+
+                // Send each propagated element update to API
+                for (let i = 0; i < updatedPkg.changes.nodes.length; i++) {
+                  const updatedNode = updatedPkg.changes.nodes[i];
+                  if (
+                    updatedNode &&
+                    i !== elementIndex &&
+                    updatedNode !== editablePackage.changes.nodes[i]
+                  ) {
+                    await onUpdateElement(editablePackage.id, 'node', i, updatedNode);
+                  }
+                }
+                for (let i = 0; i < updatedPkg.changes.edges.length; i++) {
+                  const updatedEdge = updatedPkg.changes.edges[i];
+                  if (updatedEdge && updatedEdge !== editablePackage.changes.edges[i]) {
+                    await onUpdateElement(editablePackage.id, 'edge', i, updatedEdge);
+                  }
+                }
+                if (updatedPkg.changes.storyContext) {
+                  for (let i = 0; i < updatedPkg.changes.storyContext.length; i++) {
+                    const updatedCtx = updatedPkg.changes.storyContext[i];
+                    if (updatedCtx && updatedCtx !== editablePackage.changes.storyContext?.[i]) {
+                      await onUpdateElement(editablePackage.id, 'storyContext', i, updatedCtx);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
-    [pkg.id, onUpdateElement]
+    [editablePackage, onUpdateElement, isSavedPackage]
   );
 
   return (
@@ -339,14 +601,34 @@ export function PackageDetail({
           )}
       </div>
 
+      {/* Name propagation notification */}
+      {namePropagation && (
+        <div className={styles.propagationNotice}>
+          <span className={styles.propagationIcon}>✓</span>
+          <span>
+            Updated {namePropagation.count} reference
+            {namePropagation.count !== 1 ? 's' : ''} from "
+            <strong>{namePropagation.oldName}</strong>" to "
+            <strong>{namePropagation.newName}</strong>"
+          </span>
+          <button
+            onClick={() => setNamePropagation(null)}
+            className={styles.propagationDismiss}
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Content */}
       <div className={styles.content}>
         {/* Story Context */}
-        {pkg.changes.storyContext && pkg.changes.storyContext.length > 0 && (
+        {editablePackage.changes.storyContext && editablePackage.changes.storyContext.length > 0 && (
           <section className={styles.section}>
             <h3 className={styles.sectionTitle}>Story Context</h3>
             <div className={styles.sectionContent}>
-              {pkg.changes.storyContext.map((change, idx) => {
+              {editablePackage.changes.storyContext.map((change, idx) => {
                 const key = getElementKey('storyContext', idx);
                 return (
                   <EditableElement
@@ -481,11 +763,11 @@ export function PackageDetail({
         )}
 
         {/* Edges (standalone) */}
-        {pkg.changes.edges.length > 0 && (
+        {editablePackage.changes.edges.length > 0 && (
           <section className={styles.section}>
             <h3 className={styles.sectionTitle}>Relationships</h3>
             <div className={styles.sectionContent}>
-              {pkg.changes.edges.map((edge, idx) => {
+              {editablePackage.changes.edges.map((edge, idx) => {
                 const key = getElementKey('edge', idx);
                 return (
                   <EditableElement
