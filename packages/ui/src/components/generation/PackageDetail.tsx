@@ -37,6 +37,7 @@ interface PackageDetailProps {
     elementIndex: number,
     updatedElement: NodeChangeAI | EdgeChangeAI | StoryContextChange
   ) => Promise<void>;
+  onBackToCompose?: () => void;
   loading?: boolean;
   // Saved package mode
   isSavedPackage?: boolean;
@@ -176,6 +177,7 @@ export function PackageDetail({
   onRegenerateElement,
   onApplyElementOption,
   onUpdateElement,
+  onBackToCompose,
   loading = false,
   isSavedPackage = false,
   savedPackageData,
@@ -542,6 +544,15 @@ export function PackageDetail({
     <div className={styles.container}>
       {/* Header */}
       <div className={styles.header}>
+        {onBackToCompose && !isSavedPackage && (
+          <button
+            className={styles.backLink}
+            onClick={onBackToCompose}
+            type="button"
+          >
+            ← Edit inputs
+          </button>
+        )}
         <div className={styles.headerMain}>
           <h2 className={styles.title}>{pkg.title}</h2>
           <div

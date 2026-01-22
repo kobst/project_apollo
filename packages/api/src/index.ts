@@ -22,7 +22,7 @@ function findEnvFile(startDir: string): string | null {
 }
 const envPath = findEnvFile(__dirname);
 if (envPath) {
-  dotenv.config({ path: envPath });
+  dotenv.config({ path: envPath, override: true });
 }
 
 import { createApp } from './app.js';

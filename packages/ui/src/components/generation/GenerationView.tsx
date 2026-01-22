@@ -4,8 +4,22 @@ import { useStory } from '../../context/StoryContext';
 import { useSavedPackages } from '../../context/SavedPackagesContext';
 import { GenerationSidebar } from './GenerationSidebar';
 import { PackageDetail } from './PackageDetail';
-import type { SavedPackageData, NarrativePackage } from '../../api/types';
+import { ComposeForm } from './ComposeForm';
+import type { ComposeFormState } from './ComposeForm';
+import type { SavedPackageData, NarrativePackage, ProposeRequest } from '../../api/types';
 import styles from './GenerationView.module.css';
+
+type ViewState = 'compose' | 'review';
+
+const DEFAULT_FORM_STATE: ComposeFormState = {
+  mode: 'add',
+  selectedEntryIndex: 0,
+  direction: '',
+  showAdvanced: false,
+  customCreativity: null,
+  customPackageCount: null,
+  customNodesPerPackage: null,
+};
 
 export function GenerationView() {
   const { currentStoryId } = useStory();
@@ -13,6 +27,7 @@ export function GenerationView() {
     session,
     loading,
     error,
+    propose,
     acceptPackage,
     refinePackage,
     rejectPackage,
@@ -31,12 +46,18 @@ export function GenerationView() {
     applySavedPackage,
   } = useSavedPackages();
 
+  // View state: compose (input form) or review (package details)
+  const [viewState, setViewState] = useState<ViewState>('compose');
+
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(
     session?.packages[0]?.id ?? null
   );
 
   // Track if viewing a saved package (separate from session packages)
   const [viewingSavedPackage, setViewingSavedPackage] = useState<SavedPackageData | null>(null);
+
+  // Form state - persists across view changes
+  const [formState, setFormState] = useState<ComposeFormState>(DEFAULT_FORM_STATE);
 
   // Load saved packages when story changes
   useEffect(() => {
@@ -51,12 +72,25 @@ export function GenerationView() {
     [session?.packages, selectedPackageId]
   );
 
-  // Auto-select first package when session changes
-  useMemo(() => {
-    if (session && session.packages.length > 0 && !selectedPackageId) {
-      setSelectedPackageId(session.packages[0]?.id ?? null);
+  // Auto-select first package and switch to review when session has packages
+  useEffect(() => {
+    if (session && session.packages.length > 0) {
+      if (!selectedPackageId || !session.packages.find(p => p.id === selectedPackageId)) {
+        setSelectedPackageId(session.packages[0]?.id ?? null);
+      }
+      // Switch to review mode when packages are available
+      if (viewState === 'compose') {
+        setViewState('review');
+      }
     }
-  }, [session, selectedPackageId]);
+  }, [session, selectedPackageId, viewState]);
+
+  // Handle generation from ComposeForm
+  const handleGenerate = useCallback(async (request: ProposeRequest) => {
+    if (!currentStoryId) return;
+    await propose(currentStoryId, request);
+    // View will auto-switch to review when packages arrive via useEffect
+  }, [currentStoryId, propose]);
 
   // Handlers
   const handleAccept = useCallback(async (filteredPackage?: NarrativePackage) => {
@@ -184,16 +218,30 @@ export function GenerationView() {
   const handleViewSavedPackage = useCallback((savedPkg: SavedPackageData) => {
     setViewingSavedPackage(savedPkg);
     setSelectedPackageId(null); // Deselect session package
+    setViewState('review');
   }, []);
 
   // Handle selecting a session package (clears saved package view)
   const handleSelectSessionPackage = useCallback((packageId: string | null) => {
     setSelectedPackageId(packageId);
     setViewingSavedPackage(null); // Clear saved package view
+    setViewState('review');
   }, []);
 
   // Close saved package view
   const handleCloseSavedPackageView = useCallback(() => {
+    setViewingSavedPackage(null);
+  }, []);
+
+  // Handle New Proposal button (goes to compose, preserving form state)
+  const handleNewProposal = useCallback(() => {
+    setViewState('compose');
+    setViewingSavedPackage(null);
+  }, []);
+
+  // Handler to go back to compose (preserving inputs)
+  const handleBackToCompose = useCallback(() => {
+    setViewState('compose');
     setViewingSavedPackage(null);
   }, []);
 
@@ -209,6 +257,70 @@ export function GenerationView() {
     );
   }
 
+  // Determine what to show in main view
+  const renderMainContent = () => {
+    // Viewing a saved package
+    if (viewingSavedPackage && currentStoryId) {
+      return (
+        <PackageDetail
+          package={viewingSavedPackage.package}
+          storyId={currentStoryId}
+          onAccept={() => handleApplySavedPackage(viewingSavedPackage.id)}
+          onRefine={handleCloseSavedPackageView}
+          onReject={() => handleDeleteSavedPackage(viewingSavedPackage.id)}
+          onRegenerateElement={handleRegenerateElement}
+          onApplyElementOption={handleApplyElementOption}
+          onUpdateElement={handleUpdateElement}
+          loading={loading || savedPackagesLoading}
+          isSavedPackage
+          savedPackageData={viewingSavedPackage}
+          onClose={handleCloseSavedPackageView}
+        />
+      );
+    }
+
+    // Compose state - show the form
+    if (viewState === 'compose') {
+      return (
+        <ComposeForm
+          onGenerate={handleGenerate}
+          loading={loading}
+          formState={formState}
+          onFormStateChange={setFormState}
+        />
+      );
+    }
+
+    // Review state with selected package
+    if (selectedPackage && currentStoryId) {
+      return (
+        <PackageDetail
+          package={selectedPackage}
+          storyId={currentStoryId}
+          onAccept={handleAccept}
+          onRefine={handleRefineClick}
+          onReject={handleReject}
+          onSave={handleSave}
+          onRegenerateElement={handleRegenerateElement}
+          onApplyElementOption={handleApplyElementOption}
+          onUpdateElement={handleUpdateElement}
+          onBackToCompose={handleBackToCompose}
+          loading={loading}
+        />
+      );
+    }
+
+    // No packages yet - show compose form
+    return (
+      <ComposeForm
+        onGenerate={handleGenerate}
+        loading={loading}
+        formState={formState}
+        onFormStateChange={setFormState}
+      />
+    );
+  };
+
   return (
     <div className={styles.container}>
       {/* Sidebar */}
@@ -221,6 +333,8 @@ export function GenerationView() {
         onDeleteSavedPackage={handleDeleteSavedPackage}
         onViewSavedPackage={handleViewSavedPackage}
         viewingSavedPackageId={viewingSavedPackage?.id ?? null}
+        onNewProposal={handleNewProposal}
+        isComposing={viewState === 'compose' && !viewingSavedPackage}
       />
 
       {/* Main Content */}
@@ -234,69 +348,8 @@ export function GenerationView() {
         )}
 
         {/* Content */}
-        {viewingSavedPackage && currentStoryId ? (
-          // Viewing a saved package
-          <PackageDetail
-            package={viewingSavedPackage.package}
-            storyId={currentStoryId}
-            onAccept={() => handleApplySavedPackage(viewingSavedPackage.id)}
-            onRefine={handleCloseSavedPackageView} // Back to normal view
-            onReject={() => handleDeleteSavedPackage(viewingSavedPackage.id)}
-            onRegenerateElement={handleRegenerateElement}
-            onApplyElementOption={handleApplyElementOption}
-            onUpdateElement={handleUpdateElement}
-            loading={loading || savedPackagesLoading}
-            isSavedPackage
-            savedPackageData={viewingSavedPackage}
-            onClose={handleCloseSavedPackageView}
-          />
-        ) : selectedPackage && currentStoryId ? (
-          <PackageDetail
-            package={selectedPackage}
-            storyId={currentStoryId}
-            onAccept={handleAccept}
-            onRefine={handleRefineClick}
-            onReject={handleReject}
-            onSave={handleSave}
-            onRegenerateElement={handleRegenerateElement}
-            onApplyElementOption={handleApplyElementOption}
-            onUpdateElement={handleUpdateElement}
-            loading={loading}
-          />
-        ) : session && session.packages.length === 0 ? (
-          <div className={styles.emptyContent}>
-            <h2>No Packages Yet</h2>
-            <p>
-              Use the controls in the sidebar to generate AI packages for your
-              story.
-            </p>
-          </div>
-        ) : (
-          <div className={styles.emptyContent}>
-            <h2>AI Generation</h2>
-            <p>
-              Generate narrative packages using AI. Select an entry point, depth,
-              and count from the sidebar, then click Generate.
-            </p>
-            <div className={styles.emptyHints}>
-              <div className={styles.hint}>
-                <strong>Entry Point:</strong> What to generate for (beat,
-                character, gap, etc.)
-              </div>
-              <div className={styles.hint}>
-                <strong>Depth:</strong> How many nodes to generate per package
-              </div>
-              <div className={styles.hint}>
-                <strong>Options:</strong> How many alternative packages to create
-              </div>
-              <div className={styles.hint}>
-                <strong>Direction:</strong> Optional guidance for the AI
-              </div>
-            </div>
-          </div>
-        )}
+        {renderMainContent()}
       </div>
-
     </div>
   );
 }

@@ -11,6 +11,24 @@
   border-bottom: 1px solid #2a2a4a;
 }
 
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0;
+  margin-bottom: 12px;
+  background: transparent;
+  border: none;
+  color: #7a9cc5;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.backLink:hover {
+  color: #9abce5;
+}
+
 .headerMain {
   display: flex;
   align-items: flex-start;

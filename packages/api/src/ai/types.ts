@@ -96,12 +96,12 @@ export interface CacheEntry {
 // =============================================================================
 
 export const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
-export const DEFAULT_OPENAI_MODEL = 'gpt-5-nano';
+export const DEFAULT_OPENAI_MODEL = 'gpt-5.2';
 
 export const DEFAULT_CONFIG: Omit<LLMClientConfig, 'apiKey'> = {
   provider: 'anthropic',
   model: DEFAULT_ANTHROPIC_MODEL,
-  maxTokens: 4096,
+  maxTokens: 16384,
   temperature: 0.7,
   maxRetries: 3,
   retryDelayMs: 1000,
