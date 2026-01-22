@@ -13,6 +13,23 @@ Exploration over prescription: Generate multiple alternatives for the user to ex
 Full graph awareness: AI reads and can propose changes to any part of the story graph, including Story Context.
 
 
+## AI Provider Configuration
+
+Apollo supports multiple AI providers:
+
+| Provider | Model | Env Variable |
+|----------|-------|--------------|
+| Anthropic (default) | claude-sonnet-4-20250514 | `ANTHROPIC_API_KEY` |
+| OpenAI | gpt-5.2 | `OPENAI_API_KEY` |
+
+**Configuration:**
+- Set `APOLLO_AI_PROVIDER=anthropic` or `APOLLO_AI_PROVIDER=openai` in `.env`
+- Provide the corresponding API key
+
+**Note:** OpenAI reasoning models (gpt-5.x) require higher token budgets for reasoning + output. The system uses `max_completion_tokens` instead of `max_tokens` for OpenAI.
+
+---
+
 1. Three AI Phases
 1.1 Interpretation Phase
 Purpose: Transform freeform user input into structured proposals.
@@ -93,12 +110,34 @@ Regenerate All: Discard all packages, start fresh with same prompt
 
 
 2. Generation Parameters
-2.1 Package Depth
+
+### 2.1 Generation Modes
+
+Apollo provides three pre-configured generation modes with optimized defaults:
+
+| Mode | Creativity | Packages | Nodes/Package | Use Case |
+|------|-----------|----------|---------------|----------|
+| **Add** | 0.5 (Balanced) | 5 | 5 | Create new story elements |
+| **Expand** | 0.3 (Conservative) | 3 | 8 | Build out existing elements |
+| **Explore** | 0.8 (Inventive) | 5 | 6 | Creative alternatives |
+
+### 2.2 Package Depth
 Controls how much each generated package contains.
-SettingLabelDescriptionApproximate BudgetnarrowFocusedJust the requested element, minimal supporting material1-2 new nodesmediumStandardRequested element plus immediate dependencies3-5 new nodeswideExpansiveFull cascade with downstream implications6-10 new nodes
-2.2 Package Count
+
+| Setting | Label | Description | Approximate Budget |
+|---------|-------|-------------|-------------------|
+| narrow | Focused | Just the requested element, minimal supporting material | 1-2 new nodes |
+| medium | Standard | Requested element plus immediate dependencies | 3-5 new nodes |
+| wide | Expansive | Full cascade with downstream implications | 6-10 new nodes |
+
+### 2.3 Package Count
 Controls how many alternative packages are generated.
-SettingLabelPackages GeneratedfewQuick2-3 packagesstandardExplore4-6 packagesmanyDeep dive8-12 packages
+
+| Setting | Label | Packages Generated |
+|---------|-------|-------------------|
+| few | Quick | 2-3 packages |
+| standard | Explore | 4-6 packages |
+| many | Deep dive | 8-12 packages |
 2.3 Direction
 Optional freeform text providing guidance for generation.
 Examples:
@@ -835,7 +874,65 @@ Both systems are complementary:
 
 ---
 
-## 15. Summary
+## 15. Inline Element Editing
+
+Users can edit individual elements within packages before accepting them.
+
+### 15.1 Editing Capabilities
+
+| Action | Description |
+|--------|-------------|
+| **Edit** | Modify element properties directly in the package review |
+| **Regenerate** | Request AI alternatives for a single element |
+| **Remove** | Mark element for exclusion from the package |
+| **Restore** | Bring back a previously removed element |
+
+### 15.2 Cascading Name Changes
+
+When editing a node's name, the system automatically updates all references:
+- Edge labels update to reflect new names
+- Related nodes display the updated name
+- Impact analysis recalculates with new names
+
+### 15.3 Regenerate Element
+
+Request AI alternatives for a specific element:
+1. Select the element to regenerate
+2. Optionally provide guidance ("make more sympathetic", "different location")
+3. Choose from 3-7 alternative options
+4. Selected option replaces the original in the package
+
+---
+
+## 16. Saved Packages
+
+Packages can be saved for later use without immediately applying them.
+
+### 16.1 Save for Later
+
+- Any package in review can be saved
+- Saved packages persist across sessions
+- Saved packages appear in the sidebar under "Saved"
+
+### 16.2 Compatibility Checking
+
+When loading a saved package, the system checks compatibility:
+
+| Status | Meaning | Action |
+|--------|---------|--------|
+| **Compatible** | Package can be applied without issues | Apply normally |
+| **Outdated** | Graph has changed but no conflicts | Warning shown, can apply |
+| **Conflicting** | Changes conflict with current graph | Must use "Apply Anyway" |
+
+### 16.3 Managing Saved Packages
+
+- View saved packages in the Generation sidebar
+- Delete packages no longer needed
+- "Apply Anyway" option for conflicting packages with manual resolution
+
+---
+
+## 17. Summary
 The AI integration provides three phases of assistance:
 
 Interpretation: Transforms freeform input into structured proposals

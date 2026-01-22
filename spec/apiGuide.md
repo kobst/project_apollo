@@ -19,10 +19,18 @@ npm start
 |---------------------|---------|-------------|
 | `PORT` | `3000` | Server port |
 | `APOLLO_DATA_DIR` | `~/.apollo` | Data directory (shared with CLI) |
+| `APOLLO_AI_PROVIDER` | `anthropic` | AI provider: `anthropic` or `openai` |
+| `ANTHROPIC_API_KEY` | - | Anthropic API key (required for anthropic provider) |
+| `OPENAI_API_KEY` | - | OpenAI API key (required for openai provider) |
+| `APOLLO_AI_MODEL` | (provider default) | Model override |
+| `APOLLO_AI_MAX_TOKENS` | `16384` | Max response tokens |
 
 ```bash
 # Custom configuration
 PORT=3001 APOLLO_DATA_DIR=/var/data/apollo npm start
+
+# With AI provider configuration
+APOLLO_AI_PROVIDER=openai OPENAI_API_KEY=sk-... npm start
 ```
 
 ## Response Format
@@ -893,6 +901,71 @@ curl http://localhost:3000/stories/my-story/lint/precommit
 | `SCENE_HAS_LOCATION` | Scene should have a location assigned | None (manual) |
 | `LOCATION_HAS_SETTING` | Location should be part of a Setting | None (manual) |
 | `STORY_HAS_PREMISE` | Story should have a Premise node | None (manual) |
+
+---
+
+## AI Generation Endpoints
+
+### Generate Narrative Packages
+
+```
+POST /stories/:id/propose
+```
+
+Generates narrative packages using the unified propose pipeline.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `mode` | string | Yes | Generation mode: `add`, `expand`, `explore` |
+| `entryPoint` | object | No | Entry point configuration |
+| `direction` | string | No | Freeform guidance text |
+| `creativity` | number | No | 0-1 creativity level (overrides mode default) |
+| `packageCount` | number | No | Number of packages (1-10) |
+| `nodesPerPackage` | number | No | Nodes per package (3-15) |
+
+**Entry Point Object:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | string | Entry type: `auto`, `beat`, `gap`, `character`, `plotPoint` |
+| `targetId` | string | Target node ID (required for non-auto types) |
+
+```bash
+curl -X POST http://localhost:3000/stories/my-story/propose \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "mode": "add",
+    "direction": "Focus on character development",
+    "entryPoint": { "type": "beat", "targetId": "beat_Midpoint" }
+  }'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "packages": [
+      {
+        "id": "pkg_abc123",
+        "title": "The Revelation",
+        "rationale": "Creates a pivotal moment...",
+        "confidence": 0.85,
+        "changes": {
+          "nodes": [...],
+          "edges": [...]
+        },
+        "impact": {
+          "fulfills_gaps": ["gap_123"],
+          "creates_gaps": [],
+          "conflicts": []
+        }
+      }
+    ],
+    "sessionId": "session_xyz"
+  }
+}
+```
 
 ---
 

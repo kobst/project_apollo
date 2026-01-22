@@ -28,6 +28,14 @@ Implement the prompt engineering layer for Apollo's AI integration. This layer s
 | Story Context input | Raw markdown | LLM understands markdown naturally |
 | Story Context output | Structured changes | Enables programmatic application |
 | AI output format | NarrativePackage → Patch | Separation of concerns; validation layer; audit trail |
+| Multi-provider support | Anthropic + OpenAI | Flexibility for users; different model strengths |
+
+### OpenAI Provider Support
+
+OpenAI support was added with the following considerations:
+- Uses `max_completion_tokens` instead of `max_tokens` (required for reasoning models)
+- Reasoning models (gpt-5.x) require higher token budgets (16384+)
+- Provider selection via `APOLLO_AI_PROVIDER` environment variable
 
 ---
 
@@ -245,8 +253,8 @@ export interface AIConfig {
 }
 
 export const defaultConfig: AIConfig = {
-  model: "claude-sonnet-4-20250514",
-  maxTokens: 4096,
+  model: "claude-sonnet-4-20250514",  // Or "gpt-5.2" for OpenAI
+  maxTokens: 16384,  // Increased for reasoning models
   temperature: 0.7,
 
   depthBudgets: {

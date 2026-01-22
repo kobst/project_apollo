@@ -10,15 +10,16 @@ A comprehensive guide to using the Apollo Contract UI for screenplay development
 2. [Interface Overview](#interface-overview)
 3. [Stories Tab](#stories-tab)
 4. [Workspace Tab](#workspace-tab)
-5. [Story Map Navigation](#story-map-navigation)
-6. [Foundations Categories](#foundations-categories)
-7. [Outline Categories](#outline-categories)
-8. [Node Editing](#node-editing)
-9. [Edge Editing](#edge-editing)
-10. [Input Panel & Extraction](#input-panel--extraction)
-11. [Lint Panel & Pre-Commit Validation](#lint-panel--pre-commit-validation)
-12. [Feature Catalog](#feature-catalog)
-13. [Troubleshooting](#troubleshooting)
+5. [Generation Tab](#generation-tab)
+6. [Story Map Navigation](#story-map-navigation)
+7. [Foundations Categories](#foundations-categories)
+8. [Outline Categories](#outline-categories)
+9. [Node Editing](#node-editing)
+10. [Edge Editing](#edge-editing)
+11. [Input Panel & Extraction](#input-panel--extraction)
+12. [Lint Panel & Pre-Commit Validation](#lint-panel--pre-commit-validation)
+13. [Feature Catalog](#feature-catalog)
+14. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -46,13 +47,13 @@ The UI proxies all `/api/*` requests to the API server automatically.
 
 ## Interface Overview
 
-The application uses a **tabbed interface** with two main views:
+The application uses a **tabbed interface** with three main views:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Header: Apollo Contract UI                                 │
 ├─────────────────────────────────────────────────────────────┤
-│  [Stories]  [Workspace]   ← View Tabs                       │
+│  [Stories]  [Workspace]  [Generation]   ← View Tabs         │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │              View-specific content                          │
@@ -66,6 +67,7 @@ The application uses a **tabbed interface** with two main views:
 |-----|---------|
 | **Stories** | Story selection, branching, and version history management |
 | **Workspace** | Unified story editing with StoryMap navigation |
+| **Generation** | AI-assisted story development with compose/review workflow |
 
 ---
 
@@ -150,6 +152,90 @@ The Workspace tab is the main editing environment. It combines coverage tracking
 │ └─ Scenes    │ └──────────────────────────────────────────┘ │
 └──────────────┴──────────────────────────────────────────────┘
 ```
+
+### Key Features
+
+- **Premise Panel**: Card-based editing UI for the story's core premise
+- **Elements Board**: Card-based UI for Characters, Locations, and Objects
+- **Relationship Display**: Human-readable node names in edge visualization
+- **Inline Editing**: Direct field editing with cascading name updates
+
+---
+
+## Generation Tab
+
+The Generation tab provides AI-assisted story development with three generation modes.
+
+### Layout
+
+```
+┌──────────────┬──────────────────────────────────────────────┐
+│ SIDEBAR      │ MAIN CONTENT                                 │
+│              │                                              │
+│ Sessions     │ Compose Form (when composing)                │
+│ └─ Active(X) │ OR                                           │
+│              │ Package Detail (when reviewing)              │
+│ Packages     │                                              │
+│ ├─ Pkg 1     │                                              │
+│ └─ Pkg 2     │                                              │
+│              │                                              │
+│ Saved        │                                              │
+│ └─ Pkg A     │                                              │
+│              │                                              │
+│ [New Proposal]                                              │
+└──────────────┴──────────────────────────────────────────────┘
+```
+
+### Generation Modes
+
+| Mode | Creativity | Packages | Nodes | Use Case |
+|------|-----------|----------|-------|----------|
+| **Add** | 0.5 (Balanced) | 5 | 5 | Create new story elements |
+| **Expand** | 0.3 (Conservative) | 3 | 8 | Build out existing elements |
+| **Explore** | 0.8 (Inventive) | 5 | 6 | Creative alternatives |
+
+### Compose Form
+
+- **Mode Selection**: Radio buttons for Add/Expand/Explore
+- **Entry Point**: Where to start (Auto, Beat, Gap, Character, etc.)
+- **Direction**: Freeform guidance text
+- **Advanced Options** (collapsible):
+  - Creativity slider (0-1)
+  - Package count (1-10)
+  - Nodes per package (3-15)
+
+### Package Review
+
+Packages display elements organized by type:
+- Story Context
+- Story Elements (Characters, Locations, Objects)
+- Outline (PlotPoints, Scenes)
+- Relationships (edges)
+- Impact (gaps fulfilled/created, conflicts)
+
+### Element Operations
+
+| Action | Description |
+|--------|-------------|
+| **Edit** | Inline editing with cascading name updates |
+| **Regenerate** | Get alternative options for single element |
+| **Remove** | Mark element for exclusion (can restore) |
+
+### Package Actions
+
+| Action | Effect |
+|--------|--------|
+| **Accept** | Apply package to story graph |
+| **Reject** | Discard package |
+| **Save for Later** | Store for future use |
+| **Refine** | Generate variations |
+| **← Edit inputs** | Return to compose with preserved form state |
+
+### Saved Packages
+
+- Persist across sessions
+- Compatibility checking (outdated/conflicting warnings)
+- Can apply saved packages with "Apply Anyway" for conflicts
 
 ---
 
