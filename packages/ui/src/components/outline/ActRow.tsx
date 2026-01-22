@@ -1,9 +1,12 @@
-import type { OutlineAct } from '../../api/types';
+import type { MergedOutlineAct } from '../../utils/outlineMergeUtils';
 import { BeatColumn } from './BeatColumn';
 import styles from './ActRow.module.css';
 
 interface ActRowProps {
-  act: OutlineAct;
+  act: MergedOutlineAct;
+  onEditProposed?: ((nodeId: string, updates: Partial<Record<string, unknown>>) => void) | undefined;
+  onRemoveProposed?: ((nodeId: string) => void) | undefined;
+  removedNodeIds?: Set<string> | undefined;
 }
 
 const ACT_NAMES: Record<number, string> = {
@@ -19,7 +22,12 @@ function getBeatSceneCount(beat: { plotPoints: { scenes: unknown[] }[] }): numbe
   return beat.plotPoints.reduce((sum, pp) => sum + pp.scenes.length, 0);
 }
 
-export function ActRow({ act }: ActRowProps) {
+export function ActRow({
+  act,
+  onEditProposed,
+  onRemoveProposed,
+  removedNodeIds,
+}: ActRowProps) {
   const actName = ACT_NAMES[act.act] || `Act ${act.act}`;
   const sceneCount = act.beats.reduce((sum, b) => sum + getBeatSceneCount(b), 0);
   const emptyCount = act.beats.filter((b) => getBeatSceneCount(b) === 0).length;
@@ -38,7 +46,13 @@ export function ActRow({ act }: ActRowProps) {
 
       <div className={styles.beatsRow}>
         {act.beats.map((beat) => (
-          <BeatColumn key={beat.id} beat={beat} />
+          <BeatColumn
+            key={beat.id}
+            beat={beat}
+            onEditProposed={onEditProposed}
+            onRemoveProposed={onRemoveProposed}
+            removedNodeIds={removedNodeIds}
+          />
         ))}
       </div>
     </div>

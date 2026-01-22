@@ -1,12 +1,15 @@
 /**
  * StructureBoard - Main content area showing the story structure.
  * Features a slide-out edit panel for editing PlotPoints and Scenes.
+ * Proposed nodes from staged packages are merged into their logical positions.
  */
 
-import { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
 import { useStory } from '../../context/StoryContext';
+import { useGeneration } from '../../context/GenerationContext';
 import { api } from '../../api/client';
 import type { OutlineData, OutlinePlotPoint, OutlineScene, OutlineIdea, CreateSceneRequest, CreateIdeaRequest } from '../../api/types';
+import { mergeProposedIntoOutline, type MergedOutlineData } from '../../utils/outlineMergeUtils';
 import { ActRow } from '../outline/ActRow';
 import { UnassignedSection } from '../outline/UnassignedSection';
 import { CreatePlotPointModal } from '../outline/CreatePlotPointModal';
@@ -47,6 +50,7 @@ export function useExpansion() {
 
 export function StructureBoard() {
   const { currentStoryId, refreshStatus } = useStory();
+  const { stagedPackage, staging, updateEditedNode, removeProposedNode } = useGeneration();
   const [outline, setOutline] = useState<OutlineData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +65,25 @@ export function StructureBoard() {
   const [savingPlotPoint, setSavingPlotPoint] = useState(false);
   const [savingScene, setSavingScene] = useState(false);
   const [savingIdea, setSavingIdea] = useState(false);
+
+  // Compute merged outline with proposed nodes in their logical positions
+  const mergedOutline: MergedOutlineData | null = useMemo(() => {
+    if (!outline) return null;
+    return mergeProposedIntoOutline(
+      outline,
+      stagedPackage,
+      staging.editedNodes,
+      staging.removedNodeIds
+    );
+  }, [outline, stagedPackage, staging.editedNodes, staging.removedNodeIds]);
+
+  const handleEditProposedNode = useCallback((nodeId: string, updates: Partial<Record<string, unknown>>) => {
+    updateEditedNode(nodeId, updates);
+  }, [updateEditedNode]);
+
+  const handleRemoveProposedNode = useCallback((nodeId: string) => {
+    removeProposedNode(nodeId);
+  }, [removeProposedNode]);
 
   const fetchOutline = useCallback(async () => {
     if (!currentStoryId) return;
@@ -242,28 +265,40 @@ export function StructureBoard() {
           </div>
 
           <div className={styles.content}>
-            {outline.acts.map((act) => (
-              <ActRow key={act.act} act={act} />
+            {/* Acts with merged proposed nodes in their logical positions */}
+            {mergedOutline?.acts.map((act) => (
+              <ActRow
+                key={act.act}
+                act={act}
+                onEditProposed={handleEditProposedNode}
+                onRemoveProposed={handleRemoveProposedNode}
+                removedNodeIds={staging.removedNodeIds}
+              />
             ))}
 
-            {outline.acts.length === 0 && (
+            {mergedOutline?.acts.length === 0 && (
               <div className={styles.noBeats}>
                 <p>No beats in this story yet.</p>
                 <p className={styles.hint}>Use the Generation tab to create story structure.</p>
               </div>
             )}
 
-            {/* Unassigned Items Section */}
+            {/* Unassigned Items Section - includes proposed unassigned items */}
             <UnassignedSection
-              plotPoints={outline.unassignedPlotPoints ?? []}
-              scenes={outline.unassignedScenes ?? []}
-              ideas={outline.unassignedIdeas ?? []}
+              plotPoints={mergedOutline?.unassignedPlotPoints ?? []}
+              scenes={mergedOutline?.unassignedScenes ?? []}
+              ideas={mergedOutline?.unassignedIdeas ?? []}
+              proposedPlotPoints={mergedOutline?.proposedUnassignedPlotPoints ?? []}
+              proposedScenes={mergedOutline?.proposedUnassignedScenes ?? []}
               onAddPlotPoint={() => setShowPlotPointModal(true)}
               onAddScene={() => setShowSceneModal(true)}
               onAddIdea={() => setShowIdeaModal(true)}
               onPlotPointClick={handlePlotPointClick}
               onSceneClick={handleSceneClick}
               onIdeaClick={handleIdeaClick}
+              onEditProposed={handleEditProposedNode}
+              onRemoveProposed={handleRemoveProposedNode}
+              removedNodeIds={staging.removedNodeIds}
             />
           </div>
 

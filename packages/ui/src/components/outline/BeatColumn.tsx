@@ -1,15 +1,20 @@
 import { useState, useCallback } from 'react';
-import type { OutlineBeat, OutlinePlotPoint, CreatePlotPointRequest } from '../../api/types';
+import type { OutlinePlotPoint, CreatePlotPointRequest } from '../../api/types';
+import type { MergedOutlineBeat, MergedOutlinePlotPoint } from '../../utils/outlineMergeUtils';
 import { useStory } from '../../context/StoryContext';
 import { usePlotPoints } from '../../hooks/usePlotPoints';
 import { useEdit } from '../workspace/StructureBoard';
 import { SceneCard } from './SceneCard';
+import { ProposedPlotPointCard } from './ProposedPlotPointCard';
 import { EmptyBeatSlot } from './EmptyBeatSlot';
 import { AddPlotPointModal } from './AddPlotPointModal';
 import styles from './BeatColumn.module.css';
 
 interface BeatColumnProps {
-  beat: OutlineBeat;
+  beat: MergedOutlineBeat;
+  onEditProposed?: ((nodeId: string, updates: Partial<Record<string, unknown>>) => void) | undefined;
+  onRemoveProposed?: ((nodeId: string) => void) | undefined;
+  removedNodeIds?: Set<string> | undefined;
 }
 
 // Format beat type for display (e.g., "FunAndGames" -> "Fun & Games")
@@ -21,13 +26,14 @@ function formatBeatType(beatType: string): string {
     .trim();
 }
 
-// Render a single PlotPoint with its nested scenes
-function PlotPointContainer({ pp, beatId }: { pp: OutlinePlotPoint; beatId: string }) {
+// Render a single PlotPoint with its nested scenes (existing nodes only)
+function PlotPointContainer({ pp, beatId }: { pp: MergedOutlinePlotPoint; beatId: string }) {
   const { onEditPlotPoint } = useEdit();
   const hasScenes = pp.scenes.length > 0;
 
   const handleClick = () => {
-    onEditPlotPoint(pp);
+    // Cast to OutlinePlotPoint for the edit handler (it only needs id, title, intent, scenes)
+    onEditPlotPoint(pp as unknown as OutlinePlotPoint);
   };
 
   return (
@@ -51,7 +57,12 @@ function PlotPointContainer({ pp, beatId }: { pp: OutlinePlotPoint; beatId: stri
   );
 }
 
-export function BeatColumn({ beat }: BeatColumnProps) {
+export function BeatColumn({
+  beat,
+  onEditProposed,
+  onRemoveProposed,
+  removedNodeIds,
+}: BeatColumnProps) {
   const { currentStoryId, refreshStatus } = useStory();
   const { createPlotPoint, isLoading } = usePlotPoints({
     storyId: currentStoryId ?? '',
@@ -90,12 +101,23 @@ export function BeatColumn({ beat }: BeatColumnProps) {
       </div>
 
       <div className={styles.content}>
-        {/* Plot Points with nested scenes */}
+        {/* Plot Points with nested scenes - mix of existing and proposed */}
         {beat.plotPoints.length > 0 && (
           <div className={styles.plotPointsSection}>
-            {beat.plotPoints.map((pp) => (
-              <PlotPointContainer key={pp.id} pp={pp} beatId={beat.id} />
-            ))}
+            {beat.plotPoints.map((pp) =>
+              pp._isProposed ? (
+                <ProposedPlotPointCard
+                  key={pp.id}
+                  plotPoint={pp}
+                  beatId={beat.id}
+                  onEdit={onEditProposed!}
+                  onRemove={pp._operation === 'add' ? onRemoveProposed : undefined}
+                  isRemoved={removedNodeIds?.has(pp.id)}
+                />
+              ) : (
+                <PlotPointContainer key={pp.id} pp={pp} beatId={beat.id} />
+              )
+            )}
           </div>
         )}
 

@@ -3,42 +3,59 @@
  *
  * PlotPoints can be dragged to Beats to create ALIGNS_WITH edges.
  * Scenes can be dragged to PlotPoints to create SATISFIED_BY edges.
+ * Also displays proposed unassigned items from staged packages.
  */
 
 import { useState, useCallback } from 'react';
-import type { OutlinePlotPoint, OutlineScene, OutlineIdea } from '../../api/types';
+import type { OutlineIdea } from '../../api/types';
+import type { MergedOutlinePlotPoint, MergedOutlineScene } from '../../utils/outlineMergeUtils';
 import { UnassignedPlotPointCard } from './UnassignedPlotPointCard';
 import { UnassignedSceneCard } from './UnassignedSceneCard';
 import { UnassignedIdeaCard } from './UnassignedIdeaCard';
+import { ProposedPlotPointCard } from './ProposedPlotPointCard';
+import { ProposedSceneCard } from './ProposedSceneCard';
 import styles from './UnassignedSection.module.css';
 
 interface UnassignedSectionProps {
-  plotPoints: OutlinePlotPoint[];
-  scenes: OutlineScene[];
+  plotPoints: MergedOutlinePlotPoint[];
+  scenes: MergedOutlineScene[];
   ideas: OutlineIdea[];
+  proposedPlotPoints?: MergedOutlinePlotPoint[] | undefined;
+  proposedScenes?: MergedOutlineScene[] | undefined;
   onAddPlotPoint: () => void;
   onAddScene: () => void;
   onAddIdea: () => void;
-  onPlotPointClick?: (pp: OutlinePlotPoint) => void;
-  onSceneClick?: (scene: OutlineScene) => void;
-  onIdeaClick?: (idea: OutlineIdea) => void;
+  onPlotPointClick?: ((pp: MergedOutlinePlotPoint) => void) | undefined;
+  onSceneClick?: ((scene: MergedOutlineScene) => void) | undefined;
+  onIdeaClick?: ((idea: OutlineIdea) => void) | undefined;
+  onEditProposed?: ((nodeId: string, updates: Partial<Record<string, unknown>>) => void) | undefined;
+  onRemoveProposed?: ((nodeId: string) => void) | undefined;
+  removedNodeIds?: Set<string> | undefined;
 }
 
 export function UnassignedSection({
   plotPoints,
   scenes,
   ideas,
+  proposedPlotPoints = [],
+  proposedScenes = [],
   onAddPlotPoint,
   onAddScene,
   onAddIdea,
   onPlotPointClick,
   onSceneClick,
   onIdeaClick,
+  onEditProposed,
+  onRemoveProposed,
+  removedNodeIds,
 }: UnassignedSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [activeTab, setActiveTab] = useState<'plotPoints' | 'scenes' | 'ideas'>('plotPoints');
 
-  const totalCount = plotPoints.length + scenes.length + ideas.length;
+  // Include proposed items in counts
+  const totalPlotPoints = plotPoints.length + proposedPlotPoints.length;
+  const totalScenes = scenes.length + proposedScenes.length;
+  const totalCount = totalPlotPoints + totalScenes + ideas.length;
 
   const toggleExpanded = useCallback(() => {
     setIsExpanded((prev) => !prev);
@@ -66,14 +83,20 @@ export function UnassignedSection({
           {totalCount > 0 && <span className={styles.count}>({totalCount})</span>}
         </div>
         <div className={styles.headerRight}>
-          {plotPoints.length > 0 && (
-            <span className={styles.badge}>
-              {plotPoints.length} Plot Point{plotPoints.length !== 1 ? 's' : ''}
+          {totalPlotPoints > 0 && (
+            <span className={`${styles.badge} ${proposedPlotPoints.length > 0 ? styles.badgeHasProposed : ''}`}>
+              {totalPlotPoints} Plot Point{totalPlotPoints !== 1 ? 's' : ''}
+              {proposedPlotPoints.length > 0 && (
+                <span className={styles.proposedIndicator}> (+{proposedPlotPoints.length})</span>
+              )}
             </span>
           )}
-          {scenes.length > 0 && (
-            <span className={styles.badge}>
-              {scenes.length} Scene{scenes.length !== 1 ? 's' : ''}
+          {totalScenes > 0 && (
+            <span className={`${styles.badge} ${proposedScenes.length > 0 ? styles.badgeHasProposed : ''}`}>
+              {totalScenes} Scene{totalScenes !== 1 ? 's' : ''}
+              {proposedScenes.length > 0 && (
+                <span className={styles.proposedIndicator}> (+{proposedScenes.length})</span>
+              )}
             </span>
           )}
           {ideas.length > 0 && (
@@ -100,8 +123,10 @@ export function UnassignedSection({
               type="button"
             >
               Plot Points
-              {plotPoints.length > 0 && (
-                <span className={styles.tabCount}>{plotPoints.length}</span>
+              {totalPlotPoints > 0 && (
+                <span className={`${styles.tabCount} ${proposedPlotPoints.length > 0 ? styles.tabCountHasProposed : ''}`}>
+                  {totalPlotPoints}
+                </span>
               )}
             </button>
             <button
@@ -110,8 +135,10 @@ export function UnassignedSection({
               type="button"
             >
               Scenes
-              {scenes.length > 0 && (
-                <span className={styles.tabCount}>{scenes.length}</span>
+              {totalScenes > 0 && (
+                <span className={`${styles.tabCount} ${proposedScenes.length > 0 ? styles.tabCountHasProposed : ''}`}>
+                  {totalScenes}
+                </span>
               )}
             </button>
             <button
@@ -131,6 +158,23 @@ export function UnassignedSection({
             {activeTab === 'plotPoints' && (
               <>
                 <div className={styles.itemsList}>
+                  {/* Proposed unassigned plot points */}
+                  {proposedPlotPoints.length > 0 && (
+                    <div className={styles.proposedSubsection}>
+                      <h4 className={styles.proposedSubsectionTitle}>Proposed (Unassigned)</h4>
+                      {proposedPlotPoints.map((pp) => (
+                        <ProposedPlotPointCard
+                          key={pp.id}
+                          plotPoint={pp}
+                          beatId=""
+                          onEdit={onEditProposed!}
+                          onRemove={pp._operation === 'add' ? onRemoveProposed : undefined}
+                          isRemoved={removedNodeIds?.has(pp.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {/* Existing unassigned plot points */}
                   {plotPoints.map((pp) => (
                     <UnassignedPlotPointCard
                       key={pp.id}
@@ -138,7 +182,7 @@ export function UnassignedSection({
                       onClick={() => onPlotPointClick?.(pp)}
                     />
                   ))}
-                  {plotPoints.length === 0 && (
+                  {totalPlotPoints === 0 && (
                     <div className={styles.emptyMessage}>
                       No unassigned plot points
                     </div>
@@ -157,6 +201,23 @@ export function UnassignedSection({
             {activeTab === 'scenes' && (
               <>
                 <div className={styles.itemsList}>
+                  {/* Proposed unassigned scenes */}
+                  {proposedScenes.length > 0 && (
+                    <div className={styles.proposedSubsection}>
+                      <h4 className={styles.proposedSubsectionTitle}>Proposed (Unassigned)</h4>
+                      {proposedScenes.map((scene) => (
+                        <ProposedSceneCard
+                          key={scene.id}
+                          scene={scene}
+                          parentPlotPointId=""
+                          onEdit={onEditProposed!}
+                          onRemove={scene._operation === 'add' ? onRemoveProposed : undefined}
+                          isRemoved={removedNodeIds?.has(scene.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {/* Existing unassigned scenes */}
                   {scenes.map((scene) => (
                     <UnassignedSceneCard
                       key={scene.id}
@@ -164,7 +225,7 @@ export function UnassignedSection({
                       onClick={() => onSceneClick?.(scene)}
                     />
                   ))}
-                  {scenes.length === 0 && (
+                  {totalScenes === 0 && (
                     <div className={styles.emptyMessage}>
                       No unassigned scenes
                     </div>

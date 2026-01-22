@@ -190,3 +190,43 @@
   background: rgba(255, 152, 0, 0.15);
   border-style: solid;
 }
+
+/* Proposed items styling */
+.badgeHasProposed {
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+}
+
+.proposedIndicator {
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.tabCountHasProposed {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+}
+
+.proposedSubsection {
+  grid-column: 1 / -1;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(74, 222, 128, 0.15);
+}
+
+.proposedSubsectionTitle {
+  margin: 0 0 10px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4ade80;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.proposedSubsectionTitle::before {
+  content: '\u2728';
+  font-size: 12px;
+}

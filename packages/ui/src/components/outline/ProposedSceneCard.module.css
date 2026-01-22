@@ -1,0 +1,299 @@
+/* ProposedSceneCard - Proposed scene within plot points */
+
+.container {
+  background: rgba(74, 222, 128, 0.05);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+  transition: all 0.15s ease;
+}
+
+.container:hover {
+  border-color: rgba(74, 222, 128, 0.5);
+}
+
+/* Operation-specific styling */
+.opAdd {
+  border-color: rgba(74, 222, 128, 0.3);
+  background: rgba(74, 222, 128, 0.05);
+}
+
+.opModify {
+  border-color: rgba(251, 146, 60, 0.3);
+  background: rgba(251, 146, 60, 0.05);
+}
+
+.opModify:hover {
+  border-color: rgba(251, 146, 60, 0.5);
+}
+
+.opDelete {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.opDelete:hover {
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* Existing (non-proposed) scene */
+.existingScene {
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.existingHeading {
+  font-size: 10px;
+  color: #999;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.header:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Badge */
+.badge {
+  padding: 1px 5px;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.badge.opAdd {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+}
+
+.badge.opModify {
+  background: rgba(251, 146, 60, 0.2);
+  color: #fb923c;
+}
+
+.badge.opDelete {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.heading {
+  flex: 1;
+  font-size: 10px;
+  color: #bbb;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.expandIcon {
+  font-size: 8px;
+  color: #555;
+  flex-shrink: 0;
+}
+
+/* Preview (collapsed) */
+.preview {
+  padding: 0 8px 6px;
+  margin: 0;
+  font-size: 9px;
+  color: #777;
+  line-height: 1.3;
+}
+
+/* Expanded content */
+.expandedContent {
+  padding: 0 8px 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.previousData {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  font-size: 10px;
+}
+
+.previousLabel {
+  color: #555;
+}
+
+.previousValue {
+  color: #777;
+  text-decoration: line-through;
+}
+
+/* Fields */
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.fieldRow {
+  display: flex;
+  gap: 8px;
+}
+
+.fieldLabel {
+  font-size: 9px;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  padding: 5px 6px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid #2a2a4a;
+  border-radius: 3px;
+  color: #ccc;
+  font-size: 11px;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  outline: none;
+  border-color: #4ade80;
+}
+
+.opModify .input:focus,
+.opModify .textarea:focus,
+.opModify .select:focus {
+  border-color: #fb923c;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 40px;
+  line-height: 1.3;
+}
+
+.select {
+  cursor: pointer;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.doneButton {
+  padding: 4px 10px;
+  background: rgba(74, 222, 128, 0.15);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 3px;
+  color: #4ade80;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.doneButton:hover {
+  background: rgba(74, 222, 128, 0.25);
+  border-color: #4ade80;
+}
+
+.removeButton {
+  padding: 4px 10px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 3px;
+  color: #fca5a5;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.removeButton:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+}
+
+/* Removed state */
+.removed {
+  background: rgba(0, 0, 0, 0.2);
+  border-color: #2a2a4a;
+  opacity: 0.6;
+}
+
+.removedContent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+}
+
+.removedIcon {
+  font-size: 10px;
+  color: #555;
+}
+
+.removedLabel {
+  flex: 1;
+  font-size: 10px;
+  color: #555;
+  text-decoration: line-through;
+}
+
+.undoButton {
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #2a2a4a;
+  border-radius: 2px;
+  color: #777;
+  font-size: 9px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.undoButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #3a3a5a;
+  color: #aaa;
+}

@@ -200,3 +200,44 @@
   color: var(--text-primary, #fff);
   background: rgba(255, 255, 255, 0.03);
 }
+
+/* Proposed Changes Section */
+.proposedSection {
+  background: var(--bg-proposed, rgba(74, 222, 128, 0.05));
+  border: 1px solid var(--border-proposed, rgba(74, 222, 128, 0.3));
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.proposedTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-proposed, #4ade80);
+  margin: 0 0 12px 0;
+}
+
+.proposedIcon {
+  font-size: 14px;
+}
+
+.proposedList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Inline proposed indicator in section header */
+.sectionCountHasProposed {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.proposedIndicator {
+  color: #4ade80;
+  font-size: 11px;
+  font-weight: 500;
+}
