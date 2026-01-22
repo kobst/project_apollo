@@ -59,6 +59,9 @@ export function GenerationView() {
   // Form state - persists across view changes
   const [formState, setFormState] = useState<ComposeFormState>(DEFAULT_FORM_STATE);
 
+  // Track previous package count to detect new packages arriving
+  const [prevPackageCount, setPrevPackageCount] = useState(0);
+
   // Load saved packages when story changes
   useEffect(() => {
     if (currentStoryId) {
@@ -72,18 +75,25 @@ export function GenerationView() {
     [session?.packages, selectedPackageId]
   );
 
-  // Auto-select first package and switch to review when session has packages
+  // Auto-select first package and switch to review when NEW packages arrive
   useEffect(() => {
-    if (session && session.packages.length > 0) {
+    const currentCount = session?.packages.length ?? 0;
+
+    if (session && currentCount > 0) {
+      // Auto-select first package if none selected or current selection invalid
       if (!selectedPackageId || !session.packages.find(p => p.id === selectedPackageId)) {
         setSelectedPackageId(session.packages[0]?.id ?? null);
       }
-      // Switch to review mode when packages are available
-      if (viewState === 'compose') {
+
+      // Only auto-switch to review when packages FIRST arrive (0 → N)
+      // This allows user to go back to compose while packages still exist
+      if (prevPackageCount === 0 && currentCount > 0) {
         setViewState('review');
       }
     }
-  }, [session, selectedPackageId, viewState]);
+
+    setPrevPackageCount(currentCount);
+  }, [session, selectedPackageId, prevPackageCount]);
 
   // Handle generation from ComposeForm
   const handleGenerate = useCallback(async (request: ProposeRequest) => {
