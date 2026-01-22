@@ -80,10 +80,11 @@ export class OpenAIClient implements ILLMClient {
       }
       messages.push({ role: 'user', content: prompt });
 
-      console.log('\n[OpenAI] === REQUEST ===');
+      console.log('\n[OpenAI] === REQUEST (streaming) ===');
       console.log('[OpenAI] Model:', this.config.model);
-      console.log('[OpenAI] System prompt (first 500 chars):', systemPrompt?.substring(0, 500));
-      console.log('[OpenAI] User prompt (first 500 chars):', prompt.substring(0, 500));
+      console.log('[OpenAI] Max tokens:', this.config.maxTokens);
+      console.log('[OpenAI] System prompt:', systemPrompt ?? '(none)');
+      console.log('[OpenAI] User prompt:', prompt);
 
       const stream = await this.client.chat.completions.create({
         model: this.config.model,
@@ -106,11 +107,10 @@ export class OpenAIClient implements ILLMClient {
         }
       }
 
-      console.log('\n[OpenAI] === RESPONSE ===');
+      console.log('\n[OpenAI] === RESPONSE (streaming) ===');
       console.log('[OpenAI] Finish reason:', finishReason);
-      console.log('[OpenAI] Full content length:', fullContent.length);
-      console.log('[OpenAI] Full content (first 1000 chars):', fullContent.substring(0, 1000));
-      console.log('[OpenAI] Full content (last 500 chars):', fullContent.substring(fullContent.length - 500));
+      console.log('[OpenAI] Content length:', fullContent.length);
+      console.log('[OpenAI] Content:', fullContent);
 
       // OpenAI streaming doesn't provide token usage in stream
       // We estimate based on content length (rough approximation)
@@ -166,8 +166,8 @@ export class OpenAIClient implements ILLMClient {
     console.log('\n[OpenAI] === REQUEST (non-streaming) ===');
     console.log('[OpenAI] Model:', this.config.model);
     console.log('[OpenAI] Max tokens:', this.config.maxTokens);
-    console.log('[OpenAI] System prompt (first 1000 chars):', systemPrompt?.substring(0, 1000));
-    console.log('[OpenAI] User prompt (first 1000 chars):', prompt.substring(0, 1000));
+    console.log('[OpenAI] System prompt:', systemPrompt ?? '(none)');
+    console.log('[OpenAI] User prompt:', prompt);
 
     for (let attempt = 0; attempt < this.config.maxRetries; attempt++) {
       try {
@@ -186,13 +186,12 @@ export class OpenAIClient implements ILLMClient {
           messages,
         });
 
-        console.log('\n[OpenAI] === RESPONSE ===');
+        console.log('\n[OpenAI] === RESPONSE (non-streaming) ===');
         console.log('[OpenAI] Finish reason:', completion.choices[0]?.finish_reason);
         console.log('[OpenAI] Usage:', completion.usage);
         const content = completion.choices[0]?.message?.content ?? '';
         console.log('[OpenAI] Content length:', content.length);
-        console.log('[OpenAI] Content (first 1000 chars):', content.substring(0, 1000));
-        console.log('[OpenAI] Content (last 500 chars):', content.substring(Math.max(0, content.length - 500)));
+        console.log('[OpenAI] Content:', content);
 
         return {
           content,

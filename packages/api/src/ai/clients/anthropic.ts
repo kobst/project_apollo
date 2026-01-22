@@ -73,6 +73,13 @@ export class AnthropicClient implements ILLMClient {
     const { onToken, onComplete, onError } = callbacks;
 
     try {
+      console.log('\n[Anthropic] === REQUEST (streaming) ===');
+      console.log('[Anthropic] Model:', this.config.model);
+      console.log('[Anthropic] Max tokens:', this.config.maxTokens);
+      console.log('[Anthropic] Temperature:', this.config.temperature);
+      console.log('[Anthropic] System prompt:', systemPrompt ?? '(none)');
+      console.log('[Anthropic] User prompt:', prompt);
+
       const streamParams: Anthropic.MessageCreateParams = {
         model: this.config.model,
         max_tokens: this.config.maxTokens,
@@ -97,6 +104,12 @@ export class AnthropicClient implements ILLMClient {
 
       inputTokens = finalMessage.usage.input_tokens;
       outputTokens = finalMessage.usage.output_tokens;
+
+      console.log('\n[Anthropic] === RESPONSE (streaming) ===');
+      console.log('[Anthropic] Stop reason:', finalMessage.stop_reason);
+      console.log('[Anthropic] Usage:', { inputTokens, outputTokens });
+      console.log('[Anthropic] Content length:', fullContent.length);
+      console.log('[Anthropic] Content:', fullContent);
 
       const response: LLMResponse = {
         content: fullContent,
@@ -141,8 +154,17 @@ export class AnthropicClient implements ILLMClient {
   ): Promise<Omit<LLMResponse, 'cached'>> {
     let lastError: Error | null = null;
 
+    console.log('\n[Anthropic] === REQUEST (non-streaming) ===');
+    console.log('[Anthropic] Model:', this.config.model);
+    console.log('[Anthropic] Max tokens:', this.config.maxTokens);
+    console.log('[Anthropic] Temperature:', this.config.temperature);
+    console.log('[Anthropic] System prompt:', systemPrompt ?? '(none)');
+    console.log('[Anthropic] User prompt:', prompt);
+
     for (let attempt = 0; attempt < this.config.maxRetries; attempt++) {
       try {
+        console.log('[Anthropic] Making API call, attempt', attempt + 1);
+
         const createParams: Anthropic.MessageCreateParams = {
           model: this.config.model,
           max_tokens: this.config.maxTokens,
@@ -157,6 +179,15 @@ export class AnthropicClient implements ILLMClient {
         // Extract text content
         const textContent = message.content.find((block) => block.type === 'text');
         const content = textContent?.type === 'text' ? textContent.text : '';
+
+        console.log('\n[Anthropic] === RESPONSE (non-streaming) ===');
+        console.log('[Anthropic] Stop reason:', message.stop_reason);
+        console.log('[Anthropic] Usage:', {
+          inputTokens: message.usage.input_tokens,
+          outputTokens: message.usage.output_tokens,
+        });
+        console.log('[Anthropic] Content length:', content.length);
+        console.log('[Anthropic] Content:', content);
 
         return {
           content,
