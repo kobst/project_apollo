@@ -440,12 +440,13 @@ Shows pending changes as UPDATE_NODE operations:
 
 ### Committing Changes
 
-1. Make edits in the form
-2. Review changes in PatchBuilder
-3. Check validation status (must show "Ready to commit")
-4. Click **Commit Changes**
-5. A new version is created with the updates
-6. Edit mode closes and node detail refreshes
+1. Make edits in the form fields
+2. Click **Save Changes** to stage your edits (PatchBuilder and validation panels appear)
+3. Review changes in PatchBuilder (shows old → new values)
+4. Check validation status in CommitPanel (must show "Ready to commit")
+5. Click **Commit Changes** to apply to the graph
+6. A new version is created with the updates
+7. Edit mode closes and node detail refreshes
 
 ### Canceling Edits
 
