@@ -1,44 +1,34 @@
 /**
- * WorkspaceView - Main workspace with sidebar navigation + main content layout:
+ * WorkspaceView - Main workspace with Story Bible layout:
  * 1. PremiseHeader (top) - Story title only
- * 2. WorkspaceSidebar (left) - Navigation: Premise, Structure Board, Elements, Story Context
- * 3. Main content (right) - PremisePanel, StructureBoard, or ElementsBoard based on selection
+ * 2. TableOfContents (left) - Scroll-spy navigation
+ * 3. StoryBible (center) - Unified scrollable document with all sections
+ * 4. GenerationPanel (right) - AI generation controls
  */
 
 import { useState, useCallback } from 'react';
 import { useStory } from '../../context/StoryContext';
-import { useGeneration } from '../../context/GenerationContext';
 import { PremiseHeader } from './PremiseHeader';
-import { WorkspaceSidebar } from './WorkspaceSidebar';
-import { StructureBoard } from './StructureBoard';
-import { ElementsBoard } from './ElementsBoard';
-import { PremisePanel } from './PremisePanel';
+import { StoryBible } from './StoryBible';
 import { GenerationPanel } from './GenerationPanel';
-import { AllChangesView } from './AllChangesView';
 import { ElementDetailModal } from './ElementDetailModal';
 import { AddElementModal, type AddElementType } from './AddElementModal';
-import { StoryContextModal } from '../context/StoryContextModal';
-import type { WorkspaceView as WorkspaceViewType, ElementType, ElementModalState } from './types';
+import type { ElementType, ElementModalState } from './types';
 import styles from './WorkspaceView.module.css';
 
 export function WorkspaceView() {
-  const { currentStoryId, status } = useStory();
-  const { stagedPackage, sectionChangeCounts } = useGeneration();
+  const { currentStoryId } = useStory();
 
-  // Sidebar collapse state
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  // TOC collapse state (replaces sidebar collapse)
+  const [isTocCollapsed, setIsTocCollapsed] = useState(false);
 
   // Generation panel collapse state
   const [isGenPanelCollapsed, setIsGenPanelCollapsed] = useState(false);
 
-  // Workspace view state (structure or elements)
-  const [workspaceView, setWorkspaceView] = useState<WorkspaceViewType>('structure');
-
   // Element detail modal state
   const [elementModal, setElementModal] = useState<ElementModalState | null>(null);
 
-  // Other modal states
-  const [storyContextModalOpen, setStoryContextModalOpen] = useState(false);
+  // Add element modal state
   const [addElementType, setAddElementType] = useState<AddElementType | null>(null);
 
   // Handle element click - open detail modal
@@ -77,33 +67,14 @@ export function WorkspaceView() {
       {/* Top: Premise Header */}
       <PremiseHeader />
 
-      {/* Main Area: Sidebar + Main Content */}
+      {/* Main Area: TOC + Story Bible + Generation Panel */}
       <div className={styles.mainArea}>
-        <WorkspaceSidebar
-          activeView={workspaceView}
-          onViewChange={setWorkspaceView}
-          onStoryContextClick={() => setStoryContextModalOpen(true)}
-          hasStoryContext={status?.hasStoryContext ?? false}
-          isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          sectionChangeCounts={sectionChangeCounts}
-          hasStagedPackage={stagedPackage !== null}
+        <StoryBible
+          onElementClick={handleElementClick}
+          onAddElement={handleAddElement}
+          isTocCollapsed={isTocCollapsed}
+          onToggleTocCollapse={() => setIsTocCollapsed(!isTocCollapsed)}
         />
-
-        <div className={styles.mainContent}>
-          {workspaceView === 'premise' ? (
-            <PremisePanel />
-          ) : workspaceView === 'structure' ? (
-            <StructureBoard />
-          ) : workspaceView === 'elements' ? (
-            <ElementsBoard
-              onElementClick={handleElementClick}
-              onAddElement={handleAddElement}
-            />
-          ) : workspaceView === 'allChanges' ? (
-            <AllChangesView />
-          ) : null}
-        </div>
 
         <GenerationPanel
           isCollapsed={isGenPanelCollapsed}
@@ -112,10 +83,6 @@ export function WorkspaceView() {
       </div>
 
       {/* Modals */}
-      {storyContextModalOpen && (
-        <StoryContextModal onClose={() => setStoryContextModalOpen(false)} />
-      )}
-
       {elementModal && (
         <ElementDetailModal
           elementId={elementModal.elementId}

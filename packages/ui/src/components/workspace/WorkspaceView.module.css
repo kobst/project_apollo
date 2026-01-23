@@ -29,8 +29,15 @@
 
 .mainArea {
   flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1fr auto;
+  overflow: hidden;
+}
+
+/* Ensure grid children can scroll */
+.mainArea > * {
+  min-height: 0;
   overflow: hidden;
 }
 
