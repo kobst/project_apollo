@@ -3,6 +3,7 @@ import {
   useContext,
   useState,
   useCallback,
+  useMemo,
   type ReactNode,
 } from 'react';
 import { api } from '../api/client';
@@ -18,6 +19,18 @@ import type {
   ProposeRequest,
   ProposeResponseData,
 } from '../api/types';
+import {
+  computeSectionChangeCounts,
+  type SectionChangeCounts,
+} from '../utils/stagingUtils';
+
+// Staging state for workspace integration
+export interface StagingState {
+  stagedPackage: NarrativePackage | null;
+  activePackageIndex: number;
+  editedNodes: Map<string, Partial<Record<string, unknown>>>;
+  removedNodeIds: Set<string>;
+}
 
 interface GenerationContextValue {
   /** Current generation session */
@@ -87,6 +100,24 @@ interface GenerationContextValue {
   validatePackage: (storyId: string, pkg: NarrativePackage) => Promise<{ valid: boolean; errors: Array<{ type: PackageElementType; index: number; field?: string; message: string }> }>;
   /** Apply a filtered package directly (bypassing session) */
   applyFilteredPackage: (storyId: string, pkg: NarrativePackage) => Promise<void>;
+
+  // Staging state (for unified workspace)
+  /** Current staging state */
+  staging: StagingState;
+  /** Computed section change counts */
+  sectionChangeCounts: SectionChangeCounts;
+  /** Stage a package by index */
+  stagePackage: (index: number) => void;
+  /** Stage a saved package directly (not from session) */
+  stageSavedPackage: (pkg: NarrativePackage) => void;
+  /** Clear staging state */
+  clearStaging: () => void;
+  /** Update a node's data in the staged package */
+  updateEditedNode: (nodeId: string, updates: Partial<Record<string, unknown>>) => void;
+  /** Remove a proposed node from staging */
+  removeProposedNode: (nodeId: string) => void;
+  /** Get the currently staged package */
+  stagedPackage: NarrativePackage | null;
 }
 
 const GenerationContext = createContext<GenerationContextValue | null>(null);
@@ -97,6 +128,14 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
+
+  // Staging state for unified workspace
+  const [staging, setStaging] = useState<StagingState>({
+    stagedPackage: null,
+    activePackageIndex: -1,
+    editedNodes: new Map(),
+    removedNodeIds: new Set(),
+  });
 
   // Get refinable elements for current selection
   const refinableElements = session?.refinableElements ?? null;
@@ -446,6 +485,14 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
           return { ...prev, status: 'accepted', acceptedPackageId: pkg.id };
         });
 
+        // Clear staging
+        setStaging({
+          stagedPackage: null,
+          activePackageIndex: -1,
+          editedNodes: new Map(),
+          removedNodeIds: new Set(),
+        });
+
         // Close panel after short delay
         setTimeout(() => {
           setIsOpen(false);
@@ -459,6 +506,87 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     },
     []
   );
+
+  // Stage a package by index
+  const stagePackage = useCallback(
+    (index: number) => {
+      if (!session || index < 0 || index >= session.packages.length) {
+        setStaging({
+          stagedPackage: null,
+          activePackageIndex: -1,
+          editedNodes: new Map(),
+          removedNodeIds: new Set(),
+        });
+        return;
+      }
+
+      const pkg = session.packages[index];
+      if (pkg) {
+        setStaging({
+          stagedPackage: pkg,
+          activePackageIndex: index,
+          editedNodes: new Map(),
+          removedNodeIds: new Set(),
+        });
+        setSelectedPackageId(pkg.id);
+      }
+    },
+    [session]
+  );
+
+  // Stage a saved package directly (not from session)
+  const stageSavedPackage = useCallback(
+    (pkg: NarrativePackage) => {
+      setStaging({
+        stagedPackage: pkg,
+        activePackageIndex: -1, // Not from session
+        editedNodes: new Map(),
+        removedNodeIds: new Set(),
+      });
+    },
+    []
+  );
+
+  // Clear staging state
+  const clearStaging = useCallback(() => {
+    setStaging({
+      stagedPackage: null,
+      activePackageIndex: -1,
+      editedNodes: new Map(),
+      removedNodeIds: new Set(),
+    });
+  }, []);
+
+  // Update a node's data in staging
+  const updateEditedNode = useCallback(
+    (nodeId: string, updates: Partial<Record<string, unknown>>) => {
+      setStaging((prev) => {
+        const newEditedNodes = new Map(prev.editedNodes);
+        const existing = newEditedNodes.get(nodeId) ?? {};
+        newEditedNodes.set(nodeId, { ...existing, ...updates });
+        return { ...prev, editedNodes: newEditedNodes };
+      });
+    },
+    []
+  );
+
+  // Remove a proposed node from staging
+  const removeProposedNode = useCallback((nodeId: string) => {
+    setStaging((prev) => {
+      const newRemovedIds = new Set(prev.removedNodeIds);
+      newRemovedIds.add(nodeId);
+      return { ...prev, removedNodeIds: newRemovedIds };
+    });
+  }, []);
+
+  // Compute section change counts from staged package
+  const sectionChangeCounts = useMemo(
+    () => computeSectionChangeCounts(staging.stagedPackage),
+    [staging.stagedPackage]
+  );
+
+  // Get the currently staged package (convenience getter)
+  const stagedPackage = staging.stagedPackage;
 
   const value: GenerationContextValue = {
     session,
@@ -481,6 +609,15 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     updatePackageElement,
     validatePackage,
     applyFilteredPackage,
+    // Staging state
+    staging,
+    sectionChangeCounts,
+    stagePackage,
+    stageSavedPackage,
+    clearStaging,
+    updateEditedNode,
+    removeProposedNode,
+    stagedPackage,
   };
 
   return (

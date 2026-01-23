@@ -35,6 +35,8 @@ export function GenerationView() {
     applyElementOption,
     updatePackageElement,
     applyFilteredPackage,
+    stageSavedPackage,
+    clearStaging,
   } = useGeneration();
 
   const {
@@ -221,15 +223,17 @@ export function GenerationView() {
     // Clear view if we deleted the one we're viewing
     if (viewingSavedPackage?.id === savedPackageId) {
       setViewingSavedPackage(null);
+      clearStaging(); // Also clear staging
     }
-  }, [currentStoryId, deleteSavedPackage, viewingSavedPackage?.id]);
+  }, [currentStoryId, deleteSavedPackage, viewingSavedPackage?.id, clearStaging]);
 
   // View saved package handler - shows it in the main content area
   const handleViewSavedPackage = useCallback((savedPkg: SavedPackageData) => {
     setViewingSavedPackage(savedPkg);
     setSelectedPackageId(null); // Deselect session package
     setViewState('review');
-  }, []);
+    stageSavedPackage(savedPkg.package); // Stage for workspace preview
+  }, [stageSavedPackage]);
 
   // Handle selecting a session package (clears saved package view)
   const handleSelectSessionPackage = useCallback((packageId: string | null) => {
@@ -241,7 +245,8 @@ export function GenerationView() {
   // Close saved package view
   const handleCloseSavedPackageView = useCallback(() => {
     setViewingSavedPackage(null);
-  }, []);
+    clearStaging(); // Clear staging when closing
+  }, [clearStaging]);
 
   // Handle New Proposal button (goes to compose, preserving form state)
   const handleNewProposal = useCallback(() => {
