@@ -83,7 +83,7 @@ interface CreateIdeaBody {
   title: string;
   description: string;
   source?: 'user' | 'ai';
-  suggestedType?: 'PlotPoint' | 'Scene' | 'Character' | 'Location' | 'Object';
+  suggestedType?: 'StoryBeat' | 'Scene' | 'Character' | 'Location' | 'Object';
 }
 
 export function createIdeaHandler(ctx: StorageContext) {

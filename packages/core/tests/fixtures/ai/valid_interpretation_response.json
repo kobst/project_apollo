@@ -7,14 +7,14 @@
     {
       "type": "node",
       "operation": "add",
-      "target_type": "PlotPoint",
+      "target_type": "StoryBeat",
       "data": {
         "title": "Discovery of Betrayal",
         "summary": "Mike discovers evidence that his partner has been working with the antagonist.",
         "intent": "character",
         "priority": 1
       },
-      "rationale": "The input describes a specific narrative event that should be tracked as a PlotPoint for story structure.",
+      "rationale": "The input describes a specific narrative event that should be tracked as a StoryBeat for story structure.",
       "relates_to": ["character_mike_001", "character_partner_001"]
     },
     {

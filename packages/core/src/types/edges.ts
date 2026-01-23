@@ -21,11 +21,11 @@ import type { NodeType } from './nodes.js';
  * Character edges:
  * HAS_ARC: Character → CharacterArc
  *
- * PlotPoint edges:
- * ALIGNS_WITH: PlotPoint → Beat (optional alignment to STC beat)
- * SATISFIED_BY: PlotPoint → Scene (with properties.order for sequencing)
- * PRECEDES: PlotPoint → PlotPoint (causal/temporal chain, DAG)
- * ADVANCES: PlotPoint → CharacterArc
+ * StoryBeat edges:
+ * ALIGNS_WITH: StoryBeat → Beat (optional alignment to STC beat)
+ * SATISFIED_BY: StoryBeat → Scene (with properties.order for sequencing)
+ * PRECEDES: StoryBeat → StoryBeat (causal/temporal chain, DAG)
+ * ADVANCES: StoryBeat → CharacterArc
  *
  * Location edges:
  * PART_OF: Location → Setting (location is part of setting/world)
@@ -149,27 +149,27 @@ export const EDGE_RULES: Record<EdgeType, EdgeRule> = {
     target: ['CharacterArc'],
   },
 
-  // PlotPoint → Beat (optional alignment to STC beat)
+  // StoryBeat → Beat (optional alignment to STC beat)
   ALIGNS_WITH: {
-    source: ['PlotPoint'],
+    source: ['StoryBeat'],
     target: ['Beat'],
   },
 
-  // PlotPoint → Scene (with properties.order for sequencing)
+  // StoryBeat → Scene (with properties.order for sequencing)
   SATISFIED_BY: {
-    source: ['PlotPoint'],
+    source: ['StoryBeat'],
     target: ['Scene'],
   },
 
-  // PlotPoint → PlotPoint (causal/temporal chain, must be DAG)
+  // StoryBeat → StoryBeat (causal/temporal chain, must be DAG)
   PRECEDES: {
-    source: ['PlotPoint'],
-    target: ['PlotPoint'],
+    source: ['StoryBeat'],
+    target: ['StoryBeat'],
   },
 
-  // PlotPoint → CharacterArc
+  // StoryBeat → CharacterArc
   ADVANCES: {
-    source: ['PlotPoint'],
+    source: ['StoryBeat'],
     target: ['CharacterArc'],
   },
 

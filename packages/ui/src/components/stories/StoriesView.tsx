@@ -117,8 +117,8 @@ export function StoriesView() {
                   <span className={styles.statLabel}>Chars</span>
                 </div>
                 <div className={styles.stat}>
-                  <span className={styles.statValue}>{status.stats.plotPoints}</span>
-                  <span className={styles.statLabel}>PlotPts</span>
+                  <span className={styles.statValue}>{status.stats.storyBeats}</span>
+                  <span className={styles.statLabel}>Beats</span>
                 </div>
               </div>
             </div>

@@ -61,7 +61,7 @@ interface GapsResponseData {
 // =============================================================================
 
 interface GapsQuery {
-  /** Filter by tier (premise, foundations, structure, plotPoints, scenes) */
+  /** Filter by tier (premise, foundations, structure, storyBeats, scenes) */
   tier?: string;
   /** Filter by domain (STRUCTURE, SCENE, CHARACTER) */
   domain?: string;
@@ -114,7 +114,7 @@ function gapToData(gap: Gap): GapData {
  * GET /stories/:id/gaps - Get unified gaps with filtering
  *
  * Query parameters:
- * - tier: premise | foundations | structure | plotPoints | scenes
+ * - tier: premise | foundations | structure | storyBeats | scenes
  * - domain: STRUCTURE | SCENE | CHARACTER
  * - type: structural | narrative
  */

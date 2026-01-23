@@ -187,7 +187,7 @@ export type GenerationCount = 'few' | 'standard' | 'many';
  */
 export interface GenerationEntryPoint {
   /** Type of entry point */
-  type: 'beat' | 'plotPoint' | 'character' | 'gap' | 'idea' | 'naked';
+  type: 'beat' | 'storyBeat' | 'character' | 'gap' | 'idea' | 'naked';
   /** Target ID if applicable */
   targetId?: string;
   /** Additional data about the target */

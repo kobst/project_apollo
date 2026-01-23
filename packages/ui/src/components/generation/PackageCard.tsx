@@ -32,7 +32,7 @@ function categorizeNodes(nodes: NodeChangeAI[]): {
     const type = node.node_type.toLowerCase();
     if (['character', 'location', 'object', 'setting'].includes(type)) {
       storyElements.push(node);
-    } else if (['plotpoint', 'scene', 'beat', 'idea'].includes(type)) {
+    } else if (['storybeat', 'scene', 'beat', 'idea'].includes(type)) {
       outline.push(node);
     } else {
       other.push(node);

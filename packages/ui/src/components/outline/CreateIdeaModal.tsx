@@ -5,7 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import type { CreateIdeaRequest, IdeaSuggestedType } from '../../api/types';
-import styles from './AddPlotPointModal.module.css';
+import styles from './AddStoryBeatModal.module.css';
 
 interface CreateIdeaModalProps {
   /** Called when user confirms creation */
@@ -18,7 +18,7 @@ interface CreateIdeaModalProps {
 
 const SUGGESTED_TYPE_OPTIONS: { value: IdeaSuggestedType | undefined; label: string }[] = [
   { value: undefined, label: 'Not sure yet' },
-  { value: 'PlotPoint', label: 'Plot Point' },
+  { value: 'StoryBeat', label: 'Story Beat' },
   { value: 'Scene', label: 'Scene' },
   { value: 'Character', label: 'Character' },
   { value: 'Location', label: 'Location' },

@@ -1,6 +1,6 @@
 /**
  * StructureBoard - Main content area showing the story structure.
- * Features a slide-out edit panel for editing PlotPoints and Scenes.
+ * Features a slide-out edit panel for editing StoryBeats and Scenes.
  * Proposed nodes from staged packages are merged into their logical positions.
  */
 
@@ -8,31 +8,31 @@ import { useState, useEffect, useCallback, useMemo, createContext, useContext } 
 import { useStory } from '../../context/StoryContext';
 import { useGeneration } from '../../context/GenerationContext';
 import { api } from '../../api/client';
-import type { OutlineData, OutlinePlotPoint, OutlineScene, OutlineIdea, CreateSceneRequest, CreateIdeaRequest } from '../../api/types';
+import type { OutlineData, OutlineStoryBeat, OutlineScene, OutlineIdea, CreateSceneRequest, CreateIdeaRequest } from '../../api/types';
 import { mergeProposedIntoOutline, type MergedOutlineData } from '../../utils/outlineMergeUtils';
 import { ActRow } from '../outline/ActRow';
 import { UnassignedSection } from '../outline/UnassignedSection';
-import { CreatePlotPointModal } from '../outline/CreatePlotPointModal';
+import { CreateStoryBeatModal } from '../outline/CreateStoryBeatModal';
 import { CreateSceneModal } from '../outline/CreateSceneModal';
 import { CreateIdeaModal } from '../outline/CreateIdeaModal';
 import { EditPanel } from './EditPanel';
 import styles from './StructureBoard.module.css';
 
 // Types for edit panel
-type EditItemType = 'plotpoint' | 'scene';
+type EditItemType = 'storybeat' | 'scene';
 interface EditState {
   type: EditItemType;
-  item: OutlinePlotPoint | OutlineScene;
+  item: OutlineStoryBeat | OutlineScene;
 }
 
 // Context for triggering edits (passed down to children)
 interface EditContextValue {
-  onEditPlotPoint: (pp: OutlinePlotPoint) => void;
+  onEditStoryBeat: (pp: OutlineStoryBeat) => void;
   onEditScene: (scene: OutlineScene) => void;
 }
 
 export const EditContext = createContext<EditContextValue>({
-  onEditPlotPoint: () => {},
+  onEditStoryBeat: () => {},
   onEditScene: () => {},
 });
 
@@ -59,10 +59,10 @@ export function StructureBoard() {
   const [editState, setEditState] = useState<EditState | null>(null);
 
   // Modal states
-  const [showPlotPointModal, setShowPlotPointModal] = useState(false);
+  const [showStoryBeatModal, setShowStoryBeatModal] = useState(false);
   const [showSceneModal, setShowSceneModal] = useState(false);
   const [showIdeaModal, setShowIdeaModal] = useState(false);
-  const [savingPlotPoint, setSavingPlotPoint] = useState(false);
+  const [savingStoryBeat, setSavingStoryBeat] = useState(false);
   const [savingScene, setSavingScene] = useState(false);
   const [savingIdea, setSavingIdea] = useState(false);
 
@@ -107,8 +107,8 @@ export function StructureBoard() {
   }, [fetchOutline]);
 
   // Edit handlers - open the slide-out panel
-  const handleEditPlotPoint = useCallback((pp: OutlinePlotPoint) => {
-    setEditState({ type: 'plotpoint', item: pp });
+  const handleEditStoryBeat = useCallback((pp: OutlineStoryBeat) => {
+    setEditState({ type: 'storybeat', item: pp });
   }, []);
 
   const handleEditScene = useCallback((scene: OutlineScene) => {
@@ -123,20 +123,20 @@ export function StructureBoard() {
     void fetchOutline();
   }, [fetchOutline]);
 
-  // Handle creating a new unassigned PlotPoint
-  const handleAddPlotPoint = useCallback(async (data: Parameters<typeof api.createPlotPoint>[1]) => {
+  // Handle creating a new unassigned StoryBeat
+  const handleAddStoryBeat = useCallback(async (data: Parameters<typeof api.createStoryBeat>[1]) => {
     if (!currentStoryId) return;
 
-    setSavingPlotPoint(true);
+    setSavingStoryBeat(true);
     try {
-      await api.createPlotPoint(currentStoryId, data);
-      setShowPlotPointModal(false);
+      await api.createStoryBeat(currentStoryId, data);
+      setShowStoryBeatModal(false);
       await fetchOutline();
       void refreshStatus();
     } catch (err) {
-      console.error('Failed to create plot point:', err);
+      console.error('Failed to create story beat:', err);
     } finally {
-      setSavingPlotPoint(false);
+      setSavingStoryBeat(false);
     }
   }, [currentStoryId, fetchOutline, refreshStatus]);
 
@@ -175,9 +175,9 @@ export function StructureBoard() {
   }, [currentStoryId, fetchOutline, refreshStatus]);
 
   // Handle clicking on items in UnassignedSection
-  const handlePlotPointClick = useCallback((pp: OutlinePlotPoint) => {
-    handleEditPlotPoint(pp);
-  }, [handleEditPlotPoint]);
+  const handleStoryBeatClick = useCallback((pp: OutlineStoryBeat) => {
+    handleEditStoryBeat(pp);
+  }, [handleEditStoryBeat]);
 
   const handleSceneClick = useCallback((scene: OutlineScene) => {
     handleEditScene(scene);
@@ -189,7 +189,7 @@ export function StructureBoard() {
   }, []);
 
   const editContextValue: EditContextValue = {
-    onEditPlotPoint: handleEditPlotPoint,
+    onEditStoryBeat: handleEditStoryBeat,
     onEditScene: handleEditScene,
   };
 
@@ -231,10 +231,10 @@ export function StructureBoard() {
   }
 
   // Calculate summary stats
-  const unassignedPlotPointCount = outline.unassignedPlotPoints?.length ?? 0;
+  const unassignedStoryBeatCount = outline.unassignedStoryBeats?.length ?? 0;
   const unassignedSceneCount = outline.unassignedScenes?.length ?? 0;
   const unassignedIdeaCount = outline.unassignedIdeas?.length ?? 0;
-  const totalUnassignedCount = unassignedPlotPointCount + unassignedSceneCount + unassignedIdeaCount;
+  const totalUnassignedCount = unassignedStoryBeatCount + unassignedSceneCount + unassignedIdeaCount;
 
   return (
     <EditContext.Provider value={editContextValue}>
@@ -247,7 +247,7 @@ export function StructureBoard() {
               </span>
               <span className={styles.summaryDivider}>•</span>
               <span className={styles.summaryItem}>
-                <strong>{outline.summary.totalPlotPoints}</strong> plot points
+                <strong>{outline.summary.totalStoryBeats}</strong> story beats
               </span>
               <span className={styles.summaryDivider}>•</span>
               <span className={styles.summaryItem}>
@@ -285,15 +285,15 @@ export function StructureBoard() {
 
             {/* Unassigned Items Section - includes proposed unassigned items */}
             <UnassignedSection
-              plotPoints={mergedOutline?.unassignedPlotPoints ?? []}
+              storyBeats={mergedOutline?.unassignedStoryBeats ?? []}
               scenes={mergedOutline?.unassignedScenes ?? []}
               ideas={mergedOutline?.unassignedIdeas ?? []}
-              proposedPlotPoints={mergedOutline?.proposedUnassignedPlotPoints ?? []}
+              proposedStoryBeats={mergedOutline?.proposedUnassignedStoryBeats ?? []}
               proposedScenes={mergedOutline?.proposedUnassignedScenes ?? []}
-              onAddPlotPoint={() => setShowPlotPointModal(true)}
+              onAddStoryBeat={() => setShowStoryBeatModal(true)}
               onAddScene={() => setShowSceneModal(true)}
               onAddIdea={() => setShowIdeaModal(true)}
-              onPlotPointClick={handlePlotPointClick}
+              onStoryBeatClick={handleStoryBeatClick}
               onSceneClick={handleSceneClick}
               onIdeaClick={handleIdeaClick}
               onEditProposed={handleEditProposedNode}
@@ -312,12 +312,12 @@ export function StructureBoard() {
           />
         )}
 
-        {/* Create Plot Point Modal */}
-        {showPlotPointModal && (
-          <CreatePlotPointModal
-            onAdd={handleAddPlotPoint}
-            onCancel={() => setShowPlotPointModal(false)}
-            saving={savingPlotPoint}
+        {/* Create Story Beat Modal */}
+        {showStoryBeatModal && (
+          <CreateStoryBeatModal
+            onAdd={handleAddStoryBeat}
+            onCancel={() => setShowStoryBeatModal(false)}
+            saving={savingStoryBeat}
           />
         )}
 

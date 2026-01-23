@@ -18,8 +18,8 @@ const ACT_NAMES: Record<number, string> = {
 };
 
 // Calculate total scenes for a beat (from all plot points)
-function getBeatSceneCount(beat: { plotPoints: { scenes: unknown[] }[] }): number {
-  return beat.plotPoints.reduce((sum, pp) => sum + pp.scenes.length, 0);
+function getBeatSceneCount(beat: { storyBeats: { scenes: unknown[] }[] }): number {
+  return beat.storyBeats.reduce((sum, pp) => sum + pp.scenes.length, 0);
 }
 
 export function ActRow({

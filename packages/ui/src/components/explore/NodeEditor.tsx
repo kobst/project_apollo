@@ -22,7 +22,7 @@ const EDITABLE_FIELDS: Record<string, string[]> = {
   Location: ['name', 'description', 'atmosphere'],
   CharacterArc: ['arc_type', 'description', 'status'],
   Object: ['name', 'description', 'significance'],
-  PlotPoint: ['title', 'summary', 'intent', 'criteria_of_satisfaction', 'priority', 'urgency', 'stakes_change', 'status', 'act'],
+  StoryBeat: ['title', 'summary', 'intent', 'criteria_of_satisfaction', 'priority', 'urgency', 'stakes_change', 'status', 'act'],
 };
 
 // Field types for rendering appropriate inputs

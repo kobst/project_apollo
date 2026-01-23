@@ -62,7 +62,7 @@ ${direction ? `## User Direction\n\n"${direction}"\n` : ''}
 - **Character**: name, description, archetype, traits[]
 - **Location**: name, description, parent_location_id
 - **Object**: name, description
-- **PlotPoint**: title, summary, intent (plot|character|tone), priority, stakes_change
+- **StoryBeat**: title, summary, intent (plot|character|tone), priority, stakes_change
 - **Scene**: heading, scene_overview, order_index, mood, key_actions[]
 
 ## Available Edge Types
@@ -70,10 +70,10 @@ ${direction ? `## User Direction\n\n"${direction}"\n` : ''}
 - HAS_CHARACTER: Scene → Character
 - LOCATED_AT: Scene → Location
 - FEATURES_OBJECT: Scene → Object
-- ALIGNS_WITH: PlotPoint → Beat
-- SATISFIED_BY: PlotPoint → Scene
-- PRECEDES: PlotPoint → PlotPoint (causal ordering)
-- ADVANCES: PlotPoint → CharacterArc
+- ALIGNS_WITH: StoryBeat → Beat
+- SATISFIED_BY: StoryBeat → Scene
+- PRECEDES: StoryBeat → StoryBeat (causal ordering)
+- ADVANCES: StoryBeat → CharacterArc
 - PART_OF: Location → Setting
 
 ## Output Format
@@ -157,8 +157,8 @@ function describeEntryPoint(entryPoint: GenerationEntryPoint): string {
     case 'beat':
       return `Generate content to realize structural beat: ${entryPoint.targetId}${targetInfo}`;
 
-    case 'plotPoint':
-      return `Generate scenes and supporting elements for PlotPoint: ${entryPoint.targetId}${targetInfo}`;
+    case 'storyBeat':
+      return `Generate scenes and supporting elements for StoryBeat: ${entryPoint.targetId}${targetInfo}`;
 
     case 'character':
       return `Generate story developments featuring Character: ${entryPoint.targetId}${targetInfo}`;

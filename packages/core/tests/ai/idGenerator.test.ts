@@ -29,8 +29,8 @@ describe('idGenerator', () => {
     });
 
     it('should lowercase the node type', () => {
-      const id = defaultIdGenerator('PlotPoint');
-      expect(id.startsWith('plotpoint_')).toBe(true);
+      const id = defaultIdGenerator('StoryBeat');
+      expect(id.startsWith('storybeat_')).toBe(true);
     });
 
     it('should include timestamp in ID', () => {
@@ -49,7 +49,7 @@ describe('idGenerator', () => {
     });
 
     it('should handle various node types', () => {
-      const types = ['Character', 'Scene', 'PlotPoint', 'Location', 'Object', 'Idea'];
+      const types = ['Character', 'Scene', 'StoryBeat', 'Location', 'Object', 'Idea'];
       for (const type of types) {
         const id = defaultIdGenerator(type);
         expect(id.startsWith(`${type.toLowerCase()}_`)).toBe(true);
@@ -76,7 +76,7 @@ describe('idGenerator', () => {
 
     it('should lowercase the node type', () => {
       const gen = createDeterministicIdGenerator();
-      expect(gen('PlotPoint')).toBe('plotpoint_test_001');
+      expect(gen('StoryBeat')).toBe('storybeat_test_001');
     });
 
     it('should be truly deterministic across instances', () => {
@@ -102,13 +102,13 @@ describe('idGenerator', () => {
     it('should accept production format IDs', () => {
       expect(isValidNodeId('character_1736500000000_abc12')).toBe(true);
       expect(isValidNodeId('scene_1736500000001_x7k2m')).toBe(true);
-      expect(isValidNodeId('plotpoint_9999999999999_zzzzz')).toBe(true);
+      expect(isValidNodeId('storybeat_9999999999999_zzzzz')).toBe(true);
     });
 
     it('should accept test format IDs', () => {
       expect(isValidNodeId('character_test_001')).toBe(true);
       expect(isValidNodeId('scene_test_999')).toBe(true);
-      expect(isValidNodeId('plotpoint_test_123')).toBe(true);
+      expect(isValidNodeId('storybeat_test_123')).toBe(true);
     });
 
     it('should accept legacy format IDs', () => {
@@ -166,7 +166,7 @@ describe('idGenerator', () => {
     it('should extract type from production IDs', () => {
       expect(extractTypeFromId('character_1736500000000_abc12')).toBe('character');
       expect(extractTypeFromId('scene_1736500000001_x7k2m')).toBe('scene');
-      expect(extractTypeFromId('plotpoint_9999999999999_zzzzz')).toBe('plotpoint');
+      expect(extractTypeFromId('storybeat_9999999999999_zzzzz')).toBe('storybeat');
     });
 
     it('should extract type from test IDs', () => {

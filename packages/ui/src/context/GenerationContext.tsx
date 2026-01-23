@@ -171,7 +171,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
   // Map ProposeEntryPointType to GenerationEntryPointType
   const mapProposeToGenerationEntryPointType = (
     proposeType: 'freeText' | 'node' | 'beat' | 'gap' | 'document'
-  ): 'beat' | 'plotPoint' | 'character' | 'gap' | 'idea' | 'naked' => {
+  ): 'beat' | 'storyBeat' | 'character' | 'gap' | 'idea' | 'naked' => {
     switch (proposeType) {
       case 'freeText': return 'naked';
       case 'node': return 'character'; // Default node to character

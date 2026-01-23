@@ -38,7 +38,7 @@ export function buildInterpretationPrompt(
 - **Character**: A person or entity with agency in the story
 - **Location**: A physical space where scenes can occur
 - **Object**: A significant prop or item with narrative relevance
-- **PlotPoint**: A narrative event that must happen (story causality)
+- **StoryBeat**: A narrative event that must happen (story causality)
 - **Scene**: A unit of dramatic action (heading + overview)
 - **Idea**: An unassigned creative concept (use when uncertain)
 - **Story Context addition**: Thematic/directional content (themes, constraints, motifs)

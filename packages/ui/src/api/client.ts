@@ -42,13 +42,13 @@ import type {
   PreCommitLintData,
   BulkAttachRequest,
   BulkAttachData,
-  PlotPointData,
-  PlotPointsListData,
-  CreatePlotPointRequest,
-  CreatePlotPointData,
-  UpdatePlotPointData,
-  DeletePlotPointData,
-  PlotPointFilters,
+  StoryBeatData,
+  StoryBeatsListData,
+  CreateStoryBeatRequest,
+  CreateStoryBeatData,
+  UpdateStoryBeatData,
+  DeleteStoryBeatData,
+  StoryBeatFilters,
   SceneData,
   ScenesListData,
   CreateSceneRequest,
@@ -261,7 +261,7 @@ export const api = {
     POST<BulkAttachData>(`/stories/${storyId}/relations/bulk-attach`, data),
 
   // Plot Points
-  listPlotPoints: (storyId: string, filters?: PlotPointFilters, limit?: number, offset?: number) => {
+  listStoryBeats: (storyId: string, filters?: StoryBeatFilters, limit?: number, offset?: number) => {
     const params = new URLSearchParams();
     if (filters?.status) params.set('status', filters.status);
     if (filters?.act) params.set('act', filters.act.toString());
@@ -270,16 +270,16 @@ export const api = {
     if (limit) params.set('limit', limit.toString());
     if (offset) params.set('offset', offset.toString());
     const query = params.toString();
-    return GET<PlotPointsListData>(`/stories/${storyId}/plot-points${query ? `?${query}` : ''}`);
+    return GET<StoryBeatsListData>(`/stories/${storyId}/story-beats${query ? `?${query}` : ''}`);
   },
-  getPlotPoint: (storyId: string, ppId: string) =>
-    GET<PlotPointData>(`/stories/${storyId}/plot-points/${ppId}`),
-  createPlotPoint: (storyId: string, data: CreatePlotPointRequest) =>
-    POST<CreatePlotPointData>(`/stories/${storyId}/plot-points`, data),
-  updatePlotPoint: (storyId: string, ppId: string, changes: Record<string, unknown>) =>
-    PATCH<UpdatePlotPointData>(`/stories/${storyId}/plot-points/${ppId}`, { changes }),
-  deletePlotPoint: (storyId: string, ppId: string) =>
-    DELETE<DeletePlotPointData>(`/stories/${storyId}/plot-points/${ppId}`),
+  getStoryBeat: (storyId: string, sbId: string) =>
+    GET<StoryBeatData>(`/stories/${storyId}/story-beats/${sbId}`),
+  createStoryBeat: (storyId: string, data: CreateStoryBeatRequest) =>
+    POST<CreateStoryBeatData>(`/stories/${storyId}/story-beats`, data),
+  updateStoryBeat: (storyId: string, sbId: string, changes: Record<string, unknown>) =>
+    PATCH<UpdateStoryBeatData>(`/stories/${storyId}/story-beats/${sbId}`, { changes }),
+  deleteStoryBeat: (storyId: string, sbId: string) =>
+    DELETE<DeleteStoryBeatData>(`/stories/${storyId}/story-beats/${sbId}`),
 
   // Scenes
   listScenes: (storyId: string, filters?: SceneFilters, limit?: number, offset?: number) => {

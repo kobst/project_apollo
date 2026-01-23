@@ -67,7 +67,7 @@
   padding: 16px;
 }
 
-.plotPoints {
+.storyBeats {
   margin-top: 16px;
 }
 
@@ -86,7 +86,7 @@
   opacity: 0.8;
 }
 
-.addPlotPointBtn {
+.addStoryBeatBtn {
   width: 100%;
   margin-top: 12px;
   padding: 12px;
@@ -99,7 +99,7 @@
   transition: all 0.15s ease;
 }
 
-.addPlotPointBtn:hover {
+.addStoryBeatBtn:hover {
   border-color: var(--text-muted, #555);
   color: var(--text-secondary, #888);
   background: rgba(255, 255, 255, 0.02);

@@ -67,8 +67,8 @@
       "description": "Cartel meeting point on the docks"
     },
     {
-      "type": "PlotPoint",
-      "id": "plotpoint_murder_001",
+      "type": "StoryBeat",
+      "id": "storybeat_murder_001",
       "title": "Murder Discovery",
       "summary": "Mike is called to investigate a murder that connects to the cartel",
       "intent": "plot",
@@ -107,13 +107,13 @@
     {
       "id": "edge_001",
       "type": "ALIGNS_WITH",
-      "from": "plotpoint_murder_001",
+      "from": "storybeat_murder_001",
       "to": "beat_Catalyst"
     },
     {
       "id": "edge_002",
       "type": "SATISFIED_BY",
-      "from": "plotpoint_murder_001",
+      "from": "storybeat_murder_001",
       "to": "scene_crime_002"
     },
     {
@@ -143,7 +143,7 @@
     {
       "id": "edge_007",
       "type": "ADVANCES",
-      "from": "plotpoint_murder_001",
+      "from": "storybeat_murder_001",
       "to": "arc_mike_001"
     }
   ]

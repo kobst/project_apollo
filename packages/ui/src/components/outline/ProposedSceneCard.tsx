@@ -1,5 +1,5 @@
 /**
- * ProposedSceneCard - Displays a proposed Scene within a plot point.
+ * ProposedSceneCard - Displays a proposed Scene within a story beat.
  * Features inline editing with expand/collapse.
  */
 
@@ -9,7 +9,7 @@ import styles from './ProposedSceneCard.module.css';
 
 interface ProposedSceneCardProps {
   scene: MergedOutlineScene;
-  parentPlotPointId: string;
+  parentStoryBeatId: string;
   onEdit: (nodeId: string, updates: Partial<Record<string, unknown>>) => void;
   onRemove?: ((nodeId: string) => void) | undefined;
   isRemoved?: boolean | undefined;
@@ -24,7 +24,7 @@ const INT_EXT_OPTIONS = [
 
 export function ProposedSceneCard({
   scene,
-  parentPlotPointId: _parentPlotPointId,
+  parentStoryBeatId: _parentStoryBeatId,
   onEdit,
   onRemove,
   isRemoved = false,

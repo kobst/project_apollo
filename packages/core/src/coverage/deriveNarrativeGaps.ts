@@ -48,9 +48,9 @@ export function deriveNarrativeGaps(graph: GraphState): Gap[] {
 
 /**
  * Derive BeatUnrealized gaps.
- * Triggered when a Beat has no Scenes reachable through PlotPoints.
+ * Triggered when a Beat has no Scenes reachable through StoryBeats.
  *
- * Hierarchy: Beat ← ALIGNS_WITH ← PlotPoint ← SATISFIED_BY ← Scene
+ * Hierarchy: Beat ← ALIGNS_WITH ← StoryBeat ← SATISFIED_BY ← Scene
  * A Beat is "realized" when it has at least one Scene attached through this chain.
  */
 function deriveBeatUnrealizedGaps(graph: GraphState): Gap[] {
@@ -58,28 +58,28 @@ function deriveBeatUnrealizedGaps(graph: GraphState): Gap[] {
   const beats = getNodesByType<Beat>(graph, 'Beat');
   const config = NARRATIVE_GAP_CONFIG.BeatUnrealized;
 
-  // Get all ALIGNS_WITH edges (PlotPoint → Beat)
+  // Get all ALIGNS_WITH edges (StoryBeat → Beat)
   const alignsWithEdges = graph.edges.filter((e) => e.type === 'ALIGNS_WITH');
-  // Get all SATISFIED_BY edges (PlotPoint → Scene)
+  // Get all SATISFIED_BY edges (StoryBeat → Scene)
   const satisfiedByEdges = graph.edges.filter((e) => e.type === 'SATISFIED_BY');
 
   for (const beat of beats) {
-    // Find PlotPoints aligned to this Beat
+    // Find StoryBeats aligned to this Beat
     const plotPointIds = alignsWithEdges
       .filter((e) => e.to === beat.id)
       .map((e) => e.from);
 
-    // Find Scenes attached to those PlotPoints
+    // Find Scenes attached to those StoryBeats
     const sceneCount = satisfiedByEdges.filter((e) =>
       plotPointIds.includes(e.from)
     ).length;
 
     if (sceneCount === 0) {
-      // Check if there are PlotPoints but no Scenes (different message)
-      const hasPlotPoints = plotPointIds.length > 0;
-      const description = hasPlotPoints
-        ? `Beat "${beat.beat_type}" has PlotPoints but no Scenes attached`
-        : `Beat "${beat.beat_type}" has no PlotPoints or Scenes`;
+      // Check if there are StoryBeats but no Scenes (different message)
+      const hasStoryBeats = plotPointIds.length > 0;
+      const description = hasStoryBeats
+        ? `Beat "${beat.beat_type}" has StoryBeats but no Scenes attached`
+        : `Beat "${beat.beat_type}" has no StoryBeats or Scenes`;
 
       gaps.push({
         id: `gap_beat_${beat.id}`,
@@ -103,28 +103,28 @@ function deriveBeatUnrealizedGaps(graph: GraphState): Gap[] {
  * Derive ActImbalance gaps.
  * Triggered when an act has no scenes while neighboring acts have content.
  *
- * Uses hierarchy: Beat ← ALIGNS_WITH ← PlotPoint ← SATISFIED_BY ← Scene
+ * Uses hierarchy: Beat ← ALIGNS_WITH ← StoryBeat ← SATISFIED_BY ← Scene
  */
 function deriveActImbalanceGaps(graph: GraphState): Gap[] {
   const gaps: Gap[] = [];
   const beats = getNodesByType<Beat>(graph, 'Beat');
   const config = NARRATIVE_GAP_CONFIG.ActImbalance;
 
-  // Get all ALIGNS_WITH edges (PlotPoint → Beat)
+  // Get all ALIGNS_WITH edges (StoryBeat → Beat)
   const alignsWithEdges = graph.edges.filter((e) => e.type === 'ALIGNS_WITH');
-  // Get all SATISFIED_BY edges (PlotPoint → Scene)
+  // Get all SATISFIED_BY edges (StoryBeat → Scene)
   const satisfiedByEdges = graph.edges.filter((e) => e.type === 'SATISFIED_BY');
 
-  // Count scenes per act by traversing Beat → PlotPoint → Scene
+  // Count scenes per act by traversing Beat → StoryBeat → Scene
   const scenesPerAct: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
 
   for (const beat of beats) {
-    // Find PlotPoints aligned to this Beat
+    // Find StoryBeats aligned to this Beat
     const plotPointIds = alignsWithEdges
       .filter((e) => e.to === beat.id)
       .map((e) => e.from);
 
-    // Count Scenes attached to those PlotPoints
+    // Count Scenes attached to those StoryBeats
     const sceneCount = satisfiedByEdges.filter((e) =>
       plotPointIds.includes(e.from)
     ).length;

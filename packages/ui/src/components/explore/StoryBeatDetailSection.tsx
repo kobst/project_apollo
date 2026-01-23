@@ -1,23 +1,23 @@
 /**
- * PlotPointDetailSection - Specialized view for PlotPoint nodes
+ * StoryBeatDetailSection - Specialized view for StoryBeat nodes
  *
  * Shows:
  * - Alignment: ALIGNS_WITH → Beat
  * - Fulfillment: SATISFIED_BY → Scene (outgoing edges with order)
- * - Causality: PRECEDES → PlotPoint (both incoming and outgoing)
+ * - Causality: PRECEDES → StoryBeat (both incoming and outgoing)
  */
 
 import { useMemo } from 'react';
 import type { NodeData, EdgeData, EdgeType } from '../../api/types';
 import type { InteractiveEdgeData, BulkAttachConfig } from './NodeRelations';
-import styles from './PlotPointDetailSection.module.css';
+import styles from './StoryBeatDetailSection.module.css';
 
-interface PlotPointDetailSectionProps {
-  /** Current plot point node ID (reserved for future use) */
-  plotPointId?: string;
-  /** Outgoing edges from this plot point */
+interface StoryBeatDetailSectionProps {
+  /** Current story beat node ID (reserved for future use) */
+  storyBeatId?: string;
+  /** Outgoing edges from this story beat */
   outgoingEdges: InteractiveEdgeData[];
-  /** Incoming edges to this plot point */
+  /** Incoming edges to this story beat */
   incomingEdges: InteractiveEdgeData[];
   /** Related nodes (to look up labels) */
   relatedNodes: NodeData[];
@@ -27,13 +27,13 @@ interface PlotPointDetailSectionProps {
   interactive?: boolean | undefined;
 }
 
-export function PlotPointDetailSection({
+export function StoryBeatDetailSection({
   outgoingEdges,
   incomingEdges,
   relatedNodes,
   onManage,
   interactive = false,
-}: PlotPointDetailSectionProps) {
+}: StoryBeatDetailSectionProps) {
   // Build a map of node IDs to node data for quick lookup
   const nodeMap = useMemo(() => {
     const map = new Map<string, NodeData>();
@@ -187,7 +187,7 @@ export function PlotPointDetailSection({
               className={styles.manageBtn}
               onClick={handleManageFulfillment}
               type="button"
-              title="Manage scenes that fulfill this plot point"
+              title="Manage scenes that fulfill this story beat"
             >
               Manage
             </button>
@@ -195,7 +195,7 @@ export function PlotPointDetailSection({
         </div>
         {satisfiedByScenes.length === 0 ? (
           <div className={styles.emptyBox}>
-            <span className={styles.emptyText}>No scenes fulfill this plot point</span>
+            <span className={styles.emptyText}>No scenes fulfill this story beat</span>
             {interactive && onManage && (
               <button
                 className={styles.addBtn}
@@ -234,7 +234,7 @@ export function PlotPointDetailSection({
               className={styles.manageBtn}
               onClick={handleManagePrecedes}
               type="button"
-              title="Manage plot point dependencies"
+              title="Manage story beat dependencies"
             >
               Manage
             </button>

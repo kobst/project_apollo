@@ -1,10 +1,10 @@
 /**
- * Modal for creating a Scene without attaching to a PlotPoint.
- * Creates an unassigned Scene that can later be dragged to a PlotPoint.
+ * Modal for creating a Scene without attaching to a StoryBeat.
+ * Creates an unassigned Scene that can later be dragged to a StoryBeat.
  */
 
 import { useState, useCallback } from 'react';
-import styles from './AddPlotPointModal.module.css';
+import styles from './AddStoryBeatModal.module.css';
 
 export interface CreateSceneRequest {
   heading: string;
@@ -110,7 +110,7 @@ export function CreateSceneModal({
             <span className={styles.alignLabel}>Status:</span>
             <span className={styles.beatName}>Unassigned</span>
             <span className={styles.actBadge} style={{ background: 'rgba(255, 152, 0, 0.15)', color: '#ffb74d' }}>
-              Will need plot point assignment
+              Will need story beat assignment
             </span>
           </div>
 

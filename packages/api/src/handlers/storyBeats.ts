@@ -1,10 +1,10 @@
 /**
- * PlotPoint handlers
- * POST /stories/:id/plot-points - Create plot point
- * GET /stories/:id/plot-points - List with filters
- * GET /stories/:id/plot-points/:ppId - Get single
- * PATCH /stories/:id/plot-points/:ppId - Update properties
- * DELETE /stories/:id/plot-points/:ppId - Delete
+ * StoryBeat handlers
+ * POST /stories/:id/story-beats - Create story beat
+ * GET /stories/:id/story-beats - List with filters
+ * GET /stories/:id/story-beats/:sbId - Get single
+ * PATCH /stories/:id/story-beats/:sbId - Update properties
+ * DELETE /stories/:id/story-beats/:sbId - Delete
  */
 
 import type { Request, Response, NextFunction } from 'express';
@@ -14,7 +14,7 @@ import {
   applyPatch,
   generateEdgeId,
 } from '@apollo/core';
-import type { Patch, PlotPoint } from '@apollo/core';
+import type { Patch, StoryBeat } from '@apollo/core';
 import type { StorageContext } from '../config.js';
 import { loadVersionedStateById, saveVersionedStateById, deserializeGraph, serializeGraph } from '../storage.js';
 import { NotFoundError, BadRequestError } from '../middleware/error.js';
@@ -24,30 +24,30 @@ import type { APIResponse, NodeData } from '../types.js';
 // Response Types
 // =============================================================================
 
-interface PlotPointData extends NodeData {
+interface StoryBeatData extends NodeData {
   fulfillmentCount: number;
   alignedBeatId?: string | undefined;
 }
 
-interface PlotPointsListData {
-  plotPoints: PlotPointData[];
+interface StoryBeatsListData {
+  storyBeats: StoryBeatData[];
   totalCount: number;
   limit: number;
   offset: number;
 }
 
-interface CreatePlotPointData {
-  plotPoint: PlotPointData;
+interface CreateStoryBeatData {
+  storyBeat: StoryBeatData;
   newVersionId: string;
 }
 
-interface UpdatePlotPointData {
-  plotPoint: PlotPointData;
+interface UpdateStoryBeatData {
+  storyBeat: StoryBeatData;
   newVersionId: string;
   fieldsUpdated: string[];
 }
 
-interface DeletePlotPointData {
+interface DeleteStoryBeatData {
   deleted: true;
   newVersionId: string;
 }
@@ -56,31 +56,31 @@ interface DeletePlotPointData {
 // Helpers
 // =============================================================================
 
-function getPlotPointLabel(pp: PlotPoint): string {
-  return pp.title || `PlotPoint:${pp.id.slice(0, 8)}`;
+function getStoryBeatLabel(sb: StoryBeat): string {
+  return sb.title || `StoryBeat:${sb.id.slice(0, 8)}`;
 }
 
-function sanitizePlotPointData(pp: PlotPoint): Record<string, unknown> {
-  const { id, type, ...rest } = pp as unknown as Record<string, unknown>;
+function sanitizeStoryBeatData(sb: StoryBeat): Record<string, unknown> {
+  const { id, type, ...rest } = sb as unknown as Record<string, unknown>;
   return rest;
 }
 
-function toPlotPointData(pp: PlotPoint, fulfillmentCount: number, alignedBeatId?: string): PlotPointData {
+function toStoryBeatData(sb: StoryBeat, fulfillmentCount: number, alignedBeatId?: string): StoryBeatData {
   return {
-    id: pp.id,
-    type: pp.type,
-    label: getPlotPointLabel(pp),
-    data: sanitizePlotPointData(pp),
+    id: sb.id,
+    type: sb.type,
+    label: getStoryBeatLabel(sb),
+    data: sanitizeStoryBeatData(sb),
     fulfillmentCount,
     alignedBeatId,
   };
 }
 
 // =============================================================================
-// POST /stories/:id/plot-points
+// POST /stories/:id/story-beats
 // =============================================================================
 
-interface CreatePlotPointBody {
+interface CreateStoryBeatBody {
   title: string;
   intent?: 'plot' | 'character' | 'tone';
   summary?: string;
@@ -91,10 +91,10 @@ interface CreatePlotPointBody {
   alignToBeatId?: string;
 }
 
-export function createPlotPointHandler(ctx: StorageContext) {
+export function createStoryBeatHandler(ctx: StorageContext) {
   return async (
-    req: Request<{ id: string }, unknown, CreatePlotPointBody>,
-    res: Response<APIResponse<CreatePlotPointData>>,
+    req: Request<{ id: string }, unknown, CreateStoryBeatBody>,
+    res: Response<APIResponse<CreateStoryBeatData>>,
     next: NextFunction
   ): Promise<void> => {
     try {
@@ -131,30 +131,30 @@ export function createPlotPointHandler(ctx: StorageContext) {
 
       // Generate IDs
       const timestamp = new Date().toISOString();
-      const plotPointId = `pp_${Date.now()}`;
-      const patchId = `patch_pp_${Date.now()}`;
+      const storyBeatId = `sb_${Date.now()}`;
+      const patchId = `patch_sb_${Date.now()}`;
       const newVersionId = `ver_${Date.now()}`;
 
-      // Build the PlotPoint node
-      const plotPoint: PlotPoint = {
-        type: 'PlotPoint',
-        id: plotPointId,
+      // Build the StoryBeat node
+      const storyBeat: StoryBeat = {
+        type: 'StoryBeat',
+        id: storyBeatId,
         title: title.trim(),
         status: 'proposed',
         createdAt: timestamp,
         updatedAt: timestamp,
       };
 
-      if (summary) plotPoint.summary = summary;
-      if (intent) plotPoint.intent = intent;
-      if (priority) plotPoint.priority = priority;
-      if (urgency) plotPoint.urgency = urgency;
-      if (stakes_change) plotPoint.stakes_change = stakes_change;
-      if (act) plotPoint.act = act;
+      if (summary) storyBeat.summary = summary;
+      if (intent) storyBeat.intent = intent;
+      if (priority) storyBeat.priority = priority;
+      if (urgency) storyBeat.urgency = urgency;
+      if (stakes_change) storyBeat.stakes_change = stakes_change;
+      if (act) storyBeat.act = act;
 
       // Build patch operations
       const ops: Patch['ops'] = [
-        { op: 'ADD_NODE', node: plotPoint },
+        { op: 'ADD_NODE', node: storyBeat },
       ];
 
       // Add ALIGNS_WITH edge if aligning to beat
@@ -164,7 +164,7 @@ export function createPlotPointHandler(ctx: StorageContext) {
           edge: {
             id: generateEdgeId(),
             type: 'ALIGNS_WITH',
-            from: plotPointId,
+            from: storyBeatId,
             to: alignToBeatId,
           },
         });
@@ -177,7 +177,7 @@ export function createPlotPointHandler(ctx: StorageContext) {
         created_at: timestamp,
         ops,
         metadata: {
-          source: 'plotPointHandler',
+          source: 'storyBeatHandler',
           action: 'create',
         },
       };
@@ -189,7 +189,7 @@ export function createPlotPointHandler(ctx: StorageContext) {
       state.history.versions[newVersionId] = {
         id: newVersionId,
         parent_id: currentVersionId,
-        label: `Created PlotPoint: ${plotPoint.title}`,
+        label: `Created StoryBeat: ${storyBeat.title}`,
         created_at: timestamp,
         graph: serializeGraph(updatedGraph),
       };
@@ -201,7 +201,7 @@ export function createPlotPointHandler(ctx: StorageContext) {
       res.status(201).json({
         success: true,
         data: {
-          plotPoint: toPlotPointData(plotPoint, 0, alignToBeatId),
+          storyBeat: toStoryBeatData(storyBeat, 0, alignToBeatId),
           newVersionId,
         },
       });
@@ -212,10 +212,10 @@ export function createPlotPointHandler(ctx: StorageContext) {
 }
 
 // =============================================================================
-// GET /stories/:id/plot-points
+// GET /stories/:id/story-beats
 // =============================================================================
 
-interface ListPlotPointsQuery {
+interface ListStoryBeatsQuery {
   status?: string;
   act?: string;
   intent?: string;
@@ -224,10 +224,10 @@ interface ListPlotPointsQuery {
   offset?: string;
 }
 
-export function listPlotPointsHandler(ctx: StorageContext) {
+export function listStoryBeatsHandler(ctx: StorageContext) {
   return async (
-    req: Request<{ id: string }, unknown, unknown, ListPlotPointsQuery>,
-    res: Response<APIResponse<PlotPointsListData>>,
+    req: Request<{ id: string }, unknown, unknown, ListStoryBeatsQuery>,
+    res: Response<APIResponse<StoryBeatsListData>>,
     next: NextFunction
   ): Promise<void> => {
     try {
@@ -249,24 +249,24 @@ export function listPlotPointsHandler(ctx: StorageContext) {
 
       const graph = deserializeGraph(currentVersion.graph);
 
-      // Get all plot points
-      let plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
+      // Get all story beats
+      let storyBeats = getNodesByType<StoryBeat>(graph, 'StoryBeat');
 
       // Apply filters
       if (status) {
-        plotPoints = plotPoints.filter((pp) => pp.status === status);
+        storyBeats = storyBeats.filter((sb) => sb.status === status);
       }
       if (act) {
         const actNum = parseInt(act, 10) as 1 | 2 | 3 | 4 | 5;
-        plotPoints = plotPoints.filter((pp) => pp.act === actNum);
+        storyBeats = storyBeats.filter((sb) => sb.act === actNum);
       }
       if (intent) {
-        plotPoints = plotPoints.filter((pp) => pp.intent === intent);
+        storyBeats = storyBeats.filter((sb) => sb.intent === intent);
       }
       if (unfulfilled === 'true') {
-        plotPoints = plotPoints.filter((pp) => {
+        storyBeats = storyBeats.filter((sb) => {
           const satisfiedByEdges = graph.edges.filter(
-            (e) => e.type === 'SATISFIED_BY' && e.from === pp.id
+            (e) => e.type === 'SATISFIED_BY' && e.from === sb.id
           );
           return satisfiedByEdges.length === 0;
         });
@@ -275,24 +275,24 @@ export function listPlotPointsHandler(ctx: StorageContext) {
       // Apply pagination
       const limit = limitStr ? parseInt(limitStr, 10) : 50;
       const offset = offsetStr ? parseInt(offsetStr, 10) : 0;
-      const totalCount = plotPoints.length;
-      const paginatedPlotPoints = plotPoints.slice(offset, offset + limit);
+      const totalCount = storyBeats.length;
+      const paginatedStoryBeats = storyBeats.slice(offset, offset + limit);
 
       // Convert to response format with fulfillment data
-      const plotPointData: PlotPointData[] = paginatedPlotPoints.map((pp) => {
+      const storyBeatData: StoryBeatData[] = paginatedStoryBeats.map((sb) => {
         const satisfiedByEdges = graph.edges.filter(
-          (e) => e.type === 'SATISFIED_BY' && e.from === pp.id
+          (e) => e.type === 'SATISFIED_BY' && e.from === sb.id
         );
         const alignsWithEdge = graph.edges.find(
-          (e) => e.type === 'ALIGNS_WITH' && e.from === pp.id
+          (e) => e.type === 'ALIGNS_WITH' && e.from === sb.id
         );
-        return toPlotPointData(pp, satisfiedByEdges.length, alignsWithEdge?.to);
+        return toStoryBeatData(sb, satisfiedByEdges.length, alignsWithEdge?.to);
       });
 
       res.json({
         success: true,
         data: {
-          plotPoints: plotPointData,
+          storyBeats: storyBeatData,
           totalCount,
           limit,
           offset,
@@ -305,17 +305,17 @@ export function listPlotPointsHandler(ctx: StorageContext) {
 }
 
 // =============================================================================
-// GET /stories/:id/plot-points/:ppId
+// GET /stories/:id/story-beats/:sbId
 // =============================================================================
 
-export function getPlotPointHandler(ctx: StorageContext) {
+export function getStoryBeatHandler(ctx: StorageContext) {
   return async (
-    req: Request<{ id: string; ppId: string }>,
-    res: Response<APIResponse<PlotPointData>>,
+    req: Request<{ id: string; sbId: string }>,
+    res: Response<APIResponse<StoryBeatData>>,
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { id, ppId } = req.params;
+      const { id, sbId } = req.params;
 
       const state = await loadVersionedStateById(id, ctx);
       if (!state) {
@@ -331,22 +331,22 @@ export function getPlotPointHandler(ctx: StorageContext) {
       }
 
       const graph = deserializeGraph(currentVersion.graph);
-      const pp = getNode(graph, ppId) as PlotPoint | undefined;
+      const sb = getNode(graph, sbId) as StoryBeat | undefined;
 
-      if (!pp || pp.type !== 'PlotPoint') {
-        throw new NotFoundError(`PlotPoint "${ppId}"`);
+      if (!sb || sb.type !== 'StoryBeat') {
+        throw new NotFoundError(`StoryBeat "${sbId}"`);
       }
 
       const satisfiedByEdges = graph.edges.filter(
-        (e) => e.type === 'SATISFIED_BY' && e.from === pp.id
+        (e) => e.type === 'SATISFIED_BY' && e.from === sb.id
       );
       const alignsWithEdge = graph.edges.find(
-        (e) => e.type === 'ALIGNS_WITH' && e.from === pp.id
+        (e) => e.type === 'ALIGNS_WITH' && e.from === sb.id
       );
 
       res.json({
         success: true,
-        data: toPlotPointData(pp, satisfiedByEdges.length, alignsWithEdge?.to),
+        data: toStoryBeatData(sb, satisfiedByEdges.length, alignsWithEdge?.to),
       });
     } catch (error) {
       next(error);
@@ -355,17 +355,17 @@ export function getPlotPointHandler(ctx: StorageContext) {
 }
 
 // =============================================================================
-// PATCH /stories/:id/plot-points/:ppId
+// PATCH /stories/:id/story-beats/:sbId
 // =============================================================================
 
-export function updatePlotPointHandler(ctx: StorageContext) {
+export function updateStoryBeatHandler(ctx: StorageContext) {
   return async (
-    req: Request<{ id: string; ppId: string }, unknown, { changes: Record<string, unknown> }>,
-    res: Response<APIResponse<UpdatePlotPointData>>,
+    req: Request<{ id: string; sbId: string }, unknown, { changes: Record<string, unknown> }>,
+    res: Response<APIResponse<UpdateStoryBeatData>>,
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { id, ppId } = req.params;
+      const { id, sbId } = req.params;
       const { changes } = req.body;
 
       if (!changes || Object.keys(changes).length === 0) {
@@ -387,15 +387,15 @@ export function updatePlotPointHandler(ctx: StorageContext) {
       }
 
       const graph = deserializeGraph(currentVersion.graph);
-      const pp = getNode(graph, ppId) as PlotPoint | undefined;
+      const sb = getNode(graph, sbId) as StoryBeat | undefined;
 
-      if (!pp || pp.type !== 'PlotPoint') {
-        throw new NotFoundError(`PlotPoint "${ppId}"`);
+      if (!sb || sb.type !== 'StoryBeat') {
+        throw new NotFoundError(`StoryBeat "${sbId}"`);
       }
 
       // Build UPDATE_NODE patch
       const timestamp = new Date().toISOString();
-      const patchId = `patch_pp_update_${Date.now()}`;
+      const patchId = `patch_sb_update_${Date.now()}`;
       const newVersionId = `ver_${Date.now()}`;
 
       // Add updatedAt to changes
@@ -409,12 +409,12 @@ export function updatePlotPointHandler(ctx: StorageContext) {
         ops: [
           {
             op: 'UPDATE_NODE',
-            id: ppId,
+            id: sbId,
             set: updatedChanges,
           },
         ],
         metadata: {
-          source: 'plotPointHandler',
+          source: 'storyBeatHandler',
           action: 'update',
         },
       };
@@ -423,16 +423,16 @@ export function updatePlotPointHandler(ctx: StorageContext) {
       const updatedGraph = applyPatch(graph, patch);
 
       // Get updated node
-      const updatedPP = getNode(updatedGraph, ppId) as PlotPoint | undefined;
-      if (!updatedPP) {
-        throw new Error('Failed to update plot point');
+      const updatedSB = getNode(updatedGraph, sbId) as StoryBeat | undefined;
+      if (!updatedSB) {
+        throw new Error('Failed to update story beat');
       }
 
       // Create new version
       state.history.versions[newVersionId] = {
         id: newVersionId,
         parent_id: currentVersionId,
-        label: `Updated PlotPoint: ${updatedPP.title}`,
+        label: `Updated StoryBeat: ${updatedSB.title}`,
         created_at: timestamp,
         graph: serializeGraph(updatedGraph),
       };
@@ -442,16 +442,16 @@ export function updatePlotPointHandler(ctx: StorageContext) {
       await saveVersionedStateById(id, state, ctx);
 
       const satisfiedByEdges = updatedGraph.edges.filter(
-        (e) => e.type === 'SATISFIED_BY' && e.from === ppId
+        (e) => e.type === 'SATISFIED_BY' && e.from === sbId
       );
       const alignsWithEdge = updatedGraph.edges.find(
-        (e) => e.type === 'ALIGNS_WITH' && e.from === ppId
+        (e) => e.type === 'ALIGNS_WITH' && e.from === sbId
       );
 
       res.json({
         success: true,
         data: {
-          plotPoint: toPlotPointData(updatedPP, satisfiedByEdges.length, alignsWithEdge?.to),
+          storyBeat: toStoryBeatData(updatedSB, satisfiedByEdges.length, alignsWithEdge?.to),
           newVersionId,
           fieldsUpdated: Object.keys(changes),
         },
@@ -463,17 +463,17 @@ export function updatePlotPointHandler(ctx: StorageContext) {
 }
 
 // =============================================================================
-// DELETE /stories/:id/plot-points/:ppId
+// DELETE /stories/:id/story-beats/:sbId
 // =============================================================================
 
-export function deletePlotPointHandler(ctx: StorageContext) {
+export function deleteStoryBeatHandler(ctx: StorageContext) {
   return async (
-    req: Request<{ id: string; ppId: string }>,
-    res: Response<APIResponse<DeletePlotPointData>>,
+    req: Request<{ id: string; sbId: string }>,
+    res: Response<APIResponse<DeleteStoryBeatData>>,
     next: NextFunction
   ): Promise<void> => {
     try {
-      const { id, ppId } = req.params;
+      const { id, sbId } = req.params;
 
       const state = await loadVersionedStateById(id, ctx);
       if (!state) {
@@ -490,20 +490,20 @@ export function deletePlotPointHandler(ctx: StorageContext) {
       }
 
       const graph = deserializeGraph(currentVersion.graph);
-      const pp = getNode(graph, ppId) as PlotPoint | undefined;
+      const sb = getNode(graph, sbId) as StoryBeat | undefined;
 
-      if (!pp || pp.type !== 'PlotPoint') {
-        throw new NotFoundError(`PlotPoint "${ppId}"`);
+      if (!sb || sb.type !== 'StoryBeat') {
+        throw new NotFoundError(`StoryBeat "${sbId}"`);
       }
 
       // Build DELETE_NODE patch (also removes connected edges)
       const timestamp = new Date().toISOString();
-      const patchId = `patch_pp_delete_${Date.now()}`;
+      const patchId = `patch_sb_delete_${Date.now()}`;
       const newVersionId = `ver_${Date.now()}`;
 
       // Find all edges connected to this node
       const connectedEdges = graph.edges.filter(
-        (e) => e.from === ppId || e.to === ppId
+        (e) => e.from === sbId || e.to === sbId
       );
 
       const ops: Patch['ops'] = [
@@ -513,7 +513,7 @@ export function deletePlotPointHandler(ctx: StorageContext) {
           edge: { id: e.id },
         })),
         // Then delete the node
-        { op: 'DELETE_NODE' as const, id: ppId },
+        { op: 'DELETE_NODE' as const, id: sbId },
       ];
 
       const patch: Patch = {
@@ -523,7 +523,7 @@ export function deletePlotPointHandler(ctx: StorageContext) {
         created_at: timestamp,
         ops,
         metadata: {
-          source: 'plotPointHandler',
+          source: 'storyBeatHandler',
           action: 'delete',
         },
       };
@@ -535,7 +535,7 @@ export function deletePlotPointHandler(ctx: StorageContext) {
       state.history.versions[newVersionId] = {
         id: newVersionId,
         parent_id: currentVersionId,
-        label: `Deleted PlotPoint: ${pp.title}`,
+        label: `Deleted StoryBeat: ${sb.title}`,
         created_at: timestamp,
         graph: serializeGraph(updatedGraph),
       };

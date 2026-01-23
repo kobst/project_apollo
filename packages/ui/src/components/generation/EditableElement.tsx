@@ -66,12 +66,12 @@ function formatEdgeRelationship(
     case 'SATISFIED_BY':
       return {
         label: `${fromName} realized by ${toName}`,
-        description: 'PlotPoint realized by scene',
+        description: 'StoryBeat realized by scene',
       };
     case 'ALIGNS_WITH':
       return {
         label: `${fromName} aligns with ${toName}`,
-        description: 'PlotPoint aligns with beat',
+        description: 'StoryBeat aligns with beat',
       };
     case 'PRECEDES':
       return {
@@ -81,7 +81,7 @@ function formatEdgeRelationship(
     case 'ADVANCES':
       return {
         label: `${fromName} advances ${toName}`,
-        description: 'PlotPoint advances character arc',
+        description: 'StoryBeat advances character arc',
       };
     case 'PART_OF':
       return {
@@ -886,7 +886,7 @@ function renderNodeEditFields(
     );
   }
 
-  if (nodeType === 'plotpoint') {
+  if (nodeType === 'storybeat') {
     return (
       <>
         <div className={styles.formRow}>

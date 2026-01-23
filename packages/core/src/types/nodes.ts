@@ -190,9 +190,9 @@ export interface Scene extends BaseNode {
   heading: string;
   title?: string;
   scene_overview: string;
-  /** @deprecated Use SATISFIED_BY edge to PlotPoint instead */
+  /** @deprecated Use SATISFIED_BY edge to StoryBeat instead */
   beat_id?: string;
-  /** Auto-computed order based on PlotPoint attachment. Undefined if unattached. */
+  /** Auto-computed order based on StoryBeat attachment. Undefined if unattached. */
   order_index?: number;
   int_ext?: IntExt;
   time_of_day?: string;
@@ -281,33 +281,33 @@ export interface CharacterArc extends BaseNode {
 // edge relationships in a future iteration.
 
 // =============================================================================
-// 14. PlotPoint
+// 14. StoryBeat (formerly PlotPoint)
 // =============================================================================
 
-export type PlotPointIntent = 'plot' | 'character' | 'tone';
-export type PlotPointPriority = 'low' | 'medium' | 'high';
-export type PlotPointUrgency = 'low' | 'medium' | 'high';
-export type PlotPointStakesChange = 'up' | 'down' | 'steady';
-export type PlotPointStatus = 'proposed' | 'approved' | 'deprecated';
+export type StoryBeatIntent = 'plot' | 'character' | 'tone';
+export type StoryBeatPriority = 'low' | 'medium' | 'high';
+export type StoryBeatUrgency = 'low' | 'medium' | 'high';
+export type StoryBeatStakesChange = 'up' | 'down' | 'steady';
+export type StoryBeatStatus = 'proposed' | 'approved' | 'deprecated';
 
-export interface PlotPoint extends BaseNode {
-  type: 'PlotPoint';
+export interface StoryBeat extends BaseNode {
+  type: 'StoryBeat';
   /** Short, imperative title (e.g., "Begin revenge tour") */
   title: string;
   /** 1-3 sentences describing the intended event */
   summary?: string;
-  /** Primary purpose of this plot point */
-  intent?: PlotPointIntent;
+  /** Primary purpose of this story beat */
+  intent?: StoryBeatIntent;
   /** Auto-computed order based on Beat alignment. Undefined if unaligned. */
   order_index?: number;
   /** Importance level */
-  priority?: PlotPointPriority;
+  priority?: StoryBeatPriority;
   /** How soon this needs to be addressed */
-  urgency?: PlotPointUrgency;
+  urgency?: StoryBeatUrgency;
   /** How stakes change at this point */
-  stakes_change?: PlotPointStakesChange;
+  stakes_change?: StoryBeatStakesChange;
   /** Lifecycle status (defaults to 'proposed') */
-  status?: PlotPointStatus;
+  status?: StoryBeatStatus;
   /** Which act this belongs to */
   act?: 1 | 2 | 3 | 4 | 5;
   /** Importance in overall plan (0-1) */
@@ -426,11 +426,11 @@ export interface GenreTone extends BaseNode {
 
 /**
  * Idea - Story ideas that are more formalized than Story Context prose
- * but not yet ready to be PlotPoints or Scenes.
+ * but not yet ready to be StoryBeats or Scenes.
  * Serves as an intermediate stage in the idea lifecycle.
  */
 export type IdeaSource = 'user' | 'ai';
-export type IdeaSuggestedType = 'PlotPoint' | 'Scene' | 'Character' | 'Location' | 'Object';
+export type IdeaSuggestedType = 'StoryBeat' | 'Scene' | 'Character' | 'Location' | 'Object';
 
 export interface Idea extends BaseNode {
   type: 'Idea';
@@ -464,7 +464,7 @@ export type ContentNode =
   | Location
   | StoryObject
   | CharacterArc
-  | PlotPoint
+  | StoryBeat
   | Logline
   | Setting
   | GenreTone
@@ -484,7 +484,7 @@ export type NodeType =
   | 'Location'
   | 'Object'
   | 'CharacterArc'
-  | 'PlotPoint'
+  | 'StoryBeat'
   | 'Logline'
   | 'Setting'
   | 'GenreTone'
@@ -504,7 +504,7 @@ export const NODE_TYPES: NodeType[] = [
   'Location',
   'Object',
   'CharacterArc',
-  'PlotPoint',
+  'StoryBeat',
   'Logline',
   'Setting',
   'GenreTone',

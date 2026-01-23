@@ -25,7 +25,7 @@ import type { APIResponse, NodeData } from '../types.js';
 // =============================================================================
 
 interface SceneData extends NodeData {
-  connectedPlotPointId?: string | undefined;
+  connectedStoryBeatId?: string | undefined;
 }
 
 interface ScenesListData {
@@ -74,13 +74,13 @@ function sanitizeSceneData(scene: Scene): Record<string, unknown> {
   return rest;
 }
 
-function toSceneData(scene: Scene, connectedPlotPointId?: string): SceneData {
+function toSceneData(scene: Scene, connectedStoryBeatId?: string): SceneData {
   return {
     id: scene.id,
     type: scene.type,
     label: getSceneLabel(scene),
     data: sanitizeSceneData(scene),
-    connectedPlotPointId,
+    connectedStoryBeatId,
   };
 }
 
@@ -94,8 +94,8 @@ interface CreateSceneBody {
   int_ext?: IntExt;
   time_of_day?: string;
   mood?: string;
-  /** Optional: immediately attach to a PlotPoint */
-  attachToPlotPointId?: string;
+  /** Optional: immediately attach to a StoryBeat */
+  attachToStoryBeatId?: string;
 }
 
 export function createSceneHandler(ctx: StorageContext) {
@@ -106,7 +106,7 @@ export function createSceneHandler(ctx: StorageContext) {
   ): Promise<void> => {
     try {
       const { id } = req.params;
-      const { heading, scene_overview, int_ext, time_of_day, mood, attachToPlotPointId } = req.body;
+      const { heading, scene_overview, int_ext, time_of_day, mood, attachToStoryBeatId } = req.body;
 
       if (!heading || heading.trim() === '') {
         throw new BadRequestError('heading is required');
@@ -128,11 +128,11 @@ export function createSceneHandler(ctx: StorageContext) {
 
       const graph = deserializeGraph(currentVersion.graph);
 
-      // If attaching to PlotPoint, verify it exists
-      if (attachToPlotPointId) {
-        const plotPoint = getNode(graph, attachToPlotPointId);
-        if (!plotPoint || plotPoint.type !== 'PlotPoint') {
-          throw new NotFoundError(`PlotPoint "${attachToPlotPointId}"`);
+      // If attaching to StoryBeat, verify it exists
+      if (attachToStoryBeatId) {
+        const storyBeat = getNode(graph, attachToStoryBeatId);
+        if (!storyBeat || storyBeat.type !== 'StoryBeat') {
+          throw new NotFoundError(`StoryBeat "${attachToStoryBeatId}"`);
         }
       }
 
@@ -161,15 +161,15 @@ export function createSceneHandler(ctx: StorageContext) {
         { op: 'ADD_NODE', node: scene },
       ];
 
-      // Add SATISFIED_BY edge if attaching to PlotPoint
-      // Edge direction: PlotPoint --SATISFIED_BY--> Scene
-      if (attachToPlotPointId) {
+      // Add SATISFIED_BY edge if attaching to StoryBeat
+      // Edge direction: StoryBeat --SATISFIED_BY--> Scene
+      if (attachToStoryBeatId) {
         ops.push({
           op: 'ADD_EDGE',
           edge: {
             id: generateEdgeId(),
             type: 'SATISFIED_BY',
-            from: attachToPlotPointId,
+            from: attachToStoryBeatId,
             to: sceneId,
           },
         });
@@ -206,7 +206,7 @@ export function createSceneHandler(ctx: StorageContext) {
       res.status(201).json({
         success: true,
         data: {
-          scene: toSceneData(scene, attachToPlotPointId),
+          scene: toSceneData(scene, attachToStoryBeatId),
           newVersionId,
         },
       });
@@ -254,17 +254,17 @@ export function listScenesHandler(ctx: StorageContext) {
       // Get all scenes
       let scenes = getNodesByType<Scene>(graph, 'Scene');
 
-      // Build scene -> PlotPoint mapping
-      const sceneToPlotPoint = new Map<string, string>();
+      // Build scene -> StoryBeat mapping
+      const sceneToStoryBeat = new Map<string, string>();
       for (const edge of graph.edges) {
         if (edge.type === 'SATISFIED_BY') {
-          sceneToPlotPoint.set(edge.to, edge.from);
+          sceneToStoryBeat.set(edge.to, edge.from);
         }
       }
 
       // Apply filters
       if (unassigned === 'true') {
-        scenes = scenes.filter((s) => !sceneToPlotPoint.has(s.id));
+        scenes = scenes.filter((s) => !sceneToStoryBeat.has(s.id));
       }
 
       // Apply pagination
@@ -275,7 +275,7 @@ export function listScenesHandler(ctx: StorageContext) {
 
       // Convert to response format
       const sceneData: SceneData[] = paginatedScenes.map((s) => {
-        return toSceneData(s, sceneToPlotPoint.get(s.id));
+        return toSceneData(s, sceneToStoryBeat.get(s.id));
       });
 
       res.json({

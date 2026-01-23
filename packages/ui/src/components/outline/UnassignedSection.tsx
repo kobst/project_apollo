@@ -1,31 +1,31 @@
 /**
- * UnassignedSection - Collapsible section showing unassigned PlotPoints and Scenes.
+ * UnassignedSection - Collapsible section showing unassigned StoryBeats and Scenes.
  *
- * PlotPoints can be dragged to Beats to create ALIGNS_WITH edges.
- * Scenes can be dragged to PlotPoints to create SATISFIED_BY edges.
+ * StoryBeats can be dragged to Beats to create ALIGNS_WITH edges.
+ * Scenes can be dragged to StoryBeats to create SATISFIED_BY edges.
  * Also displays proposed unassigned items from staged packages.
  */
 
 import { useState, useCallback } from 'react';
 import type { OutlineIdea } from '../../api/types';
-import type { MergedOutlinePlotPoint, MergedOutlineScene } from '../../utils/outlineMergeUtils';
-import { UnassignedPlotPointCard } from './UnassignedPlotPointCard';
+import type { MergedOutlineStoryBeat, MergedOutlineScene } from '../../utils/outlineMergeUtils';
+import { UnassignedStoryBeatCard } from './UnassignedStoryBeatCard';
 import { UnassignedSceneCard } from './UnassignedSceneCard';
 import { UnassignedIdeaCard } from './UnassignedIdeaCard';
-import { ProposedPlotPointCard } from './ProposedPlotPointCard';
+import { ProposedStoryBeatCard } from './ProposedStoryBeatCard';
 import { ProposedSceneCard } from './ProposedSceneCard';
 import styles from './UnassignedSection.module.css';
 
 interface UnassignedSectionProps {
-  plotPoints: MergedOutlinePlotPoint[];
+  storyBeats: MergedOutlineStoryBeat[];
   scenes: MergedOutlineScene[];
   ideas: OutlineIdea[];
-  proposedPlotPoints?: MergedOutlinePlotPoint[] | undefined;
+  proposedStoryBeats?: MergedOutlineStoryBeat[] | undefined;
   proposedScenes?: MergedOutlineScene[] | undefined;
-  onAddPlotPoint: () => void;
+  onAddStoryBeat: () => void;
   onAddScene: () => void;
   onAddIdea: () => void;
-  onPlotPointClick?: ((pp: MergedOutlinePlotPoint) => void) | undefined;
+  onStoryBeatClick?: ((pp: MergedOutlineStoryBeat) => void) | undefined;
   onSceneClick?: ((scene: MergedOutlineScene) => void) | undefined;
   onIdeaClick?: ((idea: OutlineIdea) => void) | undefined;
   onEditProposed?: ((nodeId: string, updates: Partial<Record<string, unknown>>) => void) | undefined;
@@ -34,15 +34,15 @@ interface UnassignedSectionProps {
 }
 
 export function UnassignedSection({
-  plotPoints,
+  storyBeats,
   scenes,
   ideas,
-  proposedPlotPoints = [],
+  proposedStoryBeats = [],
   proposedScenes = [],
-  onAddPlotPoint,
+  onAddStoryBeat,
   onAddScene,
   onAddIdea,
-  onPlotPointClick,
+  onStoryBeatClick,
   onSceneClick,
   onIdeaClick,
   onEditProposed,
@@ -50,12 +50,12 @@ export function UnassignedSection({
   removedNodeIds,
 }: UnassignedSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [activeTab, setActiveTab] = useState<'plotPoints' | 'scenes' | 'ideas'>('plotPoints');
+  const [activeTab, setActiveTab] = useState<'storyBeats' | 'scenes' | 'ideas'>('storyBeats');
 
   // Include proposed items in counts
-  const totalPlotPoints = plotPoints.length + proposedPlotPoints.length;
+  const totalStoryBeats = storyBeats.length + proposedStoryBeats.length;
   const totalScenes = scenes.length + proposedScenes.length;
-  const totalCount = totalPlotPoints + totalScenes + ideas.length;
+  const totalCount = totalStoryBeats + totalScenes + ideas.length;
 
   const toggleExpanded = useCallback(() => {
     setIsExpanded((prev) => !prev);
@@ -83,11 +83,11 @@ export function UnassignedSection({
           {totalCount > 0 && <span className={styles.count}>({totalCount})</span>}
         </div>
         <div className={styles.headerRight}>
-          {totalPlotPoints > 0 && (
-            <span className={`${styles.badge} ${proposedPlotPoints.length > 0 ? styles.badgeHasProposed : ''}`}>
-              {totalPlotPoints} Plot Point{totalPlotPoints !== 1 ? 's' : ''}
-              {proposedPlotPoints.length > 0 && (
-                <span className={styles.proposedIndicator}> (+{proposedPlotPoints.length})</span>
+          {totalStoryBeats > 0 && (
+            <span className={`${styles.badge} ${proposedStoryBeats.length > 0 ? styles.badgeHasProposed : ''}`}>
+              {totalStoryBeats} Story Beat{totalStoryBeats !== 1 ? 's' : ''}
+              {proposedStoryBeats.length > 0 && (
+                <span className={styles.proposedIndicator}> (+{proposedStoryBeats.length})</span>
               )}
             </span>
           )}
@@ -111,21 +111,21 @@ export function UnassignedSection({
         <div className={styles.content}>
           <p className={styles.description}>
             {totalCount > 0
-              ? 'These items need to be assigned. Drag plot points to beats, or drag scenes to plot points.'
-              : 'Create plot points and scenes here before assigning them to the structure above.'}
+              ? 'These items need to be assigned. Drag story beats to beats, or drag scenes to story beats.'
+              : 'Create story beats and scenes here before assigning them to the structure above.'}
           </p>
 
           {/* Tabs */}
           <div className={styles.tabs}>
             <button
-              className={`${styles.tab} ${activeTab === 'plotPoints' ? styles.tabActive : ''}`}
-              onClick={() => setActiveTab('plotPoints')}
+              className={`${styles.tab} ${activeTab === 'storyBeats' ? styles.tabActive : ''}`}
+              onClick={() => setActiveTab('storyBeats')}
               type="button"
             >
-              Plot Points
-              {totalPlotPoints > 0 && (
-                <span className={`${styles.tabCount} ${proposedPlotPoints.length > 0 ? styles.tabCountHasProposed : ''}`}>
-                  {totalPlotPoints}
+              Story Beats
+              {totalStoryBeats > 0 && (
+                <span className={`${styles.tabCount} ${proposedStoryBeats.length > 0 ? styles.tabCountHasProposed : ''}`}>
+                  {totalStoryBeats}
                 </span>
               )}
             </button>
@@ -155,17 +155,17 @@ export function UnassignedSection({
 
           {/* Content */}
           <div className={styles.itemsContainer}>
-            {activeTab === 'plotPoints' && (
+            {activeTab === 'storyBeats' && (
               <>
                 <div className={styles.itemsList}>
-                  {/* Proposed unassigned plot points */}
-                  {proposedPlotPoints.length > 0 && (
+                  {/* Proposed unassigned story beats */}
+                  {proposedStoryBeats.length > 0 && (
                     <div className={styles.proposedSubsection}>
                       <h4 className={styles.proposedSubsectionTitle}>Proposed (Unassigned)</h4>
-                      {proposedPlotPoints.map((pp) => (
-                        <ProposedPlotPointCard
+                      {proposedStoryBeats.map((pp) => (
+                        <ProposedStoryBeatCard
                           key={pp.id}
-                          plotPoint={pp}
+                          storyBeat={pp}
                           beatId=""
                           onEdit={onEditProposed!}
                           onRemove={pp._operation === 'add' ? onRemoveProposed : undefined}
@@ -174,26 +174,26 @@ export function UnassignedSection({
                       ))}
                     </div>
                   )}
-                  {/* Existing unassigned plot points */}
-                  {plotPoints.map((pp) => (
-                    <UnassignedPlotPointCard
+                  {/* Existing unassigned story beats */}
+                  {storyBeats.map((pp) => (
+                    <UnassignedStoryBeatCard
                       key={pp.id}
-                      plotPoint={pp}
-                      onClick={() => onPlotPointClick?.(pp)}
+                      storyBeat={pp}
+                      onClick={() => onStoryBeatClick?.(pp)}
                     />
                   ))}
-                  {totalPlotPoints === 0 && (
+                  {totalStoryBeats === 0 && (
                     <div className={styles.emptyMessage}>
-                      No unassigned plot points
+                      No unassigned story beats
                     </div>
                   )}
                 </div>
                 <button
                   className={styles.addButton}
-                  onClick={onAddPlotPoint}
+                  onClick={onAddStoryBeat}
                   type="button"
                 >
-                  + Add Plot Point
+                  + Add Story Beat
                 </button>
               </>
             )}
@@ -209,7 +209,7 @@ export function UnassignedSection({
                         <ProposedSceneCard
                           key={scene.id}
                           scene={scene}
-                          parentPlotPointId=""
+                          parentStoryBeatId=""
                           onEdit={onEditProposed!}
                           onRemove={scene._operation === 'add' ? onRemoveProposed : undefined}
                           isRemoved={removedNodeIds?.has(scene.id)}

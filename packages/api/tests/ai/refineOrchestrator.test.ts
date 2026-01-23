@@ -54,7 +54,7 @@ describe('refineOrchestrator', () => {
           nodes: [
             {
               operation: 'add',
-              node_type: 'PlotPoint',
+              node_type: 'StoryBeat',
               node_id: 'pp_001',
               data: { title: 'The Discovery' },
             },

@@ -115,8 +115,8 @@ describe('generateOrchestrator', () => {
       const beatEntry = createMockEntryPoint('beat', 'beat_001');
       expect(beatEntry.type).toBe('beat');
 
-      const plotPointEntry = createMockEntryPoint('plotPoint', 'pp_001');
-      expect(plotPointEntry.type).toBe('plotPoint');
+      const storyBeatEntry = createMockEntryPoint('storyBeat', 'sb_001');
+      expect(storyBeatEntry.type).toBe('storyBeat');
 
       const characterEntry = createMockEntryPoint('character', 'char_001');
       expect(characterEntry.type).toBe('character');

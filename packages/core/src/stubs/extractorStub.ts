@@ -12,7 +12,7 @@ import type {
   Beat,
   BeatType,
   Scene,
-  PlotPoint,
+  StoryBeat,
   StoryObject,
   Logline,
   Setting,
@@ -381,8 +381,8 @@ export function extractFromInput(
     });
   }
 
-  if (targetType === 'PlotPoint' || (!targetType && (lowerInput.includes('must') || lowerInput.includes('need') || lowerInput.includes('should')))) {
-    // PlotPoint extraction proposal
+  if (targetType === 'StoryBeat' || (!targetType && (lowerInput.includes('must') || lowerInput.includes('need') || lowerInput.includes('should')))) {
+    // StoryBeat extraction proposal
     const plotPointId = `pp_extracted_${Date.now()}`;
     const patchId = `patch_pp_${Date.now()}`;
     const timestamp = new Date().toISOString();
@@ -398,8 +398,8 @@ export function extractFromInput(
       intent = 'character';
     }
 
-    const plotPoint: PlotPoint = {
-      type: 'PlotPoint',
+    const plotPoint: StoryBeat = {
+      type: 'StoryBeat',
       id: plotPointId,
       title,
       summary: input.slice(0, 300),
@@ -414,7 +414,7 @@ export function extractFromInput(
       title: `Create plot point: ${title.slice(0, 40)}${title.length > 40 ? '...' : ''}`,
       description: 'Extract a new plot point representing a story beat that must happen.',
       confidence: 0.7,
-      extractedEntities: [{ type: 'PlotPoint', name: title, id: plotPointId }],
+      extractedEntities: [{ type: 'StoryBeat', name: title, id: plotPointId }],
       patch: {
         type: 'Patch',
         id: patchId,
@@ -653,7 +653,7 @@ export function extractFromInput(
       title: 'Create plot point',
       description: 'Create a new plot point from the input.',
       confidence: 0.6,
-      extractedEntities: [{ type: 'PlotPoint', name: title, id: plotPointId }],
+      extractedEntities: [{ type: 'StoryBeat', name: title, id: plotPointId }],
       patch: {
         type: 'Patch',
         id: patchId,
@@ -663,7 +663,7 @@ export function extractFromInput(
           {
             op: 'ADD_NODE',
             node: {
-              type: 'PlotPoint',
+              type: 'StoryBeat',
               id: plotPointId,
               title,
               summary: input.slice(0, 300),
@@ -671,7 +671,7 @@ export function extractFromInput(
               status: 'proposed',
               createdAt: timestamp,
               updatedAt: timestamp,
-            } as PlotPoint,
+            } as StoryBeat,
           },
         ],
         metadata: {

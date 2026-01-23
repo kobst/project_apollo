@@ -1,7 +1,7 @@
 /**
- * SceneFulfillmentSection - Shows which PlotPoints a Scene fulfills
+ * SceneFulfillmentSection - Shows which StoryBeats a Scene fulfills
  *
- * Displays SATISFIED_BY edges where PlotPoint → Scene, with order and status.
+ * Displays SATISFIED_BY edges where StoryBeat → Scene, with order and status.
  * Provides a "Manage" button to open the bulk attach modal.
  */
 
@@ -15,7 +15,7 @@ interface SceneFulfillmentSectionProps {
   sceneId: string;
   /** Incoming edges to the scene (we filter for SATISFIED_BY) */
   incomingEdges: InteractiveEdgeData[];
-  /** Related nodes (to look up PlotPoint labels) */
+  /** Related nodes (to look up StoryBeat labels) */
   relatedNodes: NodeData[];
   /** Called when user wants to manage fulfillments */
   onManage?: ((config: BulkAttachConfig) => void) | undefined;
@@ -104,7 +104,7 @@ export function SceneFulfillmentSection({
             className={styles.manageBtn}
             onClick={handleManage}
             type="button"
-            title="Manage which plot points this scene fulfills"
+            title="Manage which story beats this scene fulfills"
           >
             Manage
           </button>
@@ -113,7 +113,7 @@ export function SceneFulfillmentSection({
 
       {fulfillmentEdges.length === 0 ? (
         <div className={styles.empty}>
-          <span className={styles.emptyText}>No plot points fulfilled</span>
+          <span className={styles.emptyText}>No story beats fulfilled</span>
           {interactive && onManage && (
             <button
               className={styles.addBtn}
@@ -127,8 +127,8 @@ export function SceneFulfillmentSection({
       ) : (
         <div className={styles.list}>
           {fulfillmentEdges.map((edge, index) => {
-            const plotPoint = nodeMap.get(edge.source);
-            const ppData = plotPoint?.data as Record<string, unknown> | undefined;
+            const storyBeat = nodeMap.get(edge.source);
+            const ppData = storyBeat?.data as Record<string, unknown> | undefined;
             const ppStatus = ppData?.status as string | undefined;
             const ppIntent = ppData?.intent as string | undefined;
 
@@ -138,8 +138,8 @@ export function SceneFulfillmentSection({
                   <span className={styles.order}>
                     {edge.properties?.order ?? index + 1}
                   </span>
-                  <span className={styles.plotPointLabel}>
-                    {plotPoint?.label || edge.source.slice(0, 12)}
+                  <span className={styles.storyBeatLabel}>
+                    {storyBeat?.label || edge.source.slice(0, 12)}
                   </span>
                 </div>
                 <div className={styles.itemMeta}>

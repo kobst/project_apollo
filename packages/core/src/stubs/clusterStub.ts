@@ -13,7 +13,7 @@ import type {
   MoveCluster,
   NarrativeMove,
   Scene,
-  PlotPoint,
+  StoryBeat,
   ScopeBudget,
   ClusterType,
 } from '../types/nodes.js';
@@ -257,10 +257,10 @@ interface MoveVariant {
 }
 
 /**
- * Create ops to attach a scene to a beat through the PlotPoint hierarchy.
- * Creates: PlotPoint, ALIGNS_WITH edge, Scene, SATISFIED_BY edge
+ * Create ops to attach a scene to a beat through the StoryBeat hierarchy.
+ * Creates: StoryBeat, ALIGNS_WITH edge, Scene, SATISFIED_BY edge
  */
-function createSceneWithPlotPoint(
+function createSceneWithStoryBeat(
   beatId: string,
   sceneId: string,
   plotPointId: string,
@@ -269,8 +269,8 @@ function createSceneWithPlotPoint(
 ): PatchOp[] {
   const timestamp = new Date().toISOString();
 
-  const plotPoint: PlotPoint = {
-    type: 'PlotPoint',
+  const plotPoint: StoryBeat = {
+    type: 'StoryBeat',
     id: plotPointId,
     title: plotPointTitle,
     intent: 'plot',
@@ -313,7 +313,7 @@ function createSceneWithPlotPoint(
 }
 
 function getMoveVariants(oq: OpenQuestion): MoveVariant[] {
-  // For BeatUnrealized, generate scene options with PlotPoint hierarchy
+  // For BeatUnrealized, generate scene options with StoryBeat hierarchy
   if (oq.type === 'BeatUnrealized' && oq.target_node_id) {
     const beatId = oq.target_node_id;
     const beatType = beatId.replace('beat_', '');
@@ -324,7 +324,7 @@ function getMoveVariants(oq: OpenQuestion): MoveVariant[] {
         rationale: 'A high-tension scene that delivers the beat through conflict.',
         style: 'dramatic',
         tags: ['dramatic', 'confrontation', 'high-stakes'],
-        ops: createSceneWithPlotPoint(
+        ops: createSceneWithStoryBeat(
           beatId,
           `scene_${beatType}_dramatic`,
           `pp_${beatType}_dramatic`,
@@ -343,7 +343,7 @@ function getMoveVariants(oq: OpenQuestion): MoveVariant[] {
         rationale: 'A contemplative scene that delivers the beat through internal discovery.',
         style: 'quiet',
         tags: ['quiet', 'revelation', 'internal'],
-        ops: createSceneWithPlotPoint(
+        ops: createSceneWithStoryBeat(
           beatId,
           `scene_${beatType}_quiet`,
           `pp_${beatType}_quiet`,
@@ -362,7 +362,7 @@ function getMoveVariants(oq: OpenQuestion): MoveVariant[] {
         rationale: 'A kinetic scene that delivers the beat through physical action.',
         style: 'action',
         tags: ['action', 'kinetic', 'physical'],
-        ops: createSceneWithPlotPoint(
+        ops: createSceneWithStoryBeat(
           beatId,
           `scene_${beatType}_action`,
           `pp_${beatType}_action`,

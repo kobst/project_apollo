@@ -1,7 +1,7 @@
 import type { NodeRelationsData, EdgeData } from '../../api/types';
 import { NodeRelations, InteractiveEdgeData, BulkAttachConfig } from './NodeRelations';
 import { SceneFulfillmentSection } from './SceneFulfillmentSection';
-import { PlotPointDetailSection } from './PlotPointDetailSection';
+import { StoryBeatDetailSection } from './StoryBeatDetailSection';
 import { BeatDetailSection } from './BeatDetailSection';
 import styles from './NodeDetailPanel.module.css';
 
@@ -95,7 +95,7 @@ export function NodeDetailPanel({
         interactive={isInteractive}
       />
 
-      {/* Scene-specific: Fulfills Plot Points section */}
+      {/* Scene-specific: Fulfills Story Beats section */}
       {node.type === 'Scene' && (
         <SceneFulfillmentSection
           sceneId={node.id}
@@ -106,10 +106,10 @@ export function NodeDetailPanel({
         />
       )}
 
-      {/* PlotPoint-specific: Alignment, Fulfillment, Causality sections */}
-      {node.type === 'PlotPoint' && (
-        <PlotPointDetailSection
-          plotPointId={node.id}
+      {/* StoryBeat-specific: Alignment, Fulfillment, Causality sections */}
+      {node.type === 'StoryBeat' && (
+        <StoryBeatDetailSection
+          storyBeatId={node.id}
           outgoingEdges={outgoingEdges}
           incomingEdges={incomingEdges}
           relatedNodes={relatedNodes}
@@ -118,7 +118,7 @@ export function NodeDetailPanel({
         />
       )}
 
-      {/* Beat-specific: Aligned Plot Points */}
+      {/* Beat-specific: Aligned Story Beats */}
       {node.type === 'Beat' && (
         <BeatDetailSection
           beatId={node.id}

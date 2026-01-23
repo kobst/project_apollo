@@ -28,7 +28,7 @@ export type GapTier =
   | 'premise' // Top: Logline node (0-1)
   | 'foundations' // Setting, GenreTone, Character, Location, Object
   | 'structure' // Beat nodes (15 STC beats)
-  | 'plotPoints' // PlotPoint nodes
+  | 'storyBeats' // StoryBeat nodes
   | 'scenes'; // Scene nodes
 
 /**
@@ -179,7 +179,7 @@ export const TIER_CONFIG: Record<GapTier, TierConfig> = {
   premise: { label: 'Logline', order: 1 },
   foundations: { label: 'Foundations', order: 2 },
   structure: { label: 'Structure', order: 3 },
-  plotPoints: { label: 'Plot Points', order: 4 },
+  storyBeats: { label: 'Story Beats', order: 4 },
   scenes: { label: 'Scenes', order: 5 },
 };
 
@@ -190,7 +190,7 @@ export const TIER_ORDER: GapTier[] = [
   'premise',
   'foundations',
   'structure',
-  'plotPoints',
+  'storyBeats',
   'scenes',
 ];
 

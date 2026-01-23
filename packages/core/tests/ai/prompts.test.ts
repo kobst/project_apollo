@@ -26,7 +26,7 @@ describe('prompts', () => {
     it('should include the count in prompt', () => {
       const prompt = buildGenerationPrompt(baseParams);
 
-      expect(prompt).toContain('generate 3 complete narrative packages');
+      expect(prompt).toContain('generate EXACTLY 3 complete narrative packages');
     });
 
     it('should include entry point description', () => {
@@ -105,7 +105,7 @@ describe('prompts', () => {
       expect(prompt).toContain('## Available Node Types');
       expect(prompt).toContain('Character');
       expect(prompt).toContain('Location');
-      expect(prompt).toContain('PlotPoint');
+      expect(prompt).toContain('StoryBeat');
       expect(prompt).toContain('Scene');
     });
 
@@ -138,15 +138,15 @@ describe('prompts', () => {
         expect(prompt).toContain('structural beat: beat_Catalyst');
       });
 
-      it('should describe plotPoint entry point', () => {
+      it('should describe storyBeat entry point', () => {
         const params: GenerationParams = {
           ...baseParams,
-          entryPoint: { type: 'plotPoint', targetId: 'pp_001' },
+          entryPoint: { type: 'storyBeat', targetId: 'sb_001' },
         };
 
         const prompt = buildGenerationPrompt(params);
 
-        expect(prompt).toContain('scenes and supporting elements for PlotPoint: pp_001');
+        expect(prompt).toContain('scenes and supporting elements for StoryBeat: sb_001');
       });
 
       it('should describe character entry point', () => {
@@ -238,7 +238,7 @@ describe('prompts', () => {
       expect(prompt).toContain('## Available Node Types');
       expect(prompt).toContain('Character');
       expect(prompt).toContain('Location');
-      expect(prompt).toContain('PlotPoint');
+      expect(prompt).toContain('StoryBeat');
       expect(prompt).toContain('Scene');
       expect(prompt).toContain('Idea');
     });

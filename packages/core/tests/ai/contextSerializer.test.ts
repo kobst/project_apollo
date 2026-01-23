@@ -215,8 +215,8 @@ describe('contextSerializer', () => {
       const charResult = serializeNodeContext(graph, 'character_mike_001');
       expect(charResult).toContain('"Detective Mike Reyes"');
 
-      // PlotPoint has title
-      const ppResult = serializeNodeContext(graph, 'plotpoint_murder_001');
+      // StoryBeat has title
+      const ppResult = serializeNodeContext(graph, 'storybeat_murder_001');
       expect(ppResult).toContain('"Murder Discovery"');
 
       // Scene has heading
@@ -240,7 +240,7 @@ describe('contextSerializer', () => {
           type: 'missing_scene',
           title: 'Missing Scene',
           description: 'Need a scene for this plot point',
-          scopeRefs: { nodeIds: ['plotpoint_001'] },
+          scopeRefs: { nodeIds: ['storybeat_001'] },
         },
       ];
 
@@ -283,8 +283,8 @@ describe('contextSerializer', () => {
       const gaps: Gap[] = [
         {
           id: 'gap_1',
-          tier: 'plotPoints',
-          type: 'missing_plotpoint',
+          tier: 'storyBeats',
+          type: 'missing_storybeat',
           title: 'Missing Midpoint',
           description: 'Story needs a midpoint plot point',
           scopeRefs: {},
@@ -293,7 +293,7 @@ describe('contextSerializer', () => {
 
       const result = serializeGaps(gaps);
 
-      expect(result).toContain('**Missing Midpoint** (missing_plotpoint)');
+      expect(result).toContain('**Missing Midpoint** (missing_storybeat)');
       expect(result).toContain('Story needs a midpoint plot point');
     });
 
@@ -305,27 +305,27 @@ describe('contextSerializer', () => {
           type: 'missing_scene',
           title: 'Missing Scene',
           description: 'Scene needed',
-          scopeRefs: { nodeIds: ['plotpoint_001', 'character_002'] },
+          scopeRefs: { nodeIds: ['storybeat_001', 'character_002'] },
         },
       ];
 
       const result = serializeGaps(gaps);
 
-      expect(result).toContain('Target: plotpoint_001, character_002');
+      expect(result).toContain('Target: storybeat_001, character_002');
     });
 
-    it('should follow tier order: premise, foundations, structure, plotPoints, scenes', () => {
+    it('should follow tier order: premise, foundations, structure, storyBeats, scenes', () => {
       const gaps: Gap[] = [
         { id: '1', tier: 'scenes', type: 't', title: 'Scenes', description: '', scopeRefs: {} },
         { id: '2', tier: 'premise', type: 't', title: 'Premise', description: '', scopeRefs: {} },
-        { id: '3', tier: 'plotPoints', type: 't', title: 'PlotPoints', description: '', scopeRefs: {} },
+        { id: '3', tier: 'storyBeats', type: 't', title: 'StoryBeats', description: '', scopeRefs: {} },
         { id: '4', tier: 'foundations', type: 't', title: 'Foundations', description: '', scopeRefs: {} },
         { id: '5', tier: 'structure', type: 't', title: 'Structure', description: '', scopeRefs: {} },
       ];
 
       const result = serializeGaps(gaps);
 
-      const order = ['Premise', 'Foundations', 'Structure', 'Plotpoints', 'Scenes'];
+      const order = ['Premise', 'Foundations', 'Structure', 'Storybeats', 'Scenes'];
       let lastIndex = -1;
       for (const tier of order) {
         const index = result.indexOf(`${tier} Tier`);

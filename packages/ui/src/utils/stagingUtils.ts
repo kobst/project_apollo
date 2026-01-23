@@ -18,7 +18,7 @@ export interface SectionChangeCounts {
 
 // Node types that belong to each section
 const PREMISE_NODE_TYPES = ['Logline', 'Setting', 'GenreTone'];
-const STRUCTURE_NODE_TYPES = ['Beat', 'PlotPoint', 'Scene'];
+const STRUCTURE_NODE_TYPES = ['Beat', 'StoryBeat', 'Scene'];
 const ELEMENT_NODE_TYPES = ['Character', 'Location', 'Object'];
 
 // Merged node for display
@@ -381,7 +381,7 @@ export function computeDetailedElementCounts(pkg: NarrativePackage | null): Deta
 
 /**
  * Compute detailed structure change counts by act
- * Requires a beat-to-act map since plot points are aligned to beats via edges
+ * Requires a beat-to-act map since story beats are aligned to beats via edges
  */
 export function computeDetailedStructureCounts(
   pkg: NarrativePackage | null,
@@ -394,12 +394,12 @@ export function computeDetailedStructureCounts(
 
   if (!pkg) return counts;
 
-  // Build map of PlotPoint ID -> Beat ID from ALIGNS_WITH edges
-  const plotPointToBeat = new Map<string, string>();
+  // Build map of StoryBeat ID -> Beat ID from ALIGNS_WITH edges
+  const storyBeatToBeat = new Map<string, string>();
   for (const edge of pkg.changes.edges) {
     if (edge.operation === 'add' && edge.edge_type === 'ALIGNS_WITH') {
-      // ALIGNS_WITH: from=PlotPoint, to=Beat
-      plotPointToBeat.set(edge.from, edge.to);
+      // ALIGNS_WITH: from=StoryBeat, to=Beat
+      storyBeatToBeat.set(edge.from, edge.to);
     }
   }
 
@@ -408,9 +408,9 @@ export function computeDetailedStructureCounts(
 
     let act: number | undefined;
 
-    // For PlotPoints, look up the beat alignment to determine the act
-    if (node.node_type === 'PlotPoint') {
-      const beatId = plotPointToBeat.get(node.node_id);
+    // For StoryBeats, look up the beat alignment to determine the act
+    if (node.node_type === 'StoryBeat') {
+      const beatId = storyBeatToBeat.get(node.node_id);
       if (beatId && beatToActMap) {
         act = beatToActMap.get(beatId);
       }

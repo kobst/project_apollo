@@ -39,11 +39,11 @@ import {
   createApplyFixHandler,
   createPreCommitLintHandler,
   createBulkAttachHandler,
-  createPlotPointHandler,
-  listPlotPointsHandler,
-  getPlotPointHandler,
-  updatePlotPointHandler,
-  deletePlotPointHandler,
+  createStoryBeatHandler,
+  listStoryBeatsHandler,
+  getStoryBeatHandler,
+  updateStoryBeatHandler,
+  deleteStoryBeatHandler,
   createCoverageHandler,
   createGapsHandler,
   createRecomputeOrderHandler,
@@ -147,12 +147,12 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   // Recompute order endpoint (migration/sync)
   router.post('/:id/recompute-order', createRecomputeOrderHandler(ctx));
 
-  // PlotPoint endpoints
-  router.post('/:id/plot-points', createPlotPointHandler(ctx));
-  router.get('/:id/plot-points', listPlotPointsHandler(ctx));
-  router.get('/:id/plot-points/:ppId', getPlotPointHandler(ctx));
-  router.patch('/:id/plot-points/:ppId', updatePlotPointHandler(ctx));
-  router.delete('/:id/plot-points/:ppId', deletePlotPointHandler(ctx));
+  // StoryBeat endpoints
+  router.post('/:id/story-beats', createStoryBeatHandler(ctx));
+  router.get('/:id/story-beats', listStoryBeatsHandler(ctx));
+  router.get('/:id/story-beats/:sbId', getStoryBeatHandler(ctx));
+  router.patch('/:id/story-beats/:sbId', updateStoryBeatHandler(ctx));
+  router.delete('/:id/story-beats/:sbId', deleteStoryBeatHandler(ctx));
 
   // Scene endpoints
   router.post('/:id/scenes', createSceneHandler(ctx));

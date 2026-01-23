@@ -66,14 +66,14 @@
 }
 
 /* Plot Points Section */
-.plotPointsSection {
+.storyBeatsSection {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-/* Individual PlotPoint container with nested scenes */
-.plotPointContainer {
+/* Individual StoryBeat container with nested scenes */
+.storyBeatContainer {
   display: flex;
   flex-direction: column;
   background: #252540;
@@ -82,7 +82,7 @@
   overflow: hidden;
 }
 
-.plotPointHeader {
+.storyBeatHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -91,7 +91,7 @@
   gap: 6px;
 }
 
-.plotPointTitle {
+.storyBeatTitle {
   font-size: 11px;
   color: #bbb;
   line-height: 1.3;
@@ -102,7 +102,7 @@
   white-space: nowrap;
 }
 
-.plotPointIntent {
+.storyBeatIntent {
   font-size: 9px;
   text-transform: uppercase;
   padding: 1px 4px;
@@ -112,27 +112,27 @@
   flex-shrink: 0;
 }
 
-.plotPointIntent.plot {
+.storyBeatIntent.plot {
   background: rgba(90, 124, 165, 0.2);
   color: #5a7ca5;
 }
 
-.plotPointIntent.character {
+.storyBeatIntent.character {
   background: rgba(165, 124, 90, 0.2);
   color: #a57c5a;
 }
 
-.plotPointIntent.theme {
+.storyBeatIntent.theme {
   background: rgba(124, 165, 90, 0.2);
   color: #7ca55a;
 }
 
-.plotPointIntent.tone {
+.storyBeatIntent.tone {
   background: rgba(165, 90, 124, 0.2);
   color: #a55a7c;
 }
 
-/* Nested scenes under a PlotPoint */
+/* Nested scenes under a StoryBeat */
 .nestedScenes {
   display: flex;
   flex-direction: column;
@@ -140,7 +140,7 @@
   padding: 4px;
 }
 
-.emptyPlotPoint {
+.emptyStoryBeat {
   padding: 8px;
   text-align: center;
   font-size: 10px;
@@ -191,7 +191,7 @@
 }
 
 /* Add Plot Point button */
-.addPlotPointBtn {
+.addStoryBeatBtn {
   margin: 4px 8px 8px;
   padding: 6px 10px;
   border: 1px dashed #4a4a6a;
@@ -204,7 +204,7 @@
   text-align: center;
 }
 
-.addPlotPointBtn:hover {
+.addStoryBeatBtn:hover {
   border-color: #5a7ca5;
   color: #5a7ca5;
   background: rgba(90, 124, 165, 0.1);
@@ -224,11 +224,11 @@
   color: #888;
 }
 
-/* PlotPoint header clickable */
-.plotPointHeader {
+/* StoryBeat header clickable */
+.storyBeatHeader {
   cursor: pointer;
 }
 
-.plotPointHeader:hover {
+.storyBeatHeader:hover {
   background: #35355a;
 }

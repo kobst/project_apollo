@@ -20,7 +20,7 @@ import type { APIResponse } from '../types.js';
 interface GapData {
   id: string;
   type: 'structural' | 'narrative';
-  tier: 'premise' | 'foundations' | 'structure' | 'plotPoints' | 'scenes';
+  tier: 'premise' | 'foundations' | 'structure' | 'storyBeats' | 'scenes';
   title: string;
   description: string;
   scopeRefs: { nodeIds?: string[]; edgeIds?: string[] };
@@ -31,7 +31,7 @@ interface GapData {
 }
 
 interface TierSummaryData {
-  tier: 'premise' | 'foundations' | 'structure' | 'plotPoints' | 'scenes';
+  tier: 'premise' | 'foundations' | 'structure' | 'storyBeats' | 'scenes';
   label: string;
   covered: number;
   total: number;

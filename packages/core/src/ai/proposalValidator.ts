@@ -127,7 +127,7 @@ const NODE_TYPE_TO_TIER: Record<string, GapTier> = {
   Location: 'foundations',
   Object: 'foundations',
   Beat: 'structure',
-  PlotPoint: 'plotPoints',
+  StoryBeat: 'storyBeats',
   Scene: 'scenes',
 };
 
@@ -137,7 +137,7 @@ const SIMILARITY_FIELDS: Record<string, string[]> = {
   Location: ['name'],
   Object: ['name'],
   Scene: ['heading', 'title'],
-  PlotPoint: ['title'],
+  StoryBeat: ['title'],
   Idea: ['title'],
   Setting: ['name'],
   GenreTone: ['genre', 'tone'],
@@ -157,9 +157,9 @@ const OUTGOING_EDGES: Record<string, Array<{ edgeType: EdgeType; targetType: str
   Location: [
     { edgeType: 'PART_OF', targetType: 'Setting' },
   ],
-  PlotPoint: [
+  StoryBeat: [
     { edgeType: 'ALIGNS_WITH', targetType: 'Beat' },
-    { edgeType: 'PRECEDES', targetType: 'PlotPoint' },
+    { edgeType: 'PRECEDES', targetType: 'StoryBeat' },
     { edgeType: 'ADVANCES', targetType: 'CharacterArc' },
   ],
 };
@@ -177,13 +177,13 @@ const INCOMING_EDGES: Record<string, Array<{ edgeType: EdgeType; sourceType: str
   ],
   CharacterArc: [
     { edgeType: 'HAS_ARC', sourceType: 'Character' },
-    { edgeType: 'ADVANCES', sourceType: 'PlotPoint' },
+    { edgeType: 'ADVANCES', sourceType: 'StoryBeat' },
   ],
   Beat: [
-    { edgeType: 'ALIGNS_WITH', sourceType: 'PlotPoint' },
+    { edgeType: 'ALIGNS_WITH', sourceType: 'StoryBeat' },
   ],
   Scene: [
-    { edgeType: 'SATISFIED_BY', sourceType: 'PlotPoint' },
+    { edgeType: 'SATISFIED_BY', sourceType: 'StoryBeat' },
   ],
   Setting: [
     { edgeType: 'PART_OF', sourceType: 'Location' },
@@ -411,7 +411,7 @@ export function checkGapFulfillment(
   }
 
   // Sort by fulfillment (full first) then by tier order
-  const tierOrder: GapTier[] = ['premise', 'foundations', 'structure', 'plotPoints', 'scenes'];
+  const tierOrder: GapTier[] = ['premise', 'foundations', 'structure', 'storyBeats', 'scenes'];
   matches.sort((a, b) => {
     if (a.fulfillment !== b.fulfillment) {
       return a.fulfillment === 'full' ? -1 : 1;

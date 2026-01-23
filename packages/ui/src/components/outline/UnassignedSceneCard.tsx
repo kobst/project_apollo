@@ -1,6 +1,6 @@
 /**
  * UnassignedSceneCard - Card displaying an unassigned scene.
- * Can be dragged to a PlotPoint to create a SATISFIED_BY edge.
+ * Can be dragged to a StoryBeat to create a SATISFIED_BY edge.
  */
 
 import type { OutlineScene } from '../../api/types';
@@ -24,7 +24,7 @@ export function UnassignedSceneCard({
       onKeyDown={(e) => e.key === 'Enter' && onClick?.()}
     >
       <div className={styles.header}>
-        <span className={styles.dragHandle} title="Drag to assign to a plot point">
+        <span className={styles.dragHandle} title="Drag to assign to a story beat">
           &#x2630;
         </span>
         {scene.intExt && <span className={styles.intExt}>{scene.intExt}</span>}

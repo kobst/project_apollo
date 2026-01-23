@@ -1,20 +1,20 @@
 /**
  * ActSwimlane - Vertical expansion model for an act.
- * Contains BeatTimeline and PlotPointSwimlanes.
+ * Contains BeatTimeline and StoryBeatSwimlanes.
  * Supports beat selection with empty state view.
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import type { MergedOutlineAct, MergedOutlinePlotPoint, MergedOutlineScene, MergedOutlineBeat } from '../../utils/outlineMergeUtils';
+import type { MergedOutlineAct, MergedOutlineStoryBeat, MergedOutlineScene, MergedOutlineBeat } from '../../utils/outlineMergeUtils';
 import { BeatTimeline } from './BeatTimeline';
-import { PlotPointSwimlane } from './PlotPointSwimlane';
+import { StoryBeatSwimlane } from './StoryBeatSwimlane';
 import styles from './ActSwimlane.module.css';
 
 interface ActSwimlaneProps {
   act: MergedOutlineAct;
-  onEditPlotPoint?: (pp: MergedOutlinePlotPoint) => void;
-  onEditScene?: (scene: MergedOutlineScene, plotPointId: string) => void;
-  onAddPlotPoint?: (beatId: string) => void;
+  onEditStoryBeat?: (pp: MergedOutlineStoryBeat) => void;
+  onEditScene?: (scene: MergedOutlineScene, storyBeatId: string) => void;
+  onAddStoryBeat?: (beatId: string) => void;
   onAddScene?: () => void;
   onEditProposed?: (nodeId: string, updates: Partial<Record<string, unknown>>) => void;
   onRemoveProposed?: (nodeId: string) => void;
@@ -29,22 +29,22 @@ const ACT_NAMES: Record<number, string> = {
   5: 'Act 5 - Finale',
 };
 
-// Get all plot points from an act (flattened from all beats)
-function getAllPlotPoints(act: MergedOutlineAct): MergedOutlinePlotPoint[] {
-  const plotPoints: MergedOutlinePlotPoint[] = [];
+// Get all story beats from an act (flattened from all beats)
+function getAllStoryBeats(act: MergedOutlineAct): MergedOutlineStoryBeat[] {
+  const storyBeats: MergedOutlineStoryBeat[] = [];
   for (const beat of act.beats) {
-    for (const pp of beat.plotPoints) {
-      plotPoints.push(pp);
+    for (const pp of beat.storyBeats) {
+      storyBeats.push(pp);
     }
   }
-  return plotPoints;
+  return storyBeats;
 }
 
 // Count scenes in an act
 function getSceneCount(act: MergedOutlineAct): number {
   let count = 0;
   for (const beat of act.beats) {
-    for (const pp of beat.plotPoints) {
+    for (const pp of beat.storyBeats) {
       count += pp.scenes.length;
     }
   }
@@ -62,9 +62,9 @@ function formatBeatType(beatType: string): string {
 
 export function ActSwimlane({
   act,
-  onEditPlotPoint,
+  onEditStoryBeat,
   onEditScene,
-  onAddPlotPoint,
+  onAddStoryBeat,
   onAddScene,
   onEditProposed,
   onRemoveProposed,
@@ -74,14 +74,14 @@ export function ActSwimlane({
   const [selectedBeatId, setSelectedBeatId] = useState<string | null>(null);
 
   const actName = ACT_NAMES[act.act] || `Act ${act.act}`;
-  const plotPoints = useMemo(() => getAllPlotPoints(act), [act]);
+  const storyBeats = useMemo(() => getAllStoryBeats(act), [act]);
   const sceneCount = useMemo(() => getSceneCount(act), [act]);
   const beatCount = act.beats.length;
 
   // Check if any content is proposed
   const hasProposed = useMemo(() => {
-    return plotPoints.some(pp => pp._isProposed || pp.scenes.some(s => s._isProposed));
-  }, [plotPoints]);
+    return storyBeats.some(pp => pp._isProposed || pp.scenes.some(s => s._isProposed));
+  }, [storyBeats]);
 
   // Get selected beat object
   const selectedBeat = useMemo((): MergedOutlineBeat | null => {
@@ -90,13 +90,13 @@ export function ActSwimlane({
   }, [act.beats, selectedBeatId]);
 
   // Check if selected beat is empty
-  const selectedBeatIsEmpty = selectedBeat ? selectedBeat.plotPoints.length === 0 : false;
+  const selectedBeatIsEmpty = selectedBeat ? selectedBeat.storyBeats.length === 0 : false;
 
   const handleBeatClick = useCallback((beatId: string) => {
     const beat = act.beats.find(b => b.id === beatId);
     if (!beat) return;
 
-    // If beat has content, just select it (could scroll to plot points)
+    // If beat has content, just select it (could scroll to story beats)
     // If beat is empty, select it to show the empty state card
     if (selectedBeatId === beatId) {
       // Clicking same beat deselects it
@@ -106,12 +106,12 @@ export function ActSwimlane({
     }
   }, [act.beats, selectedBeatId]);
 
-  // Handle add plot point from empty beat card
-  const handleAddPlotPointFromBeat = useCallback(() => {
-    if (selectedBeatId && onAddPlotPoint) {
-      onAddPlotPoint(selectedBeatId);
+  // Handle add story beat from empty beat card
+  const handleAddStoryBeatFromBeat = useCallback(() => {
+    if (selectedBeatId && onAddStoryBeat) {
+      onAddStoryBeat(selectedBeatId);
     }
-  }, [selectedBeatId, onAddPlotPoint]);
+  }, [selectedBeatId, onAddStoryBeat]);
 
   // Clear selection when clicking outside
   const handleClearSelection = useCallback(() => {
@@ -136,7 +136,7 @@ export function ActSwimlane({
         <h3 className={styles.actTitle}>{actName}</h3>
 
         <span className={styles.stats}>
-          {beatCount} beats, {plotPoints.length} plot points, {sceneCount} scenes
+          {beatCount} beats, {storyBeats.length} story beats, {sceneCount} scenes
           {hasProposed && <span className={styles.proposedIndicator}> (has proposed)</span>}
         </span>
       </div>
@@ -168,15 +168,15 @@ export function ActSwimlane({
               {selectedBeat.guidance && (
                 <p className={styles.emptyBeatGuidance}>{selectedBeat.guidance}</p>
               )}
-              <p className={styles.emptyBeatMessage}>No plot points aligned to this beat yet.</p>
+              <p className={styles.emptyBeatMessage}>No story beats aligned to this beat yet.</p>
               <div className={styles.emptyBeatActions}>
-                {onAddPlotPoint && (
+                {onAddStoryBeat && (
                   <button
                     type="button"
                     className={styles.emptyBeatBtn}
-                    onClick={handleAddPlotPointFromBeat}
+                    onClick={handleAddStoryBeatFromBeat}
                   >
-                    + Add Plot Point
+                    + Add Story Beat
                   </button>
                 )}
                 {onAddScene && (
@@ -192,21 +192,21 @@ export function ActSwimlane({
             </div>
           )}
 
-          {/* Plot point swimlanes - hidden when viewing an empty beat */}
+          {/* Story beat swimlanes - hidden when viewing an empty beat */}
           {!selectedBeatIsEmpty && (
             <>
-              <div className={styles.plotPoints}>
-                {plotPoints.length === 0 ? (
+              <div className={styles.storyBeats}>
+                {storyBeats.length === 0 ? (
                   <div className={styles.emptyState}>
-                    <p>No plot points in this act yet.</p>
-                    <p className={styles.hint}>Click a beat in the timeline above to add a plot point.</p>
+                    <p>No story beats in this act yet.</p>
+                    <p className={styles.hint}>Click a beat in the timeline above to add a story beat.</p>
                   </div>
                 ) : (
-                  plotPoints.map((pp) => (
-                    <PlotPointSwimlane
+                  storyBeats.map((pp) => (
+                    <StoryBeatSwimlane
                       key={pp.id}
-                      plotPoint={pp}
-                      onEditPlotPoint={onEditPlotPoint ? () => onEditPlotPoint(pp) : undefined}
+                      storyBeat={pp}
+                      onEditStoryBeat={onEditStoryBeat ? () => onEditStoryBeat(pp) : undefined}
                       onEditScene={onEditScene ? (scene) => onEditScene(scene, pp.id) : undefined}
                       onAddScene={onAddScene}
                       onEditProposed={onEditProposed}
@@ -217,14 +217,14 @@ export function ActSwimlane({
                 )}
               </div>
 
-              {/* Add plot point button */}
-              {onAddPlotPoint && (
+              {/* Add story beat button */}
+              {onAddStoryBeat && (
                 <button
                   type="button"
-                  className={styles.addPlotPointBtn}
-                  onClick={() => onAddPlotPoint(act.beats[0]?.id ?? '')}
+                  className={styles.addStoryBeatBtn}
+                  onClick={() => onAddStoryBeat(act.beats[0]?.id ?? '')}
                 >
-                  + Add Plot Point to {actName.split(' - ')[0]}
+                  + Add Story Beat to {actName.split(' - ')[0]}
                 </button>
               )}
             </>

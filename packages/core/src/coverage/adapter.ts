@@ -28,15 +28,15 @@ const RULE_TO_TIER: Record<string, GapTier> = {
   STC_BEAT_ORDERING: 'structure',
   SCENE_ACT_BOUNDARY: 'structure',
 
-  // PlotPoints tier
-  PP_EVENT_REALIZATION: 'plotPoints',
-  PP_DAG_NO_CYCLES: 'plotPoints',
-  PP_ACT_ALIGNMENT: 'plotPoints',
+  // StoryBeats tier
+  SB_EVENT_REALIZATION: 'storyBeats',
+  SB_DAG_NO_CYCLES: 'storyBeats',
+  SB_ACT_ALIGNMENT: 'storyBeats',
 
   // Scenes tier
   SCENE_HAS_CHARACTER: 'scenes',
   SCENE_HAS_LOCATION: 'scenes',
-  SCENE_HAS_PLOTPOINT: 'scenes',
+  SCENE_HAS_STORYBEAT: 'scenes',
   EDGE_ORDER_UNIQUE: 'scenes',
 };
 
@@ -54,7 +54,7 @@ const NODE_TYPE_TO_TIER: Record<string, GapTier> = {
   Character: 'foundations',
   CharacterArc: 'foundations',
   Beat: 'structure',
-  PlotPoint: 'plotPoints',
+  StoryBeat: 'storyBeats',
   Scene: 'scenes',
   Location: 'scenes',
   Object: 'scenes',
@@ -76,15 +76,15 @@ const RULE_LABELS: Record<string, string> = {
   STC_BEAT_ORDERING: 'Beat Order Issue',
   SCENE_ACT_BOUNDARY: 'Scene Act Mismatch',
 
-  // PlotPoints
-  PP_EVENT_REALIZATION: 'Unrealized PlotPoint',
-  PP_DAG_NO_CYCLES: 'PlotPoint Cycle Detected',
-  PP_ACT_ALIGNMENT: 'PlotPoint Act Mismatch',
+  // StoryBeats
+  SB_EVENT_REALIZATION: 'Unrealized StoryBeat',
+  SB_DAG_NO_CYCLES: 'StoryBeat Cycle Detected',
+  SB_ACT_ALIGNMENT: 'StoryBeat Act Mismatch',
 
   // Scenes
   SCENE_HAS_CHARACTER: 'Scene Without Character',
   SCENE_HAS_LOCATION: 'Scene Without Location',
-  SCENE_HAS_PLOTPOINT: 'Unlinked Scene',
+  SCENE_HAS_STORYBEAT: 'Unlinked Scene',
   EDGE_ORDER_UNIQUE: 'Duplicate Edge Order',
 };
 

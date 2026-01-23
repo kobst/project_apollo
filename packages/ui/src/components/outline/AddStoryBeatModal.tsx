@@ -1,59 +1,59 @@
 /**
- * Modal for quickly adding a PlotPoint aligned to a Beat.
+ * Modal for quickly adding a StoryBeat aligned to a Beat.
  * Pre-fills act from the beat and creates ALIGNS_WITH edge on save.
  */
 
 import { useState, useCallback } from 'react';
-import type { CreatePlotPointRequest, PlotPointIntent, PlotPointPriority } from '../../api/types';
-import styles from './AddPlotPointModal.module.css';
+import type { CreateStoryBeatRequest, StoryBeatIntent, StoryBeatPriority } from '../../api/types';
+import styles from './AddStoryBeatModal.module.css';
 
-interface AddPlotPointModalProps {
-  /** Beat ID to align the plot point to */
+interface AddStoryBeatModalProps {
+  /** Beat ID to align the story beat to */
   beatId: string;
   /** Beat type for display */
   beatType: string;
   /** Act number from the beat */
   act: 1 | 2 | 3 | 4 | 5;
   /** Called when user confirms creation */
-  onAdd: (data: CreatePlotPointRequest) => void;
+  onAdd: (data: CreateStoryBeatRequest) => void;
   /** Called when user cancels */
   onCancel: () => void;
   /** Loading state */
   saving?: boolean;
 }
 
-const INTENT_OPTIONS: { value: PlotPointIntent; label: string }[] = [
+const INTENT_OPTIONS: { value: StoryBeatIntent; label: string }[] = [
   { value: 'plot', label: 'Plot' },
   { value: 'character', label: 'Character' },
   { value: 'tone', label: 'Tone' },
 ];
 
-const PRIORITY_OPTIONS: { value: PlotPointPriority; label: string }[] = [
+const PRIORITY_OPTIONS: { value: StoryBeatPriority; label: string }[] = [
   { value: 'high', label: 'High' },
   { value: 'medium', label: 'Medium' },
   { value: 'low', label: 'Low' },
 ];
 
-export function AddPlotPointModal({
+export function AddStoryBeatModal({
   beatId,
   beatType,
   act,
   onAdd,
   onCancel,
   saving = false,
-}: AddPlotPointModalProps) {
+}: AddStoryBeatModalProps) {
   const [title, setTitle] = useState('');
-  const [intent, setIntent] = useState<PlotPointIntent>('plot');
+  const [intent, setIntent] = useState<StoryBeatIntent>('plot');
   const [summary, setSummary] = useState('');
   const [criteria, setCriteria] = useState('');
-  const [priority, setPriority] = useState<PlotPointPriority>('medium');
+  const [priority, setPriority] = useState<StoryBeatPriority>('medium');
 
   const canSubmit = title.trim().length > 0 && !saving;
 
   const handleSubmit = useCallback(() => {
     if (!canSubmit) return;
 
-    const data: CreatePlotPointRequest = {
+    const data: CreateStoryBeatRequest = {
       title: title.trim(),
       intent,
       act,
@@ -92,7 +92,7 @@ export function AddPlotPointModal({
     <div className={styles.overlay} onClick={onCancel} onKeyDown={handleKeyDown}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
-          <h3 className={styles.title}>Add Plot Point</h3>
+          <h3 className={styles.title}>Add Story Beat</h3>
           <button
             className={styles.closeBtn}
             onClick={onCancel}
@@ -137,7 +137,7 @@ export function AddPlotPointModal({
               id="pp-intent"
               className={styles.select}
               value={intent}
-              onChange={(e) => setIntent(e.target.value as PlotPointIntent)}
+              onChange={(e) => setIntent(e.target.value as StoryBeatIntent)}
               disabled={saving}
             >
               {INTENT_OPTIONS.map((opt) => (
@@ -157,7 +157,7 @@ export function AddPlotPointModal({
               id="pp-priority"
               className={styles.select}
               value={priority}
-              onChange={(e) => setPriority(e.target.value as PlotPointPriority)}
+              onChange={(e) => setPriority(e.target.value as StoryBeatPriority)}
               disabled={saving}
             >
               {PRIORITY_OPTIONS.map((opt) => (
@@ -216,7 +216,7 @@ export function AddPlotPointModal({
             disabled={!canSubmit}
             type="button"
           >
-            {saving ? 'Adding...' : 'Add Plot Point'}
+            {saving ? 'Adding...' : 'Add Story Beat'}
           </button>
         </div>
       </div>

@@ -62,7 +62,7 @@ const ENTRY_POINTS: EntryPointOption[] = [
   { type: 'node', label: 'Character', targetType: 'Character' },
   { type: 'node', label: 'Location', targetType: 'Location' },
   { type: 'node', label: 'Scene', targetType: 'Scene' },
-  { type: 'node', label: 'Plot Point', targetType: 'PlotPoint' },
+  { type: 'node', label: 'Story Beat', targetType: 'StoryBeat' },
 ];
 
 interface ComposeFormProps {

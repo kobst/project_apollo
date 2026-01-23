@@ -1,16 +1,16 @@
 /**
- * PlotPointSwimlane - Horizontal row for a plot point with scene cards.
+ * StoryBeatSwimlane - Horizontal row for a story beat with scene cards.
  * Collapsible header with full title, horizontal scroll for scenes.
  */
 
 import { useState, useCallback } from 'react';
-import type { MergedOutlinePlotPoint, MergedOutlineScene } from '../../utils/outlineMergeUtils';
+import type { MergedOutlineStoryBeat, MergedOutlineScene } from '../../utils/outlineMergeUtils';
 import { SwimlaneSceneCard } from './SwimlaneSceneCard';
-import styles from './PlotPointSwimlane.module.css';
+import styles from './StoryBeatSwimlane.module.css';
 
-interface PlotPointSwimlaneProps {
-  plotPoint: MergedOutlinePlotPoint;
-  onEditPlotPoint?: (() => void) | undefined;
+interface StoryBeatSwimlaneProps {
+  storyBeat: MergedOutlineStoryBeat;
+  onEditStoryBeat?: (() => void) | undefined;
   onEditScene?: ((scene: MergedOutlineScene) => void) | undefined;
   onAddScene?: (() => void) | undefined;
   onEditProposed?: ((nodeId: string, updates: Partial<Record<string, unknown>>) => void) | undefined;
@@ -27,30 +27,30 @@ const INTENT_COLORS: Record<string, string> = {
   payoff: '#4ade80',    // green
 };
 
-export function PlotPointSwimlane({
-  plotPoint,
-  onEditPlotPoint,
+export function StoryBeatSwimlane({
+  storyBeat,
+  onEditStoryBeat,
   onEditScene,
   onAddScene,
   onRemoveProposed,
   isRemoved,
-}: PlotPointSwimlaneProps) {
+}: StoryBeatSwimlaneProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const isProposed = plotPoint._isProposed;
-  const operation = plotPoint._operation;
-  const hasScenes = plotPoint.scenes.length > 0;
+  const isProposed = storyBeat._isProposed;
+  const operation = storyBeat._operation;
+  const hasScenes = storyBeat.scenes.length > 0;
 
   const handleRemove = useCallback(() => {
     if (onRemoveProposed) {
-      onRemoveProposed(plotPoint.id);
+      onRemoveProposed(storyBeat.id);
     }
-  }, [plotPoint.id, onRemoveProposed]);
+  }, [storyBeat.id, onRemoveProposed]);
 
-  const intentColor = INTENT_COLORS[plotPoint.intent] || '#888';
+  const intentColor = INTENT_COLORS[storyBeat.intent] || '#888';
 
   // Check if any scene is proposed
-  const hasProposedScenes = plotPoint.scenes.some(s => s._isProposed);
+  const hasProposedScenes = storyBeat.scenes.some(s => s._isProposed);
 
   return (
     <div
@@ -69,7 +69,7 @@ export function PlotPointSwimlane({
           </span>
         </button>
 
-        <div className={styles.titleArea} onClick={onEditPlotPoint}>
+        <div className={styles.titleArea} onClick={onEditStoryBeat}>
           {/* Operation badge for proposed */}
           {isProposed && operation && (
             <span className={`${styles.badge} ${styles[`badge${operation}`]}`}>
@@ -77,32 +77,32 @@ export function PlotPointSwimlane({
             </span>
           )}
 
-          <span className={styles.title}>{plotPoint.title}</span>
+          <span className={styles.title}>{storyBeat.title}</span>
 
           <span
             className={styles.intent}
             style={{ backgroundColor: `${intentColor}20`, color: intentColor }}
           >
-            {plotPoint.intent}
+            {storyBeat.intent}
           </span>
 
-          {plotPoint.status && (
-            <span className={`${styles.status} ${styles[`status${plotPoint.status}`]}`}>
-              {plotPoint.status}
+          {storyBeat.status && (
+            <span className={`${styles.status} ${styles[`status${storyBeat.status}`]}`}>
+              {storyBeat.status}
             </span>
           )}
 
           {/* Scene count indicator */}
           <span className={`${styles.sceneCount} ${hasProposedScenes ? styles.hasProposed : ''}`}>
-            {plotPoint.scenes.length} scene{plotPoint.scenes.length !== 1 ? 's' : ''}
+            {storyBeat.scenes.length} scene{storyBeat.scenes.length !== 1 ? 's' : ''}
             {hasProposedScenes && ' +proposed'}
           </span>
         </div>
 
         {/* Actions */}
         <div className={styles.actions}>
-          {onEditPlotPoint && (
-            <button type="button" className={styles.actionBtn} onClick={onEditPlotPoint}>
+          {onEditStoryBeat && (
+            <button type="button" className={styles.actionBtn} onClick={onEditStoryBeat}>
               Edit
             </button>
           )}
@@ -124,11 +124,11 @@ export function PlotPointSwimlane({
       {/* Expanded content - summary and scene grid */}
       {isExpanded && !isRemoved && (
         <div className={styles.expandedContent}>
-          {plotPoint._previousData && (
+          {storyBeat._previousData && (
             <div className={styles.previousData}>
               <span className={styles.previousLabel}>Previous:</span>
               <span className={styles.previousValue}>
-                {(plotPoint._previousData.title as string) || 'No title'}
+                {(storyBeat._previousData.title as string) || 'No title'}
               </span>
             </div>
           )}
@@ -139,7 +139,7 @@ export function PlotPointSwimlane({
       {!isRemoved && (
         <div className={styles.scenesRow}>
           <div className={styles.scenesScroll}>
-            {plotPoint.scenes.map((scene) => (
+            {storyBeat.scenes.map((scene) => (
               <SwimlaneSceneCard
                 key={scene.id}
                 scene={scene}

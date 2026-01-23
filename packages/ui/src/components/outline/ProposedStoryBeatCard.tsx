@@ -1,15 +1,15 @@
 /**
- * ProposedPlotPointCard - Displays a proposed PlotPoint within a beat column.
+ * ProposedStoryBeatCard - Displays a proposed StoryBeat within a beat column.
  * Features inline editing with expand/collapse and nested proposed scenes.
  */
 
 import { useState, useCallback } from 'react';
-import type { MergedOutlinePlotPoint } from '../../utils/outlineMergeUtils';
+import type { MergedOutlineStoryBeat } from '../../utils/outlineMergeUtils';
 import { ProposedSceneCard } from './ProposedSceneCard';
-import styles from './ProposedPlotPointCard.module.css';
+import styles from './ProposedStoryBeatCard.module.css';
 
-interface ProposedPlotPointCardProps {
-  plotPoint: MergedOutlinePlotPoint;
+interface ProposedStoryBeatCardProps {
+  storyBeat: MergedOutlineStoryBeat;
   beatId: string;
   onEdit: (nodeId: string, updates: Partial<Record<string, unknown>>) => void;
   onRemove?: ((nodeId: string) => void) | undefined;
@@ -23,58 +23,58 @@ const INTENT_OPTIONS = [
   { value: 'tone', label: 'Tone' },
 ];
 
-export function ProposedPlotPointCard({
-  plotPoint,
+export function ProposedStoryBeatCard({
+  storyBeat,
   beatId: _beatId,
   onEdit,
   onRemove,
   isRemoved = false,
   onUndoRemove,
-}: ProposedPlotPointCardProps) {
+}: ProposedStoryBeatCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [localData, setLocalData] = useState({
-    title: plotPoint.title,
-    intent: plotPoint.intent,
-    summary: (plotPoint as unknown as { summary?: string }).summary ?? '',
+    title: storyBeat.title,
+    intent: storyBeat.intent,
+    summary: (storyBeat as unknown as { summary?: string }).summary ?? '',
   });
 
   const operationClass =
-    plotPoint._operation === 'add'
+    storyBeat._operation === 'add'
       ? styles.opAdd
-      : plotPoint._operation === 'modify'
+      : storyBeat._operation === 'modify'
       ? styles.opModify
       : styles.opDelete;
 
   const operationLabel =
-    plotPoint._operation === 'add'
+    storyBeat._operation === 'add'
       ? 'PROPOSED'
-      : plotPoint._operation === 'modify'
+      : storyBeat._operation === 'modify'
       ? 'MODIFIED'
       : 'REMOVING';
 
   const handleFieldChange = useCallback(
     (key: string, value: string) => {
       setLocalData((prev) => ({ ...prev, [key]: value }));
-      onEdit(plotPoint.id, { [key]: value });
+      onEdit(storyBeat.id, { [key]: value });
     },
-    [plotPoint.id, onEdit]
+    [storyBeat.id, onEdit]
   );
 
   const handleRemove = useCallback(() => {
-    onRemove?.(plotPoint.id);
-  }, [plotPoint.id, onRemove]);
+    onRemove?.(storyBeat.id);
+  }, [storyBeat.id, onRemove]);
 
   const handleUndoRemove = useCallback(() => {
-    onUndoRemove?.(plotPoint.id);
-  }, [plotPoint.id, onUndoRemove]);
+    onUndoRemove?.(storyBeat.id);
+  }, [storyBeat.id, onUndoRemove]);
 
   const toggleExpand = useCallback(() => {
     setIsExpanded((prev) => !prev);
   }, []);
 
   // Count scenes (both existing converted and proposed)
-  const sceneCount = plotPoint.scenes.length;
-  const proposedSceneCount = plotPoint.scenes.filter((s) => s._isProposed).length;
+  const sceneCount = storyBeat.scenes.length;
+  const proposedSceneCount = storyBeat.scenes.filter((s) => s._isProposed).length;
 
   // Removed state
   if (isRemoved) {
@@ -83,7 +83,7 @@ export function ProposedPlotPointCard({
         <div className={styles.removedContent}>
           <span className={styles.removedIcon}>{'\u2715'}</span>
           <span className={styles.removedLabel}>
-            PlotPoint: {plotPoint.title} - will not be added
+            StoryBeat: {storyBeat.title} - will not be added
           </span>
           {onUndoRemove && (
             <button
@@ -122,7 +122,7 @@ export function ProposedPlotPointCard({
       {/* Collapsed: show scenes preview */}
       {!isExpanded && sceneCount > 0 && (
         <div className={styles.scenesPreview}>
-          {plotPoint.scenes.slice(0, 2).map((scene) => (
+          {storyBeat.scenes.slice(0, 2).map((scene) => (
             <div
               key={scene.id}
               className={`${styles.scenePreviewItem} ${scene._isProposed ? styles.proposed : ''}`}
@@ -145,11 +145,11 @@ export function ProposedPlotPointCard({
       {isExpanded && (
         <div className={styles.expandedContent}>
           {/* Show previous data for modifications */}
-          {plotPoint._operation === 'modify' && plotPoint._previousData && (
+          {storyBeat._operation === 'modify' && storyBeat._previousData && (
             <div className={styles.previousData}>
               <span className={styles.previousLabel}>Previous:</span>
               <span className={styles.previousValue}>
-                {(plotPoint._previousData.title as string) ?? 'Untitled'}
+                {(storyBeat._previousData.title as string) ?? 'Untitled'}
               </span>
             </div>
           )}
@@ -204,11 +204,11 @@ export function ProposedPlotPointCard({
                 )}
               </h4>
               <div className={styles.scenesList}>
-                {plotPoint.scenes.map((scene) => (
+                {storyBeat.scenes.map((scene) => (
                   <ProposedSceneCard
                     key={scene.id}
                     scene={scene}
-                    parentPlotPointId={plotPoint.id}
+                    parentStoryBeatId={storyBeat.id}
                     onEdit={onEdit}
                     onRemove={scene._isProposed && scene._operation === 'add' ? onRemove : undefined}
                     isRemoved={false}
@@ -227,7 +227,7 @@ export function ProposedPlotPointCard({
             >
               Done
             </button>
-            {onRemove && plotPoint._operation === 'add' && (
+            {onRemove && storyBeat._operation === 'add' && (
               <button
                 className={styles.removeButton}
                 onClick={handleRemove}

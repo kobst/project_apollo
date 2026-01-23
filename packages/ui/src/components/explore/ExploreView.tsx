@@ -170,7 +170,7 @@ export function ExploreView() {
       if (!currentStoryId) return;
       try {
         // Fetch nodes of all types for the picker
-        const types = ['Beat', 'Scene', 'Character', 'Location', 'CharacterArc', 'Object', 'PlotPoint', 'Logline', 'Setting', 'GenreTone'];
+        const types = ['Beat', 'Scene', 'Character', 'Location', 'CharacterArc', 'Object', 'StoryBeat', 'Logline', 'Setting', 'GenreTone'];
         const results = await Promise.all(
           types.map(type => api.listNodes(currentStoryId, type).catch(() => ({ nodes: [] })))
         );

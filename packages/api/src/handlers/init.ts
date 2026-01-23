@@ -117,7 +117,7 @@ export function createInitHandler(ctx: StorageContext) {
             characters: graphStats.nodeCountByType.Character ?? 0,
             locations: graphStats.nodeCountByType.Location ?? 0,
             objects: graphStats.nodeCountByType.Object ?? 0,
-            plotPoints: graphStats.nodeCountByType.PlotPoint ?? 0,
+            storyBeats: graphStats.nodeCountByType.StoryBeat ?? 0,
             ideas: graphStats.nodeCountByType.Idea ?? 0,
             edges: graphStats.edgeCount,
             loglines: graphStats.nodeCountByType.Logline ?? 0,

@@ -1,5 +1,5 @@
 {
-  "description": "Graph state after first Scene is added to Catalyst beat (via PlotPoint)",
+  "description": "Graph state after first Scene is added to Catalyst beat (via StoryBeat)",
   "storyVersion": {
     "type": "StoryVersion",
     "id": "sv1",
@@ -37,7 +37,7 @@
       "description": "A small mountain town threatened by flooding."
     },
     {
-      "type": "PlotPoint",
+      "type": "StoryBeat",
       "id": "pp_catalyst_001",
       "title": "Dam Discovery",
       "intent": "plot",

@@ -7,23 +7,23 @@ import { useState, useEffect, useCallback, useMemo, createContext, useContext } 
 import { useStory } from '../../context/StoryContext';
 import { useGeneration } from '../../context/GenerationContext';
 import { api } from '../../api/client';
-import type { OutlineData, OutlinePlotPoint, OutlineScene, OutlineIdea, CreateSceneRequest, CreateIdeaRequest } from '../../api/types';
-import { mergeProposedIntoOutline, type MergedOutlineData, type MergedOutlinePlotPoint, type MergedOutlineScene, type MergedOutlineBeat } from '../../utils/outlineMergeUtils';
+import type { OutlineData, OutlineStoryBeat, OutlineScene, OutlineIdea, CreateSceneRequest, CreateIdeaRequest } from '../../api/types';
+import { mergeProposedIntoOutline, type MergedOutlineData, type MergedOutlineStoryBeat, type MergedOutlineScene, type MergedOutlineBeat } from '../../utils/outlineMergeUtils';
 import { CollapsibleSection } from './CollapsibleSection';
 import { ActSwimlane } from './ActSwimlane';
 import { UnassignedSection } from '../outline/UnassignedSection';
-import { AddPlotPointModal } from '../outline/AddPlotPointModal';
-import { CreatePlotPointModal } from '../outline/CreatePlotPointModal';
+import { AddStoryBeatModal } from '../outline/AddStoryBeatModal';
+import { CreateStoryBeatModal } from '../outline/CreateStoryBeatModal';
 import { CreateSceneModal } from '../outline/CreateSceneModal';
 import { CreateIdeaModal } from '../outline/CreateIdeaModal';
 import { EditPanel } from './EditPanel';
 import styles from './StructureSection.module.css';
 
 // Types for edit panel
-type EditItemType = 'plotpoint' | 'scene';
+type EditItemType = 'storybeat' | 'scene';
 interface EditState {
   type: EditItemType;
-  item: OutlinePlotPoint | OutlineScene;
+  item: OutlineStoryBeat | OutlineScene;
 }
 
 // State for tracking which beat was clicked
@@ -35,12 +35,12 @@ interface BeatContext {
 
 // Context for triggering edits (passed down to children)
 interface StructureEditContextValue {
-  onEditPlotPoint: (pp: OutlinePlotPoint) => void;
+  onEditStoryBeat: (pp: OutlineStoryBeat) => void;
   onEditScene: (scene: OutlineScene) => void;
 }
 
 const StructureEditContext = createContext<StructureEditContextValue>({
-  onEditPlotPoint: () => {},
+  onEditStoryBeat: () => {},
   onEditScene: () => {},
 });
 
@@ -59,10 +59,10 @@ export function StructureSection() {
   const [editState, setEditState] = useState<EditState | null>(null);
 
   // Modal states
-  const [showPlotPointModal, setShowPlotPointModal] = useState(false);
+  const [showStoryBeatModal, setShowStoryBeatModal] = useState(false);
   const [showSceneModal, setShowSceneModal] = useState(false);
   const [showIdeaModal, setShowIdeaModal] = useState(false);
-  const [savingPlotPoint, setSavingPlotPoint] = useState(false);
+  const [savingStoryBeat, setSavingStoryBeat] = useState(false);
   const [savingScene, setSavingScene] = useState(false);
   const [savingIdea, setSavingIdea] = useState(false);
 
@@ -123,11 +123,11 @@ export function StructureSection() {
   }, [fetchOutline]);
 
   // Edit handlers - open the slide-out panel
-  const handleEditPlotPoint = useCallback((pp: OutlinePlotPoint | MergedOutlinePlotPoint) => {
-    setEditState({ type: 'plotpoint', item: pp as OutlinePlotPoint });
+  const handleEditStoryBeat = useCallback((pp: OutlineStoryBeat | MergedOutlineStoryBeat) => {
+    setEditState({ type: 'storybeat', item: pp as OutlineStoryBeat });
   }, []);
 
-  const handleEditScene = useCallback((scene: OutlineScene | MergedOutlineScene, _plotPointId?: string) => {
+  const handleEditScene = useCallback((scene: OutlineScene | MergedOutlineScene, _storyBeatId?: string) => {
     setEditState({ type: 'scene', item: scene as OutlineScene });
   }, []);
 
@@ -139,8 +139,8 @@ export function StructureSection() {
     void fetchOutline();
   }, [fetchOutline]);
 
-  // Handle opening add plot point modal - with beat context
-  const handleOpenAddPlotPoint = useCallback((beatId: string) => {
+  // Handle opening add story beat modal - with beat context
+  const handleOpenAddStoryBeat = useCallback((beatId: string) => {
     const beatInfo = beatMap.get(beatId);
     if (beatInfo) {
       setBeatContext({
@@ -152,30 +152,30 @@ export function StructureSection() {
       // No beat context - will create unassigned
       setBeatContext(null);
     }
-    setShowPlotPointModal(true);
+    setShowStoryBeatModal(true);
   }, [beatMap]);
 
-  // Handle opening add plot point modal without beat context (unassigned)
-  const handleOpenAddUnassignedPlotPoint = useCallback(() => {
+  // Handle opening add story beat modal without beat context (unassigned)
+  const handleOpenAddUnassignedStoryBeat = useCallback(() => {
     setBeatContext(null);
-    setShowPlotPointModal(true);
+    setShowStoryBeatModal(true);
   }, []);
 
-  // Handle creating a new PlotPoint
-  const handleAddPlotPoint = useCallback(async (data: Parameters<typeof api.createPlotPoint>[1]) => {
+  // Handle creating a new StoryBeat
+  const handleAddStoryBeat = useCallback(async (data: Parameters<typeof api.createStoryBeat>[1]) => {
     if (!currentStoryId) return;
 
-    setSavingPlotPoint(true);
+    setSavingStoryBeat(true);
     try {
-      await api.createPlotPoint(currentStoryId, data);
-      setShowPlotPointModal(false);
+      await api.createStoryBeat(currentStoryId, data);
+      setShowStoryBeatModal(false);
       setBeatContext(null);
       await fetchOutline();
       void refreshStatus();
     } catch (err) {
-      console.error('Failed to create plot point:', err);
+      console.error('Failed to create story beat:', err);
     } finally {
-      setSavingPlotPoint(false);
+      setSavingStoryBeat(false);
     }
   }, [currentStoryId, fetchOutline, refreshStatus]);
 
@@ -213,16 +213,16 @@ export function StructureSection() {
     }
   }, [currentStoryId, fetchOutline, refreshStatus]);
 
-  // Handle closing plot point modal
-  const handleClosePlotPointModal = useCallback(() => {
-    setShowPlotPointModal(false);
+  // Handle closing story beat modal
+  const handleCloseStoryBeatModal = useCallback(() => {
+    setShowStoryBeatModal(false);
     setBeatContext(null);
   }, []);
 
   // Handle clicking on items
-  const handlePlotPointClick = useCallback((pp: OutlinePlotPoint) => {
-    handleEditPlotPoint(pp);
-  }, [handleEditPlotPoint]);
+  const handleStoryBeatClick = useCallback((pp: OutlineStoryBeat) => {
+    handleEditStoryBeat(pp);
+  }, [handleEditStoryBeat]);
 
   const handleSceneClick = useCallback((scene: OutlineScene) => {
     handleEditScene(scene);
@@ -237,7 +237,7 @@ export function StructureSection() {
     if (!outline) return 'No structure data';
     const parts: string[] = [];
     parts.push(`${outline.summary.totalBeats} beats`);
-    parts.push(`${outline.summary.totalPlotPoints} plot points`);
+    parts.push(`${outline.summary.totalStoryBeats} story beats`);
     parts.push(`${outline.summary.totalScenes} scenes`);
     return parts.join(', ');
   }, [outline]);
@@ -249,7 +249,7 @@ export function StructureSection() {
     : undefined;
 
   const editContextValue: StructureEditContextValue = {
-    onEditPlotPoint: handleEditPlotPoint,
+    onEditStoryBeat: handleEditStoryBeat,
     onEditScene: handleEditScene,
   };
 
@@ -295,10 +295,10 @@ export function StructureSection() {
   }
 
   // Calculate unassigned counts
-  const unassignedPlotPointCount = outline.unassignedPlotPoints?.length ?? 0;
+  const unassignedStoryBeatCount = outline.unassignedStoryBeats?.length ?? 0;
   const unassignedSceneCount = outline.unassignedScenes?.length ?? 0;
   const unassignedIdeaCount = outline.unassignedIdeas?.length ?? 0;
-  const totalUnassignedCount = unassignedPlotPointCount + unassignedSceneCount + unassignedIdeaCount;
+  const totalUnassignedCount = unassignedStoryBeatCount + unassignedSceneCount + unassignedIdeaCount;
 
   return (
     <StructureEditContext.Provider value={editContextValue}>
@@ -318,7 +318,7 @@ export function StructureSection() {
             </span>
             <span className={styles.summaryDivider}>{'\u2022'}</span>
             <span className={styles.summaryItem}>
-              <strong>{outline.summary.totalPlotPoints}</strong> plot points
+              <strong>{outline.summary.totalStoryBeats}</strong> story beats
             </span>
             <span className={styles.summaryDivider}>{'\u2022'}</span>
             <span className={styles.summaryItem}>
@@ -340,9 +340,9 @@ export function StructureSection() {
               <ActSwimlane
                 key={act.act}
                 act={act}
-                onEditPlotPoint={handleEditPlotPoint}
+                onEditStoryBeat={handleEditStoryBeat}
                 onEditScene={handleEditScene}
-                onAddPlotPoint={handleOpenAddPlotPoint}
+                onAddStoryBeat={handleOpenAddStoryBeat}
                 onAddScene={() => setShowSceneModal(true)}
                 onEditProposed={handleEditProposedNode}
                 onRemoveProposed={handleRemoveProposedNode}
@@ -360,15 +360,15 @@ export function StructureSection() {
 
           {/* Unassigned Items Section */}
           <UnassignedSection
-            plotPoints={mergedOutline.unassignedPlotPoints ?? []}
+            storyBeats={mergedOutline.unassignedStoryBeats ?? []}
             scenes={mergedOutline.unassignedScenes ?? []}
             ideas={mergedOutline.unassignedIdeas ?? []}
-            proposedPlotPoints={mergedOutline.proposedUnassignedPlotPoints ?? []}
+            proposedStoryBeats={mergedOutline.proposedUnassignedStoryBeats ?? []}
             proposedScenes={mergedOutline.proposedUnassignedScenes ?? []}
-            onAddPlotPoint={handleOpenAddUnassignedPlotPoint}
+            onAddStoryBeat={handleOpenAddUnassignedStoryBeat}
             onAddScene={() => setShowSceneModal(true)}
             onAddIdea={() => setShowIdeaModal(true)}
-            onPlotPointClick={handlePlotPointClick}
+            onStoryBeatClick={handleStoryBeatClick}
             onSceneClick={handleSceneClick}
             onIdeaClick={handleIdeaClick}
             onEditProposed={handleEditProposedNode}
@@ -387,23 +387,23 @@ export function StructureSection() {
           />
         )}
 
-        {/* Plot Point Modal - use AddPlotPointModal if beat context, else CreatePlotPointModal */}
-        {showPlotPointModal && beatContext && (
-          <AddPlotPointModal
+        {/* Story Beat Modal - use AddStoryBeatModal if beat context, else CreateStoryBeatModal */}
+        {showStoryBeatModal && beatContext && (
+          <AddStoryBeatModal
             beatId={beatContext.beatId}
             beatType={beatContext.beatType}
             act={beatContext.act}
-            onAdd={handleAddPlotPoint}
-            onCancel={handleClosePlotPointModal}
-            saving={savingPlotPoint}
+            onAdd={handleAddStoryBeat}
+            onCancel={handleCloseStoryBeatModal}
+            saving={savingStoryBeat}
           />
         )}
 
-        {showPlotPointModal && !beatContext && (
-          <CreatePlotPointModal
-            onAdd={handleAddPlotPoint}
-            onCancel={handleClosePlotPointModal}
-            saving={savingPlotPoint}
+        {showStoryBeatModal && !beatContext && (
+          <CreateStoryBeatModal
+            onAdd={handleAddStoryBeat}
+            onCancel={handleCloseStoryBeatModal}
+            saving={savingStoryBeat}
           />
         )}
 

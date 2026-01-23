@@ -1,13 +1,13 @@
 import { useState, useCallback } from 'react';
-import type { OutlinePlotPoint, CreatePlotPointRequest } from '../../api/types';
-import type { MergedOutlineBeat, MergedOutlinePlotPoint } from '../../utils/outlineMergeUtils';
+import type { OutlineStoryBeat, CreateStoryBeatRequest } from '../../api/types';
+import type { MergedOutlineBeat, MergedOutlineStoryBeat } from '../../utils/outlineMergeUtils';
 import { useStory } from '../../context/StoryContext';
-import { usePlotPoints } from '../../hooks/usePlotPoints';
+import { useStoryBeats } from '../../hooks/useStoryBeats';
 import { useEdit } from '../workspace/StructureBoard';
 import { SceneCard } from './SceneCard';
-import { ProposedPlotPointCard } from './ProposedPlotPointCard';
+import { ProposedStoryBeatCard } from './ProposedStoryBeatCard';
 import { EmptyBeatSlot } from './EmptyBeatSlot';
-import { AddPlotPointModal } from './AddPlotPointModal';
+import { AddStoryBeatModal } from './AddStoryBeatModal';
 import styles from './BeatColumn.module.css';
 
 interface BeatColumnProps {
@@ -26,21 +26,21 @@ function formatBeatType(beatType: string): string {
     .trim();
 }
 
-// Render a single PlotPoint with its nested scenes (existing nodes only)
-function PlotPointContainer({ pp, beatId }: { pp: MergedOutlinePlotPoint; beatId: string }) {
-  const { onEditPlotPoint } = useEdit();
+// Render a single StoryBeat with its nested scenes (existing nodes only)
+function StoryBeatContainer({ pp, beatId }: { pp: MergedOutlineStoryBeat; beatId: string }) {
+  const { onEditStoryBeat } = useEdit();
   const hasScenes = pp.scenes.length > 0;
 
   const handleClick = () => {
-    // Cast to OutlinePlotPoint for the edit handler (it only needs id, title, intent, scenes)
-    onEditPlotPoint(pp as unknown as OutlinePlotPoint);
+    // Cast to OutlineStoryBeat for the edit handler (it only needs id, title, intent, scenes)
+    onEditStoryBeat(pp as unknown as OutlineStoryBeat);
   };
 
   return (
-    <div className={styles.plotPointContainer}>
-      <div className={styles.plotPointHeader} onClick={handleClick}>
-        <span className={styles.plotPointTitle}>{pp.title}</span>
-        <span className={`${styles.plotPointIntent} ${styles[pp.intent]}`}>
+    <div className={styles.storyBeatContainer}>
+      <div className={styles.storyBeatHeader} onClick={handleClick}>
+        <span className={styles.storyBeatTitle}>{pp.title}</span>
+        <span className={`${styles.storyBeatIntent} ${styles[pp.intent]}`}>
           {pp.intent}
         </span>
       </div>
@@ -50,7 +50,7 @@ function PlotPointContainer({ pp, beatId }: { pp: MergedOutlinePlotPoint; beatId
             <SceneCard key={scene.id} scene={scene} beatId={beatId} />
           ))
         ) : (
-          <div className={styles.emptyPlotPoint}>No scenes yet</div>
+          <div className={styles.emptyStoryBeat}>No scenes yet</div>
         )}
       </div>
     </div>
@@ -64,13 +64,13 @@ export function BeatColumn({
   removedNodeIds,
 }: BeatColumnProps) {
   const { currentStoryId, refreshStatus } = useStory();
-  const { createPlotPoint, isLoading } = usePlotPoints({
+  const { createStoryBeat, isLoading } = useStoryBeats({
     storyId: currentStoryId ?? '',
   });
 
   const [showAddPPModal, setShowAddPPModal] = useState(false);
 
-  const hasContent = beat.plotPoints.length > 0;
+  const hasContent = beat.storyBeats.length > 0;
 
   const statusClass = beat.status === 'REALIZED'
     ? styles.realized
@@ -78,15 +78,15 @@ export function BeatColumn({
     ? styles.planned
     : styles.empty;
 
-  const handleAddPlotPoint = useCallback(
-    async (data: CreatePlotPointRequest) => {
-      const result = await createPlotPoint(data);
+  const handleAddStoryBeat = useCallback(
+    async (data: CreateStoryBeatRequest) => {
+      const result = await createStoryBeat(data);
       if (result) {
         setShowAddPPModal(false);
         refreshStatus?.();
       }
     },
-    [createPlotPoint, refreshStatus]
+    [createStoryBeat, refreshStatus]
   );
 
   return (
@@ -101,21 +101,21 @@ export function BeatColumn({
       </div>
 
       <div className={styles.content}>
-        {/* Plot Points with nested scenes - mix of existing and proposed */}
-        {beat.plotPoints.length > 0 && (
-          <div className={styles.plotPointsSection}>
-            {beat.plotPoints.map((pp) =>
+        {/* Story Beats with nested scenes - mix of existing and proposed */}
+        {beat.storyBeats.length > 0 && (
+          <div className={styles.storyBeatsSection}>
+            {beat.storyBeats.map((pp) =>
               pp._isProposed ? (
-                <ProposedPlotPointCard
+                <ProposedStoryBeatCard
                   key={pp.id}
-                  plotPoint={pp}
+                  storyBeat={pp}
                   beatId={beat.id}
                   onEdit={onEditProposed!}
                   onRemove={pp._operation === 'add' ? onRemoveProposed : undefined}
                   isRemoved={removedNodeIds?.has(pp.id)}
                 />
               ) : (
-                <PlotPointContainer key={pp.id} pp={pp} beatId={beat.id} />
+                <StoryBeatContainer key={pp.id} pp={pp} beatId={beat.id} />
               )
             )}
           </div>
@@ -127,14 +127,14 @@ export function BeatColumn({
         )}
       </div>
 
-      {/* Add Plot Point button */}
+      {/* Add Story Beat button */}
       <button
-        className={styles.addPlotPointBtn}
+        className={styles.addStoryBeatBtn}
         onClick={() => setShowAddPPModal(true)}
         type="button"
         title="Add a plot point aligned to this beat"
       >
-        + Plot Point
+        + Story Beat
       </button>
 
       {beat.notes && (
@@ -143,13 +143,13 @@ export function BeatColumn({
         </div>
       )}
 
-      {/* Add Plot Point Modal */}
+      {/* Add Story Beat Modal */}
       {showAddPPModal && (
-        <AddPlotPointModal
+        <AddStoryBeatModal
           beatId={beat.id}
           beatType={beat.beatType}
           act={beat.act as 1 | 2 | 3 | 4 | 5}
-          onAdd={handleAddPlotPoint}
+          onAdd={handleAddStoryBeat}
           onCancel={() => setShowAddPPModal(false)}
           saving={isLoading}
         />

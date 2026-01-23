@@ -1,18 +1,18 @@
 /**
- * EditPanel - Modal for editing PlotPoints and Scenes.
+ * EditPanel - Modal for editing StoryBeats and Scenes.
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { api } from '../../api/client';
-import type { OutlinePlotPoint, OutlineScene } from '../../api/types';
+import type { OutlineStoryBeat, OutlineScene } from '../../api/types';
 import styles from './EditPanel.module.css';
 
-type EditItemType = 'plotpoint' | 'scene';
+type EditItemType = 'storybeat' | 'scene';
 
 interface EditPanelProps {
   itemType: EditItemType;
-  item: OutlinePlotPoint | OutlineScene;
+  item: OutlineStoryBeat | OutlineScene;
   onClose: () => void;
   onSave?: () => void;
 }
@@ -22,6 +22,33 @@ const INTENT_OPTIONS = [
   { value: 'character', label: 'Character' },
   { value: 'theme', label: 'Theme' },
   { value: 'tone', label: 'Tone' },
+];
+
+const PRIORITY_OPTIONS = [
+  { value: '', label: 'Not specified' },
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+];
+
+const URGENCY_OPTIONS = [
+  { value: '', label: 'Not specified' },
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+];
+
+const STAKES_CHANGE_OPTIONS = [
+  { value: '', label: 'Not specified' },
+  { value: 'up', label: 'Up' },
+  { value: 'down', label: 'Down' },
+  { value: 'steady', label: 'Steady' },
+];
+
+const STATUS_OPTIONS = [
+  { value: 'proposed', label: 'Proposed' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'deprecated', label: 'Deprecated' },
 ];
 
 const INT_EXT_OPTIONS = [
@@ -47,9 +74,14 @@ export function EditPanel({ itemType, item, onClose, onSave }: EditPanelProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [ppData, setPpData] = useState({
+  const [sbData, setSbData] = useState({
     title: '',
     intent: 'plot',
+    summary: '',
+    priority: '',
+    urgency: '',
+    stakesChange: '',
+    status: 'proposed',
   });
 
   const [sceneData, setSceneData] = useState({
@@ -61,11 +93,16 @@ export function EditPanel({ itemType, item, onClose, onSave }: EditPanelProps) {
   });
 
   useEffect(() => {
-    if (itemType === 'plotpoint') {
-      const pp = item as OutlinePlotPoint;
-      setPpData({
-        title: pp.title || '',
-        intent: pp.intent || 'plot',
+    if (itemType === 'storybeat') {
+      const sb = item as OutlineStoryBeat;
+      setSbData({
+        title: sb.title || '',
+        intent: sb.intent || 'plot',
+        summary: sb.summary || '',
+        priority: sb.priority || '',
+        urgency: sb.urgency || '',
+        stakesChange: sb.stakesChange || '',
+        status: sb.status || 'proposed',
       });
     } else {
       const scene = item as OutlineScene;
@@ -87,10 +124,15 @@ export function EditPanel({ itemType, item, onClose, onSave }: EditPanelProps) {
     setError(null);
 
     try {
-      if (itemType === 'plotpoint') {
-        await api.updatePlotPoint(currentStoryId, item.id, {
-          title: ppData.title.trim() || undefined,
-          intent: ppData.intent || undefined,
+      if (itemType === 'storybeat') {
+        await api.updateStoryBeat(currentStoryId, item.id, {
+          title: sbData.title.trim() || undefined,
+          intent: sbData.intent || undefined,
+          summary: sbData.summary.trim() || undefined,
+          priority: sbData.priority || undefined,
+          urgency: sbData.urgency || undefined,
+          stakes_change: sbData.stakesChange || undefined,
+          status: sbData.status || undefined,
         });
       } else {
         await api.updateScene(currentStoryId, item.id, {
@@ -110,7 +152,7 @@ export function EditPanel({ itemType, item, onClose, onSave }: EditPanelProps) {
     } finally {
       setSaving(false);
     }
-  }, [currentStoryId, itemType, item.id, ppData, sceneData, refreshStatus, onSave, onClose]);
+  }, [currentStoryId, itemType, item.id, sbData, sceneData, refreshStatus, onSave, onClose]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -124,7 +166,7 @@ export function EditPanel({ itemType, item, onClose, onSave }: EditPanelProps) {
     [onClose, saving, handleSave]
   );
 
-  const title = itemType === 'plotpoint' ? 'Edit Plot Point' : 'Edit Scene';
+  const title = itemType === 'storybeat' ? 'Edit Story Beat' : 'Edit Scene';
 
   return (
     <div className={styles.overlay} onClick={onClose} onKeyDown={handleKeyDown}>
@@ -144,33 +186,33 @@ export function EditPanel({ itemType, item, onClose, onSave }: EditPanelProps) {
         <div className={styles.content}>
           {error && <div className={styles.error}>{error}</div>}
 
-          {itemType === 'plotpoint' ? (
+          {itemType === 'storybeat' ? (
             <div className={styles.form}>
               <div className={styles.field}>
-                <label className={styles.label} htmlFor="pp-title">
+                <label className={styles.label} htmlFor="sb-title">
                   Title
                 </label>
                 <input
-                  id="pp-title"
+                  id="sb-title"
                   type="text"
                   className={styles.input}
-                  value={ppData.title}
-                  onChange={(e) => setPpData({ ...ppData, title: e.target.value })}
-                  placeholder="What happens at this plot point..."
+                  value={sbData.title}
+                  onChange={(e) => setSbData({ ...sbData, title: e.target.value })}
+                  placeholder="What happens at this story beat..."
                   disabled={saving}
                   autoFocus
                 />
               </div>
 
               <div className={styles.field}>
-                <label className={styles.label} htmlFor="pp-intent">
+                <label className={styles.label} htmlFor="sb-intent">
                   Intent
                 </label>
                 <select
-                  id="pp-intent"
+                  id="sb-intent"
                   className={styles.select}
-                  value={ppData.intent}
-                  onChange={(e) => setPpData({ ...ppData, intent: e.target.value })}
+                  value={sbData.intent}
+                  onChange={(e) => setSbData({ ...sbData, intent: e.target.value })}
                   disabled={saving}
                 >
                   {INTENT_OPTIONS.map((opt) => (
@@ -180,8 +222,107 @@ export function EditPanel({ itemType, item, onClose, onSave }: EditPanelProps) {
                   ))}
                 </select>
                 <span className={styles.hint}>
-                  What this plot point primarily serves in the story
+                  What this story beat primarily serves in the story
                 </span>
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="sb-summary">
+                  Summary
+                </label>
+                <textarea
+                  id="sb-summary"
+                  className={styles.textarea}
+                  value={sbData.summary}
+                  onChange={(e) => setSbData({ ...sbData, summary: e.target.value })}
+                  placeholder="Describe what happens in this story beat..."
+                  rows={3}
+                  disabled={saving}
+                />
+                <span className={styles.hint}>
+                  A brief description of the story beat
+                </span>
+              </div>
+
+              <div className={styles.fieldRow}>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="sb-priority">
+                    Priority
+                  </label>
+                  <select
+                    id="sb-priority"
+                    className={styles.select}
+                    value={sbData.priority}
+                    onChange={(e) => setSbData({ ...sbData, priority: e.target.value })}
+                    disabled={saving}
+                  >
+                    {PRIORITY_OPTIONS.map((opt) => (
+                      <option key={opt.value || 'none'} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="sb-urgency">
+                    Urgency
+                  </label>
+                  <select
+                    id="sb-urgency"
+                    className={styles.select}
+                    value={sbData.urgency}
+                    onChange={(e) => setSbData({ ...sbData, urgency: e.target.value })}
+                    disabled={saving}
+                  >
+                    {URGENCY_OPTIONS.map((opt) => (
+                      <option key={opt.value || 'none'} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="sb-stakes">
+                  Stakes Change
+                </label>
+                <select
+                  id="sb-stakes"
+                  className={styles.select}
+                  value={sbData.stakesChange}
+                  onChange={(e) => setSbData({ ...sbData, stakesChange: e.target.value })}
+                  disabled={saving}
+                >
+                  {STAKES_CHANGE_OPTIONS.map((opt) => (
+                    <option key={opt.value || 'none'} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <span className={styles.hint}>
+                  How does this story beat affect the stakes?
+                </span>
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="sb-status">
+                  Status
+                </label>
+                <select
+                  id="sb-status"
+                  className={styles.select}
+                  value={sbData.status}
+                  onChange={(e) => setSbData({ ...sbData, status: e.target.value })}
+                  disabled={saving}
+                >
+                  {STATUS_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           ) : (

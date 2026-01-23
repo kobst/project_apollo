@@ -10,7 +10,7 @@ export type NodeTypeOption =
   | 'Character'
   | 'Location'
   | 'Object'
-  | 'PlotPoint';
+  | 'StoryBeat';
 
 interface NodeTypeFilterProps {
   selectedType: NodeTypeOption;
@@ -25,7 +25,7 @@ const NODE_TYPES: { type: NodeTypeOption; label: string; statKey?: keyof StorySt
   { type: 'GenreTone', label: 'Genre/Tone', statKey: 'genreTones' },
   // Structure & content
   { type: 'Beat', label: 'Beats', statKey: 'beats' },
-  { type: 'PlotPoint', label: 'Plot Points', statKey: 'plotPoints' },
+  { type: 'StoryBeat', label: 'Story Beats', statKey: 'storyBeats' },
   { type: 'Scene', label: 'Scenes', statKey: 'scenes' },
   { type: 'Character', label: 'Characters', statKey: 'characters' },
   { type: 'Location', label: 'Locations', statKey: 'locations' },

@@ -191,7 +191,7 @@ export function serializeGaps(gaps: Gap[]): string {
     'premise',
     'foundations',
     'structure',
-    'plotPoints',
+    'storyBeats',
     'scenes',
   ];
 
@@ -249,7 +249,7 @@ function serializeStateSummary(graph: GraphState): string {
     'Object',
     'Setting',
     'Beat',
-    'PlotPoint',
+    'StoryBeat',
     'Scene',
     'CharacterArc',
     'Idea',
@@ -279,7 +279,7 @@ function serializeNodesByType(graph: GraphState, maxNodes: number): string {
     { header: 'Locations & Settings', types: ['Location', 'Setting'] },
     { header: 'Objects', types: ['Object'] },
     { header: 'Structure (Beats)', types: ['Beat'] },
-    { header: 'Plot Points', types: ['PlotPoint'] },
+    { header: 'Story Beats', types: ['StoryBeat'] },
     { header: 'Scenes', types: ['Scene'] },
     { header: 'Character Arcs', types: ['CharacterArc'] },
     { header: 'Ideas (Unassigned)', types: ['Idea'] },

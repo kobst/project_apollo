@@ -17,7 +17,7 @@
         "nodes": [
           {
             "operation": "add",
-            "node_type": "PlotPoint",
+            "node_type": "StoryBeat",
             "node_id": "plotpoint_1736700000000_xyz45",
             "data": {
               "title": "Mike Discovers Partner's Betrayal",
@@ -85,7 +85,7 @@
         "nodes": [
           {
             "operation": "add",
-            "node_type": "PlotPoint",
+            "node_type": "StoryBeat",
             "node_id": "plotpoint_1736700000004_mno56",
             "data": {
               "title": "Mike Is Framed",
@@ -120,7 +120,7 @@
         "nodes": [
           {
             "operation": "add",
-            "node_type": "PlotPoint",
+            "node_type": "StoryBeat",
             "node_id": "plotpoint_1736700000006_stu90",
             "data": {
               "title": "The Partner's Secret",

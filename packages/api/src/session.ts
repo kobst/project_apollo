@@ -270,7 +270,7 @@ export async function removeExtractionProposalById(
 // Generation Session Types
 // =============================================================================
 
-export type GenerationEntryPointType = 'beat' | 'plotPoint' | 'character' | 'gap' | 'idea' | 'naked';
+export type GenerationEntryPointType = 'beat' | 'storyBeat' | 'character' | 'gap' | 'idea' | 'naked';
 
 export interface GenerationEntryPoint {
   type: GenerationEntryPointType;

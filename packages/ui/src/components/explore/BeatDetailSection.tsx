@@ -1,8 +1,8 @@
 /**
  * BeatDetailSection - Specialized view for Beat nodes
  *
- * Shows PlotPoints aligned to this Beat via ALIGNS_WITH edges.
- * Future: Could show derived scenes (PlotPoint → SATISFIED_BY → Scene)
+ * Shows StoryBeats aligned to this Beat via ALIGNS_WITH edges.
+ * Future: Could show derived scenes (StoryBeat → SATISFIED_BY → Scene)
  */
 
 import { useMemo } from 'react';
@@ -30,32 +30,32 @@ export function BeatDetailSection({
     return map;
   }, [relatedNodes]);
 
-  // Get PlotPoints aligned to this beat (incoming ALIGNS_WITH)
-  const alignedPlotPoints = useMemo(() => {
+  // Get StoryBeats aligned to this beat (incoming ALIGNS_WITH)
+  const alignedStoryBeats = useMemo(() => {
     return incomingEdges
       .filter((e) => e.type === 'ALIGNS_WITH')
       .map((e) => ({
         edge: e,
-        plotPoint: nodeMap.get(e.source),
+        storyBeat: nodeMap.get(e.source),
       }))
-      .filter((item) => item.plotPoint !== undefined);
+      .filter((item) => item.storyBeat !== undefined);
   }, [incomingEdges, nodeMap]);
 
-  // Count scenes fulfilled by aligned plot points
+  // Count scenes fulfilled by aligned story beats
   const totalFulfilledScenes = useMemo(() => {
     let count = 0;
-    for (const { plotPoint } of alignedPlotPoints) {
+    for (const { storyBeat } of alignedStoryBeats) {
       // fulfillmentCount is populated by the relations API
-      const fulfillmentCount = plotPoint?.data?.fulfillmentCount;
+      const fulfillmentCount = storyBeat?.data?.fulfillmentCount;
       if (typeof fulfillmentCount === 'number') {
         count += fulfillmentCount;
       }
     }
     return count;
-  }, [alignedPlotPoints]);
+  }, [alignedStoryBeats]);
 
-  if (alignedPlotPoints.length === 0) {
-    return null; // Don't show section if no plot points aligned
+  if (alignedStoryBeats.length === 0) {
+    return null; // Don't show section if no story beats aligned
   }
 
   return (
@@ -64,19 +64,19 @@ export function BeatDetailSection({
       <div className={styles.section}>
         <div className={styles.header}>
           <h4 className={styles.title}>Aligned Plot Points</h4>
-          <span className={styles.count}>({alignedPlotPoints.length})</span>
+          <span className={styles.count}>({alignedStoryBeats.length})</span>
         </div>
         <div className={styles.list}>
-          {alignedPlotPoints.map(({ edge, plotPoint }) => {
-            const fulfillmentCount = plotPoint?.data?.fulfillmentCount;
+          {alignedStoryBeats.map(({ edge, storyBeat }) => {
+            const fulfillmentCount = storyBeat?.data?.fulfillmentCount;
             return (
-              <div key={edge.edgeId || plotPoint?.id} className={styles.item}>
+              <div key={edge.edgeId || storyBeat?.id} className={styles.item}>
                 <span className={styles.itemLabel}>
-                  {plotPoint?.label || edge.source.slice(0, 12)}
+                  {storyBeat?.label || edge.source.slice(0, 12)}
                 </span>
-                {plotPoint?.data.intent !== undefined && (
+                {storyBeat?.data.intent !== undefined && (
                   <span className={styles.intentBadge}>
-                    {String(plotPoint.data.intent)}
+                    {String(storyBeat.data.intent)}
                   </span>
                 )}
                 {typeof fulfillmentCount === 'number' && fulfillmentCount > 0 && (
@@ -90,7 +90,7 @@ export function BeatDetailSection({
         </div>
         {totalFulfilledScenes > 0 && (
           <div className={styles.summary}>
-            {totalFulfilledScenes} scene{totalFulfilledScenes !== 1 ? 's' : ''} fulfill this beat via plot points
+            {totalFulfilledScenes} scene{totalFulfilledScenes !== 1 ? 's' : ''} fulfill this beat via story beats
           </div>
         )}
       </div>

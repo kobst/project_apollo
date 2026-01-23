@@ -13,7 +13,7 @@ import {
 } from '../core/graph.js';
 import { lint, registerHardRules, registerSoftRules } from '../rules/index.js';
 import type { LintScope } from '../rules/types.js';
-import type { Beat, PlotPoint, Scene } from '../types/nodes.js';
+import type { Beat, StoryBeat, Scene } from '../types/nodes.js';
 import { BEAT_POSITION_MAP } from '../types/nodes.js';
 import type {
   TierSummary,
@@ -99,8 +99,8 @@ function computeTierSummaries(graph: GraphState, gaps: Gap[]): TierSummary[] {
         return computeFoundationsTier(graph);
       case 'structure':
         return computeStructureTier(graph);
-      case 'plotPoints':
-        return computePlotPointsTier(graph);
+      case 'storyBeats':
+        return computeStoryBeatsTier(graph);
       case 'scenes':
         return computeScenesTier(graph);
     }
@@ -166,46 +166,46 @@ function computeStructureTier(graph: GraphState): TierSummary {
 }
 
 /**
- * Compute PlotPoints tier summary.
- * Coverage: PlotPoints with SATISFIED_BY edges / expected minimum.
- * Expected minimum = number of beats (at least one plot point per beat).
+ * Compute StoryBeats tier summary.
+ * Coverage: StoryBeats with SATISFIED_BY edges / expected minimum.
+ * Expected minimum = number of beats (at least one story beat per beat).
  * Active = proposed or approved (excludes deprecated).
  */
-function computePlotPointsTier(graph: GraphState): TierSummary {
-  const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
-  // Active plot points = not deprecated (proposed or approved)
-  const activePPs = plotPoints.filter((pp) => pp.status !== 'deprecated');
+function computeStoryBeatsTier(graph: GraphState): TierSummary {
+  const storyBeats = getNodesByType<StoryBeat>(graph, 'StoryBeat');
+  // Active story beats = not deprecated (proposed or approved)
+  const activeSBs = storyBeats.filter((sb) => sb.status !== 'deprecated');
 
-  // Get the number of beats to determine minimum expected plot points
+  // Get the number of beats to determine minimum expected story beats
   const beats = getNodesByType<Beat>(graph, 'Beat');
   const numBeats = beats.length;
 
-  // Expected minimum: at least one plot point per beat, or EXPECTED_BEATS if no beats yet
+  // Expected minimum: at least one story beat per beat, or EXPECTED_BEATS if no beats yet
   const expectedMin = numBeats > 0 ? numBeats : EXPECTED_BEATS;
 
-  // Total is the greater of existing active PPs or expected minimum
-  const total = Math.max(activePPs.length, expectedMin);
+  // Total is the greater of existing active SBs or expected minimum
+  const total = Math.max(activeSBs.length, expectedMin);
 
-  // If no active plot points, show 0/expectedMin
-  if (activePPs.length === 0) {
+  // If no active story beats, show 0/expectedMin
+  if (activeSBs.length === 0) {
     return {
-      tier: 'plotPoints',
-      label: 'Plot Points',
+      tier: 'storyBeats',
+      label: 'Story Beats',
       covered: 0,
       total,
       percent: 0,
     };
   }
 
-  // Count plot points that have at least one SATISFIED_BY edge (linked to a scene)
+  // Count story beats that have at least one SATISFIED_BY edge (linked to a scene)
   const satisfiedByEdges = getEdgesByType(graph, 'SATISFIED_BY');
-  const satisfiedPPIds = new Set(satisfiedByEdges.map((e) => e.to));
+  const satisfiedSBIds = new Set(satisfiedByEdges.map((e) => e.to));
 
-  const covered = activePPs.filter((pp) => satisfiedPPIds.has(pp.id)).length;
+  const covered = activeSBs.filter((sb) => satisfiedSBIds.has(sb.id)).length;
 
   return {
-    tier: 'plotPoints',
-    label: 'Plot Points',
+    tier: 'storyBeats',
+    label: 'Story Beats',
     covered,
     total,
     percent: Math.round((covered / total) * 100),
@@ -224,13 +224,13 @@ function computeScenesTier(graph: GraphState): TierSummary {
   const beats = getNodesByType<Beat>(graph, 'Beat');
   const numBeats = beats.length > 0 ? beats.length : EXPECTED_BEATS;
 
-  // Get the number of active plot points
-  const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
-  const numActivePPs = plotPoints.filter((pp) => pp.status !== 'deprecated').length;
+  // Get the number of active story beats
+  const storyBeats = getNodesByType<StoryBeat>(graph, 'StoryBeat');
+  const numActiveSBs = storyBeats.filter((sb) => sb.status !== 'deprecated').length;
 
-  // Expected minimum: the greater of beats or plot points
-  // (need at least one scene per beat, and at least one scene per plot point)
-  const expectedMin = Math.max(numBeats, numActivePPs);
+  // Expected minimum: the greater of beats or story beats
+  // (need at least one scene per beat, and at least one scene per story beat)
+  const expectedMin = Math.max(numBeats, numActiveSBs);
 
   // Total is the greater of existing scenes or expected minimum
   const total = Math.max(scenes.length, expectedMin);

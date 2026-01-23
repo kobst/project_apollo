@@ -48,7 +48,7 @@ export function FoundationsPanel({ category, nodeType }: FoundationsPanelProps) 
   const fetchAllNodes = useCallback(async () => {
     if (!currentStoryId) return;
     try {
-      const types = ['Beat', 'Scene', 'Character', 'Location', 'CharacterArc', 'Object', 'PlotPoint', 'Logline', 'Setting', 'GenreTone'];
+      const types = ['Beat', 'Scene', 'Character', 'Location', 'CharacterArc', 'Object', 'StoryBeat', 'Logline', 'Setting', 'GenreTone'];
       const results = await Promise.all(
         types.map(type => api.listNodes(currentStoryId, type).catch(() => ({ nodes: [] })))
       );
@@ -94,7 +94,7 @@ export function FoundationsPanel({ category, nodeType }: FoundationsPanelProps) 
       locations: 'Locations',
       objects: 'Objects',
       board: 'Structure Board',
-      plotPoints: 'Plot Points',
+      storyBeats: 'Story Beats',
       scenes: 'Scenes',
       unassigned: 'Unassigned',
     };

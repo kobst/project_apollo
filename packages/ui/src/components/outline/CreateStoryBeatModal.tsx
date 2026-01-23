@@ -1,28 +1,28 @@
 /**
- * Modal for creating a PlotPoint without aligning to a Beat.
- * Creates an unassigned PlotPoint that can later be dragged to a Beat.
+ * Modal for creating a StoryBeat without aligning to a Beat.
+ * Creates an unassigned StoryBeat that can later be dragged to a Beat.
  */
 
 import { useState, useCallback } from 'react';
-import type { CreatePlotPointRequest, PlotPointIntent, PlotPointPriority } from '../../api/types';
-import styles from './AddPlotPointModal.module.css';
+import type { CreateStoryBeatRequest, StoryBeatIntent, StoryBeatPriority } from '../../api/types';
+import styles from './AddStoryBeatModal.module.css';
 
-interface CreatePlotPointModalProps {
+interface CreateStoryBeatModalProps {
   /** Called when user confirms creation */
-  onAdd: (data: CreatePlotPointRequest) => void;
+  onAdd: (data: CreateStoryBeatRequest) => void;
   /** Called when user cancels */
   onCancel: () => void;
   /** Loading state */
   saving?: boolean;
 }
 
-const INTENT_OPTIONS: { value: PlotPointIntent; label: string }[] = [
+const INTENT_OPTIONS: { value: StoryBeatIntent; label: string }[] = [
   { value: 'plot', label: 'Plot' },
   { value: 'character', label: 'Character' },
   { value: 'tone', label: 'Tone' },
 ];
 
-const PRIORITY_OPTIONS: { value: PlotPointPriority; label: string }[] = [
+const PRIORITY_OPTIONS: { value: StoryBeatPriority; label: string }[] = [
   { value: 'high', label: 'High' },
   { value: 'medium', label: 'Medium' },
   { value: 'low', label: 'Low' },
@@ -37,15 +37,15 @@ const ACT_OPTIONS: { value: 1 | 2 | 3 | 4 | 5 | undefined; label: string }[] = [
   { value: 5, label: 'Act 5' },
 ];
 
-export function CreatePlotPointModal({
+export function CreateStoryBeatModal({
   onAdd,
   onCancel,
   saving = false,
-}: CreatePlotPointModalProps) {
+}: CreateStoryBeatModalProps) {
   const [title, setTitle] = useState('');
-  const [intent, setIntent] = useState<PlotPointIntent>('plot');
+  const [intent, setIntent] = useState<StoryBeatIntent>('plot');
   const [summary, setSummary] = useState('');
-  const [priority, setPriority] = useState<PlotPointPriority>('medium');
+  const [priority, setPriority] = useState<StoryBeatPriority>('medium');
   const [act, setAct] = useState<1 | 2 | 3 | 4 | 5 | undefined>(undefined);
 
   const canSubmit = title.trim().length > 0 && !saving;
@@ -53,11 +53,11 @@ export function CreatePlotPointModal({
   const handleSubmit = useCallback(() => {
     if (!canSubmit) return;
 
-    const data: CreatePlotPointRequest = {
+    const data: CreateStoryBeatRequest = {
       title: title.trim(),
       intent,
       priority,
-      // No alignToBeatId - this creates an unassigned plot point
+      // No alignToBeatId - this creates an unassigned story beat
     };
 
     if (summary.trim()) {
@@ -84,7 +84,7 @@ export function CreatePlotPointModal({
     <div className={styles.overlay} onClick={onCancel} onKeyDown={handleKeyDown}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
-          <h3 className={styles.title}>Create Plot Point</h3>
+          <h3 className={styles.title}>Create Story Beat</h3>
           <button
             className={styles.closeBtn}
             onClick={onCancel}
@@ -131,7 +131,7 @@ export function CreatePlotPointModal({
               id="cpp-intent"
               className={styles.select}
               value={intent}
-              onChange={(e) => setIntent(e.target.value as PlotPointIntent)}
+              onChange={(e) => setIntent(e.target.value as StoryBeatIntent)}
               disabled={saving}
             >
               {INTENT_OPTIONS.map((opt) => (
@@ -171,7 +171,7 @@ export function CreatePlotPointModal({
               id="cpp-priority"
               className={styles.select}
               value={priority}
-              onChange={(e) => setPriority(e.target.value as PlotPointPriority)}
+              onChange={(e) => setPriority(e.target.value as StoryBeatPriority)}
               disabled={saving}
             >
               {PRIORITY_OPTIONS.map((opt) => (
@@ -214,7 +214,7 @@ export function CreatePlotPointModal({
             disabled={!canSubmit}
             type="button"
           >
-            {saving ? 'Creating...' : 'Create Plot Point'}
+            {saving ? 'Creating...' : 'Create Story Beat'}
           </button>
         </div>
       </div>

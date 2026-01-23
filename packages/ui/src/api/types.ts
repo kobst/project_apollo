@@ -20,7 +20,7 @@ export interface StoryStats {
   characters: number;
   locations: number;
   objects: number;
-  plotPoints: number;
+  storyBeats: number;
   ideas: number;
   edges: number;
   loglines: number;
@@ -287,7 +287,7 @@ export interface OutlineScene {
 }
 
 export type IdeaSource = 'user' | 'ai';
-export type IdeaSuggestedType = 'PlotPoint' | 'Scene' | 'Character' | 'Location' | 'Object';
+export type IdeaSuggestedType = 'StoryBeat' | 'Scene' | 'Character' | 'Location' | 'Object';
 
 export interface OutlineIdea {
   id: string;
@@ -298,10 +298,14 @@ export interface OutlineIdea {
   createdAt: string;
 }
 
-export interface OutlinePlotPoint {
+export interface OutlineStoryBeat {
   id: string;
   title: string;
   intent: string;
+  summary?: string;
+  priority?: string;
+  urgency?: string;
+  stakesChange?: string;
   status?: string;
   scenes: OutlineScene[];
 }
@@ -314,7 +318,7 @@ export interface OutlineBeat {
   guidance?: string;
   status?: string;
   notes?: string;
-  plotPoints: OutlinePlotPoint[];
+  storyBeats: OutlineStoryBeat[];
 }
 
 export interface OutlineAct {
@@ -325,18 +329,18 @@ export interface OutlineAct {
 export interface OutlineData {
   storyId: string;
   acts: OutlineAct[];
-  /** PlotPoints not aligned to any Beat (no ALIGNS_WITH edge) */
-  unassignedPlotPoints: OutlinePlotPoint[];
-  /** Scenes not connected to any PlotPoint */
+  /** StoryBeats not aligned to any Beat (no ALIGNS_WITH edge) */
+  unassignedStoryBeats: OutlineStoryBeat[];
+  /** Scenes not connected to any StoryBeat */
   unassignedScenes: OutlineScene[];
   /** Ideas - informal story ideas not yet promoted to formal nodes */
   unassignedIdeas: OutlineIdea[];
   summary: {
     totalBeats: number;
     totalScenes: number;
-    totalPlotPoints: number;
+    totalStoryBeats: number;
     totalIdeas: number;
-    unassignedPlotPointCount: number;
+    unassignedStoryBeatCount: number;
     unassignedSceneCount: number;
     unassignedIdeaCount: number;
   };
@@ -640,59 +644,59 @@ export interface BulkAttachData {
 }
 
 // =============================================================================
-// PlotPoint Types
+// StoryBeat Types
 // =============================================================================
 
-export type PlotPointIntent = 'plot' | 'character' | 'tone';
-export type PlotPointPriority = 'low' | 'medium' | 'high';
-export type PlotPointUrgency = 'low' | 'medium' | 'high';
-export type PlotPointStakesChange = 'up' | 'down' | 'steady';
-export type PlotPointStatus = 'proposed' | 'approved' | 'deprecated';
+export type StoryBeatIntent = 'plot' | 'character' | 'tone';
+export type StoryBeatPriority = 'low' | 'medium' | 'high';
+export type StoryBeatUrgency = 'low' | 'medium' | 'high';
+export type StoryBeatStakesChange = 'up' | 'down' | 'steady';
+export type StoryBeatStatus = 'proposed' | 'approved' | 'deprecated';
 
-export interface PlotPointData extends NodeData {
+export interface StoryBeatData extends NodeData {
   fulfillmentCount: number;
   alignedBeatId?: string;
 }
 
-export interface PlotPointsListData {
-  plotPoints: PlotPointData[];
+export interface StoryBeatsListData {
+  storyBeats: StoryBeatData[];
   totalCount: number;
   limit: number;
   offset: number;
 }
 
-export interface CreatePlotPointRequest {
+export interface CreateStoryBeatRequest {
   title: string;
-  intent: PlotPointIntent;
+  intent: StoryBeatIntent;
   summary?: string;
   criteria_of_satisfaction?: string;
-  priority?: PlotPointPriority;
-  urgency?: PlotPointUrgency;
-  stakes_change?: PlotPointStakesChange;
+  priority?: StoryBeatPriority;
+  urgency?: StoryBeatUrgency;
+  stakes_change?: StoryBeatStakesChange;
   act?: 1 | 2 | 3 | 4 | 5;
   alignToBeatId?: string;
 }
 
-export interface CreatePlotPointData {
-  plotPoint: PlotPointData;
+export interface CreateStoryBeatData {
+  storyBeat: StoryBeatData;
   newVersionId: string;
 }
 
-export interface UpdatePlotPointData {
-  plotPoint: PlotPointData;
+export interface UpdateStoryBeatData {
+  storyBeat: StoryBeatData;
   newVersionId: string;
   fieldsUpdated: string[];
 }
 
-export interface DeletePlotPointData {
+export interface DeleteStoryBeatData {
   deleted: true;
   newVersionId: string;
 }
 
-export interface PlotPointFilters {
-  status?: PlotPointStatus;
+export interface StoryBeatFilters {
+  status?: StoryBeatStatus;
   act?: 1 | 2 | 3 | 4 | 5;
-  intent?: PlotPointIntent;
+  intent?: StoryBeatIntent;
   unfulfilled?: boolean;
 }
 
@@ -703,7 +707,7 @@ export interface PlotPointFilters {
 export type IntExt = 'INT' | 'EXT' | 'OTHER';
 
 export interface SceneData extends NodeData {
-  connectedPlotPointId?: string | undefined;
+  connectedStoryBeatId?: string | undefined;
 }
 
 export interface ScenesListData {
@@ -719,8 +723,8 @@ export interface CreateSceneRequest {
   int_ext?: IntExt;
   time_of_day?: string;
   mood?: string;
-  /** Optional: immediately attach to a PlotPoint */
-  attachToPlotPointId?: string;
+  /** Optional: immediately attach to a StoryBeat */
+  attachToStoryBeatId?: string;
 }
 
 export interface CreateSceneData {
@@ -787,7 +791,7 @@ export interface DeleteIdeaData {
 // =============================================================================
 
 export type GapType = 'structural' | 'narrative';
-export type GapTier = 'premise' | 'foundations' | 'structure' | 'plotPoints' | 'scenes';
+export type GapTier = 'premise' | 'foundations' | 'structure' | 'storyBeats' | 'scenes';
 export type GapSource = 'rule-engine' | 'derived' | 'user' | 'extractor' | 'import';
 export type GapStatus = 'open' | 'in_progress' | 'resolved';
 export type GapDomain = 'STRUCTURE' | 'SCENE' | 'CHARACTER';
@@ -852,7 +856,7 @@ export interface UpdateContextData {
 // Entry point types for generation
 export type GenerationEntryPointType =
   | 'beat'
-  | 'plotPoint'
+  | 'storyBeat'
   | 'character'
   | 'gap'
   | 'idea'

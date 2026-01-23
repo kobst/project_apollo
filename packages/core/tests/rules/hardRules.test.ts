@@ -9,21 +9,21 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { GraphState } from '../../src/core/graph.js';
-import type { Beat, Scene, PlotPoint } from '../../src/types/nodes.js';
+import type { Beat, Scene, StoryBeat } from '../../src/types/nodes.js';
 import { BEAT_ACT_MAP, BEAT_POSITION_MAP } from '../../src/types/nodes.js';
 import {
   SCENE_ACT_BOUNDARY,
   STC_BEAT_ORDERING,
   EDGE_ORDER_UNIQUE,
-  PP_DAG_NO_CYCLES,
-  PP_ACT_ALIGNMENT,
+  SB_DAG_NO_CYCLES,
+  SB_ACT_ALIGNMENT,
 } from '../../src/rules/hardRules.js';
 import { applyPatch } from '../../src/core/applyPatch.js';
 import {
   createGraphWith15Beats,
   createScene,
   createCharacter,
-  createPlotPoint,
+  createStoryBeat,
   resetIdCounter,
   createEdge,
   edges,
@@ -335,199 +335,199 @@ describe('Hard Rules', () => {
   });
 
   // ===========================================================================
-  // PP_DAG_NO_CYCLES
+  // SB_DAG_NO_CYCLES
   // ===========================================================================
 
-  describe('PP_DAG_NO_CYCLES', () => {
+  describe('SB_DAG_NO_CYCLES', () => {
     it('should detect simple cycle in PRECEDES edges', () => {
       // Create A -> B -> C -> A cycle
-      const ppA = createPlotPoint({ id: 'pp_a', title: 'Plot Point A' });
-      const ppB = createPlotPoint({ id: 'pp_b', title: 'Plot Point B' });
-      const ppC = createPlotPoint({ id: 'pp_c', title: 'Plot Point C' });
-      graph.nodes.set(ppA.id, ppA);
-      graph.nodes.set(ppB.id, ppB);
-      graph.nodes.set(ppC.id, ppC);
+      const sbA = createStoryBeat({ id: 'sb_a', title: 'Story Beat A' });
+      const sbB = createStoryBeat({ id: 'sb_b', title: 'Story Beat B' });
+      const sbC = createStoryBeat({ id: 'sb_c', title: 'Story Beat C' });
+      graph.nodes.set(sbA.id, sbA);
+      graph.nodes.set(sbB.id, sbB);
+      graph.nodes.set(sbC.id, sbC);
 
-      graph.edges.push(edges.precedes('pp_a', 'pp_b', 'edge_ab'));
-      graph.edges.push(edges.precedes('pp_b', 'pp_c', 'edge_bc'));
-      graph.edges.push(edges.precedes('pp_c', 'pp_a', 'edge_ca')); // Creates cycle
+      graph.edges.push(edges.precedes('sb_a', 'sb_b', 'edge_ab'));
+      graph.edges.push(edges.precedes('sb_b', 'sb_c', 'edge_bc'));
+      graph.edges.push(edges.precedes('sb_c', 'sb_a', 'edge_ca')); // Creates cycle
 
-      const violations = PP_DAG_NO_CYCLES.evaluate(graph, { mode: 'full' });
+      const violations = SB_DAG_NO_CYCLES.evaluate(graph, { mode: 'full' });
 
       expect(violations.length).toBeGreaterThan(0);
-      expect(violations[0].ruleId).toBe('PP_DAG_NO_CYCLES');
+      expect(violations[0].ruleId).toBe('SB_DAG_NO_CYCLES');
       expect(violations[0].severity).toBe('hard');
       expect(violations[0].message).toContain('cycle');
     });
 
     it('should detect self-referential cycle', () => {
-      const pp = createPlotPoint({ id: 'pp_self', title: 'Self-referencing PP' });
-      graph.nodes.set(pp.id, pp);
+      const sb = createStoryBeat({ id: 'sb_self', title: 'Self-referencing SB' });
+      graph.nodes.set(sb.id, sb);
 
-      graph.edges.push(edges.precedes('pp_self', 'pp_self', 'edge_self'));
+      graph.edges.push(edges.precedes('sb_self', 'sb_self', 'edge_self'));
 
-      const violations = PP_DAG_NO_CYCLES.evaluate(graph, { mode: 'full' });
+      const violations = SB_DAG_NO_CYCLES.evaluate(graph, { mode: 'full' });
 
       expect(violations.length).toBeGreaterThan(0);
-      expect(violations[0].ruleId).toBe('PP_DAG_NO_CYCLES');
+      expect(violations[0].ruleId).toBe('SB_DAG_NO_CYCLES');
     });
 
     it('should not flag valid DAG (no cycles)', () => {
       // Create A -> B -> C (linear, no cycle)
-      const ppA = createPlotPoint({ id: 'pp_a', title: 'Plot Point A' });
-      const ppB = createPlotPoint({ id: 'pp_b', title: 'Plot Point B' });
-      const ppC = createPlotPoint({ id: 'pp_c', title: 'Plot Point C' });
-      graph.nodes.set(ppA.id, ppA);
-      graph.nodes.set(ppB.id, ppB);
-      graph.nodes.set(ppC.id, ppC);
+      const sbA = createStoryBeat({ id: 'sb_a', title: 'Story Beat A' });
+      const sbB = createStoryBeat({ id: 'sb_b', title: 'Story Beat B' });
+      const sbC = createStoryBeat({ id: 'sb_c', title: 'Story Beat C' });
+      graph.nodes.set(sbA.id, sbA);
+      graph.nodes.set(sbB.id, sbB);
+      graph.nodes.set(sbC.id, sbC);
 
-      graph.edges.push(edges.precedes('pp_a', 'pp_b', 'edge_ab'));
-      graph.edges.push(edges.precedes('pp_b', 'pp_c', 'edge_bc'));
+      graph.edges.push(edges.precedes('sb_a', 'sb_b', 'edge_ab'));
+      graph.edges.push(edges.precedes('sb_b', 'sb_c', 'edge_bc'));
 
-      const violations = PP_DAG_NO_CYCLES.evaluate(graph, { mode: 'full' });
+      const violations = SB_DAG_NO_CYCLES.evaluate(graph, { mode: 'full' });
 
       expect(violations).toHaveLength(0);
     });
 
     it('should not flag diamond DAG (convergent paths)', () => {
       // Create diamond: A -> B, A -> C, B -> D, C -> D
-      const ppA = createPlotPoint({ id: 'pp_a', title: 'Plot Point A' });
-      const ppB = createPlotPoint({ id: 'pp_b', title: 'Plot Point B' });
-      const ppC = createPlotPoint({ id: 'pp_c', title: 'Plot Point C' });
-      const ppD = createPlotPoint({ id: 'pp_d', title: 'Plot Point D' });
-      graph.nodes.set(ppA.id, ppA);
-      graph.nodes.set(ppB.id, ppB);
-      graph.nodes.set(ppC.id, ppC);
-      graph.nodes.set(ppD.id, ppD);
+      const sbA = createStoryBeat({ id: 'sb_a', title: 'Story Beat A' });
+      const sbB = createStoryBeat({ id: 'sb_b', title: 'Story Beat B' });
+      const sbC = createStoryBeat({ id: 'sb_c', title: 'Story Beat C' });
+      const sbD = createStoryBeat({ id: 'sb_d', title: 'Story Beat D' });
+      graph.nodes.set(sbA.id, sbA);
+      graph.nodes.set(sbB.id, sbB);
+      graph.nodes.set(sbC.id, sbC);
+      graph.nodes.set(sbD.id, sbD);
 
-      graph.edges.push(edges.precedes('pp_a', 'pp_b', 'edge_ab'));
-      graph.edges.push(edges.precedes('pp_a', 'pp_c', 'edge_ac'));
-      graph.edges.push(edges.precedes('pp_b', 'pp_d', 'edge_bd'));
-      graph.edges.push(edges.precedes('pp_c', 'pp_d', 'edge_cd'));
+      graph.edges.push(edges.precedes('sb_a', 'sb_b', 'edge_ab'));
+      graph.edges.push(edges.precedes('sb_a', 'sb_c', 'edge_ac'));
+      graph.edges.push(edges.precedes('sb_b', 'sb_d', 'edge_bd'));
+      graph.edges.push(edges.precedes('sb_c', 'sb_d', 'edge_cd'));
 
-      const violations = PP_DAG_NO_CYCLES.evaluate(graph, { mode: 'full' });
+      const violations = SB_DAG_NO_CYCLES.evaluate(graph, { mode: 'full' });
 
       expect(violations).toHaveLength(0);
     });
 
     it('should not provide auto-fix (user must decide)', () => {
-      const ppA = createPlotPoint({ id: 'pp_a', title: 'Plot Point A' });
-      const ppB = createPlotPoint({ id: 'pp_b', title: 'Plot Point B' });
-      graph.nodes.set(ppA.id, ppA);
-      graph.nodes.set(ppB.id, ppB);
+      const sbA = createStoryBeat({ id: 'sb_a', title: 'Story Beat A' });
+      const sbB = createStoryBeat({ id: 'sb_b', title: 'Story Beat B' });
+      graph.nodes.set(sbA.id, sbA);
+      graph.nodes.set(sbB.id, sbB);
 
-      graph.edges.push(edges.precedes('pp_a', 'pp_b', 'edge_ab'));
-      graph.edges.push(edges.precedes('pp_b', 'pp_a', 'edge_ba'));
+      graph.edges.push(edges.precedes('sb_a', 'sb_b', 'edge_ab'));
+      graph.edges.push(edges.precedes('sb_b', 'sb_a', 'edge_ba'));
 
-      const violations = PP_DAG_NO_CYCLES.evaluate(graph, { mode: 'full' });
+      const violations = SB_DAG_NO_CYCLES.evaluate(graph, { mode: 'full' });
       expect(violations.length).toBeGreaterThan(0);
 
-      const fix = PP_DAG_NO_CYCLES.suggestFix!(graph, violations[0]);
+      const fix = SB_DAG_NO_CYCLES.suggestFix!(graph, violations[0]);
       expect(fix).toBeNull(); // No auto-fix for cycles
     });
   });
 
   // ===========================================================================
-  // PP_ACT_ALIGNMENT
+  // SB_ACT_ALIGNMENT
   // ===========================================================================
 
-  describe('PP_ACT_ALIGNMENT', () => {
-    it('should detect PlotPoint act mismatch with aligned Beat', () => {
-      // Create a PlotPoint with act=1 aligned to a beat in act=3 (Midpoint)
-      const pp = createPlotPoint({
-        id: 'pp_1',
+  describe('SB_ACT_ALIGNMENT', () => {
+    it('should detect StoryBeat act mismatch with aligned Beat', () => {
+      // Create a StoryBeat with act=1 aligned to a beat in act=3 (Midpoint)
+      const sb = createStoryBeat({
+        id: 'sb_1',
         title: 'Midpoint Revelation',
         act: 1, // Wrong - should match beat's act (3)
       });
-      graph.nodes.set(pp.id, pp);
+      graph.nodes.set(sb.id, sb);
 
       // Align to Midpoint beat (which is in Act 3)
-      graph.edges.push(edges.alignsWith('pp_1', 'beat_Midpoint', 'edge_align'));
+      graph.edges.push(edges.alignsWith('sb_1', 'beat_Midpoint', 'edge_align'));
 
-      const violations = PP_ACT_ALIGNMENT.evaluate(graph, { mode: 'full' });
+      const violations = SB_ACT_ALIGNMENT.evaluate(graph, { mode: 'full' });
 
       expect(violations).toHaveLength(1);
-      expect(violations[0].ruleId).toBe('PP_ACT_ALIGNMENT');
+      expect(violations[0].ruleId).toBe('SB_ACT_ALIGNMENT');
       expect(violations[0].severity).toBe('hard');
       expect(violations[0].message).toContain('Act 1');
       expect(violations[0].message).toContain('Act 3');
     });
 
-    it('should not flag PlotPoint with matching act', () => {
-      // Create a PlotPoint with act=3 aligned to Midpoint (also act 3)
-      const pp = createPlotPoint({
-        id: 'pp_1',
+    it('should not flag StoryBeat with matching act', () => {
+      // Create a StoryBeat with act=3 aligned to Midpoint (also act 3)
+      const sb = createStoryBeat({
+        id: 'sb_1',
         title: 'Midpoint Revelation',
         act: 3,
       });
-      graph.nodes.set(pp.id, pp);
+      graph.nodes.set(sb.id, sb);
 
-      graph.edges.push(edges.alignsWith('pp_1', 'beat_Midpoint', 'edge_align'));
+      graph.edges.push(edges.alignsWith('sb_1', 'beat_Midpoint', 'edge_align'));
 
-      const violations = PP_ACT_ALIGNMENT.evaluate(graph, { mode: 'full' });
+      const violations = SB_ACT_ALIGNMENT.evaluate(graph, { mode: 'full' });
 
       expect(violations).toHaveLength(0);
     });
 
-    it('should not flag PlotPoint without act set', () => {
-      // PlotPoint without act field shouldn't trigger the rule
-      const pp = createPlotPoint({
-        id: 'pp_1',
-        title: 'Unassigned PP',
+    it('should not flag StoryBeat without act set', () => {
+      // StoryBeat without act field shouldn't trigger the rule
+      const sb = createStoryBeat({
+        id: 'sb_1',
+        title: 'Unassigned SB',
         // No act set
       });
-      graph.nodes.set(pp.id, pp);
+      graph.nodes.set(sb.id, sb);
 
-      graph.edges.push(edges.alignsWith('pp_1', 'beat_Midpoint', 'edge_align'));
+      graph.edges.push(edges.alignsWith('sb_1', 'beat_Midpoint', 'edge_align'));
 
-      const violations = PP_ACT_ALIGNMENT.evaluate(graph, { mode: 'full' });
+      const violations = SB_ACT_ALIGNMENT.evaluate(graph, { mode: 'full' });
 
       expect(violations).toHaveLength(0);
     });
 
-    it('should not flag PlotPoint without ALIGNS_WITH edge', () => {
-      // PlotPoint with act but no alignment shouldn't trigger the rule
-      const pp = createPlotPoint({
-        id: 'pp_1',
-        title: 'Unaligned PP',
+    it('should not flag StoryBeat without ALIGNS_WITH edge', () => {
+      // StoryBeat with act but no alignment shouldn't trigger the rule
+      const sb = createStoryBeat({
+        id: 'sb_1',
+        title: 'Unaligned SB',
         act: 2,
       });
-      graph.nodes.set(pp.id, pp);
+      graph.nodes.set(sb.id, sb);
 
       // No ALIGNS_WITH edge
 
-      const violations = PP_ACT_ALIGNMENT.evaluate(graph, { mode: 'full' });
+      const violations = SB_ACT_ALIGNMENT.evaluate(graph, { mode: 'full' });
 
       expect(violations).toHaveLength(0);
     });
 
-    it('should generate fix that updates PlotPoint act to match Beat', () => {
-      const pp = createPlotPoint({
-        id: 'pp_1',
+    it('should generate fix that updates StoryBeat act to match Beat', () => {
+      const sb = createStoryBeat({
+        id: 'sb_1',
         title: 'Catalyst Event',
         act: 5, // Wrong - Catalyst is in Act 1
       });
-      graph.nodes.set(pp.id, pp);
+      graph.nodes.set(sb.id, sb);
 
-      graph.edges.push(edges.alignsWith('pp_1', 'beat_Catalyst', 'edge_align'));
+      graph.edges.push(edges.alignsWith('sb_1', 'beat_Catalyst', 'edge_align'));
 
-      const violations = PP_ACT_ALIGNMENT.evaluate(graph, { mode: 'full' });
+      const violations = SB_ACT_ALIGNMENT.evaluate(graph, { mode: 'full' });
       expect(violations).toHaveLength(1);
 
-      const fix = PP_ACT_ALIGNMENT.suggestFix!(graph, violations[0]);
+      const fix = SB_ACT_ALIGNMENT.suggestFix!(graph, violations[0]);
       expect(fix).not.toBeNull();
       expect(fix!.label).toContain('Act 1');
-      expect(fix!.affectedNodeIds).toContain('pp_1');
+      expect(fix!.affectedNodeIds).toContain('sb_1');
 
       // Apply the fix
       const newGraph = applyPatch(graph, fix!.patch);
 
-      // Verify PlotPoint now has correct act
-      const updatedPP = newGraph.nodes.get('pp_1') as PlotPoint;
-      expect(updatedPP.act).toBe(1);
+      // Verify StoryBeat now has correct act
+      const updatedSB = newGraph.nodes.get('sb_1') as StoryBeat;
+      expect(updatedSB.act).toBe(1);
 
       // Verify no more violations
-      const newViolations = PP_ACT_ALIGNMENT.evaluate(newGraph, { mode: 'full' });
+      const newViolations = SB_ACT_ALIGNMENT.evaluate(newGraph, { mode: 'full' });
       expect(newViolations).toHaveLength(0);
     });
   });

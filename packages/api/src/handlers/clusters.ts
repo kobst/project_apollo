@@ -110,8 +110,8 @@ export function createClustersHandler(ctx: StorageContext) {
           );
         }
 
-        // Use the highest priority gap by tier (premise > foundations > structure > plotPoints > scenes)
-        const tierPriority = ['premise', 'foundations', 'structure', 'plotPoints', 'scenes'];
+        // Use the highest priority gap by tier (premise > foundations > structure > storyBeats > scenes)
+        const tierPriority = ['premise', 'foundations', 'structure', 'storyBeats', 'scenes'];
         scopedGaps.sort(
           (a, b) =>
             tierPriority.indexOf(a.tier) - tierPriority.indexOf(b.tier)

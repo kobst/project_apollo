@@ -54,7 +54,7 @@
           },
           {
             "operation": "add",
-            "node_type": "PlotPoint",
+            "node_type": "StoryBeat",
             "node_id": "",
             "data": { "title": "Empty ID" }
           }

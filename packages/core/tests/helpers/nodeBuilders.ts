@@ -11,8 +11,8 @@ import type {
   Motif,
   CharacterArc,
   Conflict,
-  PlotPoint,
-  PlotPointIntent,
+  StoryBeat,
+  StoryBeatIntent,
 } from '../../src/types/nodes.js';
 
 let idCounter = 0;
@@ -188,15 +188,15 @@ export function createCharacterArc(
 }
 
 /**
- * Create a valid PlotPoint node
+ * Create a valid StoryBeat node
  */
-export function createPlotPoint(overrides: Partial<PlotPoint> = {}): PlotPoint {
+export function createStoryBeat(overrides: Partial<StoryBeat> = {}): StoryBeat {
   const now = new Date().toISOString();
   return {
-    type: 'PlotPoint',
+    type: 'StoryBeat',
     id: overrides.id ?? nextId('pp'),
-    title: overrides.title ?? 'Test Plot Point',
-    intent: overrides.intent ?? ('plot' as PlotPointIntent),
+    title: overrides.title ?? 'Test Story Beat',
+    intent: overrides.intent ?? ('plot' as StoryBeatIntent),
     status: overrides.status ?? 'proposed',
     createdAt: overrides.createdAt ?? now,
     updatedAt: overrides.updatedAt ?? now,

@@ -9,26 +9,26 @@ import {
   createScene,
   createCharacter,
   createCharacterArc,
-  createPlotPoint,
+  createStoryBeat,
   resetIdCounter,
 } from './helpers/index.js';
 import { edges } from './helpers/index.js';
 
 /**
- * Helper to connect a scene to a beat through the PlotPoint hierarchy.
- * Creates PlotPoint → ALIGNS_WITH → Beat and PlotPoint → SATISFIED_BY → Scene
+ * Helper to connect a scene to a beat through the StoryBeat hierarchy.
+ * Creates StoryBeat → ALIGNS_WITH → Beat and StoryBeat → SATISFIED_BY → Scene
  */
 function attachSceneToBeat(
   graph: GraphState,
   sceneId: string,
   beatId: string,
-  plotPointId?: string
+  storyBeatId?: string
 ): void {
-  const ppId = plotPointId ?? `pp_for_${sceneId}`;
-  const pp = createPlotPoint({ id: ppId, title: `PP for ${sceneId}` });
-  graph.nodes.set(pp.id, pp);
-  graph.edges.push(edges.alignsWith(ppId, beatId));
-  graph.edges.push(edges.satisfiedBy(ppId, sceneId, 1));
+  const sbId = storyBeatId ?? `sb_for_${sceneId}`;
+  const sb = createStoryBeat({ id: sbId, title: `SB for ${sceneId}` });
+  graph.nodes.set(sb.id, sb);
+  graph.edges.push(edges.alignsWith(sbId, beatId));
+  graph.edges.push(edges.satisfiedBy(sbId, sceneId, 1));
 }
 import { fixtures } from './fixtures/index.js';
 
@@ -68,11 +68,11 @@ describe('deriveOpenQuestions', () => {
     });
   });
 
-  describe('After adding Catalyst scene (via PlotPoint)', () => {
-    it('should remove BeatUnrealized for Catalyst after scene added via PlotPoint', () => {
+  describe('After adding Catalyst scene (via StoryBeat)', () => {
+    it('should remove BeatUnrealized for Catalyst after scene added via StoryBeat', () => {
       const scene = createScene('beat_Catalyst', { id: 'scene_catalyst' });
       graph.nodes.set(scene.id, scene);
-      // Connect scene to beat through PlotPoint hierarchy
+      // Connect scene to beat through StoryBeat hierarchy
       attachSceneToBeat(graph, 'scene_catalyst', 'beat_Catalyst');
 
       const questions = deriveOpenQuestions(graph);
@@ -101,7 +101,7 @@ describe('deriveOpenQuestions', () => {
       expect(breakIntoTwoOQ).toBeDefined();
     });
 
-    it('should have 14 BeatUnrealized after adding one scene via PlotPoint', () => {
+    it('should have 14 BeatUnrealized after adding one scene via StoryBeat', () => {
       const scene = createScene('beat_Catalyst', { id: 'scene_catalyst' });
       graph.nodes.set(scene.id, scene);
       attachSceneToBeat(graph, 'scene_catalyst', 'beat_Catalyst');
@@ -115,11 +115,11 @@ describe('deriveOpenQuestions', () => {
 
   describe('ActImbalance', () => {
     it('should detect act imbalance when one act is empty while neighbors have content', () => {
-      // Add scenes to Act 1 beats (positions 1-5) via PlotPoints
+      // Add scenes to Act 1 beats (positions 1-5) via StoryBeats
       const scene1 = createScene('beat_OpeningImage', { id: 'scene_1' });
       const scene2 = createScene('beat_Setup', { id: 'scene_2' });
       // Skip Act 2 entirely (positions 6-8)
-      // Add scenes to Act 3 (positions 9-10) via PlotPoints
+      // Add scenes to Act 3 (positions 9-10) via StoryBeats
       const scene3 = createScene('beat_Midpoint', { id: 'scene_3' });
       const scene4 = createScene('beat_BadGuysCloseIn', { id: 'scene_4' });
 
@@ -128,7 +128,7 @@ describe('deriveOpenQuestions', () => {
       graph.nodes.set(scene3.id, scene3);
       graph.nodes.set(scene4.id, scene4);
 
-      // Connect scenes to beats through PlotPoints
+      // Connect scenes to beats through StoryBeats
       attachSceneToBeat(graph, 'scene_1', 'beat_OpeningImage');
       attachSceneToBeat(graph, 'scene_2', 'beat_Setup');
       attachSceneToBeat(graph, 'scene_3', 'beat_Midpoint');

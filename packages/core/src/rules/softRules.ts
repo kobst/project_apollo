@@ -6,7 +6,7 @@
 
 import type { GraphState } from '../core/graph.js';
 import { getNodesByType } from '../core/graph.js';
-import type { PlotPoint, Logline, Location } from '../types/nodes.js';
+import type { StoryBeat, Logline, Location } from '../types/nodes.js';
 import type { Rule, RuleViolation, LintScope } from './types.js';
 import { getScenesInScope, isNodeInScope, createViolation } from './utils.js';
 import { registerRule } from './engine.js';
@@ -111,49 +111,49 @@ export const SCENE_HAS_LOCATION: Rule = {
 
 
 // =============================================================================
-// PP_EVENT_REALIZATION
+// SB_EVENT_REALIZATION
 // =============================================================================
 
 /**
- * Approved PlotPoints should have at least one SATISFIED_BY edge to a scene.
- * This ensures that approved plot points are realized in the narrative.
+ * Approved StoryBeats should have at least one SATISFIED_BY edge to a scene.
+ * This ensures that approved story beats are realized in the narrative.
  */
-export const PP_EVENT_REALIZATION: Rule = {
-  id: 'PP_EVENT_REALIZATION',
-  name: 'Approved PlotPoint Should Have Scene',
+export const SB_EVENT_REALIZATION: Rule = {
+  id: 'SB_EVENT_REALIZATION',
+  name: 'Approved StoryBeat Should Have Scene',
   severity: 'soft',
   category: 'completeness',
-  description: 'Approved plot points should be satisfied by at least one scene',
+  description: 'Approved story beats should be satisfied by at least one scene',
 
   evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
     const violations: RuleViolation[] = [];
-    const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
+    const storyBeats = getNodesByType<StoryBeat>(graph, 'StoryBeat');
 
-    for (const pp of plotPoints) {
+    for (const sb of storyBeats) {
       // Skip if not in scope
-      if (!isNodeInScope(scope, pp.id)) continue;
+      if (!isNodeInScope(scope, sb.id)) continue;
 
-      // Only check approved plot points
-      if (pp.status !== 'approved') continue;
+      // Only check approved story beats
+      if (sb.status !== 'approved') continue;
 
-      // Check for SATISFIED_BY edges from this plot point
+      // Check for SATISFIED_BY edges from this story beat
       const satisfiedByEdges = graph.edges.filter(
-        (e) => e.type === 'SATISFIED_BY' && e.from === pp.id
+        (e) => e.type === 'SATISFIED_BY' && e.from === sb.id
       );
 
       if (satisfiedByEdges.length === 0) {
         violations.push(
           createViolation(
-            'PP_EVENT_REALIZATION',
+            'SB_EVENT_REALIZATION',
             'soft',
             'completeness',
-            `Approved PlotPoint "${pp.title}" has no scenes satisfying it`,
+            `Approved StoryBeat "${sb.title}" has no scenes satisfying it`,
             {
-              nodeId: pp.id,
-              nodeType: 'PlotPoint',
+              nodeId: sb.id,
+              nodeType: 'StoryBeat',
               context: {
-                plotPointTitle: pp.title,
-                plotPointStatus: pp.status,
+                storyBeatTitle: sb.title,
+                storyBeatStatus: sb.status,
               },
             }
           )
@@ -166,26 +166,26 @@ export const PP_EVENT_REALIZATION: Rule = {
 };
 
 // =============================================================================
-// SCENE_HAS_PLOTPOINT
+// SCENE_HAS_STORYBEAT
 // =============================================================================
 
 /**
- * Scene should be satisfied by at least one PlotPoint (via SATISFIED_BY edge).
+ * Scene should be satisfied by at least one StoryBeat (via SATISFIED_BY edge).
  * This ensures scenes are connected to the story's causality chain.
  */
-export const SCENE_HAS_PLOTPOINT: Rule = {
-  id: 'SCENE_HAS_PLOTPOINT',
-  name: 'Scene Should Have PlotPoint',
+export const SCENE_HAS_STORYBEAT: Rule = {
+  id: 'SCENE_HAS_STORYBEAT',
+  name: 'Scene Should Have StoryBeat',
   severity: 'soft',
   category: 'completeness',
-  description: 'Scenes should be satisfied by at least one PlotPoint',
+  description: 'Scenes should be satisfied by at least one StoryBeat',
 
   evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
     const violations: RuleViolation[] = [];
     const scenes = getScenesInScope(graph, scope);
 
     for (const scene of scenes) {
-      // Check for incoming SATISFIED_BY edges (PlotPoint → Scene)
+      // Check for incoming SATISFIED_BY edges (StoryBeat → Scene)
       const satisfiedByEdges = graph.edges.filter(
         (e) => e.type === 'SATISFIED_BY' && e.to === scene.id
       );
@@ -193,10 +193,10 @@ export const SCENE_HAS_PLOTPOINT: Rule = {
       if (satisfiedByEdges.length === 0) {
         violations.push(
           createViolation(
-            'SCENE_HAS_PLOTPOINT',
+            'SCENE_HAS_STORYBEAT',
             'soft',
             'completeness',
-            `Scene "${scene.heading}" is not connected to any PlotPoint`,
+            `Scene "${scene.heading}" is not connected to any StoryBeat`,
             {
               nodeId: scene.id,
               nodeType: 'Scene',
@@ -311,8 +311,8 @@ export const LOCATION_HAS_SETTING: Rule = {
 export const SOFT_RULES: Rule[] = [
   SCENE_HAS_CHARACTER,
   SCENE_HAS_LOCATION,
-  SCENE_HAS_PLOTPOINT,
-  PP_EVENT_REALIZATION,
+  SCENE_HAS_STORYBEAT,
+  SB_EVENT_REALIZATION,
   STORY_HAS_LOGLINE,
   LOCATION_HAS_SETTING,
 ];

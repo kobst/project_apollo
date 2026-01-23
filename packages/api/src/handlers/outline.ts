@@ -2,16 +2,16 @@
  * GET /stories/:id/outline - Get story outline structure
  * Returns beats organized by act with plot points containing their scenes
  *
- * Hierarchy: Beat → PlotPoint → Scene
- * - PlotPoints align to Beats via ALIGNS_WITH edges
- * - Scenes satisfy PlotPoints via SATISFIED_BY edges
- * - Unassigned PlotPoints (no ALIGNS_WITH edge) returned separately
- * - Unassigned scenes (no PlotPoint connection) returned separately
+ * Hierarchy: Beat → StoryBeat → Scene
+ * - StoryBeats align to Beats via ALIGNS_WITH edges
+ * - Scenes satisfy StoryBeats via SATISFIED_BY edges
+ * - Unassigned StoryBeats (no ALIGNS_WITH edge) returned separately
+ * - Unassigned scenes (no StoryBeat connection) returned separately
  */
 
 import type { Request, Response, NextFunction } from 'express';
 import { getNodesByType, getEdgesByType, getNode } from '@apollo/core';
-import type { Beat, Scene, PlotPoint, Idea } from '@apollo/core';
+import type { Beat, Scene, StoryBeat, Idea } from '@apollo/core';
 import type { StorageContext } from '../config.js';
 import { loadVersionedStateById, deserializeGraph } from '../storage.js';
 import { NotFoundError } from '../middleware/error.js';
@@ -28,11 +28,15 @@ interface OutlineScene {
   status: string | undefined;
 }
 
-// PlotPoint data for outline (with nested scenes)
-interface OutlinePlotPoint {
+// StoryBeat data for outline (with nested scenes)
+interface OutlineStoryBeat {
   id: string;
   title: string;
   intent: string | undefined;
+  summary: string | undefined;
+  priority: string | undefined;
+  urgency: string | undefined;
+  stakesChange: string | undefined;
   status: string | undefined;
   scenes: OutlineScene[];
 }
@@ -56,7 +60,7 @@ interface OutlineBeat {
   guidance: string | undefined;
   status: string | undefined;
   notes: string | undefined;
-  plotPoints: OutlinePlotPoint[];
+  storyBeats: OutlineStoryBeat[];
 }
 
 // Act grouping
@@ -69,18 +73,18 @@ interface OutlineAct {
 interface OutlineData {
   storyId: string;
   acts: OutlineAct[];
-  /** PlotPoints not aligned to any Beat (no ALIGNS_WITH edge) */
-  unassignedPlotPoints: OutlinePlotPoint[];
-  /** Scenes not connected to any PlotPoint */
+  /** StoryBeats not aligned to any Beat (no ALIGNS_WITH edge) */
+  unassignedStoryBeats: OutlineStoryBeat[];
+  /** Scenes not connected to any StoryBeat */
   unassignedScenes: OutlineScene[];
   /** Ideas - informal story ideas not yet promoted to formal nodes */
   unassignedIdeas: OutlineIdea[];
   summary: {
     totalBeats: number;
     totalScenes: number;
-    totalPlotPoints: number;
+    totalStoryBeats: number;
     totalIdeas: number;
-    unassignedPlotPointCount: number;
+    unassignedStoryBeatCount: number;
     unassignedSceneCount: number;
     unassignedIdeaCount: number;
   };
@@ -125,61 +129,61 @@ export function createOutlineHandler(ctx: StorageContext) {
       // Get all nodes
       const beats = getNodesByType(graph, 'Beat') as Beat[];
       const scenes = getNodesByType(graph, 'Scene') as Scene[];
-      const plotPoints = getNodesByType(graph, 'PlotPoint') as PlotPoint[];
+      const plotPoints = getNodesByType(graph, 'StoryBeat') as StoryBeat[];
       const ideas = getNodesByType(graph, 'Idea') as Idea[];
 
       // Get edges for alignment and fulfillment
       const alignsWithEdges = getEdgesByType(graph, 'ALIGNS_WITH');
       const satisfiedByEdges = getEdgesByType(graph, 'SATISFIED_BY');
 
-      // Build scenesByPlotPoint map (plotPointId -> Scene[])
-      // Also track which PlotPoint each scene belongs to
-      const scenesByPlotPoint = new Map<string, Scene[]>();
-      const sceneToPlotPoint = new Map<string, string>(); // sceneId -> plotPointId
+      // Build scenesByStoryBeat map (plotPointId -> Scene[])
+      // Also track which StoryBeat each scene belongs to
+      const scenesByStoryBeat = new Map<string, Scene[]>();
+      const sceneToStoryBeat = new Map<string, string>(); // sceneId -> plotPointId
       for (const edge of satisfiedByEdges) {
-        // SATISFIED_BY: PlotPoint (from) → Scene (to)
+        // SATISFIED_BY: StoryBeat (from) → Scene (to)
         const scene = getNode(graph, edge.to) as Scene | undefined;
         if (scene) {
-          sceneToPlotPoint.set(scene.id, edge.from);
-          const existing = scenesByPlotPoint.get(edge.from) || [];
+          sceneToStoryBeat.set(scene.id, edge.from);
+          const existing = scenesByStoryBeat.get(edge.from) || [];
           existing.push(scene);
-          scenesByPlotPoint.set(edge.from, existing);
+          scenesByStoryBeat.set(edge.from, existing);
         }
       }
 
       // Sort scenes within each plot point by order_index (undefined treated as last)
-      for (const [ppId, ppScenes] of scenesByPlotPoint) {
+      for (const [ppId, ppScenes] of scenesByStoryBeat) {
         ppScenes.sort((a, b) => {
           const orderA = a.order_index ?? Number.MAX_SAFE_INTEGER;
           const orderB = b.order_index ?? Number.MAX_SAFE_INTEGER;
           return orderA - orderB;
         });
-        scenesByPlotPoint.set(ppId, ppScenes);
+        scenesByStoryBeat.set(ppId, ppScenes);
       }
 
-      // Build plotPointsByBeat map (beatId -> PlotPoint[])
-      // Also track which PlotPoints are aligned to beats
-      const plotPointsByBeat = new Map<string, PlotPoint[]>();
-      const alignedPlotPoints = new Set<string>(); // PlotPoints with ALIGNS_WITH edge
+      // Build plotPointsByBeat map (beatId -> StoryBeat[])
+      // Also track which StoryBeats are aligned to beats
+      const plotPointsByBeat = new Map<string, StoryBeat[]>();
+      const alignedStoryBeats = new Set<string>(); // StoryBeats with ALIGNS_WITH edge
       for (const edge of alignsWithEdges) {
-        // ALIGNS_WITH: PlotPoint (from) → Beat (to)
-        const plotPoint = getNode(graph, edge.from) as PlotPoint | undefined;
+        // ALIGNS_WITH: StoryBeat (from) → Beat (to)
+        const plotPoint = getNode(graph, edge.from) as StoryBeat | undefined;
         if (plotPoint) {
-          alignedPlotPoints.add(plotPoint.id);
+          alignedStoryBeats.add(plotPoint.id);
           const existing = plotPointsByBeat.get(edge.to) || [];
           existing.push(plotPoint);
           plotPointsByBeat.set(edge.to, existing);
         }
       }
 
-      // Collect unassigned PlotPoints (no ALIGNS_WITH edge to any Beat)
-      const unassignedPPs: PlotPoint[] = plotPoints.filter(
-        (pp) => !alignedPlotPoints.has(pp.id)
+      // Collect unassigned StoryBeats (no ALIGNS_WITH edge to any Beat)
+      const unassignedPPs: StoryBeat[] = plotPoints.filter(
+        (pp) => !alignedStoryBeats.has(pp.id)
       );
 
-      // Collect unassigned scenes (no SATISFIED_BY edge from any PlotPoint)
+      // Collect unassigned scenes (no SATISFIED_BY edge from any StoryBeat)
       const unassignedScenes: Scene[] = scenes.filter(
-        (scene) => !sceneToPlotPoint.has(scene.id)
+        (scene) => !sceneToStoryBeat.has(scene.id)
       );
       // Sort by order_index (undefined treated as last)
       unassignedScenes.sort((a, b) => {
@@ -190,7 +194,7 @@ export function createOutlineHandler(ctx: StorageContext) {
 
       // Build outline beats with nested structure
       const outlineBeats: OutlineBeat[] = beats.map((beat) => {
-        const beatPlotPoints = plotPointsByBeat.get(beat.id) || [];
+        const beatStoryBeats = plotPointsByBeat.get(beat.id) || [];
 
         return {
           id: beat.id,
@@ -200,12 +204,16 @@ export function createOutlineHandler(ctx: StorageContext) {
           guidance: beat.guidance,
           status: beat.status,
           notes: beat.notes,
-          plotPoints: beatPlotPoints.map((pp) => ({
-            id: pp.id,
-            title: pp.title,
-            intent: pp.intent,
-            status: pp.status,
-            scenes: (scenesByPlotPoint.get(pp.id) || []).map(toOutlineScene),
+          storyBeats: beatStoryBeats.map((sb) => ({
+            id: sb.id,
+            title: sb.title,
+            intent: sb.intent,
+            summary: sb.summary,
+            priority: sb.priority,
+            urgency: sb.urgency,
+            stakesChange: sb.stakes_change,
+            status: sb.status,
+            scenes: (scenesByStoryBeat.get(sb.id) || []).map(toOutlineScene),
           })),
         };
       });
@@ -230,13 +238,17 @@ export function createOutlineHandler(ctx: StorageContext) {
         }
       }
 
-      // Convert unassigned PlotPoints to OutlinePlotPoint format (with their scenes)
-      const unassignedPlotPoints: OutlinePlotPoint[] = unassignedPPs.map((pp) => ({
-        id: pp.id,
-        title: pp.title,
-        intent: pp.intent,
-        status: pp.status,
-        scenes: (scenesByPlotPoint.get(pp.id) || []).map(toOutlineScene),
+      // Convert unassigned StoryBeats to OutlineStoryBeat format (with their scenes)
+      const unassignedStoryBeats: OutlineStoryBeat[] = unassignedPPs.map((sb) => ({
+        id: sb.id,
+        title: sb.title,
+        intent: sb.intent,
+        summary: sb.summary,
+        priority: sb.priority,
+        urgency: sb.urgency,
+        stakesChange: sb.stakes_change,
+        status: sb.status,
+        scenes: (scenesByStoryBeat.get(sb.id) || []).map(toOutlineScene),
       }));
 
       // Convert ideas to OutlineIdea format (all ideas are "unassigned" since they don't connect to beats)
@@ -257,15 +269,15 @@ export function createOutlineHandler(ctx: StorageContext) {
       const data: OutlineData = {
         storyId: id,
         acts,
-        unassignedPlotPoints,
+        unassignedStoryBeats,
         unassignedScenes: unassignedScenes.map(toOutlineScene),
         unassignedIdeas,
         summary: {
           totalBeats: outlineBeats.length,
           totalScenes: scenes.length,
-          totalPlotPoints: plotPoints.length,
+          totalStoryBeats: plotPoints.length,
           totalIdeas: ideas.length,
-          unassignedPlotPointCount: unassignedPPs.length,
+          unassignedStoryBeatCount: unassignedPPs.length,
           unassignedSceneCount: unassignedScenes.length,
           unassignedIdeaCount: ideas.length,
         },

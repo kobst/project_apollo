@@ -381,7 +381,7 @@ export function createBulkAttachHandler(ctx: StorageContext) {
         }
       }
 
-      // Auto-compute order_index for PlotPoints and Scenes when attachment edges change
+      // Auto-compute order_index for StoryBeats and Scenes when attachment edges change
       if (edgeType === 'ALIGNS_WITH' || edgeType === 'SATISFIED_BY') {
         const orderResult = computeOrder(finalGraph);
         if (orderResult.ops.length > 0) {

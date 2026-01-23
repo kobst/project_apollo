@@ -1,21 +1,21 @@
 /**
- * UnassignedPlotPointCard - Card displaying an unassigned plot point.
+ * UnassignedStoryBeatCard - Card displaying an unassigned story beat.
  * Can be dragged to a Beat to create an ALIGNS_WITH edge.
  */
 
-import type { OutlinePlotPoint } from '../../api/types';
-import styles from './UnassignedPlotPointCard.module.css';
+import type { OutlineStoryBeat } from '../../api/types';
+import styles from './UnassignedStoryBeatCard.module.css';
 
-interface UnassignedPlotPointCardProps {
-  plotPoint: OutlinePlotPoint;
+interface UnassignedStoryBeatCardProps {
+  storyBeat: OutlineStoryBeat;
   onClick?: () => void;
 }
 
-export function UnassignedPlotPointCard({
-  plotPoint,
+export function UnassignedStoryBeatCard({
+  storyBeat,
   onClick,
-}: UnassignedPlotPointCardProps) {
-  const sceneCount = plotPoint.scenes?.length ?? 0;
+}: UnassignedStoryBeatCardProps) {
+  const sceneCount = storyBeat.scenes?.length ?? 0;
 
   return (
     <div
@@ -29,17 +29,17 @@ export function UnassignedPlotPointCard({
         <span className={styles.dragHandle} title="Drag to assign to a beat">
           &#x2630;
         </span>
-        <span className={styles.title}>{plotPoint.title}</span>
+        <span className={styles.title}>{storyBeat.title}</span>
       </div>
 
       <div className={styles.meta}>
-        {plotPoint.intent && (
-          <span className={`${styles.badge} ${styles[`intent_${plotPoint.intent}`]}`}>
-            {plotPoint.intent}
+        {storyBeat.intent && (
+          <span className={`${styles.badge} ${styles[`intent_${storyBeat.intent}`]}`}>
+            {storyBeat.intent}
           </span>
         )}
-        {plotPoint.status && (
-          <span className={styles.badge}>{plotPoint.status}</span>
+        {storyBeat.status && (
+          <span className={styles.badge}>{storyBeat.status}</span>
         )}
       </div>
 

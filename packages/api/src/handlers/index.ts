@@ -44,12 +44,12 @@ export {
 } from './lint.js';
 export { createBulkAttachHandler } from './bulkAttach.js';
 export {
-  createPlotPointHandler,
-  listPlotPointsHandler,
-  getPlotPointHandler,
-  updatePlotPointHandler,
-  deletePlotPointHandler,
-} from './plotPoints.js';
+  createStoryBeatHandler,
+  listStoryBeatsHandler,
+  getStoryBeatHandler,
+  updateStoryBeatHandler,
+  deleteStoryBeatHandler,
+} from './storyBeats.js';
 export { createCoverageHandler } from './coverage.js';
 export { createGapsHandler } from './gaps.js';
 export { createRecomputeOrderHandler } from './recomputeOrder.js';
