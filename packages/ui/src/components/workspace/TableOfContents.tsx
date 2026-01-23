@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import type { SectionChangeCounts } from '../../utils/stagingUtils';
+import type { SectionChangeCounts, DetailedElementCounts, DetailedStructureCounts } from '../../utils/stagingUtils';
 import styles from './TableOfContents.module.css';
 
 interface ActData {
@@ -33,6 +33,10 @@ interface TableOfContentsProps {
   onNavigate: (sectionId: string) => void;
   /** Section change counts for staged package */
   sectionChangeCounts?: SectionChangeCounts | undefined;
+  /** Detailed element change counts (by type) */
+  detailedElementCounts?: DetailedElementCounts | undefined;
+  /** Detailed structure change counts (by act) */
+  detailedStructureCounts?: DetailedStructureCounts | undefined;
   /** Whether a package is currently staged */
   hasStagedPackage?: boolean | undefined;
   /** Whether the sidebar is collapsed */
@@ -72,6 +76,8 @@ export function TableOfContents({
   activeSectionId,
   onNavigate,
   sectionChangeCounts,
+  detailedElementCounts,
+  detailedStructureCounts,
   hasStagedPackage,
   isCollapsed,
   onToggleCollapse,
@@ -186,19 +192,34 @@ export function TableOfContents({
             )}
           </button>
 
-          {elementsExpanded && elementCounts && (
+          {elementsExpanded && (elementCounts || detailedElementCounts) && (
             <ul className={styles.subNav}>
               <li className={styles.subNavInfo}>
                 <span>Characters</span>
-                <span className={styles.count}>{elementCounts.characters}</span>
+                <span className={styles.countGroup}>
+                  <span className={styles.count}>{elementCounts?.characters ?? 0}</span>
+                  {hasStagedPackage && detailedElementCounts && detailedElementCounts.characters.additions > 0 && (
+                    <span className={styles.proposedCount}>+{detailedElementCounts.characters.additions}</span>
+                  )}
+                </span>
               </li>
               <li className={styles.subNavInfo}>
                 <span>Locations</span>
-                <span className={styles.count}>{elementCounts.locations}</span>
+                <span className={styles.countGroup}>
+                  <span className={styles.count}>{elementCounts?.locations ?? 0}</span>
+                  {hasStagedPackage && detailedElementCounts && detailedElementCounts.locations.additions > 0 && (
+                    <span className={styles.proposedCount}>+{detailedElementCounts.locations.additions}</span>
+                  )}
+                </span>
               </li>
               <li className={styles.subNavInfo}>
                 <span>Objects</span>
-                <span className={styles.count}>{elementCounts.objects}</span>
+                <span className={styles.countGroup}>
+                  <span className={styles.count}>{elementCounts?.objects ?? 0}</span>
+                  {hasStagedPackage && detailedElementCounts && detailedElementCounts.objects.additions > 0 && (
+                    <span className={styles.proposedCount}>+{detailedElementCounts.objects.additions}</span>
+                  )}
+                </span>
               </li>
             </ul>
           )}
@@ -233,20 +254,32 @@ export function TableOfContents({
 
           {structureExpanded && actData.length > 0 && (
             <ul className={styles.subNav}>
-              {actData.map((act) => (
-                <li key={act.id}>
-                  <button
-                    className={`${styles.subNavItem} ${activeSectionId === act.id ? styles.active : ''}`}
-                    onClick={() => handleClick(act.id)}
-                    type="button"
-                  >
-                    <span>Act {act.actNumber}</span>
-                    <span className={`${styles.progress} ${act.filledBeats === act.totalBeats ? styles.complete : ''}`}>
-                      {act.filledBeats}/{act.totalBeats}
-                    </span>
-                  </button>
-                </li>
-              ))}
+              {actData.map((act) => {
+                const actChanges = detailedStructureCounts?.byAct.get(act.actNumber);
+                const hasProposedChanges = hasStagedPackage && actChanges && (actChanges.additions > 0 || actChanges.modifications > 0);
+                return (
+                  <li key={act.id}>
+                    <button
+                      className={`${styles.subNavItem} ${activeSectionId === act.id ? styles.active : ''}`}
+                      onClick={() => handleClick(act.id)}
+                      type="button"
+                    >
+                      <span>Act {act.actNumber}</span>
+                      <span className={styles.countGroup}>
+                        <span className={`${styles.progress} ${act.filledBeats === act.totalBeats ? styles.complete : ''}`}>
+                          {act.filledBeats}/{act.totalBeats}
+                        </span>
+                        {hasProposedChanges && actChanges.additions > 0 && (
+                          <span className={styles.proposedCount}>+{actChanges.additions}</span>
+                        )}
+                        {hasProposedChanges && actChanges.modifications > 0 && (
+                          <span className={styles.proposedModCount}>~{actChanges.modifications}</span>
+                        )}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </li>

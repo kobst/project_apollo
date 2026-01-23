@@ -331,3 +331,144 @@ export function getProposedNodes(mergedNodes: MergedNode[]): MergedNode[] {
 export function getProposedEdges(mergedEdges: MergedEdge[]): MergedEdge[] {
   return mergedEdges.filter((edge) => edge._isProposed);
 }
+
+// Detailed change counts for better UI display
+export interface DetailedElementCounts {
+  characters: { additions: number; modifications: number };
+  locations: { additions: number; modifications: number };
+  objects: { additions: number; modifications: number };
+}
+
+export interface DetailedStructureCounts {
+  byAct: Map<number, { additions: number; modifications: number }>;
+  unassigned: { additions: number; modifications: number };
+}
+
+/**
+ * Compute detailed element change counts by type
+ */
+export function computeDetailedElementCounts(pkg: NarrativePackage | null): DetailedElementCounts {
+  const counts: DetailedElementCounts = {
+    characters: { additions: 0, modifications: 0 },
+    locations: { additions: 0, modifications: 0 },
+    objects: { additions: 0, modifications: 0 },
+  };
+
+  if (!pkg) return counts;
+
+  for (const node of pkg.changes.nodes) {
+    let target: { additions: number; modifications: number } | null = null;
+
+    if (node.node_type === 'Character') {
+      target = counts.characters;
+    } else if (node.node_type === 'Location') {
+      target = counts.locations;
+    } else if (node.node_type === 'Object') {
+      target = counts.objects;
+    }
+
+    if (target) {
+      if (node.operation === 'add') {
+        target.additions++;
+      } else if (node.operation === 'modify') {
+        target.modifications++;
+      }
+    }
+  }
+
+  return counts;
+}
+
+/**
+ * Compute detailed structure change counts by act
+ * Requires a beat-to-act map since plot points are aligned to beats via edges
+ */
+export function computeDetailedStructureCounts(
+  pkg: NarrativePackage | null,
+  beatToActMap?: Map<string, number>
+): DetailedStructureCounts {
+  const counts: DetailedStructureCounts = {
+    byAct: new Map(),
+    unassigned: { additions: 0, modifications: 0 },
+  };
+
+  if (!pkg) return counts;
+
+  // Build map of PlotPoint ID -> Beat ID from ALIGNS_WITH edges
+  const plotPointToBeat = new Map<string, string>();
+  for (const edge of pkg.changes.edges) {
+    if (edge.operation === 'add' && edge.edge_type === 'ALIGNS_WITH') {
+      // ALIGNS_WITH: from=PlotPoint, to=Beat
+      plotPointToBeat.set(edge.from, edge.to);
+    }
+  }
+
+  for (const node of pkg.changes.nodes) {
+    if (!STRUCTURE_NODE_TYPES.includes(node.node_type)) continue;
+
+    let act: number | undefined;
+
+    // For PlotPoints, look up the beat alignment to determine the act
+    if (node.node_type === 'PlotPoint') {
+      const beatId = plotPointToBeat.get(node.node_id);
+      if (beatId && beatToActMap) {
+        act = beatToActMap.get(beatId);
+      }
+    }
+
+    // Fallback: try to get act from node data
+    if (!act) {
+      act = node.data?.act as number | undefined;
+    }
+
+    if (act && act >= 1 && act <= 5) {
+      if (!counts.byAct.has(act)) {
+        counts.byAct.set(act, { additions: 0, modifications: 0 });
+      }
+      const actCounts = counts.byAct.get(act)!;
+      if (node.operation === 'add') {
+        actCounts.additions++;
+      } else if (node.operation === 'modify') {
+        actCounts.modifications++;
+      }
+    } else {
+      // No act specified - count as unassigned
+      if (node.operation === 'add') {
+        counts.unassigned.additions++;
+      } else if (node.operation === 'modify') {
+        counts.unassigned.modifications++;
+      }
+    }
+  }
+
+  return counts;
+}
+
+/**
+ * Format detailed element counts for display
+ * Returns something like "+1 Character, +2 Locations"
+ */
+export function formatDetailedElementCounts(counts: DetailedElementCounts): string[] {
+  const parts: string[] = [];
+
+  if (counts.characters.additions > 0) {
+    parts.push(`+${counts.characters.additions} Character${counts.characters.additions > 1 ? 's' : ''}`);
+  }
+  if (counts.characters.modifications > 0) {
+    parts.push(`~${counts.characters.modifications} Character${counts.characters.modifications > 1 ? 's' : ''}`);
+  }
+  if (counts.locations.additions > 0) {
+    parts.push(`+${counts.locations.additions} Location${counts.locations.additions > 1 ? 's' : ''}`);
+  }
+  if (counts.locations.modifications > 0) {
+    parts.push(`~${counts.locations.modifications} Location${counts.locations.modifications > 1 ? 's' : ''}`);
+  }
+  if (counts.objects.additions > 0) {
+    parts.push(`+${counts.objects.additions} Object${counts.objects.additions > 1 ? 's' : ''}`);
+  }
+  if (counts.objects.modifications > 0) {
+    parts.push(`~${counts.objects.modifications} Object${counts.objects.modifications > 1 ? 's' : ''}`);
+  }
+
+  return parts;
+}

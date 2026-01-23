@@ -21,7 +21,11 @@ import type {
 } from '../api/types';
 import {
   computeSectionChangeCounts,
+  computeDetailedElementCounts,
+  computeDetailedStructureCounts,
   type SectionChangeCounts,
+  type DetailedElementCounts,
+  type DetailedStructureCounts,
 } from '../utils/stagingUtils';
 
 // Staging state for workspace integration
@@ -106,6 +110,10 @@ interface GenerationContextValue {
   staging: StagingState;
   /** Computed section change counts */
   sectionChangeCounts: SectionChangeCounts;
+  /** Detailed element change counts (by type) */
+  detailedElementCounts: DetailedElementCounts;
+  /** Detailed structure change counts (by act) */
+  detailedStructureCounts: DetailedStructureCounts;
   /** Stage a package by index */
   stagePackage: (index: number) => void;
   /** Stage a saved package directly (not from session) */
@@ -585,6 +593,18 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     [staging.stagedPackage]
   );
 
+  // Compute detailed element counts (by type: Character, Location, Object)
+  const detailedElementCounts = useMemo(
+    () => computeDetailedElementCounts(staging.stagedPackage),
+    [staging.stagedPackage]
+  );
+
+  // Compute detailed structure counts (by act)
+  const detailedStructureCounts = useMemo(
+    () => computeDetailedStructureCounts(staging.stagedPackage),
+    [staging.stagedPackage]
+  );
+
   // Get the currently staged package (convenience getter)
   const stagedPackage = staging.stagedPackage;
 
@@ -612,6 +632,8 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     // Staging state
     staging,
     sectionChangeCounts,
+    detailedElementCounts,
+    detailedStructureCounts,
     stagePackage,
     stageSavedPackage,
     clearStaging,

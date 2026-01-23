@@ -10,6 +10,7 @@ import { useGeneration } from '../../context/GenerationContext';
 import { useStory } from '../../context/StoryContext';
 import { api } from '../../api/client';
 import type { OutlineData } from '../../api/types';
+import { computeDetailedStructureCounts } from '../../utils/stagingUtils';
 import { PremiseSection } from './PremiseSection';
 import { ElementsSection } from './ElementsSection';
 import { StructureSection } from './StructureSection';
@@ -38,7 +39,7 @@ export function StoryBible({
   onToggleTocCollapse,
 }: StoryBibleProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { stagedPackage, sectionChangeCounts } = useGeneration();
+  const { stagedPackage, sectionChangeCounts, detailedElementCounts } = useGeneration();
   const { currentStoryId, status } = useStory();
 
   // Fetch outline data for TOC navigation
@@ -70,6 +71,25 @@ export function StoryBible({
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, []);
+
+  // Build beat-to-act map from outline for detailed structure counts
+  const beatToActMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!outline) return map;
+
+    for (const act of outline.acts) {
+      for (const beat of act.beats) {
+        map.set(beat.id, act.act);
+      }
+    }
+    return map;
+  }, [outline]);
+
+  // Compute detailed structure counts using the beat-to-act map
+  const detailedStructureCounts = useMemo(
+    () => computeDetailedStructureCounts(stagedPackage, beatToActMap),
+    [stagedPackage, beatToActMap]
+  );
 
   // Generate act data for TOC sub-navigation
   const actData = useMemo(() => {
@@ -128,6 +148,8 @@ export function StoryBible({
         activeSectionId={activeSectionId}
         onNavigate={handleNavigate}
         sectionChangeCounts={sectionChangeCounts}
+        detailedElementCounts={detailedElementCounts}
+        detailedStructureCounts={detailedStructureCounts}
         hasStagedPackage={stagedPackage !== null}
         isCollapsed={isTocCollapsed}
         onToggleCollapse={onToggleTocCollapse}
