@@ -1,12 +1,16 @@
 /**
  * PremisePanel - Card-based view for editing premise fields (Logline, Genre/Tone, Setting).
  * Replaces the modal-based editing with an inline panel view.
+ * Includes staged proposal preview section when a package is staged.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useStory } from '../../context/StoryContext';
+import { useGeneration } from '../../context/GenerationContext';
 import { api } from '../../api/client';
 import type { NodeData } from '../../api/types';
+import type { MergedNode } from '../../utils/stagingUtils';
+import { InlineEditor } from './InlineEditor';
 import styles from './PremisePanel.module.css';
 
 interface PremiseNodes {
@@ -27,6 +31,7 @@ interface FormData {
 
 export function PremisePanel() {
   const { currentStoryId, refreshStatus } = useStory();
+  const { stagedPackage, staging, updateEditedNode, removeProposedNode } = useGeneration();
   const [nodes, setNodes] = useState<PremiseNodes>({
     logline: null,
     genreTone: null,
@@ -43,6 +48,41 @@ export function PremisePanel() {
     settingPeriod: '',
   });
   const [saving, setSaving] = useState(false);
+
+  // Compute proposed premise nodes from staged package
+  const proposedPremiseNodes = useMemo((): MergedNode[] => {
+    if (!stagedPackage) return [];
+
+    const proposedNodes: MergedNode[] = [];
+    for (const nodeChange of stagedPackage.changes.nodes) {
+      const nodeType = nodeChange.node_type;
+      if (nodeType === 'Logline' || nodeType === 'Setting' || nodeType === 'GenreTone') {
+        const localEdits = staging.editedNodes.get(nodeChange.node_id);
+        const isRemoved = staging.removedNodeIds.has(nodeChange.node_id);
+        if (!isRemoved || nodeChange.operation !== 'add') {
+          proposedNodes.push({
+            id: nodeChange.node_id,
+            type: nodeType,
+            label: (nodeChange.data?.name as string) ?? (nodeChange.data?.text as string) ?? nodeType,
+            data: { ...nodeChange.data, ...localEdits },
+            _isProposed: true,
+            _packageId: stagedPackage.id,
+            _operation: nodeChange.operation,
+            _previousData: nodeChange.previous_data,
+          });
+        }
+      }
+    }
+    return proposedNodes;
+  }, [stagedPackage, staging.editedNodes, staging.removedNodeIds]);
+
+  const handleEditProposedNode = useCallback((nodeId: string, updates: Partial<Record<string, unknown>>) => {
+    updateEditedNode(nodeId, updates);
+  }, [updateEditedNode]);
+
+  const handleRemoveProposedNode = useCallback((nodeId: string) => {
+    removeProposedNode(nodeId);
+  }, [removeProposedNode]);
 
   const fetchPremiseData = useCallback(async () => {
     if (!currentStoryId) return;
@@ -240,6 +280,27 @@ export function PremisePanel() {
 
       <div className={styles.content}>
         {error && <div className={styles.error}>{error}</div>}
+
+        {/* Proposed Changes Section */}
+        {proposedPremiseNodes.length > 0 && (
+          <div className={styles.proposedSection}>
+            <h3 className={styles.proposedTitle}>
+              <span className={styles.proposedIcon}>{'\u2728'}</span>
+              Proposed Changes ({proposedPremiseNodes.length})
+            </h3>
+            <div className={styles.proposedList}>
+              {proposedPremiseNodes.map((node) => (
+                <InlineEditor
+                  key={node.id}
+                  node={node}
+                  onEdit={handleEditProposedNode}
+                  onRemove={node._operation === 'add' ? handleRemoveProposedNode : undefined}
+                  isRemoved={staging.removedNodeIds.has(node.id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Logline Card - Full Width */}
         <div className={styles.card}>

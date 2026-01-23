@@ -7,7 +7,6 @@ import { Header } from './components/layout/Header';
 import { ViewTabs, type ViewMode } from './components/layout/ViewTabs';
 import { StoriesView } from './components/stories/StoriesView';
 import { WorkspaceView } from './components/workspace';
-import { GenerationView } from './components/generation';
 
 export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('stories');
@@ -23,8 +22,6 @@ export default function App() {
             {viewMode === 'stories' && <StoriesView />}
 
             {viewMode === 'workspace' && <WorkspaceView />}
-
-            {viewMode === 'generation' && <GenerationView />}
           </div>
         </SavedPackagesProvider>
       </GenerationProvider>

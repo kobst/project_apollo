@@ -4,7 +4,7 @@
 
 export type ElementType = 'Character' | 'Location' | 'Object';
 
-export type WorkspaceView = 'structure' | 'elements' | 'premise';
+export type WorkspaceView = 'structure' | 'elements' | 'premise' | 'allChanges';
 
 export interface ElementModalState {
   elementId: string;

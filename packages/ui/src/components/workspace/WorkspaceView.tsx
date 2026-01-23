@@ -7,11 +7,14 @@
 
 import { useState, useCallback } from 'react';
 import { useStory } from '../../context/StoryContext';
+import { useGeneration } from '../../context/GenerationContext';
 import { PremiseHeader } from './PremiseHeader';
 import { WorkspaceSidebar } from './WorkspaceSidebar';
 import { StructureBoard } from './StructureBoard';
 import { ElementsBoard } from './ElementsBoard';
 import { PremisePanel } from './PremisePanel';
+import { GenerationPanel } from './GenerationPanel';
+import { AllChangesView } from './AllChangesView';
 import { ElementDetailModal } from './ElementDetailModal';
 import { AddElementModal, type AddElementType } from './AddElementModal';
 import { StoryContextModal } from '../context/StoryContextModal';
@@ -20,9 +23,13 @@ import styles from './WorkspaceView.module.css';
 
 export function WorkspaceView() {
   const { currentStoryId, status } = useStory();
+  const { stagedPackage, sectionChangeCounts } = useGeneration();
 
   // Sidebar collapse state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Generation panel collapse state
+  const [isGenPanelCollapsed, setIsGenPanelCollapsed] = useState(false);
 
   // Workspace view state (structure or elements)
   const [workspaceView, setWorkspaceView] = useState<WorkspaceViewType>('structure');
@@ -79,6 +86,8 @@ export function WorkspaceView() {
           hasStoryContext={status?.hasStoryContext ?? false}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          sectionChangeCounts={sectionChangeCounts}
+          hasStagedPackage={stagedPackage !== null}
         />
 
         <div className={styles.mainContent}>
@@ -86,13 +95,20 @@ export function WorkspaceView() {
             <PremisePanel />
           ) : workspaceView === 'structure' ? (
             <StructureBoard />
-          ) : (
+          ) : workspaceView === 'elements' ? (
             <ElementsBoard
               onElementClick={handleElementClick}
               onAddElement={handleAddElement}
             />
-          )}
+          ) : workspaceView === 'allChanges' ? (
+            <AllChangesView />
+          ) : null}
         </div>
+
+        <GenerationPanel
+          isCollapsed={isGenPanelCollapsed}
+          onToggleCollapse={() => setIsGenPanelCollapsed(!isGenPanelCollapsed)}
+        />
       </div>
 
       {/* Modals */}

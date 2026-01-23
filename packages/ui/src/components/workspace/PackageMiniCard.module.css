@@ -1,0 +1,91 @@
+/* PackageMiniCard - Compact card for package carousel */
+
+.card {
+  position: relative;
+  min-width: 140px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--text-muted, #555);
+}
+
+.card.active {
+  background: var(--bg-proposed, rgba(74, 222, 128, 0.08));
+  border-color: var(--color-proposed, #4ade80);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.index {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary, #888);
+}
+
+.active .index {
+  background: var(--color-proposed, #4ade80);
+  color: #000;
+}
+
+.confidence {
+  font-size: 11px;
+  color: var(--text-muted, #666);
+}
+
+.active .confidence {
+  color: var(--color-proposed, #4ade80);
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary, #aaa);
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.active .title {
+  color: var(--text-primary, #fff);
+}
+
+.meta {
+  display: flex;
+  gap: 8px;
+}
+
+.count {
+  font-size: 10px;
+  color: var(--text-muted, #666);
+}
+
+.activeIndicator {
+  position: absolute;
+  bottom: 0;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  background: var(--color-proposed, #4ade80);
+  border-radius: 1px;
+}
