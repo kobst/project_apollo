@@ -2,24 +2,22 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useGeneration } from '../../context/GenerationContext';
 import { useStory } from '../../context/StoryContext';
 import { useSavedPackages } from '../../context/SavedPackagesContext';
+import { useGenerationData } from '../../hooks/useGenerationData';
 import { GenerationSidebar } from './GenerationSidebar';
 import { PackageDetail } from './PackageDetail';
-import { ComposeForm } from './ComposeForm';
+import { ComposeForm, createDefaultFormState } from './ComposeForm';
 import type { ComposeFormState } from './ComposeForm';
-import type { SavedPackageData, NarrativePackage, ProposeRequest } from '../../api/types';
+import type {
+  SavedPackageData,
+  NarrativePackage,
+  ProposeStoryBeatsRequest,
+  ProposeCharactersRequest,
+  ProposeScenesRequest,
+  ProposeExpandRequest,
+} from '../../api/types';
 import styles from './GenerationView.module.css';
 
 type ViewState = 'compose' | 'review';
-
-const DEFAULT_FORM_STATE: ComposeFormState = {
-  mode: 'add',
-  selectedEntryIndex: 0,
-  direction: '',
-  showAdvanced: false,
-  customCreativity: null,
-  customPackageCount: null,
-  customNodesPerPackage: null,
-};
 
 export function GenerationView() {
   const { currentStoryId } = useStory();
@@ -27,7 +25,10 @@ export function GenerationView() {
     session,
     loading,
     error,
-    propose,
+    proposeStoryBeats,
+    proposeCharacters,
+    proposeScenes,
+    proposeExpand,
     acceptPackage,
     refinePackage,
     rejectPackage,
@@ -48,6 +49,9 @@ export function GenerationView() {
     applySavedPackage,
   } = useSavedPackages();
 
+  // Fetch data needed for the generation form (beats, characters, story beats)
+  const { beats, characters, storyBeats } = useGenerationData(currentStoryId);
+
   // View state: compose (input form) or review (package details)
   const [viewState, setViewState] = useState<ViewState>('compose');
 
@@ -59,7 +63,7 @@ export function GenerationView() {
   const [viewingSavedPackage, setViewingSavedPackage] = useState<SavedPackageData | null>(null);
 
   // Form state - persists across view changes
-  const [formState, setFormState] = useState<ComposeFormState>(DEFAULT_FORM_STATE);
+  const [formState, setFormState] = useState<ComposeFormState>(createDefaultFormState);
 
   // Track previous package count to detect new packages arriving
   const [prevPackageCount, setPrevPackageCount] = useState(0);
@@ -97,12 +101,26 @@ export function GenerationView() {
     setPrevPackageCount(currentCount);
   }, [session, selectedPackageId, prevPackageCount]);
 
-  // Handle generation from ComposeForm
-  const handleGenerate = useCallback(async (request: ProposeRequest) => {
+  // Mode-specific generation handlers
+  const handleGenerateStoryBeats = useCallback(async (request: ProposeStoryBeatsRequest) => {
     if (!currentStoryId) return;
-    await propose(currentStoryId, request);
-    // View will auto-switch to review when packages arrive via useEffect
-  }, [currentStoryId, propose]);
+    await proposeStoryBeats(currentStoryId, request);
+  }, [currentStoryId, proposeStoryBeats]);
+
+  const handleGenerateCharacters = useCallback(async (request: ProposeCharactersRequest) => {
+    if (!currentStoryId) return;
+    await proposeCharacters(currentStoryId, request);
+  }, [currentStoryId, proposeCharacters]);
+
+  const handleGenerateScenes = useCallback(async (request: ProposeScenesRequest) => {
+    if (!currentStoryId) return;
+    await proposeScenes(currentStoryId, request);
+  }, [currentStoryId, proposeScenes]);
+
+  const handleGenerateExpand = useCallback(async (request: ProposeExpandRequest) => {
+    if (!currentStoryId) return;
+    await proposeExpand(currentStoryId, request);
+  }, [currentStoryId, proposeExpand]);
 
   // Handlers
   const handleAccept = useCallback(async (filteredPackage?: NarrativePackage) => {
@@ -298,10 +316,16 @@ export function GenerationView() {
     if (viewState === 'compose') {
       return (
         <ComposeForm
-          onGenerate={handleGenerate}
+          onGenerateStoryBeats={handleGenerateStoryBeats}
+          onGenerateCharacters={handleGenerateCharacters}
+          onGenerateScenes={handleGenerateScenes}
+          onGenerateExpand={handleGenerateExpand}
           loading={loading}
           formState={formState}
           onFormStateChange={setFormState}
+          beats={beats}
+          characters={characters}
+          storyBeats={storyBeats}
         />
       );
     }
@@ -328,10 +352,16 @@ export function GenerationView() {
     // No packages yet - show compose form
     return (
       <ComposeForm
-        onGenerate={handleGenerate}
+        onGenerateStoryBeats={handleGenerateStoryBeats}
+        onGenerateCharacters={handleGenerateCharacters}
+        onGenerateScenes={handleGenerateScenes}
+        onGenerateExpand={handleGenerateExpand}
         loading={loading}
         formState={formState}
         onFormStateChange={setFormState}
+        beats={beats}
+        characters={characters}
+        storyBeats={storyBeats}
       />
     );
   };

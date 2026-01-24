@@ -1329,3 +1329,175 @@ export interface ProposeRefineRequest {
   guidance: string;
   creativity?: number;
 }
+
+// =============================================================================
+// New Generation API Types (Four-Mode System)
+// =============================================================================
+
+/**
+ * Focus type for Story Beats generation.
+ */
+export type StoryBeatsFocusType = 'all' | 'act' | 'beats';
+
+/**
+ * Request for Story Beats generation.
+ */
+export interface ProposeStoryBeatsRequest {
+  focus: StoryBeatsFocusType;
+  targetAct?: 1 | 2 | 3 | 4 | 5 | undefined;
+  priorityBeatIds?: string[] | undefined;
+  direction?: string | undefined;
+  creativity?: number | undefined;
+  packageCount?: number | undefined;
+  inventNewEntities?: boolean | undefined;
+}
+
+/**
+ * Validated beat info in Story Beats response.
+ */
+export interface ValidatedBeatInfo {
+  beatId: string;
+  beatType: string;
+  act: number;
+  storyBeatCount: number;
+  isNew: boolean;
+}
+
+/**
+ * Rejected beat info in Story Beats response.
+ */
+export interface RejectedBeatInfo {
+  beatId: string;
+  beatType: string;
+  reason: string;
+}
+
+/**
+ * Response from Story Beats generation.
+ */
+export interface ProposeStoryBeatsResponse {
+  sessionId: string;
+  packages: NarrativePackage[];
+  validatedBeats: ValidatedBeatInfo[];
+  rejectedBeats: RejectedBeatInfo[];
+}
+
+/**
+ * Focus type for Characters generation.
+ */
+export type CharacterFocusType =
+  | 'develop-existing'
+  | 'new-protagonist'
+  | 'new-antagonist'
+  | 'new-supporting'
+  | 'fill-gaps';
+
+/**
+ * Request for Characters generation.
+ */
+export interface ProposeCharactersRequest {
+  focus: CharacterFocusType;
+  characterId?: string | undefined;
+  includeArcs?: boolean | undefined;
+  direction?: string | undefined;
+  creativity?: number | undefined;
+  packageCount?: number | undefined;
+  inventNewEntities?: boolean | undefined;
+}
+
+/**
+ * Character summary in Characters response.
+ */
+export interface CharacterSummary {
+  id: string;
+  name: string;
+  role?: string;
+  arcCount: number;
+  isNew: boolean;
+}
+
+/**
+ * Response from Characters generation.
+ */
+export interface ProposeCharactersResponse {
+  sessionId: string;
+  packages: NarrativePackage[];
+  existingCharacters: CharacterSummary[];
+  newCharacters: CharacterSummary[];
+}
+
+/**
+ * Request for Scenes generation.
+ */
+export interface ProposeScenesRequest {
+  storyBeatIds: string[];
+  scenesPerBeat?: number | undefined;
+  direction?: string | undefined;
+  creativity?: number | undefined;
+  packageCount?: number | undefined;
+  inventNewEntities?: boolean | undefined;
+}
+
+/**
+ * Scene summary in Scenes response.
+ */
+export interface SceneSummary {
+  id: string;
+  heading: string;
+  storyBeatId: string;
+  isNew: boolean;
+}
+
+/**
+ * Response from Scenes generation.
+ */
+export interface ProposeScenesResponse {
+  sessionId: string;
+  packages: NarrativePackage[];
+  generatedScenes: SceneSummary[];
+}
+
+/**
+ * Target type for Expand generation.
+ */
+export type ExpandTargetType = 'story-context' | 'story-context-section' | 'node';
+
+/**
+ * Context section for Expand generation.
+ */
+export type ExpandContextSection =
+  | 'genre-tone'
+  | 'setting'
+  | 'themes'
+  | 'backstory'
+  | 'worldbuilding'
+  | 'rules';
+
+/**
+ * Depth for Expand generation.
+ */
+export type ExpandDepthType = 'surface' | 'deep';
+
+/**
+ * Request for Expand generation.
+ */
+export interface ProposeExpandRequest {
+  targetType: ExpandTargetType;
+  contextSection?: ExpandContextSection | undefined;
+  nodeId?: string | undefined;
+  depth?: ExpandDepthType | undefined;
+  direction?: string | undefined;
+  creativity?: number | undefined;
+  packageCount?: number | undefined;
+  inventNewEntities?: boolean | undefined;
+}
+
+/**
+ * Response from Expand generation.
+ */
+export interface ProposeExpandResponse {
+  sessionId: string;
+  packages: NarrativePackage[];
+  expandedSections?: string[];
+  expandedNodeId?: string;
+}

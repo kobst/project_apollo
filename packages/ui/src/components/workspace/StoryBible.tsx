@@ -15,6 +15,7 @@ import { PremiseSection } from './PremiseSection';
 import { ElementsSection } from './ElementsSection';
 import { StructureSection } from './StructureSection';
 import { ContextSection } from './ContextSection';
+import { IdeasSection } from './IdeasSection';
 import { TableOfContents } from './TableOfContents';
 import type { ElementType } from './types';
 import styles from './StoryBible.module.css';
@@ -30,7 +31,7 @@ interface StoryBibleProps {
   onToggleTocCollapse: () => void;
 }
 
-const SECTION_IDS = ['premise', 'elements', 'structure', 'context'];
+const SECTION_IDS = ['premise', 'elements', 'structure', 'context', 'ideas'];
 
 export function StoryBible({
   onElementClick,
@@ -158,6 +159,7 @@ export function StoryBible({
         progress={progress}
         hasPremise={Boolean(status?.logline)}
         hasContext={status?.hasStoryContext ?? false}
+        ideasCount={status?.stats?.ideas ?? 0}
       />
 
       <div className={styles.scrollArea} ref={scrollRef} data-scroll-area>
@@ -171,6 +173,8 @@ export function StoryBible({
         <StructureSection />
 
         <ContextSection />
+
+        <IdeasSection />
       </div>
     </div>
   );

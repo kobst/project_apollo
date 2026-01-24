@@ -242,6 +242,16 @@
   cursor: not-allowed;
 }
 
+/* Validation Error */
+.validationError {
+  padding: 10px 14px;
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  border-radius: 6px;
+  color: #f87171;
+  font-size: 13px;
+}
+
 /* Generate Button */
 .generateBtn {
   padding: 14px 24px;

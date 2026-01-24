@@ -1,0 +1,62 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.toggle {
+  display: flex;
+  background: #16162a;
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.option:hover:not(:disabled):not(.selected) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.option.selected {
+  background: rgba(90, 124, 165, 0.2);
+}
+
+.option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.optionLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #888;
+  transition: color 0.15s ease;
+}
+
+.option.selected .optionLabel {
+  color: #7a9cc5;
+}
+
+.optionHint {
+  font-size: 10px;
+  color: #555;
+  transition: color 0.15s ease;
+}
+
+.option.selected .optionHint {
+  color: #6a8cb5;
+}

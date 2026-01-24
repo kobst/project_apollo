@@ -1,95 +1,168 @@
-import { useCallback } from 'react';
-import type { ProposeEntryPointType, ProposeRequest, ProposeIntent } from '../../api/types';
-import styles from './ComposeForm.module.css';
+/**
+ * ComposeForm - Main generation form with four-mode system.
+ * Modes: Story Beats, Characters, Scenes, Expand
+ */
 
-// Generation modes with smart defaults
-export type GenerationMode = 'add' | 'expand' | 'explore';
+import { useCallback, useEffect, useState } from 'react';
+import { ModeSelector, type GenerationMode } from './ModeSelector';
+import { ExpansionScopeToggle, type ExpansionScope } from './ExpansionScopeToggle';
+import {
+  StoryBeatsOptions,
+  CharactersOptions,
+  ScenesOptions,
+  ExpandOptions,
+  type StoryBeatsOptionsState,
+  type CharactersOptionsState,
+  type ScenesOptionsState,
+  type ExpandOptionsState,
+} from './mode-options';
+import type {
+  ProposeStoryBeatsRequest,
+  ProposeCharactersRequest,
+  ProposeScenesRequest,
+  ProposeExpandRequest,
+} from '../../api/types';
+import styles from './ComposeForm.module.css';
 
 // Form state interface - lifted to parent for persistence
 export interface ComposeFormState {
   mode: GenerationMode;
-  selectedEntryIndex: number;
+  expansionScope: ExpansionScope;
+
+  storyBeatsOptions: StoryBeatsOptionsState;
+  charactersOptions: CharactersOptionsState;
+  scenesOptions: ScenesOptionsState;
+  expandOptions: ExpandOptionsState;
+
   direction: string;
   showAdvanced: boolean;
   customCreativity: number | null;
   customPackageCount: number | null;
-  customNodesPerPackage: number | null;
 }
 
-interface ModeConfig {
-  intent: ProposeIntent;
+// Default state factory
+export function createDefaultFormState(): ComposeFormState {
+  return {
+    mode: 'story-beats',
+    expansionScope: 'flexible',
+
+    storyBeatsOptions: {
+      focusType: 'all',
+      priorityBeats: [],
+    },
+    charactersOptions: {
+      focus: 'fill-gaps',
+      includeArcs: true,
+    },
+    scenesOptions: {
+      storyBeatIds: [],
+      scenesPerBeat: 2,
+    },
+    expandOptions: {
+      targetType: 'story-context',
+      depth: 'surface',
+    },
+
+    direction: '',
+    showAdvanced: false,
+    customCreativity: null,
+    customPackageCount: null,
+  };
+}
+
+// Mode-specific default values
+interface ModeDefaults {
   creativity: number;
   packageCount: number;
-  maxNodesPerPackage: number;
-  description: string;
 }
 
-const MODE_CONFIGS: Record<GenerationMode, ModeConfig> = {
-  add: {
-    intent: 'add',
-    creativity: 0.5,
-    packageCount: 5,
-    maxNodesPerPackage: 5,
-    description: 'Create new story elements that fit naturally',
-  },
-  expand: {
-    intent: 'expand',
-    creativity: 0.3,
-    packageCount: 3,
-    maxNodesPerPackage: 8,
-    description: 'Build out from existing elements with more detail',
-  },
-  explore: {
-    intent: 'add',
-    creativity: 0.8,
-    packageCount: 5,
-    maxNodesPerPackage: 6,
-    description: 'Generate creative alternatives and new directions',
-  },
+const MODE_DEFAULTS: Record<GenerationMode, ModeDefaults> = {
+  'story-beats': { creativity: 0.5, packageCount: 5 },
+  'characters': { creativity: 0.6, packageCount: 4 },
+  'scenes': { creativity: 0.4, packageCount: 3 },
+  'expand': { creativity: 0.3, packageCount: 3 },
 };
 
-// Entry point options with optional target type for node-based entries
-interface EntryPointOption {
-  type: ProposeEntryPointType;
-  label: string;
-  targetType?: string; // For 'node' type, specifies which node type
+// Data passed from parent for mode options
+interface BeatInfo {
+  id: string;
+  beatType: string;
+  act: number;
+  positionIndex: number;
+  hasMissingStoryBeats: boolean;
 }
 
-const ENTRY_POINTS: EntryPointOption[] = [
-  { type: 'freeText', label: 'Auto (AI decides)' },
-  { type: 'beat', label: 'Beat' },
-  { type: 'gap', label: 'Gap' },
-  { type: 'node', label: 'Character', targetType: 'Character' },
-  { type: 'node', label: 'Location', targetType: 'Location' },
-  { type: 'node', label: 'Scene', targetType: 'Scene' },
-  { type: 'node', label: 'Story Beat', targetType: 'StoryBeat' },
-];
+interface CharacterInfo {
+  id: string;
+  name: string;
+  role?: string | undefined;
+}
+
+interface StoryBeatInfo {
+  id: string;
+  title: string;
+  intent: string;
+  act?: number | undefined;
+  sceneCount: number;
+  status: 'proposed' | 'approved' | 'deprecated';
+}
+
+interface SelectedNodeInfo {
+  id: string;
+  type: string;
+  name: string;
+}
 
 interface ComposeFormProps {
-  onGenerate: (request: ProposeRequest) => Promise<void>;
+  /** Generate Story Beats */
+  onGenerateStoryBeats: (request: ProposeStoryBeatsRequest) => Promise<void>;
+  /** Generate Characters */
+  onGenerateCharacters: (request: ProposeCharactersRequest) => Promise<void>;
+  /** Generate Scenes */
+  onGenerateScenes: (request: ProposeScenesRequest) => Promise<void>;
+  /** Generate Expand */
+  onGenerateExpand: (request: ProposeExpandRequest) => Promise<void>;
+  /** Loading state */
   loading?: boolean;
+  /** Form state (lifted to parent) */
   formState: ComposeFormState;
+  /** Callback to update form state */
   onFormStateChange: (state: ComposeFormState) => void;
+  /** Available beats from outline */
+  beats?: BeatInfo[];
+  /** Available characters */
+  characters?: CharacterInfo[];
+  /** Available story beats */
+  storyBeats?: StoryBeatInfo[];
+  /** Currently selected node in Story Bible */
+  selectedNode?: SelectedNodeInfo;
 }
 
 export function ComposeForm({
-  onGenerate,
+  onGenerateStoryBeats,
+  onGenerateCharacters,
+  onGenerateScenes,
+  onGenerateExpand,
   loading = false,
   formState,
   onFormStateChange,
+  beats = [],
+  characters = [],
+  storyBeats = [],
+  selectedNode,
 }: ComposeFormProps) {
-  // Destructure form state
   const {
     mode,
-    selectedEntryIndex,
+    expansionScope,
+    storyBeatsOptions,
+    charactersOptions,
+    scenesOptions,
+    expandOptions,
     direction,
     showAdvanced,
     customCreativity,
     customPackageCount,
-    customNodesPerPackage,
   } = formState;
-
-  const selectedEntry = ENTRY_POINTS[selectedEntryIndex] ?? ENTRY_POINTS[0];
 
   // Helper to update a single field
   const updateField = <K extends keyof ComposeFormState>(
@@ -101,59 +174,151 @@ export function ComposeForm({
 
   // Get effective values (custom or mode default)
   const getEffectiveValues = () => {
-    const modeConfig = MODE_CONFIGS[mode];
+    const defaults = MODE_DEFAULTS[mode];
     return {
-      creativity: customCreativity ?? modeConfig.creativity,
-      packageCount: customPackageCount ?? modeConfig.packageCount,
-      maxNodesPerPackage: customNodesPerPackage ?? modeConfig.maxNodesPerPackage,
+      creativity: customCreativity ?? defaults.creativity,
+      packageCount: customPackageCount ?? defaults.packageCount,
     };
   };
 
-  const handleSubmit = useCallback(async () => {
-    if (!selectedEntry) return;
-
-    const modeConfig = MODE_CONFIGS[mode];
-    const effective = getEffectiveValues();
-
-    const scope: ProposeRequest['scope'] = {
-      entryPoint: selectedEntry.type,
-    };
-
-    // Add targetType for node-based entry points
-    if (selectedEntry.targetType) {
-      scope.targetType = selectedEntry.targetType;
-    }
-
-    const request: ProposeRequest = {
-      intent: modeConfig.intent,
-      scope,
-      constraints: {
-        creativity: effective.creativity,
-      },
-      options: {
-        packageCount: effective.packageCount,
-        maxNodesPerPackage: effective.maxNodesPerPackage,
-      },
-    };
-
-    const trimmedDirection = direction.trim();
-    if (trimmedDirection) {
-      request.input = { text: trimmedDirection };
-    }
-
-    await onGenerate(request);
-  }, [mode, selectedEntry, direction, customCreativity, customPackageCount, customNodesPerPackage, onGenerate, formState]);
-
-  // Reset advanced options when mode changes
+  // Handle mode change - reset mode-specific options
   const handleModeChange = (newMode: GenerationMode) => {
     onFormStateChange({
       ...formState,
       mode: newMode,
       customCreativity: null,
       customPackageCount: null,
-      customNodesPerPackage: null,
     });
   };
+
+  // Sync selected node with expand options
+  useEffect(() => {
+    if (
+      selectedNode &&
+      mode === 'expand' &&
+      expandOptions.targetType === 'node' &&
+      !expandOptions.nodeId
+    ) {
+      updateField('expandOptions', {
+        ...expandOptions,
+        nodeId: selectedNode.id,
+        nodeType: selectedNode.type,
+        nodeName: selectedNode.name,
+      });
+    }
+  }, [selectedNode, mode, expandOptions]);
+
+  // Validate form before submission
+  const validateForm = (): string | null => {
+    switch (mode) {
+      case 'story-beats':
+        if (storyBeatsOptions.focusType === 'beats' && storyBeatsOptions.priorityBeats.length === 0) {
+          return 'Select at least one beat when using Priority Beats focus';
+        }
+        break;
+      case 'characters':
+        if (charactersOptions.focus === 'develop-existing' && !charactersOptions.characterId) {
+          return 'Select a character to develop';
+        }
+        break;
+      case 'scenes':
+        if (scenesOptions.storyBeatIds.length === 0) {
+          return 'Select at least one story beat to generate scenes from';
+        }
+        break;
+      case 'expand':
+        if (expandOptions.targetType === 'node' && !expandOptions.nodeId) {
+          return 'Select an element to expand';
+        }
+        break;
+    }
+    return null;
+  };
+
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const handleSubmit = useCallback(async () => {
+    const error = validateForm();
+    if (error) {
+      setValidationError(error);
+      return;
+    }
+    setValidationError(null);
+
+    const effective = getEffectiveValues();
+    const inventNewEntities = expansionScope === 'flexible';
+
+    switch (mode) {
+      case 'story-beats': {
+        const request: ProposeStoryBeatsRequest = {
+          focus: storyBeatsOptions.focusType,
+          targetAct: storyBeatsOptions.targetAct,
+          priorityBeatIds: storyBeatsOptions.priorityBeats.length > 0
+            ? storyBeatsOptions.priorityBeats
+            : undefined,
+          direction: direction.trim() || undefined,
+          creativity: effective.creativity,
+          packageCount: effective.packageCount,
+          inventNewEntities,
+        };
+        await onGenerateStoryBeats(request);
+        break;
+      }
+      case 'characters': {
+        const request: ProposeCharactersRequest = {
+          focus: charactersOptions.focus,
+          characterId: charactersOptions.characterId,
+          includeArcs: charactersOptions.includeArcs,
+          direction: direction.trim() || undefined,
+          creativity: effective.creativity,
+          packageCount: effective.packageCount,
+          inventNewEntities,
+        };
+        await onGenerateCharacters(request);
+        break;
+      }
+      case 'scenes': {
+        const request: ProposeScenesRequest = {
+          storyBeatIds: scenesOptions.storyBeatIds,
+          scenesPerBeat: scenesOptions.scenesPerBeat,
+          direction: direction.trim() || undefined,
+          creativity: effective.creativity,
+          packageCount: effective.packageCount,
+          inventNewEntities,
+        };
+        await onGenerateScenes(request);
+        break;
+      }
+      case 'expand': {
+        const request: ProposeExpandRequest = {
+          targetType: expandOptions.targetType,
+          contextSection: expandOptions.contextSection,
+          nodeId: expandOptions.nodeId,
+          depth: expandOptions.depth,
+          direction: direction.trim() || undefined,
+          creativity: effective.creativity,
+          packageCount: effective.packageCount,
+          inventNewEntities,
+        };
+        await onGenerateExpand(request);
+        break;
+      }
+    }
+  }, [
+    mode,
+    expansionScope,
+    storyBeatsOptions,
+    charactersOptions,
+    scenesOptions,
+    expandOptions,
+    direction,
+    customCreativity,
+    customPackageCount,
+    onGenerateStoryBeats,
+    onGenerateCharacters,
+    onGenerateScenes,
+    onGenerateExpand,
+  ]);
 
   const effective = getEffectiveValues();
 
@@ -161,56 +326,75 @@ export function ComposeForm({
     <div className={styles.container}>
       <div className={styles.header}>
         <h2 className={styles.title}>New Proposal</h2>
-        <p className={styles.subtitle}>
-          Generate AI-powered story elements
-        </p>
+        <p className={styles.subtitle}>Generate AI-powered story elements</p>
       </div>
 
       {/* Mode Selector */}
       <div className={styles.section}>
         <label className={styles.label}>Mode</label>
-        <div className={styles.modeSelector}>
-          {(Object.keys(MODE_CONFIGS) as GenerationMode[]).map((m) => (
-            <button
-              key={m}
-              className={`${styles.modeBtn} ${mode === m ? styles.selected : ''}`}
-              onClick={() => handleModeChange(m)}
-              disabled={loading}
-              type="button"
-            >
-              <span className={styles.modeName}>{m.charAt(0).toUpperCase() + m.slice(1)}</span>
-              <span className={styles.modeDesc}>{MODE_CONFIGS[m].description}</span>
-            </button>
-          ))}
-        </div>
+        <ModeSelector
+          value={mode}
+          onChange={handleModeChange}
+          disabled={loading}
+        />
       </div>
 
-      {/* Entry Point */}
+      {/* Expansion Scope */}
       <div className={styles.section}>
-        <label className={styles.label}>Entry Point</label>
-        <select
-          className={styles.select}
-          value={selectedEntryIndex}
-          onChange={(e) => updateField('selectedEntryIndex', Number(e.target.value))}
+        <label className={styles.label}>Expansion Scope</label>
+        <ExpansionScopeToggle
+          value={expansionScope}
+          onChange={(scope) => updateField('expansionScope', scope)}
           disabled={loading}
-        >
-          {ENTRY_POINTS.map((ep, index) => (
-            <option key={index} value={index}>
-              {ep.label}
-            </option>
-          ))}
-        </select>
+        />
+      </div>
+
+      {/* Mode-Specific Options */}
+      <div className={styles.section}>
+        <label className={styles.label}>Options</label>
+        {mode === 'story-beats' && (
+          <StoryBeatsOptions
+            value={storyBeatsOptions}
+            onChange={(opts) => updateField('storyBeatsOptions', opts)}
+            beats={beats}
+            disabled={loading}
+          />
+        )}
+        {mode === 'characters' && (
+          <CharactersOptions
+            value={charactersOptions}
+            onChange={(opts) => updateField('charactersOptions', opts)}
+            characters={characters}
+            disabled={loading}
+          />
+        )}
+        {mode === 'scenes' && (
+          <ScenesOptions
+            value={scenesOptions}
+            onChange={(opts) => updateField('scenesOptions', opts)}
+            storyBeats={storyBeats}
+            disabled={loading}
+          />
+        )}
+        {mode === 'expand' && (
+          <ExpandOptions
+            value={expandOptions}
+            onChange={(opts) => updateField('expandOptions', opts)}
+            selectedNode={selectedNode}
+            disabled={loading}
+          />
+        )}
       </div>
 
       {/* Direction */}
       <div className={styles.section}>
-        <label className={styles.label}>Direction</label>
+        <label className={styles.label}>Direction (Optional)</label>
         <textarea
           className={styles.textarea}
           value={direction}
           onChange={(e) => updateField('direction', e.target.value)}
-          placeholder="Describe what you want to generate... e.g., 'A mysterious informant who knows about the shipment robberies' or 'Scenes showing the growing tension between the partners'"
-          rows={4}
+          placeholder="Describe what you want to generate... e.g., 'Focus on building tension' or 'A mysterious informant who knows secrets'"
+          rows={3}
           disabled={loading}
         />
       </div>
@@ -223,7 +407,7 @@ export function ComposeForm({
           type="button"
         >
           <span>Advanced Options</span>
-          <span className={styles.advancedIcon}>{showAdvanced ? '−' : '+'}</span>
+          <span className={styles.advancedIcon}>{showAdvanced ? '\u2212' : '+'}</span>
         </button>
 
         {showAdvanced && (
@@ -233,7 +417,11 @@ export function ComposeForm({
               <div className={styles.sliderHeader}>
                 <label className={styles.advancedLabel}>Creativity</label>
                 <span className={styles.sliderValue}>
-                  {effective.creativity < 0.33 ? 'Conservative' : effective.creativity < 0.67 ? 'Balanced' : 'Inventive'}
+                  {effective.creativity < 0.33
+                    ? 'Conservative'
+                    : effective.creativity < 0.67
+                      ? 'Balanced'
+                      : 'Inventive'}
                 </span>
               </div>
               <input
@@ -241,7 +429,7 @@ export function ComposeForm({
                 min="0"
                 max="1"
                 step="0.1"
-                value={customCreativity ?? MODE_CONFIGS[mode].creativity}
+                value={customCreativity ?? MODE_DEFAULTS[mode].creativity}
                 onChange={(e) => updateField('customCreativity', Number(e.target.value))}
                 disabled={loading}
                 className={styles.slider}
@@ -258,25 +446,8 @@ export function ComposeForm({
                 type="range"
                 min="1"
                 max="10"
-                value={customPackageCount ?? MODE_CONFIGS[mode].packageCount}
+                value={customPackageCount ?? MODE_DEFAULTS[mode].packageCount}
                 onChange={(e) => updateField('customPackageCount', Number(e.target.value))}
-                disabled={loading}
-                className={styles.slider}
-              />
-            </div>
-
-            {/* Nodes per Package */}
-            <div className={styles.advancedOption}>
-              <div className={styles.sliderHeader}>
-                <label className={styles.advancedLabel}>Nodes per Package</label>
-                <span className={styles.sliderValue}>{effective.maxNodesPerPackage}</span>
-              </div>
-              <input
-                type="range"
-                min="3"
-                max="15"
-                value={customNodesPerPackage ?? MODE_CONFIGS[mode].maxNodesPerPackage}
-                onChange={(e) => updateField('customNodesPerPackage', Number(e.target.value))}
                 disabled={loading}
                 className={styles.slider}
               />
@@ -284,6 +455,13 @@ export function ComposeForm({
           </div>
         )}
       </div>
+
+      {/* Validation Error */}
+      {validationError && (
+        <div className={styles.validationError}>
+          {validationError}
+        </div>
+      )}
 
       {/* Generate Button */}
       <button
@@ -297,3 +475,7 @@ export function ComposeForm({
     </div>
   );
 }
+
+// Re-export types for convenience
+export type { GenerationMode } from './ModeSelector';
+export type { ExpansionScope } from './ExpansionScopeToggle';

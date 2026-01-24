@@ -53,6 +53,8 @@ interface TableOfContentsProps {
   hasPremise?: boolean | undefined;
   /** Whether context section has content */
   hasContext?: boolean | undefined;
+  /** Ideas count */
+  ideasCount?: number | undefined;
 }
 
 // Helper to render change badge
@@ -86,6 +88,7 @@ export function TableOfContents({
   progress,
   hasPremise,
   hasContext,
+  ideasCount = 0,
 }: TableOfContentsProps) {
   const [structureExpanded, setStructureExpanded] = useState(true);
   const [elementsExpanded, setElementsExpanded] = useState(false);
@@ -299,6 +302,21 @@ export function TableOfContents({
                 additions={sectionChangeCounts.storyContext.additions}
                 modifications={sectionChangeCounts.storyContext.modifications}
               />
+            )}
+          </button>
+        </li>
+
+        {/* Ideas */}
+        <li>
+          <button
+            className={`${styles.navItem} ${activeSectionId === 'ideas' ? styles.active : ''}`}
+            onClick={() => handleClick('ideas')}
+            type="button"
+          >
+            <span className={styles.navIcon}>{'\uD83D\uDCA1'}</span>
+            <span className={styles.navLabel}>Ideas</span>
+            {ideasCount > 0 && (
+              <span className={styles.count}>{ideasCount}</span>
             )}
           </button>
         </li>

@@ -96,6 +96,15 @@ import type {
   ProposeRequest,
   ProposeResponseData,
   ProposeRefineRequest,
+  // New Generation API types
+  ProposeStoryBeatsRequest,
+  ProposeStoryBeatsResponse,
+  ProposeCharactersRequest,
+  ProposeCharactersResponse,
+  ProposeScenesRequest,
+  ProposeScenesResponse,
+  ProposeExpandRequest,
+  ProposeExpandResponse,
 } from './types';
 
 const API_BASE = '/api';
@@ -483,6 +492,34 @@ export const api = {
    */
   refineProposal: (storyId: string, data: ProposeRefineRequest) =>
     POST<ProposeResponseData>(`/stories/${storyId}/propose/refine`, data),
+
+  // =========================================================================
+  // New Generation API (Four-Mode System)
+  // =========================================================================
+
+  /**
+   * Generate story beats aligned to structure.
+   */
+  proposeStoryBeats: (storyId: string, data: ProposeStoryBeatsRequest) =>
+    POST<ProposeStoryBeatsResponse>(`/stories/${storyId}/propose/story-beats`, data),
+
+  /**
+   * Generate characters and arcs.
+   */
+  proposeCharacters: (storyId: string, data: ProposeCharactersRequest) =>
+    POST<ProposeCharactersResponse>(`/stories/${storyId}/propose/characters`, data),
+
+  /**
+   * Generate scenes from committed story beats.
+   */
+  proposeScenes: (storyId: string, data: ProposeScenesRequest) =>
+    POST<ProposeScenesResponse>(`/stories/${storyId}/propose/scenes`, data),
+
+  /**
+   * Expand story context or a selected node.
+   */
+  proposeExpand: (storyId: string, data: ProposeExpandRequest) =>
+    POST<ProposeExpandResponse>(`/stories/${storyId}/propose/expand`, data),
 };
 
 // =============================================================================

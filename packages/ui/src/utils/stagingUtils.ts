@@ -6,7 +6,7 @@
 import type { NarrativePackage } from '../api/types';
 
 // Section identifiers for change counts
-export type StagingSection = 'premise' | 'structure' | 'elements' | 'storyContext';
+export type StagingSection = 'premise' | 'structure' | 'elements' | 'storyContext' | 'ideas';
 
 // Change counts per section
 export interface SectionChangeCounts {
@@ -14,12 +14,14 @@ export interface SectionChangeCounts {
   structure: { additions: number; modifications: number; deletions: number };
   elements: { additions: number; modifications: number; deletions: number };
   storyContext: { additions: number; modifications: number; deletions: number };
+  ideas: { additions: number; modifications: number; deletions: number };
 }
 
 // Node types that belong to each section
 const PREMISE_NODE_TYPES = ['Logline', 'Setting', 'GenreTone'];
 const STRUCTURE_NODE_TYPES = ['Beat', 'StoryBeat', 'Scene'];
 const ELEMENT_NODE_TYPES = ['Character', 'Location', 'Object'];
+const IDEAS_NODE_TYPES = ['Idea'];
 
 // Merged node for display
 export interface MergedNode {
@@ -70,6 +72,7 @@ export function getSectionForNodeType(nodeType: string): StagingSection {
   if (PREMISE_NODE_TYPES.includes(nodeType)) return 'premise';
   if (STRUCTURE_NODE_TYPES.includes(nodeType)) return 'structure';
   if (ELEMENT_NODE_TYPES.includes(nodeType)) return 'elements';
+  if (IDEAS_NODE_TYPES.includes(nodeType)) return 'ideas';
   return 'structure'; // Default to structure for unknown types
 }
 
@@ -82,6 +85,7 @@ export function computeSectionChangeCounts(pkg: NarrativePackage | null): Sectio
     structure: { additions: 0, modifications: 0, deletions: 0 },
     elements: { additions: 0, modifications: 0, deletions: 0 },
     storyContext: { additions: 0, modifications: 0, deletions: 0 },
+    ideas: { additions: 0, modifications: 0, deletions: 0 },
   };
 
   if (!pkg) return counts;

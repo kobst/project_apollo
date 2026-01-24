@@ -1,0 +1,388 @@
+/* Shared styles for mode options components */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sectionLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Radio Group */
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.radioOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.radioOption:hover {
+  background: #1e1e36;
+  border-color: #3a3a5a;
+}
+
+.radioOption input[type="radio"] {
+  margin-top: 3px;
+  flex-shrink: 0;
+  accent-color: #5a7ca5;
+}
+
+.radioLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #ddd;
+  flex-shrink: 0;
+  min-width: 120px;
+}
+
+.radioHint {
+  font-size: 11px;
+  color: #666;
+  line-height: 1.4;
+}
+
+/* Select */
+.select {
+  padding: 10px 12px;
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 6px;
+  color: #ddd;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.select:hover:not(:disabled) {
+  border-color: #3a3a5a;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #5a7ca5;
+}
+
+.select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Checkbox Option */
+.checkboxOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.checkboxOption:hover {
+  background: #1e1e36;
+  border-color: #3a3a5a;
+}
+
+.checkboxOption input[type="checkbox"] {
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: #5a7ca5;
+}
+
+.checkboxLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #ddd;
+  flex-shrink: 0;
+}
+
+.checkboxHint {
+  font-size: 11px;
+  color: #666;
+  margin-left: auto;
+}
+
+/* Beat Checklist */
+.beatChecklist {
+  max-height: 200px;
+  overflow-y: auto;
+  background: #16162a;
+  border: 1px solid #2a2a4a;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.actGroup {
+  margin-bottom: 12px;
+}
+
+.actGroup:last-child {
+  margin-bottom: 0;
+}
+
+.actHeader {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  margin-bottom: 4px;
+}
+
+.beatList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.beatOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.beatOption:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.beatOption.missing {
+  background: rgba(251, 146, 60, 0.05);
+}
+
+.beatOption input[type="checkbox"] {
+  flex-shrink: 0;
+  accent-color: #5a7ca5;
+}
+
+.beatLabel {
+  font-size: 12px;
+  color: #aaa;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.missingIndicator {
+  color: #fb923c;
+  font-size: 8px;
+}
+
+.sceneCount {
+  font-size: 10px;
+  color: #666;
+  margin-left: 4px;
+}
+
+/* Bulk Actions */
+.bulkActions {
+  display: flex;
+  gap: 12px;
+}
+
+.linkButton {
+  background: none;
+  border: none;
+  color: #5a7ca5;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.linkButton:hover:not(:disabled) {
+  color: #7a9cc5;
+  text-decoration: underline;
+}
+
+.linkButton:disabled {
+  color: #555;
+  cursor: not-allowed;
+}
+
+/* Empty State */
+.emptyState {
+  padding: 16px;
+  background: #16162a;
+  border: 1px dashed #2a2a4a;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.emptyState p {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.emptyHint {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #555;
+}
+
+/* Summary */
+.summary {
+  padding: 10px 12px;
+  background: rgba(90, 124, 165, 0.1);
+  border-radius: 6px;
+  font-size: 12px;
+  color: #7a9cc5;
+  text-align: center;
+}
+
+/* Depth Toggle (for Expand mode) */
+.depthToggle {
+  display: flex;
+  background: #16162a;
+  border: 1px solid #2a2a4a;
+  border-radius: 6px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.depthOption {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.depthOption:hover:not(:disabled):not(.selected) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.depthOption.selected {
+  background: rgba(90, 124, 165, 0.2);
+}
+
+.depthOption:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.depthLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #888;
+}
+
+.depthOption.selected .depthLabel {
+  color: #7a9cc5;
+}
+
+.depthHint {
+  font-size: 10px;
+  color: #555;
+}
+
+.depthOption.selected .depthHint {
+  color: #6a8cb5;
+}
+
+/* Selected Node Display */
+.selectedNode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(90, 124, 165, 0.1);
+  border: 1px solid #3a4a6a;
+  border-radius: 6px;
+}
+
+.nodeType {
+  font-size: 10px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.nodeName {
+  font-size: 13px;
+  color: #ddd;
+  font-weight: 500;
+}
+
+.nodePrompt {
+  padding: 12px;
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 6px;
+}
+
+.nodePrompt p {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #888;
+}
+
+.nodePrompt strong {
+  color: #ddd;
+}
+
+.useNodeButton {
+  padding: 6px 12px;
+  background: rgba(90, 124, 165, 0.2);
+  border: 1px solid #3a4a6a;
+  border-radius: 4px;
+  color: #7a9cc5;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.useNodeButton:hover:not(:disabled) {
+  background: rgba(90, 124, 165, 0.3);
+}
+
+.useNodeButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

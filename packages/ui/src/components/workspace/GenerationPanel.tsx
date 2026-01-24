@@ -7,10 +7,17 @@ import { useCallback, useState, useEffect } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { useGeneration } from '../../context/GenerationContext';
 import { useSavedPackages } from '../../context/SavedPackagesContext';
-import { ComposeForm, type ComposeFormState } from '../generation/ComposeForm';
+import { useGenerationData } from '../../hooks/useGenerationData';
+import { ComposeForm, createDefaultFormState, type ComposeFormState } from '../generation/ComposeForm';
 import { SavedPackagesPanel } from '../generation/SavedPackagesPanel';
 import { PackageCarousel } from './PackageCarousel';
-import type { ProposeRequest, SavedPackageData } from '../../api/types';
+import type {
+  SavedPackageData,
+  ProposeStoryBeatsRequest,
+  ProposeCharactersRequest,
+  ProposeScenesRequest,
+  ProposeExpandRequest,
+} from '../../api/types';
 import styles from './GenerationPanel.module.css';
 
 interface GenerationPanelProps {
@@ -18,24 +25,30 @@ interface GenerationPanelProps {
   onToggleCollapse: () => void;
 }
 
-// Default form state
-const DEFAULT_FORM_STATE: ComposeFormState = {
-  mode: 'add',
-  selectedEntryIndex: 0,
-  direction: '',
-  showAdvanced: false,
-  customCreativity: null,
-  customPackageCount: null,
-  customNodesPerPackage: null,
-};
-
 export function GenerationPanel({ isCollapsed, onToggleCollapse }: GenerationPanelProps) {
   const { currentStoryId, refreshStatus } = useStory();
-  const { propose, session, loading, error, stagePackage, stageSavedPackage, staging, acceptPackage, rejectPackage, clearStaging } = useGeneration();
+  const {
+    proposeStoryBeats,
+    proposeCharacters,
+    proposeScenes,
+    proposeExpand,
+    session,
+    loading,
+    error,
+    stagePackage,
+    stageSavedPackage,
+    staging,
+    acceptPackage,
+    rejectPackage,
+    clearStaging,
+  } = useGeneration();
   const { savedPackages, loadSavedPackages, savePackage, applySavedPackage, deleteSavedPackage } = useSavedPackages();
 
+  // Fetch data needed for the generation form (beats, characters, story beats)
+  const { beats, characters, storyBeats, refresh: refreshGenerationData } = useGenerationData(currentStoryId);
+
   // Form state preserved during collapse
-  const [formState, setFormState] = useState<ComposeFormState>(DEFAULT_FORM_STATE);
+  const [formState, setFormState] = useState<ComposeFormState>(createDefaultFormState);
 
   // Local state for viewing saved package (similar to GenerationView)
   const [viewingSavedPackageId, setViewingSavedPackageId] = useState<string | null>(null);
@@ -47,14 +60,45 @@ export function GenerationPanel({ isCollapsed, onToggleCollapse }: GenerationPan
     }
   }, [currentStoryId, loadSavedPackages]);
 
-  // Handle generate
-  const handleGenerate = useCallback(
-    async (request: ProposeRequest) => {
+  // Mode-specific generation handlers
+  const handleGenerateStoryBeats = useCallback(
+    async (request: ProposeStoryBeatsRequest) => {
       if (!currentStoryId) return;
-      await propose(currentStoryId, request);
+      await proposeStoryBeats(currentStoryId, request);
       refreshStatus();
+      refreshGenerationData();
     },
-    [currentStoryId, propose, refreshStatus]
+    [currentStoryId, proposeStoryBeats, refreshStatus, refreshGenerationData]
+  );
+
+  const handleGenerateCharacters = useCallback(
+    async (request: ProposeCharactersRequest) => {
+      if (!currentStoryId) return;
+      await proposeCharacters(currentStoryId, request);
+      refreshStatus();
+      refreshGenerationData();
+    },
+    [currentStoryId, proposeCharacters, refreshStatus, refreshGenerationData]
+  );
+
+  const handleGenerateScenes = useCallback(
+    async (request: ProposeScenesRequest) => {
+      if (!currentStoryId) return;
+      await proposeScenes(currentStoryId, request);
+      refreshStatus();
+      refreshGenerationData();
+    },
+    [currentStoryId, proposeScenes, refreshStatus, refreshGenerationData]
+  );
+
+  const handleGenerateExpand = useCallback(
+    async (request: ProposeExpandRequest) => {
+      if (!currentStoryId) return;
+      await proposeExpand(currentStoryId, request);
+      refreshStatus();
+      refreshGenerationData();
+    },
+    [currentStoryId, proposeExpand, refreshStatus, refreshGenerationData]
   );
 
   // Handle saved package view - stages it for workspace preview
@@ -178,10 +222,16 @@ export function GenerationPanel({ isCollapsed, onToggleCollapse }: GenerationPan
 
         {/* Compose Form */}
         <ComposeForm
-          onGenerate={handleGenerate}
+          onGenerateStoryBeats={handleGenerateStoryBeats}
+          onGenerateCharacters={handleGenerateCharacters}
+          onGenerateScenes={handleGenerateScenes}
+          onGenerateExpand={handleGenerateExpand}
           loading={loading}
           formState={formState}
           onFormStateChange={setFormState}
+          beats={beats}
+          characters={characters}
+          storyBeats={storyBeats}
         />
 
         {/* Package Carousel */}

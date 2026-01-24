@@ -1,0 +1,144 @@
+.card {
+  padding: 12px;
+  border-radius: 8px;
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card.idea {
+  border-left: 3px solid #eab308;
+}
+
+.card.context {
+  border-left: 3px solid #22c55e;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon {
+  font-size: 14px;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ddd;
+  flex: 1;
+}
+
+.categoryBadge {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  background: rgba(234, 179, 8, 0.15);
+  color: #eab308;
+  border-radius: 3px;
+}
+
+.description {
+  font-size: 12px;
+  color: #888;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.relatedNodes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid #2a2a4a;
+}
+
+.relatedLabel {
+  font-size: 10px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.relatedList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.relatedNode {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+}
+
+.nodeType {
+  font-size: 9px;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+}
+
+.nodeName {
+  font-size: 11px;
+  color: #aaa;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #2a2a4a;
+}
+
+.dismissBtn {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid #3a3a5a;
+  border-radius: 4px;
+  color: #888;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dismissBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.03);
+  color: #aaa;
+}
+
+.dismissBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.includeBtn {
+  padding: 6px 12px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 4px;
+  color: #22c55e;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.includeBtn:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.2);
+}
+
+.includeBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

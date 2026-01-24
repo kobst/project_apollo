@@ -18,6 +18,14 @@ import type {
   StoryContextChange,
   ProposeRequest,
   ProposeResponseData,
+  ProposeStoryBeatsRequest,
+  ProposeStoryBeatsResponse,
+  ProposeCharactersRequest,
+  ProposeCharactersResponse,
+  ProposeScenesRequest,
+  ProposeScenesResponse,
+  ProposeExpandRequest,
+  ProposeExpandResponse,
 } from '../api/types';
 import {
   computeSectionChangeCounts,
@@ -49,6 +57,14 @@ interface GenerationContextValue {
   // Actions
   /** Unified propose (main AI pipeline) */
   propose: (storyId: string, request: ProposeRequest) => Promise<ProposeResponseData>;
+  /** Propose Story Beats */
+  proposeStoryBeats: (storyId: string, request: ProposeStoryBeatsRequest) => Promise<ProposeStoryBeatsResponse>;
+  /** Propose Characters */
+  proposeCharacters: (storyId: string, request: ProposeCharactersRequest) => Promise<ProposeCharactersResponse>;
+  /** Propose Scenes */
+  proposeScenes: (storyId: string, request: ProposeScenesRequest) => Promise<ProposeScenesResponse>;
+  /** Propose Expand */
+  proposeExpand: (storyId: string, request: ProposeExpandRequest) => Promise<ProposeExpandResponse>;
   /** Refine a package via propose */
   refinePackage: (storyId: string, packageId: string, guidance: string, creativity?: number) => Promise<void>;
   /** Accept a package and apply to graph */
@@ -205,6 +221,103 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
         setSelectedPackageId(data.packages[0]?.id ?? null);
         setIsOpen(true);
 
+        return data;
+      } catch (err) {
+        setError((err as Error).message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  // Helper to create session from generation response
+  const createSessionFromResponse = (
+    sessionId: string,
+    storyId: string,
+    packages: NarrativePackage[],
+    entryPointType: 'beat' | 'storyBeat' | 'character' | 'gap' | 'idea' | 'naked'
+  ) => {
+    const newSession: GenerationSession = {
+      id: sessionId,
+      storyId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      entryPoint: { type: entryPointType },
+      packages,
+      status: 'active',
+    };
+    setSession(newSession);
+    setSelectedPackageId(packages[0]?.id ?? null);
+    setIsOpen(true);
+  };
+
+  // Propose Story Beats
+  const proposeStoryBeats = useCallback(
+    async (storyId: string, request: ProposeStoryBeatsRequest): Promise<ProposeStoryBeatsResponse> => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await api.proposeStoryBeats(storyId, request);
+        createSessionFromResponse(data.sessionId, storyId, data.packages, 'beat');
+        return data;
+      } catch (err) {
+        setError((err as Error).message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  // Propose Characters
+  const proposeCharacters = useCallback(
+    async (storyId: string, request: ProposeCharactersRequest): Promise<ProposeCharactersResponse> => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await api.proposeCharacters(storyId, request);
+        createSessionFromResponse(data.sessionId, storyId, data.packages, 'character');
+        return data;
+      } catch (err) {
+        setError((err as Error).message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  // Propose Scenes
+  const proposeScenes = useCallback(
+    async (storyId: string, request: ProposeScenesRequest): Promise<ProposeScenesResponse> => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await api.proposeScenes(storyId, request);
+        createSessionFromResponse(data.sessionId, storyId, data.packages, 'storyBeat');
+        return data;
+      } catch (err) {
+        setError((err as Error).message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  // Propose Expand
+  const proposeExpand = useCallback(
+    async (storyId: string, request: ProposeExpandRequest): Promise<ProposeExpandResponse> => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await api.proposeExpand(storyId, request);
+        createSessionFromResponse(data.sessionId, storyId, data.packages, 'naked');
         return data;
       } catch (err) {
         setError((err as Error).message);
@@ -614,6 +727,10 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     error,
     isOpen,
     propose,
+    proposeStoryBeats,
+    proposeCharacters,
+    proposeScenes,
+    proposeExpand,
     refinePackage,
     acceptPackage,
     rejectPackage,
