@@ -524,6 +524,53 @@ Should rejected packages be permanently deleted or archived?
 Rate limiting / cost management for LLM calls
 Caching strategies for similar generation requests
 
+### 11.3 Specialized Generation Endpoints
+
+#### StoryBeat-Only Generation
+
+The `/propose/story-beats` endpoint provides focused generation of **only StoryBeat nodes** to fill structural gaps (beats without ALIGNS_WITH edges from any StoryBeat).
+
+**Use Cases:**
+- Filling in story beats after establishing basic structure
+- Generating narrative milestones without creating supporting elements
+- Focused structure development when beats exist but lack story content
+
+**Request:**
+```typescript
+interface ProposeStoryBeatsRequest {
+  priorityBeats?: string[];           // Beat IDs or BeatTypes to always include
+  packageCount?: number;              // default: 3
+  maxStoryBeatsPerPackage?: number;   // default: 5
+  direction?: string;                 // User guidance
+  creativity?: number;                // 0-1, default: 0.5
+}
+```
+
+**Response:**
+```typescript
+interface ProposeStoryBeatsResponse {
+  sessionId: string;
+  packages: NarrativePackage[];       // Only contains StoryBeat nodes
+  missingBeats: MissingBeatInfo[];    // All beats lacking StoryBeat alignment
+}
+```
+
+**Strict Constraints:**
+1. **Node Types**: ONLY `StoryBeat` nodes are generated
+2. **Edge Types**: ONLY `ALIGNS_WITH` (StoryBeat → Beat) and `PRECEDES` (StoryBeat → StoryBeat) edges
+3. **Validation**: ALIGNS_WITH edges must target valid Beat IDs
+
+**Example:**
+```bash
+POST /stories/:id/propose/story-beats
+{
+  "priorityBeats": ["Catalyst", "Midpoint"],
+  "packageCount": 3,
+  "direction": "Focus on protagonist inner conflict"
+}
+```
+
+---
 
 12. Input Processing Workflows
 

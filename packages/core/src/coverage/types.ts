@@ -304,3 +304,24 @@ export const GAP_DOMAINS: GapDomain[] = [
   'SCENE',
   'CHARACTER',
 ];
+
+// =============================================================================
+// Missing Beat Info (for StoryBeat generation)
+// =============================================================================
+
+import type { BeatType } from '../types/nodes.js';
+
+/**
+ * Information about a Beat that lacks StoryBeat alignment.
+ * Used for StoryBeat generation to identify structural gaps.
+ */
+export interface MissingBeatInfo {
+  /** Beat node ID */
+  beatId: string;
+  /** Type of the beat (e.g., 'Catalyst', 'Midpoint') */
+  beatType: BeatType;
+  /** Which act the beat belongs to (1-5) */
+  act: 1 | 2 | 3 | 4 | 5;
+  /** Position index within the story structure */
+  position: number;
+}

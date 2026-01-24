@@ -184,7 +184,9 @@ export {
   buildInterpretationPrompt,
   buildGenerationPrompt,
   buildRefinementPrompt,
+  buildStoryBeatPrompt,
 } from './prompts/index.js';
+export type { StoryBeatPromptParams } from './prompts/index.js';
 
 // =============================================================================
 // Text Similarity

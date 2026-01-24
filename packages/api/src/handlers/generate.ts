@@ -66,6 +66,11 @@ import {
   discardActiveProposal,
 } from '../ai/proposeOrchestrator.js';
 import {
+  proposeStoryBeats,
+  type ProposeStoryBeatsRequest,
+} from '../ai/storyBeatOrchestrator.js';
+import type { MissingBeatInfo } from '@apollo/core';
+import {
   createLLMClient,
   isLLMConfigured,
   getMissingKeyError,
@@ -1789,6 +1794,121 @@ export function createRefineProposalHandler(ctx: StorageContext) {
         res.end();
       } else {
         const result = await propose(id, proposeRequest, ctx, llmClient);
+
+        // Enrich packages with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
+        res.json({
+          success: true,
+          data: enrichedResult,
+        });
+      }
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+// =============================================================================
+// Propose StoryBeats Handler (StoryBeat-only generation)
+// =============================================================================
+
+interface ProposeStoryBeatsResponseData {
+  sessionId: string;
+  packages: ai.NarrativePackage[];
+  missingBeats: MissingBeatInfo[];
+}
+
+interface ProposeStoryBeatsRequestBody {
+  priorityBeats?: string[];
+  packageCount?: number;
+  maxStoryBeatsPerPackage?: number;
+  direction?: string;
+  creativity?: number;
+}
+
+/**
+ * POST /stories/:id/propose/story-beats
+ *
+ * Generate StoryBeat nodes to fill structural gaps (beats without alignment).
+ * Returns only StoryBeat nodes with ALIGNS_WITH and PRECEDES edges.
+ */
+export function createProposeStoryBeatsHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string }, unknown, ProposeStoryBeatsRequestBody>,
+    res: Response<APIResponse<ProposeStoryBeatsResponseData>>,
+    next: NextFunction
+  ): Promise<void> => {
+    console.log('[proposeStoryBeatsHandler] Received propose story-beats request');
+    try {
+      const { id } = req.params;
+      const {
+        priorityBeats = [],
+        packageCount = 3,
+        maxStoryBeatsPerPackage = 5,
+        direction,
+        creativity = 0.5,
+      } = req.body;
+
+      console.log(`[proposeStoryBeatsHandler] Story: ${id}, priorityBeats: ${priorityBeats.length}, packageCount: ${packageCount}`);
+
+      if (!isLLMConfigured()) {
+        const { message, suggestion } = getMissingKeyError();
+        throw new BadRequestError(message, suggestion);
+      }
+
+      const llmClient = createLLMClient();
+
+      const request: ProposeStoryBeatsRequest = {
+        priorityBeats,
+        packageCount,
+        maxStoryBeatsPerPackage,
+        creativity,
+      };
+      if (direction) {
+        request.direction = direction;
+      }
+
+      // Check for streaming request
+      const wantsStream = req.headers.accept === 'text/event-stream';
+
+      if (wantsStream) {
+        // Set up SSE
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.flushHeaders();
+
+        const streamCallbacks: StreamCallbacks = {
+          onToken: (token) => {
+            res.write(`data: ${JSON.stringify({ type: 'token', content: token })}\n\n`);
+          },
+          onComplete: (response) => {
+            res.write(`data: ${JSON.stringify({ type: 'usage', usage: response.usage })}\n\n`);
+          },
+          onError: (error) => {
+            res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+          },
+        };
+
+        const result = await proposeStoryBeats(id, request, ctx, llmClient, streamCallbacks);
+
+        // Enrich packages with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
+        res.write(`data: ${JSON.stringify({ type: 'result', data: enrichedResult })}\n\n`);
+        res.write('data: [DONE]\n\n');
+        res.end();
+      } else {
+        const result = await proposeStoryBeats(id, request, ctx, llmClient);
 
         // Enrich packages with edge names
         const graph = await loadGraphById(id, ctx);

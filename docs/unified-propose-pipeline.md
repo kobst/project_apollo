@@ -25,6 +25,7 @@ These have been unified into a single `/propose` endpoint with a **creativity sl
 | `/:id/propose/active` | DELETE | Discard the active proposal |
 | `/:id/propose/commit` | POST | Commit (accept) a package from the proposal |
 | `/:id/propose/refine` | POST | Refine an existing package with guidance |
+| `/:id/propose/story-beats` | POST | Generate StoryBeat nodes only (see below) |
 
 #### Removed Endpoints
 
@@ -249,3 +250,78 @@ The Generation panel is now the single entry point for all AI features:
 | Auto-discard on new propose | Silent | Reduces friction, user can always re-propose |
 | Always show staging UI | No auto-commit | User should review AI output before committing |
 | Strategy pattern | Internal routing | Clean separation of interpret/generate/refine logic |
+
+## Specialized Endpoints
+
+### StoryBeat-Only Generation
+
+The `/propose/story-beats` endpoint provides a specialized generation flow for filling structural gaps with **only StoryBeat nodes**.
+
+#### Use Cases
+
+- Filling in story beats after establishing basic structure
+- Generating narrative milestones without creating supporting elements (scenes, characters)
+- Focused structure development when beats exist but lack story content
+
+#### Request Schema
+
+```typescript
+interface ProposeStoryBeatsRequest {
+  priorityBeats?: string[];           // Beat IDs or BeatTypes to always include
+  packageCount?: number;              // default: 3
+  maxStoryBeatsPerPackage?: number;   // default: 5
+  direction?: string;                 // User guidance
+  creativity?: number;                // 0-1, default: 0.5
+}
+```
+
+#### Response Schema
+
+```typescript
+interface ProposeStoryBeatsResponse {
+  sessionId: string;
+  packages: NarrativePackage[];       // Only contains StoryBeat nodes
+  missingBeats: MissingBeatInfo[];    // All beats lacking StoryBeat alignment
+}
+
+interface MissingBeatInfo {
+  beatId: string;
+  beatType: BeatType;
+  act: 1 | 2 | 3 | 4 | 5;
+  position: number;
+}
+```
+
+#### Strict Constraints
+
+1. **Node Types**: ONLY `StoryBeat` nodes are generated. Scene, Character, Location, and Object nodes are filtered out.
+2. **Edge Types**: ONLY `ALIGNS_WITH` and `PRECEDES` edges are allowed:
+   - `ALIGNS_WITH`: StoryBeat → Beat (required for each StoryBeat)
+   - `PRECEDES`: StoryBeat → StoryBeat (optional, for causal ordering)
+3. **Validation**: ALIGNS_WITH edges must target valid Beat IDs
+
+#### Priority Beats
+
+The `priorityBeats` parameter accepts Beat IDs (e.g., `beat_Catalyst`) or Beat types (e.g., `Catalyst`). When specified:
+- At least one package SHOULD address each priority beat
+- A warning is logged if no package covers priority beats
+
+#### Example
+
+```bash
+curl -X POST http://localhost:3000/stories/my-story/propose/story-beats \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "priorityBeats": ["Catalyst", "Midpoint"],
+    "packageCount": 3,
+    "maxStoryBeatsPerPackage": 3,
+    "direction": "Focus on protagonist inner conflict"
+  }'
+```
+
+#### Integration
+
+The generated session can be reviewed and committed using the standard propose workflow:
+- View active proposal: `GET /:id/propose/active`
+- Commit a package: `POST /:id/propose/commit`
+- Discard: `DELETE /:id/propose/active`

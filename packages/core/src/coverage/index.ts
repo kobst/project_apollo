@@ -18,6 +18,7 @@ export type {
   TierConfig,
   NarrativeGapConfig,
   NarrativeGapType,
+  MissingBeatInfo,
 } from './types.js';
 
 export {
@@ -32,7 +33,7 @@ export {
 export { violationToGap, violationsToGaps } from './adapter.js';
 
 // Compute
-export { computeCoverage } from './compute.js';
+export { computeCoverage, computeUnalignedBeats } from './compute.js';
 
 // Narrative gap derivation
 export {

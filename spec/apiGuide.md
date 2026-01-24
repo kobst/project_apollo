@@ -1111,6 +1111,105 @@ curl -X POST http://localhost:3000/stories/my-story/update-package-element \
 
 ---
 
+### Propose Story Beats (StoryBeat-Only Generation)
+
+```
+POST /stories/:id/propose/story-beats
+```
+
+Generates **only StoryBeat nodes** to fill structural gaps (beats without ALIGNS_WITH edges from any StoryBeat). This specialized endpoint ensures strict output constraints - no Scene, Character, Location, or Object nodes are generated.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `priorityBeats` | string[] | No | Beat IDs or BeatTypes to always include (e.g., `['Catalyst', 'Midpoint']`) |
+| `packageCount` | number | No | Number of packages (default: 3) |
+| `maxStoryBeatsPerPackage` | number | No | Max StoryBeats per package (default: 5) |
+| `direction` | string | No | User guidance for generation |
+| `creativity` | number | No | 0-1 creativity level (default: 0.5) |
+
+```bash
+curl -X POST http://localhost:3000/stories/my-story/propose/story-beats \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "priorityBeats": ["Catalyst", "Midpoint"],
+    "packageCount": 3,
+    "maxStoryBeatsPerPackage": 3,
+    "direction": "Focus on dramatic tension"
+  }'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "sessionId": "gs_1234567890_abc12",
+    "packages": [
+      {
+        "id": "pkg_12345_abc",
+        "title": "Dramatic Catalyst Moment",
+        "rationale": "Creates a pivotal catalyst that sets the story in motion",
+        "confidence": 0.85,
+        "style_tags": ["dramatic", "revelation"],
+        "changes": {
+          "nodes": [
+            {
+              "operation": "add",
+              "node_type": "StoryBeat",
+              "node_id": "storybeat_12345_xyz",
+              "data": {
+                "title": "Marcus discovers the truth",
+                "summary": "Marcus finds evidence that reveals the conspiracy.",
+                "intent": "plot",
+                "priority": "high",
+                "stakes_change": "raise"
+              }
+            }
+          ],
+          "edges": [
+            {
+              "operation": "add",
+              "edge_type": "ALIGNS_WITH",
+              "from": "storybeat_12345_xyz",
+              "to": "beat_Catalyst"
+            }
+          ]
+        },
+        "impact": {
+          "fulfills_gaps": ["derived_missing_beat_Catalyst"],
+          "creates_gaps": [],
+          "conflicts": []
+        }
+      }
+    ],
+    "missingBeats": [
+      {
+        "beatId": "beat_Catalyst",
+        "beatType": "Catalyst",
+        "act": 1,
+        "position": 4
+      },
+      {
+        "beatId": "beat_Midpoint",
+        "beatType": "Midpoint",
+        "act": 3,
+        "position": 9
+      }
+    ]
+  }
+}
+```
+
+**Notes:**
+- Output is strictly filtered to only StoryBeat nodes
+- Only ALIGNS_WITH and PRECEDES edge types are allowed
+- `missingBeats` shows all beats that currently lack StoryBeat alignment
+- Use this endpoint when you want to fill structural gaps without generating scenes or other elements
+- The session can be reviewed and committed using the standard `/propose/commit` endpoint
+
+---
+
 ### Validate Package
 
 ```

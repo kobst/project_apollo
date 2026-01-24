@@ -20,6 +20,7 @@ import type {
   CoverageResponse,
   Gap,
   GapTier,
+  MissingBeatInfo,
 } from './types.js';
 import { TIER_ORDER } from './types.js';
 import { violationsToGaps } from './adapter.js';
@@ -345,4 +346,47 @@ function computeMissingFoundationGaps(graph: GraphState): Gap[] {
  */
 function formatBeatType(beatType: string): string {
   return beatType.replace(/([A-Z])/g, ' $1').trim();
+}
+
+// =============================================================================
+// Unaligned Beats (for StoryBeat generation)
+// =============================================================================
+
+/**
+ * Compute beats that have no ALIGNS_WITH edges from StoryBeats.
+ * These represent structural gaps that need StoryBeat coverage.
+ *
+ * @param graph - The story graph to analyze
+ * @returns Array of MissingBeatInfo for beats without StoryBeat alignment
+ */
+export function computeUnalignedBeats(graph: GraphState): MissingBeatInfo[] {
+  const beats = getNodesByType<Beat>(graph, 'Beat');
+
+  // Get all ALIGNS_WITH edges (StoryBeat → Beat)
+  const alignsWithEdges = getEdgesByType(graph, 'ALIGNS_WITH');
+
+  // Create set of beat IDs that have at least one StoryBeat aligned
+  const alignedBeatIds = new Set<string>();
+  for (const edge of alignsWithEdges) {
+    // ALIGNS_WITH goes from StoryBeat to Beat, so edge.to is the Beat ID
+    alignedBeatIds.add(edge.to);
+  }
+
+  // Find beats that are not in the aligned set
+  const unalignedBeats: MissingBeatInfo[] = [];
+  for (const beat of beats) {
+    if (!alignedBeatIds.has(beat.id)) {
+      unalignedBeats.push({
+        beatId: beat.id,
+        beatType: beat.beat_type,
+        act: beat.act,
+        position: beat.position_index,
+      });
+    }
+  }
+
+  // Sort by position for consistent ordering
+  unalignedBeats.sort((a, b) => a.position - b.position);
+
+  return unalignedBeats;
 }

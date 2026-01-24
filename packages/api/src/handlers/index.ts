@@ -87,6 +87,8 @@ export {
   createDiscardProposalHandler,
   createCommitProposalHandler,
   createRefineProposalHandler,
+  // StoryBeat-only generation
+  createProposeStoryBeatsHandler,
 } from './generate.js';
 export {
   createListSavedPackagesHandler,
