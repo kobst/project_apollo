@@ -3,7 +3,7 @@ import { useStory } from '../../context/StoryContext';
 import { api } from '../../api/client';
 import type { OutlineData, OutlineStoryBeat, OutlineScene, OutlineIdea, CreateSceneRequest, CreateIdeaRequest } from '../../api/types';
 import { ActRow } from './ActRow';
-import { UnassignedSection } from './UnassignedSection';
+import { StashSection } from './StashSection';
 import { CreateStoryBeatModal } from './CreateStoryBeatModal';
 import { CreateSceneModal } from './CreateSceneModal';
 import { CreateIdeaModal } from './CreateIdeaModal';
@@ -197,8 +197,8 @@ export function OutlineView() {
           </div>
         )}
 
-        {/* Unassigned Items Section */}
-        <UnassignedSection
+        {/* Stash Section */}
+        <StashSection
           storyBeats={outline.unassignedStoryBeats ?? []}
           scenes={outline.unassignedScenes ?? []}
           ideas={outline.unassignedIdeas ?? []}

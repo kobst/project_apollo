@@ -1,6 +1,6 @@
 /**
  * StructureSection - Story structure with horizontal swimlane layout.
- * Wrapped in CollapsibleSection, contains ActSwimlanes and UnassignedSection.
+ * Wrapped in CollapsibleSection, contains ActSwimlanes and StashSection.
  */
 
 import { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
@@ -11,7 +11,7 @@ import type { OutlineData, OutlineStoryBeat, OutlineScene, OutlineIdea, CreateSc
 import { mergeProposedIntoOutline, type MergedOutlineData, type MergedOutlineStoryBeat, type MergedOutlineScene, type MergedOutlineBeat } from '../../utils/outlineMergeUtils';
 import { CollapsibleSection } from './CollapsibleSection';
 import { ActSwimlane } from './ActSwimlane';
-import { UnassignedSection } from '../outline/UnassignedSection';
+import { StashSection } from '../outline/StashSection';
 import { AddStoryBeatModal } from '../outline/AddStoryBeatModal';
 import { CreateStoryBeatModal } from '../outline/CreateStoryBeatModal';
 import { CreateSceneModal } from '../outline/CreateSceneModal';
@@ -59,7 +59,7 @@ interface StructureSectionProps {
 
 export function StructureSection({ onElementClick, nodeSelectionMode }: StructureSectionProps) {
   const { currentStoryId, refreshStatus } = useStory();
-  const { stagedPackage, staging, updateEditedNode, removeProposedNode, sectionChangeCounts } = useGeneration();
+  const { stagedPackage, staging, updateEditedNode, removeProposedNode, toggleStashedIdeaExclusion, excludedStashedIdeaIds, sectionChangeCounts } = useGeneration();
   const [outline, setOutline] = useState<OutlineData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -377,13 +377,14 @@ export function StructureSection({ onElementClick, nodeSelectionMode }: Structur
             )}
           </div>
 
-          {/* Unassigned Items Section */}
-          <UnassignedSection
+          {/* Stash Section */}
+          <StashSection
             storyBeats={mergedOutline.unassignedStoryBeats ?? []}
             scenes={mergedOutline.unassignedScenes ?? []}
             ideas={mergedOutline.unassignedIdeas ?? []}
             proposedStoryBeats={mergedOutline.proposedUnassignedStoryBeats ?? []}
             proposedScenes={mergedOutline.proposedUnassignedScenes ?? []}
+            proposedIdeas={mergedOutline.proposedIdeas ?? []}
             onAddStoryBeat={handleOpenAddUnassignedStoryBeat}
             onAddScene={() => setShowSceneModal(true)}
             onAddIdea={() => setShowIdeaModal(true)}
@@ -393,6 +394,8 @@ export function StructureSection({ onElementClick, nodeSelectionMode }: Structur
             onEditProposed={handleEditProposedNode}
             onRemoveProposed={handleRemoveProposedNode}
             removedNodeIds={staging.removedNodeIds}
+            excludedIdeaIds={excludedStashedIdeaIds}
+            onToggleIdeaExclusion={toggleStashedIdeaExclusion}
           />
         </div>
 

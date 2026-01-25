@@ -42,6 +42,8 @@ export interface StagingState {
   activePackageIndex: number;
   editedNodes: Map<string, Partial<Record<string, unknown>>>;
   removedNodeIds: Set<string>;
+  /** IDs of stashed ideas to exclude from package application */
+  excludedStashedIdeaIds: Set<string>;
 }
 
 interface GenerationContextValue {
@@ -140,6 +142,10 @@ interface GenerationContextValue {
   updateEditedNode: (nodeId: string, updates: Partial<Record<string, unknown>>) => void;
   /** Remove a proposed node from staging */
   removeProposedNode: (nodeId: string) => void;
+  /** Toggle exclusion of a stashed idea */
+  toggleStashedIdeaExclusion: (ideaId: string) => void;
+  /** Set of excluded stashed idea IDs */
+  excludedStashedIdeaIds: Set<string>;
   /** Get the currently staged package */
   stagedPackage: NarrativePackage | null;
 }
@@ -159,6 +165,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     activePackageIndex: -1,
     editedNodes: new Map(),
     removedNodeIds: new Set(),
+    excludedStashedIdeaIds: new Set(),
   });
 
   // Get refinable elements for current selection
@@ -369,7 +376,12 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
       try {
         setLoading(true);
         setError(null);
-        await api.acceptPackage(storyId, packageId);
+
+        // Pass excluded stashed idea IDs to API
+        const excludedIds = staging.excludedStashedIdeaIds.size > 0
+          ? Array.from(staging.excludedStashedIdeaIds)
+          : undefined;
+        await api.acceptPackage(storyId, packageId, excludedIds);
 
         // Mark session as accepted
         setSession((prev) => {
@@ -392,7 +404,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     },
-    []
+    [staging.excludedStashedIdeaIds]
   );
 
   // Reject package (local only - removes from session)
@@ -612,6 +624,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
           activePackageIndex: -1,
           editedNodes: new Map(),
           removedNodeIds: new Set(),
+          excludedStashedIdeaIds: new Set(),
         });
 
         // Close panel after short delay
@@ -637,6 +650,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
           activePackageIndex: -1,
           editedNodes: new Map(),
           removedNodeIds: new Set(),
+          excludedStashedIdeaIds: new Set(),
         });
         return;
       }
@@ -648,6 +662,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
           activePackageIndex: index,
           editedNodes: new Map(),
           removedNodeIds: new Set(),
+          excludedStashedIdeaIds: new Set(),
         });
         setSelectedPackageId(pkg.id);
       }
@@ -663,6 +678,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
         activePackageIndex: -1, // Not from session
         editedNodes: new Map(),
         removedNodeIds: new Set(),
+        excludedStashedIdeaIds: new Set(),
       });
     },
     []
@@ -675,6 +691,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
       activePackageIndex: -1,
       editedNodes: new Map(),
       removedNodeIds: new Set(),
+      excludedStashedIdeaIds: new Set(),
     });
   }, []);
 
@@ -697,6 +714,19 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
       const newRemovedIds = new Set(prev.removedNodeIds);
       newRemovedIds.add(nodeId);
       return { ...prev, removedNodeIds: newRemovedIds };
+    });
+  }, []);
+
+  // Toggle exclusion of a stashed idea
+  const toggleStashedIdeaExclusion = useCallback((ideaId: string) => {
+    setStaging((prev) => {
+      const newExcludedIds = new Set(prev.excludedStashedIdeaIds);
+      if (newExcludedIds.has(ideaId)) {
+        newExcludedIds.delete(ideaId);
+      } else {
+        newExcludedIds.add(ideaId);
+      }
+      return { ...prev, excludedStashedIdeaIds: newExcludedIds };
     });
   }, []);
 
@@ -756,6 +786,8 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     clearStaging,
     updateEditedNode,
     removeProposedNode,
+    toggleStashedIdeaExclusion,
+    excludedStashedIdeaIds: staging.excludedStashedIdeaIds,
     stagedPackage,
   };
 

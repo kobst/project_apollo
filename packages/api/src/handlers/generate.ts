@@ -18,6 +18,7 @@ import {
   generateEdgeId,
   computeCoverage,
   getNode,
+  isValidEdgeType,
   type Patch,
   type PatchOp,
   type NodeType,
@@ -800,8 +801,14 @@ export function packageToPatch(
     }
   }
 
-  // Convert edge changes to patch ops
+  // Convert edge changes to patch ops (filter out invalid edge types)
   for (const edgeChange of pkg.changes.edges) {
+    // Skip invalid edge types that the LLM might have hallucinated
+    if (!isValidEdgeType(edgeChange.edge_type)) {
+      console.warn(`[packageToPatch] Skipping invalid edge type: ${edgeChange.edge_type}`);
+      continue;
+    }
+
     switch (edgeChange.operation) {
       case 'add':
         ops.push({
@@ -935,13 +942,13 @@ export function createApplyPackageHandler(ctx: StorageContext) {
 
 export function createAcceptPackageHandler(ctx: StorageContext) {
   return async (
-    req: Request<{ id: string }, unknown, { packageId: string }>,
+    req: Request<{ id: string }, unknown, { packageId: string; excludedStashedIdeaIds?: string[] }>,
     res: Response<APIResponse<AcceptPackageResponseData>>,
     next: NextFunction
   ): Promise<void> => {
     try {
       const { id } = req.params;
-      const { packageId } = req.body;
+      const { packageId, excludedStashedIdeaIds } = req.body;
 
       if (!packageId) {
         throw new BadRequestError('packageId is required');
@@ -999,7 +1006,37 @@ export function createAcceptPackageHandler(ctx: StorageContext) {
       // 5. Apply patch
       graph = applyPatch(graph, patch);
 
-      // 6. Handle Story Context changes
+      // 6. Handle stashed ideas -> convert to Idea nodes (filter excluded ones)
+      let ideasCreated = 0;
+      const excludedIdsSet = excludedStashedIdeaIds ? new Set(excludedStashedIdeaIds) : new Set<string>();
+      if (pkg.suggestions?.stashedIdeas && pkg.suggestions.stashedIdeas.length > 0) {
+        const timestamp = new Date().toISOString();
+        for (const idea of pkg.suggestions.stashedIdeas) {
+          // Skip excluded ideas
+          if (excludedIdsSet.has(idea.id)) {
+            continue;
+          }
+
+          // Create Idea node and add to graph
+          const ideaNode = {
+            type: 'Idea' as const,
+            id: idea.id.startsWith('idea_') ? idea.id : `idea_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            title: idea.content.slice(0, 50) + (idea.content.length > 50 ? '...' : ''),
+            description: idea.content,
+            source: 'ai' as const,
+            status: 'active' as const,
+            category: idea.category,
+            sourcePackageId: pkg.id,
+            createdAt: timestamp,
+          };
+
+          // Add idea node to graph
+          graph.nodes.set(ideaNode.id, ideaNode as unknown as Parameters<typeof graph.nodes.set>[1]);
+          ideasCreated++;
+        }
+      }
+
+      // 7. Handle Story Context changes
       let storyContextUpdated = false;
       if (pkg.changes.storyContext && pkg.changes.storyContext.length > 0) {
         // Note: Story Context updates would be applied separately
@@ -1007,7 +1044,7 @@ export function createAcceptPackageHandler(ctx: StorageContext) {
         storyContextUpdated = true;
       }
 
-      // 7. Save updated graph
+      // 8. Save updated graph
       const newVersionId = await updateGraphById(
         id,
         graph,
@@ -1016,12 +1053,12 @@ export function createAcceptPackageHandler(ctx: StorageContext) {
         ctx
       );
 
-      // 8. Mark session as accepted
+      // 9. Mark session as accepted
       await markSessionAccepted(id, packageId, ctx);
 
-      // 9. Compute stats
+      // 10. Compute stats
       const stats = {
-        nodesAdded: pkg.changes.nodes.filter((n) => n.operation === 'add').length,
+        nodesAdded: pkg.changes.nodes.filter((n) => n.operation === 'add').length + ideasCreated,
         nodesModified: pkg.changes.nodes.filter((n) => n.operation === 'modify').length,
         nodesDeleted: pkg.changes.nodes.filter((n) => n.operation === 'delete').length,
         edgesAdded: pkg.changes.edges.filter((e) => e.operation === 'add').length,
@@ -1034,7 +1071,7 @@ export function createAcceptPackageHandler(ctx: StorageContext) {
           packageId: pkg.id,
           title: pkg.title,
           newVersionId,
-          patchOpsApplied: patch.ops.length,
+          patchOpsApplied: patch.ops.length + ideasCreated,
           ...stats,
           storyContextUpdated,
         },

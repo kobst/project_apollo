@@ -114,7 +114,9 @@ class ApiError extends Error {
     message: string,
     public suggestion?: string
   ) {
-    super(message);
+    // Include suggestion in the error message for better visibility in console
+    const fullMessage = suggestion ? `${message}: ${suggestion}` : message;
+    super(fullMessage);
     this.name = 'ApiError';
   }
 }
@@ -386,9 +388,13 @@ export const api = {
 
   /**
    * Accept a package from a session and apply its changes to the graph
+   * @param excludedStashedIdeaIds - IDs of stashed ideas to exclude from conversion to Idea nodes
    */
-  acceptPackage: (storyId: string, packageId: string) =>
-    POST<AcceptPackageResponseData>(`/stories/${storyId}/accept-package`, { packageId }),
+  acceptPackage: (storyId: string, packageId: string, excludedStashedIdeaIds?: string[]) =>
+    POST<AcceptPackageResponseData>(`/stories/${storyId}/accept-package`, {
+      packageId,
+      ...(excludedStashedIdeaIds && excludedStashedIdeaIds.length > 0 ? { excludedStashedIdeaIds } : {}),
+    }),
 
   // =========================================================================
   // Saved Packages

@@ -46,6 +46,14 @@ export interface ConversionResult {
   ideasToCreate?: Idea[];
 }
 
+/**
+ * Options for package to patch conversion.
+ */
+export interface ConversionOptions {
+  /** IDs of stashed ideas to exclude from conversion */
+  excludedStashedIdeaIds?: Set<string>;
+}
+
 // =============================================================================
 // Main Conversion Function
 // =============================================================================
@@ -63,17 +71,19 @@ export interface ConversionResult {
  *
  * Also handles suggestions:
  * - contextAdditions → Story Context updates (combined with storyContext changes)
- * - stashedIdeas → Idea node creation (returned separately)
+ * - stashedIdeas → Idea node creation (returned separately, filtered by excludedStashedIdeaIds)
  *
  * @param pkg - The NarrativePackage to convert
  * @param baseVersionId - The version ID this patch is based on
  * @param currentStoryContext - Current Story Context content (for modifications)
+ * @param options - Conversion options (e.g., excluded stashed idea IDs)
  * @returns Conversion result with patch and optional Story Context update
  */
 export function packageToPatch(
   pkg: NarrativePackage,
   baseVersionId: string,
-  currentStoryContext?: string
+  currentStoryContext?: string,
+  options?: ConversionOptions
 ): ConversionResult {
   const ops: PatchOp[] = [];
 
@@ -208,9 +218,16 @@ export function packageToPatch(
     };
   }
 
-  // Handle stashed ideas → convert to Idea nodes
+  // Handle stashed ideas → convert to Idea nodes (filter out excluded ones)
   if (pkg.suggestions?.stashedIdeas && pkg.suggestions.stashedIdeas.length > 0) {
-    result.ideasToCreate = convertStashedIdeasToNodes(pkg.suggestions.stashedIdeas, pkg.id);
+    const excludedIds = options?.excludedStashedIdeaIds;
+    const filteredIdeas = excludedIds
+      ? pkg.suggestions.stashedIdeas.filter((idea) => !excludedIds.has(idea.id))
+      : pkg.suggestions.stashedIdeas;
+
+    if (filteredIdeas.length > 0) {
+      result.ideasToCreate = convertStashedIdeasToNodes(filteredIdeas, pkg.id);
+    }
   }
 
   return result;

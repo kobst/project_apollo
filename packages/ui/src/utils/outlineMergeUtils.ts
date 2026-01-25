@@ -14,7 +14,12 @@ import type {
   OutlineScene,
   OutlineIdea,
   NarrativePackage,
+  IdeaSource,
 } from '../api/types';
+
+// Re-use types from core for Ideas
+export type IdeaCategory = 'character' | 'plot' | 'scene' | 'worldbuilding' | 'general';
+export type IdeaStatus = 'active' | 'promoted' | 'dismissed';
 
 // Extended types with proposed metadata
 export interface MergedOutlineScene extends OutlineScene {
@@ -36,6 +41,24 @@ export interface MergedOutlineBeat extends Omit<OutlineBeat, 'storyBeats'> {
   storyBeats: MergedOutlineStoryBeat[];
 }
 
+/**
+ * Merged outline idea with proposal tracking metadata.
+ * Used for displaying stashed ideas from AI packages.
+ */
+export interface MergedOutlineIdea {
+  id: string;
+  title: string;
+  description: string;
+  category: IdeaCategory;
+  status: IdeaStatus;
+  source: IdeaSource;
+  // Proposal tracking
+  _isProposed?: boolean | undefined;
+  _operation?: 'add' | undefined;
+  _packageId?: string | undefined;
+  _sourceType?: 'stashedIdea' | 'ideaNode' | undefined;
+}
+
 export interface MergedOutlineAct extends Omit<OutlineAct, 'beats'> {
   beats: MergedOutlineBeat[];
 }
@@ -48,6 +71,8 @@ export interface MergedOutlineData extends Omit<OutlineData, 'acts' | 'unassigne
   // Track proposed items that have no assignment edges
   proposedUnassignedStoryBeats: MergedOutlineStoryBeat[];
   proposedUnassignedScenes: MergedOutlineScene[];
+  // Track proposed ideas from stashed ideas in packages
+  proposedIdeas: MergedOutlineIdea[];
 }
 
 /**
@@ -90,6 +115,7 @@ export function mergeProposedIntoOutline(
       unassignedScenes: outline.unassignedScenes as MergedOutlineScene[],
       proposedUnassignedStoryBeats: [],
       proposedUnassignedScenes: [],
+      proposedIdeas: [],
     };
   }
 
@@ -266,6 +292,32 @@ export function mergeProposedIntoOutline(
     }
   }
 
+  // Step 9: Extract stashed ideas from package suggestions
+  const proposedIdeas: MergedOutlineIdea[] = [];
+  // Check for suggestions.stashedIdeas in the package (enhanced structure)
+  const stashedIdeas = (stagedPackage as { suggestions?: { stashedIdeas?: Array<{ id: string; content: string; category?: string; relatedNodeIds?: string[] }> } }).suggestions?.stashedIdeas;
+  if (stashedIdeas) {
+    for (const idea of stashedIdeas) {
+      // Skip if removed
+      if (removedNodeIds.has(idea.id)) {
+        continue;
+      }
+
+      proposedIdeas.push({
+        id: idea.id,
+        title: idea.content.slice(0, 50) + (idea.content.length > 50 ? '...' : ''),
+        description: idea.content,
+        category: (idea.category as IdeaCategory) ?? 'general',
+        status: 'active',
+        source: 'ai',
+        _isProposed: true,
+        _operation: 'add',
+        _packageId: stagedPackage.id,
+        _sourceType: 'stashedIdea',
+      });
+    }
+  }
+
   return {
     storyId: outline.storyId,
     acts: mergedActs,
@@ -274,6 +326,7 @@ export function mergeProposedIntoOutline(
     unassignedIdeas: outline.unassignedIdeas,
     proposedUnassignedStoryBeats,
     proposedUnassignedScenes,
+    proposedIdeas,
     summary: outline.summary,
   };
 }

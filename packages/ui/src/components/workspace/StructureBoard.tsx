@@ -11,7 +11,7 @@ import { api } from '../../api/client';
 import type { OutlineData, OutlineStoryBeat, OutlineScene, OutlineIdea, CreateSceneRequest, CreateIdeaRequest } from '../../api/types';
 import { mergeProposedIntoOutline, type MergedOutlineData } from '../../utils/outlineMergeUtils';
 import { ActRow } from '../outline/ActRow';
-import { UnassignedSection } from '../outline/UnassignedSection';
+import { StashSection } from '../outline/StashSection';
 import { CreateStoryBeatModal } from '../outline/CreateStoryBeatModal';
 import { CreateSceneModal } from '../outline/CreateSceneModal';
 import { CreateIdeaModal } from '../outline/CreateIdeaModal';
@@ -50,7 +50,7 @@ export function useExpansion() {
 
 export function StructureBoard() {
   const { currentStoryId, refreshStatus } = useStory();
-  const { stagedPackage, staging, updateEditedNode, removeProposedNode } = useGeneration();
+  const { stagedPackage, staging, updateEditedNode, removeProposedNode, toggleStashedIdeaExclusion, excludedStashedIdeaIds } = useGeneration();
   const [outline, setOutline] = useState<OutlineData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -174,7 +174,7 @@ export function StructureBoard() {
     }
   }, [currentStoryId, fetchOutline, refreshStatus]);
 
-  // Handle clicking on items in UnassignedSection
+  // Handle clicking on items in StashSection
   const handleStoryBeatClick = useCallback((pp: OutlineStoryBeat) => {
     handleEditStoryBeat(pp);
   }, [handleEditStoryBeat]);
@@ -283,13 +283,14 @@ export function StructureBoard() {
               </div>
             )}
 
-            {/* Unassigned Items Section - includes proposed unassigned items */}
-            <UnassignedSection
+            {/* Stash Section - includes proposed items */}
+            <StashSection
               storyBeats={mergedOutline?.unassignedStoryBeats ?? []}
               scenes={mergedOutline?.unassignedScenes ?? []}
               ideas={mergedOutline?.unassignedIdeas ?? []}
               proposedStoryBeats={mergedOutline?.proposedUnassignedStoryBeats ?? []}
               proposedScenes={mergedOutline?.proposedUnassignedScenes ?? []}
+              proposedIdeas={mergedOutline?.proposedIdeas ?? []}
               onAddStoryBeat={() => setShowStoryBeatModal(true)}
               onAddScene={() => setShowSceneModal(true)}
               onAddIdea={() => setShowIdeaModal(true)}
@@ -299,6 +300,8 @@ export function StructureBoard() {
               onEditProposed={handleEditProposedNode}
               onRemoveProposed={handleRemoveProposedNode}
               removedNodeIds={staging.removedNodeIds}
+              excludedIdeaIds={excludedStashedIdeaIds}
+              onToggleIdeaExclusion={toggleStashedIdeaExclusion}
             />
           </div>
 
