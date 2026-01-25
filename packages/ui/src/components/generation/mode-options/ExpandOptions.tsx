@@ -3,6 +3,7 @@
  * Elaborate on story context or a selected node.
  */
 
+import { useEffect, useRef } from 'react';
 import styles from './ModeOptions.module.css';
 
 export type ExpandTargetType = 'story-context' | 'story-context-section' | 'node';
@@ -91,9 +92,12 @@ export function ExpandOptions({
     onChange({ ...value, depth });
   };
 
-  // Sync with selectedNode when it changes
-  const useSelectedNode = () => {
-    if (selectedNode && value.targetType === 'node') {
+  // Track previous selectedNode to detect changes
+  const prevSelectedNodeRef = useRef<NodeInfo | null | undefined>(null);
+
+  // Auto-sync with selectedNode when it changes while in 'node' mode
+  useEffect(() => {
+    if (value.targetType === 'node' && selectedNode && selectedNode.id !== prevSelectedNodeRef.current?.id) {
       onChange({
         ...value,
         nodeId: selectedNode.id,
@@ -101,7 +105,8 @@ export function ExpandOptions({
         nodeName: selectedNode.name,
       });
     }
-  };
+    prevSelectedNodeRef.current = selectedNode;
+  }, [selectedNode, value.targetType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className={styles.container}>
@@ -175,26 +180,13 @@ export function ExpandOptions({
             <div className={styles.selectedNode}>
               <span className={styles.nodeType}>{value.nodeType}</span>
               <span className={styles.nodeName}>{value.nodeName}</span>
-            </div>
-          ) : selectedNode ? (
-            <div className={styles.nodePrompt}>
-              <p>
-                Use: <strong>{selectedNode.name}</strong> ({selectedNode.type})
-              </p>
-              <button
-                type="button"
-                className={styles.useNodeButton}
-                onClick={useSelectedNode}
-                disabled={disabled}
-              >
-                Use Selected
-              </button>
+              <span className={styles.selectedIndicator}>✓ Selected</span>
             </div>
           ) : (
             <div className={styles.emptyState}>
               <p>No element selected.</p>
               <p className={styles.emptyHint}>
-                Click an element in the Story Bible to select it.
+                Click any element in the Story Bible to select it for expansion.
               </p>
             </div>
           )}

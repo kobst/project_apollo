@@ -16,6 +16,13 @@ import { AddElementModal, type AddElementType } from './AddElementModal';
 import type { ElementType, ElementModalState } from './types';
 import styles from './WorkspaceView.module.css';
 
+// Selected node info for Expand mode
+export interface SelectedNodeInfo {
+  id: string;
+  type: string;
+  name: string;
+}
+
 export function WorkspaceView() {
   const { currentStoryId } = useStory();
 
@@ -31,10 +38,30 @@ export function WorkspaceView() {
   // Add element modal state
   const [addElementType, setAddElementType] = useState<AddElementType | null>(null);
 
-  // Handle element click - open detail modal
-  const handleElementClick = useCallback((elementId: string, elementType: ElementType) => {
-    setElementModal({ elementId, elementType });
-  }, []);
+  // Selected node for Expand mode
+  const [selectedNode, setSelectedNode] = useState<SelectedNodeInfo | null>(null);
+
+  // Whether we're in node selection mode (Expand mode with "Selected Node" target)
+  const [nodeSelectionMode, setNodeSelectionMode] = useState(false);
+
+  // Handle element click - open detail modal OR select for expand
+  const handleElementClick = useCallback((elementId: string, elementType: string, elementName?: string) => {
+    if (nodeSelectionMode) {
+      // In selection mode, select the node instead of opening modal
+      setSelectedNode({
+        id: elementId,
+        type: elementType,
+        name: elementName ?? elementId,
+      });
+    } else {
+      // Normal mode - open detail modal (only for Character, Location, Object)
+      const modalTypes = ['Character', 'Location', 'Object'];
+      if (modalTypes.includes(elementType)) {
+        setElementModal({ elementId, elementType: elementType as ElementType });
+      }
+      // StoryBeat and Scene have their own edit panel in StructureSection
+    }
+  }, [nodeSelectionMode]);
 
   // Handle close element detail modal
   const handleCloseElementModal = useCallback(() => {
@@ -74,11 +101,15 @@ export function WorkspaceView() {
           onAddElement={handleAddElement}
           isTocCollapsed={isTocCollapsed}
           onToggleTocCollapse={() => setIsTocCollapsed(!isTocCollapsed)}
+          nodeSelectionMode={nodeSelectionMode}
         />
 
         <GenerationPanel
           isCollapsed={isGenPanelCollapsed}
           onToggleCollapse={() => setIsGenPanelCollapsed(!isGenPanelCollapsed)}
+          selectedNode={selectedNode}
+          onClearSelectedNode={() => setSelectedNode(null)}
+          onNodeSelectionModeChange={setNodeSelectionMode}
         />
       </div>
 

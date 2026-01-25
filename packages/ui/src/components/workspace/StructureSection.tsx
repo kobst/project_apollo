@@ -48,7 +48,16 @@ export function useStructureEdit() {
   return useContext(StructureEditContext);
 }
 
-export function StructureSection() {
+type AnyElementType = 'Character' | 'Location' | 'Object' | 'StoryBeat' | 'Scene' | 'Beat' | 'Idea' | string;
+
+interface StructureSectionProps {
+  /** Callback when an element is clicked (for node selection mode) */
+  onElementClick?: ((elementId: string, elementType: AnyElementType, elementName?: string) => void) | undefined;
+  /** Whether we're in node selection mode (for Expand) - when true, don't open edit panel */
+  nodeSelectionMode?: boolean | undefined;
+}
+
+export function StructureSection({ onElementClick, nodeSelectionMode }: StructureSectionProps) {
   const { currentStoryId, refreshStatus } = useStory();
   const { stagedPackage, staging, updateEditedNode, removeProposedNode, sectionChangeCounts } = useGeneration();
   const [outline, setOutline] = useState<OutlineData | null>(null);
@@ -122,14 +131,24 @@ export function StructureSection() {
     void fetchOutline();
   }, [fetchOutline]);
 
-  // Edit handlers - open the slide-out panel
+  // Edit handlers - open the slide-out panel (unless in selection mode)
   const handleEditStoryBeat = useCallback((pp: OutlineStoryBeat | MergedOutlineStoryBeat) => {
-    setEditState({ type: 'storybeat', item: pp as OutlineStoryBeat });
-  }, []);
+    // Notify parent for node selection mode
+    onElementClick?.(pp.id, 'StoryBeat', pp.title);
+    // Only open edit panel if not in selection mode
+    if (!nodeSelectionMode) {
+      setEditState({ type: 'storybeat', item: pp as OutlineStoryBeat });
+    }
+  }, [onElementClick, nodeSelectionMode]);
 
   const handleEditScene = useCallback((scene: OutlineScene | MergedOutlineScene, _storyBeatId?: string) => {
-    setEditState({ type: 'scene', item: scene as OutlineScene });
-  }, []);
+    // Notify parent for node selection mode
+    onElementClick?.(scene.id, 'Scene', scene.heading);
+    // Only open edit panel if not in selection mode
+    if (!nodeSelectionMode) {
+      setEditState({ type: 'scene', item: scene as OutlineScene });
+    }
+  }, [onElementClick, nodeSelectionMode]);
 
   const handleCloseEdit = useCallback(() => {
     setEditState(null);

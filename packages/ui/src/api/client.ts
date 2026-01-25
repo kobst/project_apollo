@@ -518,8 +518,22 @@ export const api = {
   /**
    * Expand story context or a selected node.
    */
-  proposeExpand: (storyId: string, data: ProposeExpandRequest) =>
-    POST<ProposeExpandResponse>(`/stories/${storyId}/propose/expand`, data),
+  proposeExpand: (storyId: string, data: ProposeExpandRequest) => {
+    // Transform flat structure to nested target format expected by API
+    const apiRequest = {
+      target: {
+        type: data.targetType,
+        nodeId: data.nodeId,
+        section: data.contextSection,
+      },
+      depth: data.depth,
+      direction: data.direction,
+      creativity: data.creativity,
+      packageCount: data.packageCount,
+      expansionScope: data.inventNewEntities ? 'flexible' : 'constrained',
+    };
+    return POST<ProposeExpandResponse>(`/stories/${storyId}/propose/expand`, apiRequest);
+  },
 };
 
 // =============================================================================

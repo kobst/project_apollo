@@ -135,7 +135,9 @@ interface ComposeFormProps {
   /** Available story beats */
   storyBeats?: StoryBeatInfo[];
   /** Currently selected node in Story Bible */
-  selectedNode?: SelectedNodeInfo;
+  selectedNode?: SelectedNodeInfo | undefined;
+  /** Callback to enable/disable node selection mode */
+  onNodeSelectionModeChange?: ((enabled: boolean) => void) | undefined;
 }
 
 export function ComposeForm({
@@ -150,6 +152,7 @@ export function ComposeForm({
   characters = [],
   storyBeats = [],
   selectedNode,
+  onNodeSelectionModeChange,
 }: ComposeFormProps) {
   const {
     mode,
@@ -196,8 +199,7 @@ export function ComposeForm({
     if (
       selectedNode &&
       mode === 'expand' &&
-      expandOptions.targetType === 'node' &&
-      !expandOptions.nodeId
+      expandOptions.targetType === 'node'
     ) {
       updateField('expandOptions', {
         ...expandOptions,
@@ -206,7 +208,18 @@ export function ComposeForm({
         nodeName: selectedNode.name,
       });
     }
-  }, [selectedNode, mode, expandOptions]);
+  }, [selectedNode, mode, expandOptions.targetType]);
+
+  // Enable/disable node selection mode based on form state
+  useEffect(() => {
+    const shouldEnableSelection = mode === 'expand' && expandOptions.targetType === 'node';
+    onNodeSelectionModeChange?.(shouldEnableSelection);
+
+    // Cleanup - disable when component unmounts or changes
+    return () => {
+      onNodeSelectionModeChange?.(false);
+    };
+  }, [mode, expandOptions.targetType, onNodeSelectionModeChange]);
 
   // Validate form before submission
   const validateForm = (): string | null => {

@@ -22,13 +22,15 @@ import styles from './StoryBible.module.css';
 
 interface StoryBibleProps {
   /** Callback when an element is clicked */
-  onElementClick: (elementId: string, elementType: ElementType) => void;
+  onElementClick: (elementId: string, elementType: string, elementName?: string) => void;
   /** Callback when add element is requested */
   onAddElement: (type: ElementType) => void;
   /** Whether the TOC sidebar is collapsed */
   isTocCollapsed: boolean;
   /** Callback to toggle TOC collapse state */
   onToggleTocCollapse: () => void;
+  /** Whether we're in node selection mode (for Expand) */
+  nodeSelectionMode?: boolean;
 }
 
 const SECTION_IDS = ['premise', 'elements', 'structure', 'context', 'ideas'];
@@ -38,6 +40,7 @@ export function StoryBible({
   onAddElement,
   isTocCollapsed,
   onToggleTocCollapse,
+  nodeSelectionMode,
 }: StoryBibleProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { stagedPackage, sectionChangeCounts, detailedElementCounts } = useGeneration();
@@ -163,6 +166,13 @@ export function StoryBible({
       />
 
       <div className={styles.scrollArea} ref={scrollRef} data-scroll-area>
+        {nodeSelectionMode && (
+          <div className={styles.selectionBanner}>
+            <span className={styles.selectionBannerText}>
+              <span className={styles.selectionBannerHighlight}>Selection Mode:</span> Click any element to select it for expansion
+            </span>
+          </div>
+        )}
         <PremiseSection />
 
         <ElementsSection
@@ -170,7 +180,10 @@ export function StoryBible({
           onAddElement={onAddElement}
         />
 
-        <StructureSection />
+        <StructureSection
+          onElementClick={onElementClick}
+          nodeSelectionMode={nodeSelectionMode}
+        />
 
         <ContextSection />
 

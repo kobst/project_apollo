@@ -16,7 +16,7 @@ import { ProposedElementCard } from './ProposedElementCard';
 import styles from './ElementsBoard.module.css';
 
 interface ElementsSectionProps {
-  onElementClick: (elementId: string, elementType: ElementType) => void;
+  onElementClick: (elementId: string, elementType: string, elementName?: string) => void;
   onAddElement?: (type: ElementType) => void;
 }
 
@@ -281,7 +281,7 @@ export function ElementsSection({ onElementClick, onAddElement }: ElementsSectio
                       key={node.id}
                       element={node}
                       elementType={section.type}
-                      onClick={() => onElementClick(node.id, section.type)}
+                      onClick={() => onElementClick(node.id, section.type, node.label)}
                     />
                   ))}
                 </div>

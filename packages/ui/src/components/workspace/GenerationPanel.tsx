@@ -20,12 +20,30 @@ import type {
 } from '../../api/types';
 import styles from './GenerationPanel.module.css';
 
+interface SelectedNodeInfo {
+  id: string;
+  type: string;
+  name: string;
+}
+
 interface GenerationPanelProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  /** Currently selected node for Expand mode */
+  selectedNode?: SelectedNodeInfo | null;
+  /** Callback to clear selected node */
+  onClearSelectedNode?: () => void;
+  /** Callback to enable/disable node selection mode */
+  onNodeSelectionModeChange?: (enabled: boolean) => void;
 }
 
-export function GenerationPanel({ isCollapsed, onToggleCollapse }: GenerationPanelProps) {
+export function GenerationPanel({
+  isCollapsed,
+  onToggleCollapse,
+  selectedNode,
+  onClearSelectedNode: _onClearSelectedNode, // Reserved for future use
+  onNodeSelectionModeChange,
+}: GenerationPanelProps) {
   const { currentStoryId, refreshStatus } = useStory();
   const {
     proposeStoryBeats,
@@ -232,6 +250,8 @@ export function GenerationPanel({ isCollapsed, onToggleCollapse }: GenerationPan
           beats={beats}
           characters={characters}
           storyBeats={storyBeats}
+          selectedNode={selectedNode ?? undefined}
+          onNodeSelectionModeChange={onNodeSelectionModeChange}
         />
 
         {/* Package Carousel */}
