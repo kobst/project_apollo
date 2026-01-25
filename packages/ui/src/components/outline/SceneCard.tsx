@@ -1,15 +1,16 @@
 import type { OutlineScene } from '../../api/types';
-import { useEdit } from '../workspace/StructureBoard';
+import { useStructureEdit } from '../workspace/StructureSection';
 import styles from './SceneCard.module.css';
 
 interface SceneCardProps {
   scene: OutlineScene;
   beatId: string;
+  parentStoryBeatId?: string;
   onUpdate?: () => void;
 }
 
-export function SceneCard({ scene, beatId: _beatId }: SceneCardProps) {
-  const { onEditScene } = useEdit();
+export function SceneCard({ scene, beatId: _beatId, parentStoryBeatId: _parentStoryBeatId }: SceneCardProps) {
+  const { onEditScene } = useStructureEdit();
 
   const displayHeading = scene.heading || 'Untitled Scene';
   const maxOverview = 60;
@@ -22,7 +23,10 @@ export function SceneCard({ scene, beatId: _beatId }: SceneCardProps) {
   };
 
   return (
-    <div className={styles.container} onClick={handleClick}>
+    <div
+      className={styles.container}
+      onClick={handleClick}
+    >
       <div className={styles.header}>
         {scene.intExt && <span className={styles.intExt}>{scene.intExt}</span>}
         <span className={styles.heading}>{displayHeading}</span>

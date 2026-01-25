@@ -6,9 +6,7 @@
  * - Scenes without SATISFIED_BY edges (not linked to story beats)
  * - Ideas (including proposed ideas from AI packages)
  *
- * StoryBeats can be dragged to Beats to create ALIGNS_WITH edges.
- * Scenes can be dragged to StoryBeats to create SATISFIED_BY edges.
- * Also displays proposed items from staged packages.
+ * Use the Assign button on items to assign them to structure.
  */
 
 import { useState, useCallback } from 'react';
@@ -41,6 +39,13 @@ interface StashSectionProps {
   // Stashed ideas exclusion
   excludedIdeaIds?: Set<string> | undefined;
   onToggleIdeaExclusion?: ((id: string) => void) | undefined;
+  // Deletion
+  onDeleteStoryBeat?: ((storyBeat: MergedOutlineStoryBeat) => void) | undefined;
+  onDeleteScene?: ((scene: MergedOutlineScene) => void) | undefined;
+  onDeleteIdea?: ((idea: OutlineIdea) => void) | undefined;
+  // Assignment
+  onAssignStoryBeat?: ((storyBeat: MergedOutlineStoryBeat) => void) | undefined;
+  onAssignScene?: ((scene: MergedOutlineScene) => void) | undefined;
 }
 
 export function StashSection({
@@ -61,6 +66,11 @@ export function StashSection({
   removedNodeIds,
   excludedIdeaIds,
   onToggleIdeaExclusion,
+  onDeleteStoryBeat,
+  onDeleteScene,
+  onDeleteIdea,
+  onAssignStoryBeat,
+  onAssignScene,
 }: StashSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [activeTab, setActiveTab] = useState<'storyBeats' | 'scenes' | 'ideas'>('storyBeats');
@@ -128,7 +138,7 @@ export function StashSection({
         <div className={styles.content}>
           <p className={styles.description}>
             {totalCount > 0
-              ? 'Floating content not yet assigned to structure. Drag items to assign them.'
+              ? 'Floating content not yet assigned to structure. Use Assign to link items.'
               : 'Create story beats, scenes, or ideas here before assigning them.'}
           </p>
 
@@ -199,6 +209,8 @@ export function StashSection({
                       key={pp.id}
                       storyBeat={pp}
                       onClick={() => onStoryBeatClick?.(pp)}
+                      onDelete={onDeleteStoryBeat ? () => onDeleteStoryBeat(pp) : undefined}
+                      onAssign={onAssignStoryBeat ? () => onAssignStoryBeat(pp) : undefined}
                     />
                   ))}
                   {totalStoryBeats === 0 && (
@@ -242,6 +254,8 @@ export function StashSection({
                       key={scene.id}
                       scene={scene}
                       onClick={() => onSceneClick?.(scene)}
+                      onDelete={onDeleteScene ? () => onDeleteScene(scene) : undefined}
+                      onAssign={onAssignScene ? () => onAssignScene(scene) : undefined}
                     />
                   ))}
                   {totalScenes === 0 && (
@@ -283,6 +297,7 @@ export function StashSection({
                       key={idea.id}
                       idea={idea}
                       onClick={() => onIdeaClick?.(idea)}
+                      onDelete={onDeleteIdea ? () => onDeleteIdea(idea) : undefined}
                     />
                   ))}
                   {totalIdeas === 0 && (

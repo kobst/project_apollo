@@ -4,17 +4,27 @@
  */
 
 import type { OutlineIdea } from '../../api/types';
+import type { MergedOutlineIdea } from '../../utils/outlineMergeUtils';
 import styles from './UnassignedIdeaCard.module.css';
 
 interface UnassignedIdeaCardProps {
-  idea: OutlineIdea;
-  onClick?: () => void;
+  idea: OutlineIdea | MergedOutlineIdea;
+  onClick?: (() => void) | undefined;
+  onDelete?: (() => void) | undefined;
 }
 
 export function UnassignedIdeaCard({
   idea,
   onClick,
+  onDelete,
 }: UnassignedIdeaCardProps) {
+  const isProposed = '_isProposed' in idea && idea._isProposed;
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete?.();
+  };
+
   return (
     <div
       className={styles.container}
@@ -28,6 +38,17 @@ export function UnassignedIdeaCard({
           &#x1F4A1;
         </span>
         <span className={styles.title}>{idea.title}</span>
+        {!isProposed && onDelete && (
+          <button
+            className={styles.deleteBtn}
+            onClick={handleDeleteClick}
+            type="button"
+            title="Delete idea"
+            aria-label="Delete idea"
+          >
+            &times;
+          </button>
+        )}
       </div>
 
       <div className={styles.description}>
@@ -35,10 +56,17 @@ export function UnassignedIdeaCard({
       </div>
 
       <div className={styles.meta}>
-        <span className={`${styles.badge} ${styles[`source_${idea.source}`]}`}>
-          {idea.source}
-        </span>
-        {idea.suggestedType && (
+        {'source' in idea && idea.source && (
+          <span className={`${styles.badge} ${styles[`source_${idea.source}`]}`}>
+            {idea.source}
+          </span>
+        )}
+        {'category' in idea && idea.category && (
+          <span className={styles.badge}>
+            {idea.category}
+          </span>
+        )}
+        {'suggestedType' in idea && idea.suggestedType && (
           <span className={`${styles.badge} ${styles.suggestedType}`}>
             → {idea.suggestedType}
           </span>

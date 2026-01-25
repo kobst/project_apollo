@@ -3,7 +3,7 @@ import type { OutlineStoryBeat, CreateStoryBeatRequest } from '../../api/types';
 import type { MergedOutlineBeat, MergedOutlineStoryBeat } from '../../utils/outlineMergeUtils';
 import { useStory } from '../../context/StoryContext';
 import { useStoryBeats } from '../../hooks/useStoryBeats';
-import { useEdit } from '../workspace/StructureBoard';
+import { useStructureEdit } from '../workspace/StructureSection';
 import { SceneCard } from './SceneCard';
 import { ProposedStoryBeatCard } from './ProposedStoryBeatCard';
 import { EmptyBeatSlot } from './EmptyBeatSlot';
@@ -28,7 +28,7 @@ function formatBeatType(beatType: string): string {
 
 // Render a single StoryBeat with its nested scenes (existing nodes only)
 function StoryBeatContainer({ pp, beatId }: { pp: MergedOutlineStoryBeat; beatId: string }) {
-  const { onEditStoryBeat } = useEdit();
+  const { onEditStoryBeat } = useStructureEdit();
   const hasScenes = pp.scenes.length > 0;
 
   const handleClick = () => {
@@ -47,10 +47,12 @@ function StoryBeatContainer({ pp, beatId }: { pp: MergedOutlineStoryBeat; beatId
       <div className={styles.nestedScenes}>
         {hasScenes ? (
           pp.scenes.map((scene) => (
-            <SceneCard key={scene.id} scene={scene} beatId={beatId} />
+            <SceneCard key={scene.id} scene={scene} beatId={beatId} parentStoryBeatId={pp.id} />
           ))
         ) : (
-          <div className={styles.emptyStoryBeat}>No scenes yet</div>
+          <div className={styles.emptyStoryBeat}>
+            No scenes yet
+          </div>
         )}
       </div>
     </div>
