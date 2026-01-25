@@ -64,6 +64,12 @@ export interface GenerationResult {
 /**
  * A complete, self-contained set of proposed changes.
  * Ready to be applied to the story graph.
+ *
+ * Supports two structures:
+ * 1. Legacy: Uses `changes` object with nodes/edges arrays
+ * 2. Enhanced: Uses `primary`/`supporting`/`suggestions` for categorized output
+ *
+ * The `packageToPatch` function handles both structures.
  */
 export interface NarrativePackage {
   /** Unique identifier for this package */
@@ -84,7 +90,7 @@ export interface NarrativePackage {
   /** Style/thematic tags for categorization */
   style_tags: string[];
 
-  /** All changes included in this package */
+  /** All changes included in this package (legacy structure) */
   changes: {
     /** Story Context modifications */
     storyContext?: StoryContextChange[];
@@ -93,6 +99,17 @@ export interface NarrativePackage {
     /** Edge additions/deletions */
     edges: EdgeChange[];
   };
+
+  // === Enhanced Structure (optional, takes precedence if present) ===
+
+  /** Primary output - the main generated content (enhanced structure) */
+  primary?: PrimaryOutput;
+
+  /** Supporting output - auxiliary content like Characters, Locations (enhanced structure) */
+  supporting?: SupportingOutput;
+
+  /** Suggestions - lightweight ideas and hints (enhanced structure) */
+  suggestions?: PackageSuggestions;
 
   /** Pre-computed impact analysis */
   impact: {
@@ -405,5 +422,277 @@ export interface ProposeResponse {
     summary: string;
     confidence: number;
     alternatives?: Array<{ summary: string; confidence: number }>;
+  };
+}
+
+// =============================================================================
+// Unified Generation API Types
+// =============================================================================
+
+/**
+ * Expansion scope controls how much supporting content is generated.
+ * - 'constrained': Only primary output type, no supporting nodes
+ * - 'flexible': Primary output with supporting Characters, Locations, etc.
+ */
+export type ExpansionScope = 'constrained' | 'flexible';
+
+/**
+ * Story context section identifiers.
+ */
+export type ContextSection = 'themes' | 'conflicts' | 'motifs' | 'tone' | 'constraints';
+
+/**
+ * Context additions suggested by generation.
+ * These are lightweight suggestions for Story Context updates.
+ */
+export interface ContextAddition {
+  /** Unique identifier */
+  id: string;
+  /** Which Story Context section to add to */
+  section: ContextSection;
+  /** Content to add */
+  content: string;
+  /** Action is always 'append' for now */
+  action: 'append';
+}
+
+/**
+ * Stashed ideas are lightweight notes, not full graph nodes.
+ * Used for capturing ideas that may be developed later.
+ */
+export interface StashedIdea {
+  /** Unique identifier */
+  id: string;
+  /** The idea content */
+  content: string;
+  /** Category for organizing ideas */
+  category: 'character' | 'plot' | 'scene' | 'worldbuilding' | 'general';
+  /** Optional references to related nodes */
+  relatedNodeIds?: string[];
+}
+
+/**
+ * Lightweight hint for a potential StoryBeat.
+ * Generated as suggestions, not full nodes.
+ */
+export interface StoryBeatHint {
+  /** Suggested title for the story beat */
+  title: string;
+  /** Brief summary of what could happen */
+  summary: string;
+  /** Suggested beat type alignment (e.g., 'Catalyst', 'Midpoint') */
+  suggestedBeat?: string;
+  /** Suggested act placement */
+  act?: 1 | 2 | 3 | 4 | 5;
+}
+
+/**
+ * Character generation focus options.
+ */
+export type CharacterFocus =
+  | 'develop_existing'
+  | 'new_protagonist'
+  | 'new_antagonist'
+  | 'new_supporting'
+  | 'fill_gaps';
+
+/**
+ * Summary of an existing character for response metadata.
+ */
+export interface CharacterSummary {
+  /** Character node ID */
+  id: string;
+  /** Character name */
+  name: string;
+  /** Character archetype if defined */
+  archetype?: string;
+  /** Number of scenes featuring this character */
+  sceneCount: number;
+}
+
+/**
+ * Information about a validated StoryBeat for scene generation.
+ */
+export interface ValidatedBeatInfo {
+  /** StoryBeat node ID */
+  storyBeatId: string;
+  /** StoryBeat title */
+  title: string;
+  /** Beat type it aligns with */
+  alignedTo: string;
+}
+
+/**
+ * Information about a rejected StoryBeat for scene generation.
+ */
+export interface RejectedBeatInfo {
+  /** StoryBeat node ID that was rejected */
+  storyBeatId: string;
+  /** Reason for rejection */
+  reason: 'not_found' | 'not_committed' | 'already_has_scenes';
+}
+
+/**
+ * Target for expand operations.
+ */
+export type ExpandTarget =
+  | { type: 'node'; nodeId: string }
+  | { type: 'story-context' }
+  | { type: 'story-context-section'; section: ContextSection };
+
+/**
+ * Common parameters shared across all generation endpoints.
+ */
+export interface CommonGenerationParams {
+  /** User guidance for generation */
+  direction?: string;
+  /** Number of package alternatives to generate */
+  packageCount?: number;
+  /** Creativity level 0-1 */
+  creativity?: number;
+  /** Expansion scope for supporting content */
+  expansionScope?: ExpansionScope;
+}
+
+// =============================================================================
+// Enhanced NarrativePackage Structure
+// =============================================================================
+
+/**
+ * Primary output type indicator for categorized packages.
+ */
+export type PrimaryOutputType = 'StoryBeat' | 'Character' | 'Scene' | 'Mixed';
+
+/**
+ * Primary output section of a NarrativePackage.
+ * Contains the main generated content.
+ */
+export interface PrimaryOutput {
+  /** Type of primary output */
+  type: PrimaryOutputType;
+  /** Primary node changes */
+  nodes: NodeChange[];
+  /** Primary edge changes */
+  edges: EdgeChange[];
+}
+
+/**
+ * Supporting output section of a NarrativePackage.
+ * Contains auxiliary content like new Characters, Locations.
+ */
+export interface SupportingOutput {
+  /** Supporting node changes (Characters, Locations, Objects) */
+  nodes: NodeChange[];
+  /** Supporting edge changes */
+  edges: EdgeChange[];
+}
+
+/**
+ * Suggestions section of a NarrativePackage.
+ * Contains lightweight suggestions that aren't full graph changes.
+ */
+export interface PackageSuggestions {
+  /** Suggested Story Context additions */
+  contextAdditions?: ContextAddition[];
+  /** Ideas to stash for later */
+  stashedIdeas?: StashedIdea[];
+  /** Hints for potential StoryBeats */
+  storyBeatHints?: StoryBeatHint[];
+}
+
+// =============================================================================
+// Endpoint-Specific Request/Response Types
+// =============================================================================
+
+/**
+ * Request for POST /propose/story-beats (enhanced).
+ */
+export interface ProposeStoryBeatsRequest extends CommonGenerationParams {
+  /** Beat IDs or BeatTypes to prioritize */
+  priorityBeats?: string[];
+  /** Max StoryBeats per package */
+  maxStoryBeatsPerPackage?: number;
+  /** Target specific act */
+  targetAct?: 1 | 2 | 3 | 4 | 5;
+}
+
+/**
+ * Request for POST /propose/characters.
+ */
+export interface ProposeCharactersRequest extends CommonGenerationParams {
+  /** Character generation focus */
+  focus: CharacterFocus;
+  /** Existing character ID for 'develop_existing' focus */
+  characterId?: string;
+  /** Whether to include character arcs */
+  includeArcs?: boolean;
+  /** Max characters per package */
+  maxCharactersPerPackage?: number;
+}
+
+/**
+ * Response for POST /propose/characters.
+ */
+export interface ProposeCharactersResponse {
+  /** Session ID for the generated packages */
+  sessionId: string;
+  /** Generated packages */
+  packages: NarrativePackage[];
+  /** Summary of existing characters for reference */
+  existingCharacters: CharacterSummary[];
+}
+
+/**
+ * Request for POST /propose/scenes.
+ */
+export interface ProposeScenesRequest extends CommonGenerationParams {
+  /** StoryBeat IDs to generate scenes for (must be committed) */
+  storyBeatIds: string[];
+  /** Number of scenes per StoryBeat */
+  scenesPerBeat?: number;
+  /** Max scenes per package */
+  maxScenesPerPackage?: number;
+}
+
+/**
+ * Response for POST /propose/scenes.
+ */
+export interface ProposeScenesResponse {
+  /** Session ID for the generated packages */
+  sessionId: string;
+  /** Generated packages */
+  packages: NarrativePackage[];
+  /** StoryBeats that were validated and used */
+  validatedBeats: ValidatedBeatInfo[];
+  /** StoryBeats that were rejected with reasons */
+  rejectedBeats: RejectedBeatInfo[];
+}
+
+/**
+ * Request for POST /propose/expand.
+ */
+export interface ProposeExpandRequest extends CommonGenerationParams {
+  /** Target to expand */
+  target: ExpandTarget;
+  /** Depth of expansion */
+  depth?: 'surface' | 'deep';
+  /** Max nodes per package */
+  maxNodesPerPackage?: number;
+}
+
+/**
+ * Response for POST /propose/expand.
+ */
+export interface ProposeExpandResponse {
+  /** Session ID for the generated packages */
+  sessionId: string;
+  /** Generated packages */
+  packages: NarrativePackage[];
+  /** Information about what was expanded */
+  expandedTarget: {
+    type: 'node' | 'story-context';
+    nodeId?: string;
+    nodeType?: string;
+    section?: ContextSection;
   };
 }

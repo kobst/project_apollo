@@ -6,6 +6,7 @@
  */
 
 import type { MissingBeatInfo } from '../../coverage/types.js';
+import type { ExpansionScope } from '../types.js';
 
 // =============================================================================
 // Types
@@ -33,6 +34,10 @@ export interface StoryBeatPromptParams {
   direction?: string;
   /** Creativity level (0-1) */
   creativity: number;
+  /** Expansion scope for supporting content (default: 'flexible') */
+  expansionScope?: ExpansionScope;
+  /** Target specific act for generation */
+  targetAct?: 1 | 2 | 3 | 4 | 5;
 }
 
 // =============================================================================
@@ -43,10 +48,11 @@ export interface StoryBeatPromptParams {
  * Build the StoryBeat generation prompt for the LLM.
  *
  * This prompt is designed to:
- * 1. Generate ONLY StoryBeat nodes (no Scene, Character, Location, Object)
+ * 1. Generate ONLY StoryBeat nodes (no Scene, Character, Location, Object) in primary
  * 2. Each StoryBeat MUST have an ALIGNS_WITH edge to a Beat
  * 3. StoryBeats MAY have PRECEDES edges for causal ordering
  * 4. Priority beats are emphasized for inclusion
+ * 5. When flexible: may include supporting Characters/Locations in supporting section
  *
  * @param params - StoryBeat generation parameters
  * @returns Complete prompt string
@@ -62,26 +68,47 @@ export function buildStoryBeatPrompt(params: StoryBeatPromptParams): string {
     maxStoryBeatsPerPackage,
     direction,
     creativity,
+    expansionScope = 'flexible',
+    targetAct,
   } = params;
 
   const creativityLabel = creativity < 0.3 ? 'conservative' : creativity > 0.7 ? 'creative' : 'balanced';
-  const missingBeatsText = formatMissingBeats(missingBeats);
-  const priorityBeatsText = formatPriorityBeats(priorityBeats, missingBeats);
+  const isConstrained = expansionScope === 'constrained';
+
+  // Filter missing beats by target act if specified
+  const filteredMissingBeats = targetAct
+    ? missingBeats.filter((b) => b.act === targetAct)
+    : missingBeats;
+
+  const missingBeatsText = formatMissingBeats(filteredMissingBeats);
+  const priorityBeatsText = formatPriorityBeats(priorityBeats, filteredMissingBeats);
+
+  const supportingSection = isConstrained ? '' : `
+## Supporting Content (Optional)
+
+When expansionScope is "flexible", you MAY include supporting nodes in the "supporting" section:
+- **Character nodes**: New characters referenced in StoryBeats
+- **Location nodes**: New locations mentioned in StoryBeats
+
+Supporting nodes should only be created if they are essential to understanding the StoryBeats.
+`;
+
+  const outputSchema = isConstrained ? getConstrainedSchema() : getFlexibleSchema();
 
   return `You are a story structure specialist generating StoryBeat nodes to fill structural gaps.
 
 ## CRITICAL CONSTRAINTS - MUST FOLLOW
 
 **STRICT OUTPUT RULES:**
-1. Output ONLY StoryBeat nodes. NO Scene, Character, Location, or Object nodes.
+1. PRIMARY section: ONLY StoryBeat nodes. NO Scene, Character, Location, or Object nodes in primary.
 2. Each StoryBeat MUST have exactly one ALIGNS_WITH edge to a Beat node.
 3. StoryBeats MAY have PRECEDES edges to other StoryBeats for causal ordering.
-4. NO other edge types are allowed (no HAS_CHARACTER, LOCATED_AT, FEATURES_OBJECT, etc.)
+${isConstrained ? '4. NO supporting content - only StoryBeats in primary.' : '4. SUPPORTING section: MAY include Character or Location nodes if needed.'}
 5. You MUST generate exactly ${packageCount} packages. Not fewer, not more.
 
-**VALID EDGE TYPES (only these are allowed):**
-- ALIGNS_WITH: StoryBeat \u2192 Beat (REQUIRED for each StoryBeat)
-- PRECEDES: StoryBeat \u2192 StoryBeat (optional, for causal ordering)
+**VALID EDGE TYPES:**
+- PRIMARY: ALIGNS_WITH (StoryBeat -> Beat, REQUIRED), PRECEDES (StoryBeat -> StoryBeat, optional)
+${isConstrained ? '' : '- SUPPORTING: FEATURES_CHARACTER (StoryBeat -> Character), LOCATED_AT (Scene -> Location)'}
 
 ## Story Context
 
@@ -90,7 +117,7 @@ ${storyContext}
 ## Missing Beats (Opportunities)
 
 These are structural beats that currently have no StoryBeat aligned to them.
-They are sorted by position in the story structure.
+${targetAct ? `**Filtered to Act ${targetAct} only.**` : 'They are sorted by position in the story structure.'}
 
 ${missingBeatsText}
 
@@ -100,26 +127,35 @@ ${priorityBeatsText}
 
 ${existingStoryBeats || '[No existing StoryBeats]'}
 
-## Key Characters (for reference only - do NOT create Character nodes)
+## Key Characters (for reference only${isConstrained ? ' - do NOT create Character nodes' : ''})
 
 ${characters || '[No characters defined yet]'}
 
 ${direction ? `## User Direction\n\n"${direction}"\n` : ''}
-
+${supportingSection}
 ## Generation Settings
 
 - **Creativity Level**: ${creativityLabel} (${creativity})
+- **Expansion Scope**: ${expansionScope}
 - **Packages to Generate**: ${packageCount}
 - **Max StoryBeats per Package**: ${maxStoryBeatsPerPackage}
+${targetAct ? `- **Target Act**: Act ${targetAct}` : ''}
 
 ## StoryBeat Node Schema
 
-Each StoryBeat node must have these fields:
-- **title**: Short descriptive title (e.g., "Marcus discovers the truth")
-- **summary**: 1-2 sentence description of what happens in this story beat
-- **intent**: One of "plot" | "character" | "tone" - what this beat primarily advances
-- **priority**: "low" | "medium" | "high" - importance to the story
-- **stakes_change**: "raise" | "lower" | "maintain" - how stakes change
+**IMPORTANT: ALL fields below are REQUIRED. Do not leave any field empty.**
+
+Each StoryBeat node MUST have these fields with meaningful content:
+- **title**: Short, evocative title capturing the beat's essence (e.g., "Marcus discovers the truth about his partner")
+- **summary**: 2-3 sentences describing what happens, who is involved, and why it matters. This should give enough context to understand the beat without reading scenes. Include emotional stakes and character motivations.
+- **intent**: One of "plot" | "character" | "tone" - the primary story function
+- **priority**: "low" | "medium" | "high" - how essential to the core narrative
+- **stakes_change**: "raise" | "lower" | "maintain" - how tension/stakes shift
+- **urgency**: "low" | "medium" | "high" - how soon this needs to happen in the story
+
+**Summary Quality Guidelines:**
+- BAD: "They meet and talk" (too vague)
+- GOOD: "Marcus confronts his partner in the precinct parking lot, demanding to know why evidence went missing. The confrontation reveals Marcus's deepening paranoia and sets up the partnership's eventual fracture."
 
 ## Output Format
 
@@ -133,26 +169,48 @@ Each StoryBeat node must have these fields:
 
 Schema:
 
-\`\`\`json
+${outputSchema}
+
+## Guidelines
+
+1. **Priority Beats**: At least one package SHOULD address each priority beat if possible
+2. **Variety**: Each package should take a meaningfully different approach
+3. **Coherence**: StoryBeats should fit the story's themes and existing content
+4. **Causal Flow**: Use PRECEDES edges when one story beat naturally leads to another
+${isConstrained ? '5. **No Supporting Nodes**: Do NOT create any supporting nodes' : '5. **Supporting Nodes**: Only include Characters/Locations if essential to the StoryBeats'}
+6. **IDs**: Use format \`storybeat_{timestamp}_{5chars}\` for new StoryBeat IDs
+
+**REMINDER: Primary section = StoryBeat nodes only. ${isConstrained ? 'No supporting content.' : 'Supporting section for Character/Location if needed.'}**
+
+Output ONLY the JSON object, no markdown code blocks, no explanation.`;
+}
+
+/**
+ * Get the constrained output schema (StoryBeats only).
+ */
+function getConstrainedSchema(): string {
+  return `\`\`\`json
 {
   "packages": [
     {
       "id": "pkg_12345_abc",
       "title": "Short descriptive title",
-      "rationale": "Why this package makes sense for the story",
+      "summary": "Why this package makes sense for the story",
       "confidence": 0.85,
       "style_tags": ["dramatic", "revelation"],
-      "changes": {
+      "primary": {
+        "type": "StoryBeat",
         "nodes": [
           {
             "operation": "add",
             "node_type": "StoryBeat",
             "node_id": "storybeat_12345_xyz",
             "data": {
-              "title": "Marcus discovers the truth",
-              "summary": "Marcus finds evidence that reveals the conspiracy.",
+              "title": "Marcus discovers the truth about his partner",
+              "summary": "Marcus finds hidden financial records in his partner's desk that prove a connection to the crime syndicate. This discovery shatters his trust and forces him to question every case they've worked together. The revelation transforms Marcus from investigator to target.",
               "intent": "plot",
               "priority": "high",
+              "urgency": "high",
               "stakes_change": "raise"
             }
           }
@@ -163,12 +221,6 @@ Schema:
             "edge_type": "ALIGNS_WITH",
             "from": "storybeat_12345_xyz",
             "to": "beat_Midpoint"
-          },
-          {
-            "operation": "add",
-            "edge_type": "PRECEDES",
-            "from": "storybeat_12345_xyz",
-            "to": "storybeat_existing_123"
           }
         ]
       },
@@ -180,20 +232,82 @@ Schema:
     }
   ]
 }
-\`\`\`
+\`\`\``;
+}
 
-## Guidelines
-
-1. **Priority Beats**: At least one package SHOULD address each priority beat if possible
-2. **Variety**: Each package should take a meaningfully different approach
-3. **Coherence**: StoryBeats should fit the story's themes and existing content
-4. **Causal Flow**: Use PRECEDES edges when one story beat naturally leads to another
-5. **No Supporting Nodes**: Do NOT create Character, Location, or Scene nodes - only reference existing ones in descriptions
-6. **IDs**: Use format \`storybeat_{timestamp}_{5chars}\` for new StoryBeat IDs
-
-**REMINDER: Only StoryBeat nodes and ALIGNS_WITH/PRECEDES edges are allowed.**
-
-Output ONLY the JSON object, no markdown code blocks, no explanation.`;
+/**
+ * Get the flexible output schema (StoryBeats + supporting content).
+ */
+function getFlexibleSchema(): string {
+  return `\`\`\`json
+{
+  "packages": [
+    {
+      "id": "pkg_12345_abc",
+      "title": "Short descriptive title",
+      "summary": "Why this package makes sense for the story",
+      "confidence": 0.85,
+      "style_tags": ["dramatic", "revelation"],
+      "primary": {
+        "type": "StoryBeat",
+        "nodes": [
+          {
+            "operation": "add",
+            "node_type": "StoryBeat",
+            "node_id": "storybeat_12345_xyz",
+            "data": {
+              "title": "Marcus discovers the truth about his partner",
+              "summary": "Marcus finds hidden financial records in his partner's desk that prove a connection to the crime syndicate. This discovery shatters his trust and forces him to question every case they've worked together. The revelation transforms Marcus from investigator to target.",
+              "intent": "plot",
+              "priority": "high",
+              "urgency": "high",
+              "stakes_change": "raise"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "operation": "add",
+            "edge_type": "ALIGNS_WITH",
+            "from": "storybeat_12345_xyz",
+            "to": "beat_Midpoint"
+          }
+        ]
+      },
+      "supporting": {
+        "nodes": [
+          {
+            "operation": "add",
+            "node_type": "Character",
+            "node_id": "char_12345_abc",
+            "data": {
+              "name": "The Informant",
+              "archetype": "Ally",
+              "description": "A mysterious figure who aids Marcus"
+            }
+          }
+        ],
+        "edges": []
+      },
+      "suggestions": {
+        "contextAdditions": [
+          {
+            "id": "ctx_12345",
+            "section": "conflicts",
+            "content": "Marcus's discovery puts him at odds with those he trusted",
+            "action": "append"
+          }
+        ]
+      },
+      "impact": {
+        "fulfills_gaps": ["derived_missing_beat_Midpoint"],
+        "creates_gaps": [],
+        "conflicts": []
+      }
+    }
+  ]
+}
+\`\`\``;
 }
 
 // =============================================================================

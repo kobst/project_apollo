@@ -89,6 +89,12 @@ export {
   createRefineProposalHandler,
   // StoryBeat-only generation
   createProposeStoryBeatsHandler,
+  // Character-focused generation
+  createProposeCharactersHandler,
+  // Scene-focused generation
+  createProposeScenesHandler,
+  // Expand-focused generation
+  createProposeExpandHandler,
 } from './generate.js';
 export {
   createListSavedPackagesHandler,

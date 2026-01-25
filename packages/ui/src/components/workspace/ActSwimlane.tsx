@@ -92,6 +92,15 @@ export function ActSwimlane({
   // Check if selected beat is empty
   const selectedBeatIsEmpty = selectedBeat ? selectedBeat.storyBeats.length === 0 : false;
 
+  // Get story beats to display: if a beat is selected, show only its story beats
+  // Otherwise show all story beats in the act
+  const displayedStoryBeats = useMemo(() => {
+    if (selectedBeat) {
+      return selectedBeat.storyBeats;
+    }
+    return storyBeats;
+  }, [selectedBeat, storyBeats]);
+
   const handleBeatClick = useCallback((beatId: string) => {
     const beat = act.beats.find(b => b.id === beatId);
     if (!beat) return;
@@ -149,6 +158,7 @@ export function ActSwimlane({
             beats={act.beats}
             selectedBeatId={selectedBeatId}
             onBeatClick={handleBeatClick}
+            onClearSelection={handleClearSelection}
           />
 
           {/* Empty beat card - shown when an empty beat is selected */}
@@ -196,24 +206,58 @@ export function ActSwimlane({
           {!selectedBeatIsEmpty && (
             <>
               <div className={styles.storyBeats}>
-                {storyBeats.length === 0 ? (
-                  <div className={styles.emptyState}>
-                    <p>No story beats in this act yet.</p>
-                    <p className={styles.hint}>Click a beat in the timeline above to add a story beat.</p>
-                  </div>
+                {selectedBeat ? (
+                  // When a beat is selected, show only its story beats
+                  displayedStoryBeats.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <p>No story beats aligned to this beat.</p>
+                      <p className={styles.hint}>Click a beat in the timeline above to add a story beat.</p>
+                    </div>
+                  ) : (
+                    displayedStoryBeats.map((pp) => (
+                      <StoryBeatSwimlane
+                        key={pp.id}
+                        storyBeat={pp}
+                        onEditStoryBeat={onEditStoryBeat ? () => onEditStoryBeat(pp) : undefined}
+                        onEditScene={onEditScene ? (scene) => onEditScene(scene, pp.id) : undefined}
+                        onAddScene={onAddScene}
+                        onEditProposed={onEditProposed}
+                        onRemoveProposed={pp._operation === 'add' ? onRemoveProposed : undefined}
+                        isRemoved={removedNodeIds?.has(pp.id)}
+                      />
+                    ))
+                  )
                 ) : (
-                  storyBeats.map((pp) => (
-                    <StoryBeatSwimlane
-                      key={pp.id}
-                      storyBeat={pp}
-                      onEditStoryBeat={onEditStoryBeat ? () => onEditStoryBeat(pp) : undefined}
-                      onEditScene={onEditScene ? (scene) => onEditScene(scene, pp.id) : undefined}
-                      onAddScene={onAddScene}
-                      onEditProposed={onEditProposed}
-                      onRemoveProposed={pp._operation === 'add' ? onRemoveProposed : undefined}
-                      isRemoved={removedNodeIds?.has(pp.id)}
-                    />
-                  ))
+                  // When no beat is selected, show story beats grouped by beat
+                  storyBeats.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <p>No story beats in this act yet.</p>
+                      <p className={styles.hint}>Click a beat in the timeline above to add a story beat.</p>
+                    </div>
+                  ) : (
+                    act.beats.filter(beat => beat.storyBeats.length > 0).map((beat) => (
+                      <div key={beat.id} className={styles.beatGroup}>
+                        <div className={styles.beatGroupHeader}>
+                          <span className={styles.beatGroupTitle}>{formatBeatType(beat.beatType)}</span>
+                          <span className={styles.beatGroupCount}>
+                            {beat.storyBeats.length} story beat{beat.storyBeats.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        {beat.storyBeats.map((pp) => (
+                          <StoryBeatSwimlane
+                            key={pp.id}
+                            storyBeat={pp}
+                            onEditStoryBeat={onEditStoryBeat ? () => onEditStoryBeat(pp) : undefined}
+                            onEditScene={onEditScene ? (scene) => onEditScene(scene, pp.id) : undefined}
+                            onAddScene={onAddScene}
+                            onEditProposed={onEditProposed}
+                            onRemoveProposed={pp._operation === 'add' ? onRemoveProposed : undefined}
+                            isRemoved={removedNodeIds?.has(pp.id)}
+                          />
+                        ))}
+                      </div>
+                    ))
+                  )
                 )}
               </div>
 

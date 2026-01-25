@@ -11,6 +11,7 @@ interface BeatTimelineProps {
   beats: MergedOutlineBeat[];
   selectedBeatId?: string | null;
   onBeatClick?: (beatId: string) => void;
+  onClearSelection?: () => void;
 }
 
 // Format beat type for display (e.g., "FunAndGames" -> "Fun & Games")
@@ -32,9 +33,20 @@ function beatHasProposed(beat: MergedOutlineBeat): boolean {
   return beat.storyBeats.some(pp => pp._isProposed || pp.scenes.some(s => s._isProposed));
 }
 
-export function BeatTimeline({ beats, selectedBeatId, onBeatClick }: BeatTimelineProps) {
+export function BeatTimeline({ beats, selectedBeatId, onBeatClick, onClearSelection }: BeatTimelineProps) {
   return (
     <div className={styles.container}>
+      {/* Show All button when a beat is selected */}
+      {selectedBeatId && onClearSelection && (
+        <button
+          type="button"
+          className={styles.showAllBtn}
+          onClick={onClearSelection}
+        >
+          ← Show All
+        </button>
+      )}
+
       <div className={styles.timeline}>
         {beats.map((beat, index) => {
           const hasContent = beatHasContent(beat);

@@ -431,6 +431,8 @@ export interface GenreTone extends BaseNode {
  */
 export type IdeaSource = 'user' | 'ai';
 export type IdeaSuggestedType = 'StoryBeat' | 'Scene' | 'Character' | 'Location' | 'Object';
+export type IdeaStatus = 'active' | 'promoted' | 'dismissed';
+export type IdeaCategory = 'character' | 'plot' | 'scene' | 'worldbuilding' | 'general';
 
 export interface Idea extends BaseNode {
   type: 'Idea';
@@ -442,6 +444,14 @@ export interface Idea extends BaseNode {
   source: IdeaSource;
   /** What it might become when promoted */
   suggestedType?: IdeaSuggestedType;
+  /** Lifecycle status (defaults to 'active') */
+  status?: IdeaStatus;
+  /** Category for organization */
+  category?: IdeaCategory;
+  /** If created from AI generation, the source package ID */
+  sourcePackageId?: string;
+  /** Related node IDs (optional, for context) */
+  relatedNodeIds?: string[];
   /** ISO timestamp of creation */
   createdAt: string;
 }

@@ -284,6 +284,9 @@ function validateGenerationSchema(data: unknown): void {
 
 /**
  * Validate a single package schema.
+ *
+ * Expected format:
+ * { summary, primary: { nodes, edges }, supporting?, suggestions?, impact? }
  */
 function validatePackageSchema(pkg: unknown, index: number): void {
   if (typeof pkg !== 'object' || pkg === null) {
@@ -299,13 +302,13 @@ function validatePackageSchema(pkg: unknown, index: number): void {
   if (typeof p.title !== 'string') {
     throw new ParseError(`Package ${index} missing title`, pkg);
   }
-  if (typeof p.rationale !== 'string') {
-    throw new ParseError(`Package ${index} missing rationale`, pkg);
+  if (typeof p.summary !== 'string') {
+    throw new ParseError(`Package ${index} missing summary`, pkg);
   }
 
-  // Changes structure
-  if (!p.changes || typeof p.changes !== 'object') {
-    throw new ParseError(`Package ${index} missing changes`, pkg);
+  // Primary structure required
+  if (!p.primary || typeof p.primary !== 'object') {
+    throw new ParseError(`Package ${index} missing primary`, pkg);
   }
 }
 
@@ -315,18 +318,25 @@ function validatePackageSchema(pkg: unknown, index: number): void {
 
 /**
  * Normalize a package from raw LLM output.
+ *
+ * Expected format: { summary, primary, supporting?, suggestions?, impact? }
  */
 function normalizePackage(pkg: Record<string, unknown>): NarrativePackage {
-  const changes = pkg.changes as Record<string, unknown> | undefined;
   const impact = pkg.impact as Record<string, unknown> | undefined;
+  const primary = pkg.primary as Record<string, unknown> | undefined;
+  const supporting = pkg.supporting as Record<string, unknown> | undefined;
+  const suggestions = pkg.suggestions as Record<string, unknown> | undefined;
+
+  // Merge primary + supporting into changes
+  const changes = normalizePrimarySupporting(primary, supporting, suggestions);
 
   const result: NarrativePackage = {
     id: String(pkg.id),
     title: String(pkg.title),
-    rationale: String(pkg.rationale),
+    rationale: String(pkg.summary), // Use 'summary' field as rationale
     confidence: normalizeConfidence(pkg.confidence),
     style_tags: normalizeStringArray(pkg.style_tags),
-    changes: normalizeChanges(changes),
+    changes,
     impact: normalizeImpact(impact),
   };
 
@@ -336,6 +346,61 @@ function normalizePackage(pkg: Record<string, unknown>): NarrativePackage {
   }
   if (typeof pkg.refinement_prompt === 'string') {
     result.refinement_prompt = pkg.refinement_prompt;
+  }
+
+  return result;
+}
+
+/**
+ * Normalize primary + supporting sections into unified changes structure.
+ */
+function normalizePrimarySupporting(
+  primary: Record<string, unknown> | undefined,
+  supporting: Record<string, unknown> | undefined,
+  suggestions: Record<string, unknown> | undefined
+): {
+  storyContext?: StoryContextChange[];
+  nodes: NodeChange[];
+  edges: EdgeChange[];
+} {
+  const nodes: NodeChange[] = [];
+  const edges: EdgeChange[] = [];
+
+  // Add primary nodes/edges
+  if (primary) {
+    if (Array.isArray(primary.nodes)) {
+      nodes.push(...(primary.nodes as NodeChange[]));
+    }
+    if (Array.isArray(primary.edges)) {
+      edges.push(...(primary.edges as EdgeChange[]));
+    }
+  }
+
+  // Add supporting nodes/edges
+  if (supporting) {
+    if (Array.isArray(supporting.nodes)) {
+      nodes.push(...(supporting.nodes as NodeChange[]));
+    }
+    if (Array.isArray(supporting.edges)) {
+      edges.push(...(supporting.edges as EdgeChange[]));
+    }
+  }
+
+  const result: {
+    storyContext?: StoryContextChange[];
+    nodes: NodeChange[];
+    edges: EdgeChange[];
+  } = { nodes, edges };
+
+  // Handle suggestions.contextAdditions -> storyContext
+  if (suggestions && Array.isArray(suggestions.contextAdditions)) {
+    result.storyContext = (suggestions.contextAdditions as Array<Record<string, unknown>>).map(
+      (ctx) => ({
+        operation: (ctx.action as string) === 'append' ? 'add' : (ctx.action as string) ?? 'add',
+        section: ctx.section as string,
+        content: ctx.content as string,
+      } as StoryContextChange)
+    );
   }
 
   return result;
@@ -359,39 +424,6 @@ function normalizeStringArray(value: unknown): string[] {
     return value.filter((v) => typeof v === 'string');
   }
   return [];
-}
-
-/**
- * Normalize changes object.
- */
-function normalizeChanges(changes: Record<string, unknown> | undefined): {
-  storyContext?: StoryContextChange[];
-  nodes: NodeChange[];
-  edges: EdgeChange[];
-} {
-  if (!changes) {
-    return { nodes: [], edges: [] };
-  }
-
-  const result: {
-    storyContext?: StoryContextChange[];
-    nodes: NodeChange[];
-    edges: EdgeChange[];
-  } = {
-    nodes: Array.isArray(changes.nodes)
-      ? (changes.nodes as NodeChange[])
-      : [],
-    edges: Array.isArray(changes.edges)
-      ? (changes.edges as EdgeChange[])
-      : [],
-  };
-
-  // Only set storyContext if it exists and is an array
-  if (Array.isArray(changes.storyContext)) {
-    result.storyContext = changes.storyContext as StoryContextChange[];
-  }
-
-  return result;
 }
 
 /**

@@ -381,6 +381,7 @@ export function computeUnalignedBeats(graph: GraphState): MissingBeatInfo[] {
         beatType: beat.beat_type,
         act: beat.act,
         position: beat.position_index,
+        hasStoryBeat: false, // These are unaligned beats - no StoryBeat aligned
       });
     }
   }

@@ -48,6 +48,10 @@ export interface ProposeStoryBeatsRequest {
   direction?: string;
   /** Creativity level 0-1 (default: 0.5) */
   creativity?: number;
+  /** Expansion scope: 'constrained' (StoryBeats only) or 'flexible' (may include supporting) */
+  expansionScope?: ai.ExpansionScope;
+  /** Target specific act for generation */
+  targetAct?: 1 | 2 | 3 | 4 | 5;
 }
 
 export interface ProposeStoryBeatsResponse {
@@ -87,6 +91,8 @@ export async function proposeStoryBeats(
     maxStoryBeatsPerPackage = 5,
     direction,
     creativity = 0.5,
+    expansionScope = 'flexible',
+    targetAct,
   } = request;
 
   // 1. Load graph state
@@ -134,9 +140,13 @@ export async function proposeStoryBeats(
     packageCount,
     maxStoryBeatsPerPackage,
     creativity,
+    expansionScope,
   };
   if (direction) {
     promptParams.direction = direction;
+  }
+  if (targetAct) {
+    promptParams.targetAct = targetAct;
   }
 
   const prompt = ai.buildStoryBeatPrompt(promptParams);

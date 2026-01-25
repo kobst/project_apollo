@@ -121,9 +121,34 @@ export function StoryBeatSwimlane({
         </div>
       )}
 
-      {/* Expanded content - summary and scene grid */}
+      {/* Expanded content - summary and details */}
       {isExpanded && !isRemoved && (
         <div className={styles.expandedContent}>
+          {/* Summary */}
+          {storyBeat.summary && (
+            <p className={styles.summary}>{storyBeat.summary}</p>
+          )}
+
+          {/* Details row */}
+          <div className={styles.detailsRow}>
+            {storyBeat.priority && (
+              <span className={`${styles.detailBadge} ${styles[`priority${storyBeat.priority}`]}`}>
+                {storyBeat.priority} priority
+              </span>
+            )}
+            {storyBeat.stakesChange && (
+              <span className={`${styles.detailBadge} ${styles[`stakes${storyBeat.stakesChange}`]}`}>
+                stakes {storyBeat.stakesChange}
+              </span>
+            )}
+            {storyBeat.urgency && (
+              <span className={styles.detailBadge}>
+                {storyBeat.urgency} urgency
+              </span>
+            )}
+          </div>
+
+          {/* Previous data for modified nodes */}
           {storyBeat._previousData && (
             <div className={styles.previousData}>
               <span className={styles.previousLabel}>Previous:</span>

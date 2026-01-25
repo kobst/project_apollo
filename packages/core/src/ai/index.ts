@@ -92,6 +92,29 @@ export type {
   ProposeOptions,
   ProposeRequest,
   ProposeResponse,
+  // Unified Generation API types
+  ExpansionScope,
+  ContextSection,
+  ContextAddition,
+  StashedIdea,
+  StoryBeatHint,
+  CharacterFocus,
+  CharacterSummary,
+  ValidatedBeatInfo,
+  RejectedBeatInfo,
+  ExpandTarget,
+  CommonGenerationParams,
+  PrimaryOutputType,
+  PrimaryOutput,
+  SupportingOutput,
+  PackageSuggestions,
+  ProposeStoryBeatsRequest,
+  ProposeCharactersRequest,
+  ProposeCharactersResponse,
+  ProposeScenesRequest,
+  ProposeScenesResponse,
+  ProposeExpandRequest,
+  ProposeExpandResponse,
 } from './types.js';
 
 // =============================================================================
@@ -185,8 +208,11 @@ export {
   buildGenerationPrompt,
   buildRefinementPrompt,
   buildStoryBeatPrompt,
+  buildCharacterPrompt,
+  buildScenePrompt,
+  buildExpandPrompt,
 } from './prompts/index.js';
-export type { StoryBeatPromptParams } from './prompts/index.js';
+export type { StoryBeatPromptParams, CharacterPromptParams, ScenePromptParams, ExpandPromptParams } from './prompts/index.js';
 
 // =============================================================================
 // Text Similarity

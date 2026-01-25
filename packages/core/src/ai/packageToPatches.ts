@@ -3,11 +3,26 @@
  *
  * Converts NarrativePackage (AI output format) to Patch (graph mutation format).
  * Handles Story Context changes separately since they're metadata, not graph nodes.
+ *
+ * Supports two package structures:
+ * 1. Legacy: pkg.changes.nodes, pkg.changes.edges
+ * 2. Enhanced: pkg.primary.nodes + pkg.supporting?.nodes, etc.
+ *
+ * Also handles suggestions:
+ * - contextAdditions → Story Context updates
+ * - stashedIdeas → Idea node creation
  */
 
 import type { Patch, PatchOp, KGNode } from '../types/patch.js';
 import type { Edge } from '../types/edges.js';
-import type { NarrativePackage, StoryContextChange } from './types.js';
+import type { Idea } from '../types/nodes.js';
+import type {
+  NarrativePackage,
+  StoryContextChange,
+  NodeChange,
+  EdgeChange,
+  StashedIdea,
+} from './types.js';
 import { defaultIdGenerator } from './idGenerator.js';
 
 // =============================================================================
@@ -27,6 +42,8 @@ export interface ConversionResult {
     /** Changes that were applied */
     changes: StoryContextChange[];
   };
+  /** Idea nodes to create from stashed ideas */
+  ideasToCreate?: Idea[];
 }
 
 // =============================================================================
@@ -40,6 +57,14 @@ export interface ConversionResult {
  * to the graph using applyPatch(). Story Context changes are
  * returned separately since they update metadata, not the graph.
  *
+ * Supports two package structures:
+ * 1. Legacy: Uses pkg.changes.nodes, pkg.changes.edges
+ * 2. Enhanced: Uses pkg.primary.nodes + pkg.supporting?.nodes, etc.
+ *
+ * Also handles suggestions:
+ * - contextAdditions → Story Context updates (combined with storyContext changes)
+ * - stashedIdeas → Idea node creation (returned separately)
+ *
  * @param pkg - The NarrativePackage to convert
  * @param baseVersionId - The version ID this patch is based on
  * @param currentStoryContext - Current Story Context content (for modifications)
@@ -52,8 +77,28 @@ export function packageToPatch(
 ): ConversionResult {
   const ops: PatchOp[] = [];
 
+  // Collect all nodes and edges from either structure
+  const allNodes: NodeChange[] = [];
+  const allEdges: EdgeChange[] = [];
+
+  // Check if enhanced structure is present (primary takes precedence)
+  if (pkg.primary) {
+    // Enhanced structure: flatten primary + supporting
+    allNodes.push(...pkg.primary.nodes);
+    allEdges.push(...pkg.primary.edges);
+
+    if (pkg.supporting) {
+      allNodes.push(...pkg.supporting.nodes);
+      allEdges.push(...pkg.supporting.edges);
+    }
+  } else {
+    // Legacy structure: use changes directly
+    allNodes.push(...pkg.changes.nodes);
+    allEdges.push(...pkg.changes.edges);
+  }
+
   // Convert node changes
-  for (const change of pkg.changes.nodes) {
+  for (const change of allNodes) {
     if (change.operation === 'add') {
       // Build the node object with required fields
       // The LLM output validation ensures required fields are present
@@ -83,7 +128,7 @@ export function packageToPatch(
   }
 
   // Convert edge changes
-  for (const edge of pkg.changes.edges) {
+  for (const edge of allEdges) {
     if (edge.operation === 'add') {
       const edgeData: Partial<Edge> = {
         id: defaultIdGenerator('edge'),
@@ -130,21 +175,87 @@ export function packageToPatch(
     },
   };
 
-  // Handle Story Context changes separately (not part of graph patch)
+  const result: ConversionResult = { patch };
+
+  // Handle Story Context changes
+  // Collect from both legacy storyContext and enhanced contextAdditions
+  const storyContextChanges: StoryContextChange[] = [];
+
+  // Legacy Story Context changes
   if (pkg.changes.storyContext && pkg.changes.storyContext.length > 0) {
-    return {
-      patch,
-      storyContextUpdate: {
-        newContext: applyStoryContextChanges(
-          currentStoryContext ?? '',
-          pkg.changes.storyContext
-        ),
-        changes: pkg.changes.storyContext,
-      },
+    storyContextChanges.push(...pkg.changes.storyContext);
+  }
+
+  // Enhanced contextAdditions (convert to StoryContextChange format)
+  if (pkg.suggestions?.contextAdditions && pkg.suggestions.contextAdditions.length > 0) {
+    for (const addition of pkg.suggestions.contextAdditions) {
+      storyContextChanges.push({
+        operation: 'add',
+        section: contextSectionToLegacySection(addition.section),
+        content: addition.content,
+      });
+    }
+  }
+
+  // Apply Story Context changes if any
+  if (storyContextChanges.length > 0) {
+    result.storyContextUpdate = {
+      newContext: applyStoryContextChanges(
+        currentStoryContext ?? '',
+        storyContextChanges
+      ),
+      changes: storyContextChanges,
     };
   }
 
-  return { patch };
+  // Handle stashed ideas → convert to Idea nodes
+  if (pkg.suggestions?.stashedIdeas && pkg.suggestions.stashedIdeas.length > 0) {
+    result.ideasToCreate = convertStashedIdeasToNodes(pkg.suggestions.stashedIdeas, pkg.id);
+  }
+
+  return result;
+}
+
+/**
+ * Convert ContextSection to legacy section name format.
+ */
+function contextSectionToLegacySection(section: import('./types.js').ContextSection): string {
+  const sectionMap: Record<import('./types.js').ContextSection, string> = {
+    themes: 'Thematic Concerns',
+    conflicts: 'Central Conflicts',
+    motifs: 'Motifs',
+    tone: 'Tone',
+    constraints: 'Constraints',
+  };
+  return sectionMap[section] || section;
+}
+
+/**
+ * Convert stashed ideas to Idea nodes.
+ */
+function convertStashedIdeasToNodes(ideas: StashedIdea[], sourcePackageId: string): Idea[] {
+  const timestamp = new Date().toISOString();
+
+  return ideas.map((idea) => {
+    const ideaNode: Idea = {
+      type: 'Idea' as const,
+      id: idea.id.startsWith('idea_') ? idea.id : `idea_${Date.now()}_${randomString(4)}`,
+      title: idea.content.slice(0, 50) + (idea.content.length > 50 ? '...' : ''),
+      description: idea.content,
+      source: 'ai' as const,
+      status: 'active' as const,
+      category: idea.category,
+      sourcePackageId,
+      createdAt: timestamp,
+    };
+
+    // Only add relatedNodeIds if defined
+    if (idea.relatedNodeIds) {
+      ideaNode.relatedNodeIds = idea.relatedNodeIds;
+    }
+
+    return ideaNode;
+  });
 }
 
 // =============================================================================
@@ -228,6 +339,8 @@ function addToSection(
  * - Modify/delete operations reference existing nodes
  * - Edge delete operations reference existing nodes
  *
+ * Supports both legacy and enhanced package structures.
+ *
  * @param pkg - Package to validate
  * @param existingNodeIds - Set of existing node IDs
  * @returns Validation result
@@ -238,8 +351,26 @@ export function validatePackageForConversion(
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
+  // Collect all nodes and edges from either structure
+  const allNodes: NodeChange[] = [];
+  const allEdges: EdgeChange[] = [];
+
+  if (pkg.primary) {
+    // Enhanced structure
+    allNodes.push(...pkg.primary.nodes);
+    allEdges.push(...pkg.primary.edges);
+    if (pkg.supporting) {
+      allNodes.push(...pkg.supporting.nodes);
+      allEdges.push(...pkg.supporting.edges);
+    }
+  } else {
+    // Legacy structure
+    allNodes.push(...pkg.changes.nodes);
+    allEdges.push(...pkg.changes.edges);
+  }
+
   // Check for modify/delete operations on non-existent nodes
-  for (const change of pkg.changes.nodes) {
+  for (const change of allNodes) {
     if (change.operation !== 'add' && !existingNodeIds.has(change.node_id)) {
       errors.push(
         `Cannot ${change.operation} non-existent node: ${change.node_id}`
@@ -248,7 +379,7 @@ export function validatePackageForConversion(
   }
 
   // Check edge delete operations
-  for (const edge of pkg.changes.edges) {
+  for (const edge of allEdges) {
     if (edge.operation === 'delete') {
       if (!existingNodeIds.has(edge.from) || !existingNodeIds.has(edge.to)) {
         errors.push(

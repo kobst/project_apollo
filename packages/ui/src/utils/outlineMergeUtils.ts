@@ -114,6 +114,13 @@ export function mergeProposedIntoOutline(
         _operation: nodeChange.operation,
         _packageId: stagedPackage.id,
       };
+      // Extract optional fields from node data
+      if (data.summary !== undefined) pp.summary = data.summary as string;
+      if (data.priority !== undefined) pp.priority = data.priority as string;
+      if (data.urgency !== undefined) pp.urgency = data.urgency as string;
+      // Handle both camelCase and snake_case for stakes change
+      if (data.stakesChange !== undefined) pp.stakesChange = data.stakesChange as string;
+      if (data.stakes_change !== undefined) pp.stakesChange = data.stakes_change as string;
       if (data.status !== undefined) pp.status = data.status as string;
       if (nodeChange.previous_data !== undefined) pp._previousData = nodeChange.previous_data;
 

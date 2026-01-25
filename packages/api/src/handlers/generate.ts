@@ -69,6 +69,18 @@ import {
   proposeStoryBeats,
   type ProposeStoryBeatsRequest,
 } from '../ai/storyBeatOrchestrator.js';
+import {
+  proposeCharacters,
+  type ProposeCharactersRequest,
+} from '../ai/characterOrchestrator.js';
+import {
+  proposeScenes,
+  type ProposeScenesRequest,
+} from '../ai/sceneOrchestrator.js';
+import {
+  proposeExpand,
+  type ProposeExpandRequest,
+} from '../ai/expandOrchestrator.js';
 import type { MissingBeatInfo } from '@apollo/core';
 import {
   createLLMClient,
@@ -1829,6 +1841,8 @@ interface ProposeStoryBeatsRequestBody {
   maxStoryBeatsPerPackage?: number;
   direction?: string;
   creativity?: number;
+  expansionScope?: ai.ExpansionScope;
+  targetAct?: 1 | 2 | 3 | 4 | 5;
 }
 
 /**
@@ -1852,6 +1866,8 @@ export function createProposeStoryBeatsHandler(ctx: StorageContext) {
         maxStoryBeatsPerPackage = 5,
         direction,
         creativity = 0.5,
+        expansionScope = 'flexible',
+        targetAct,
       } = req.body;
 
       console.log(`[proposeStoryBeatsHandler] Story: ${id}, priorityBeats: ${priorityBeats.length}, packageCount: ${packageCount}`);
@@ -1868,7 +1884,11 @@ export function createProposeStoryBeatsHandler(ctx: StorageContext) {
         packageCount,
         maxStoryBeatsPerPackage,
         creativity,
+        expansionScope,
       };
+      if (targetAct) {
+        request.targetAct = targetAct;
+      }
       if (direction) {
         request.direction = direction;
       }
@@ -1909,6 +1929,401 @@ export function createProposeStoryBeatsHandler(ctx: StorageContext) {
         res.end();
       } else {
         const result = await proposeStoryBeats(id, request, ctx, llmClient);
+
+        // Enrich packages with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
+        res.json({
+          success: true,
+          data: enrichedResult,
+        });
+      }
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+// =============================================================================
+// Propose Characters Handler (Character-focused generation)
+// =============================================================================
+
+interface ProposeCharactersResponseData {
+  sessionId: string;
+  packages: ai.NarrativePackage[];
+  existingCharacters: ai.CharacterSummary[];
+}
+
+interface ProposeCharactersRequestBody {
+  focus: ai.CharacterFocus;
+  characterId?: string;
+  includeArcs?: boolean;
+  maxCharactersPerPackage?: number;
+  expansionScope?: ai.ExpansionScope;
+  direction?: string;
+  packageCount?: number;
+  creativity?: number;
+}
+
+/**
+ * POST /stories/:id/propose/characters
+ *
+ * Generate Character nodes with optional CharacterArc nodes.
+ */
+export function createProposeCharactersHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string }, unknown, ProposeCharactersRequestBody>,
+    res: Response<APIResponse<ProposeCharactersResponseData>>,
+    next: NextFunction
+  ): Promise<void> => {
+    console.log('[proposeCharactersHandler] Received propose characters request');
+    try {
+      const { id } = req.params;
+      const {
+        focus,
+        characterId,
+        includeArcs = true,
+        maxCharactersPerPackage = 3,
+        expansionScope = 'flexible',
+        direction,
+        packageCount = 3,
+        creativity = 0.5,
+      } = req.body;
+
+      if (!focus) {
+        throw new BadRequestError('focus is required');
+      }
+
+      if (focus === 'develop_existing' && !characterId) {
+        throw new BadRequestError('characterId is required for "develop_existing" focus');
+      }
+
+      console.log(`[proposeCharactersHandler] Story: ${id}, focus: ${focus}, includeArcs: ${includeArcs}`);
+
+      if (!isLLMConfigured()) {
+        const { message, suggestion } = getMissingKeyError();
+        throw new BadRequestError(message, suggestion);
+      }
+
+      const llmClient = createLLMClient();
+
+      const request: ProposeCharactersRequest = {
+        focus,
+        includeArcs,
+        maxCharactersPerPackage,
+        expansionScope,
+        packageCount,
+        creativity,
+      };
+      if (characterId) {
+        request.characterId = characterId;
+      }
+      if (direction) {
+        request.direction = direction;
+      }
+
+      // Check for streaming request
+      const wantsStream = req.headers.accept === 'text/event-stream';
+
+      if (wantsStream) {
+        // Set up SSE
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.flushHeaders();
+
+        const streamCallbacks: StreamCallbacks = {
+          onToken: (token) => {
+            res.write(`data: ${JSON.stringify({ type: 'token', content: token })}\n\n`);
+          },
+          onComplete: (response) => {
+            res.write(`data: ${JSON.stringify({ type: 'usage', usage: response.usage })}\n\n`);
+          },
+          onError: (error) => {
+            res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+          },
+        };
+
+        const result = await proposeCharacters(id, request, ctx, llmClient, streamCallbacks);
+
+        // Enrich packages with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
+        res.write(`data: ${JSON.stringify({ type: 'result', data: enrichedResult })}\n\n`);
+        res.write('data: [DONE]\n\n');
+        res.end();
+      } else {
+        const result = await proposeCharacters(id, request, ctx, llmClient);
+
+        // Enrich packages with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
+        res.json({
+          success: true,
+          data: enrichedResult,
+        });
+      }
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+// =============================================================================
+// Propose Scenes Handler (Scene-focused generation)
+// =============================================================================
+
+interface ProposeScenesResponseData {
+  sessionId: string;
+  packages: ai.NarrativePackage[];
+  validatedBeats: ai.ValidatedBeatInfo[];
+  rejectedBeats: ai.RejectedBeatInfo[];
+}
+
+interface ProposeScenesRequestBody {
+  storyBeatIds: string[];
+  scenesPerBeat?: number;
+  maxScenesPerPackage?: number;
+  expansionScope?: ai.ExpansionScope;
+  direction?: string;
+  packageCount?: number;
+  creativity?: number;
+}
+
+/**
+ * POST /stories/:id/propose/scenes
+ *
+ * Generate Scene nodes for committed StoryBeats.
+ */
+export function createProposeScenesHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string }, unknown, ProposeScenesRequestBody>,
+    res: Response<APIResponse<ProposeScenesResponseData>>,
+    next: NextFunction
+  ): Promise<void> => {
+    console.log('[proposeScenesHandler] Received propose scenes request');
+    try {
+      const { id } = req.params;
+      const {
+        storyBeatIds,
+        scenesPerBeat = 1,
+        maxScenesPerPackage = 5,
+        expansionScope = 'flexible',
+        direction,
+        packageCount = 3,
+        creativity = 0.5,
+      } = req.body;
+
+      if (!storyBeatIds || storyBeatIds.length === 0) {
+        throw new BadRequestError('storyBeatIds is required and must contain at least one ID');
+      }
+
+      console.log(`[proposeScenesHandler] Story: ${id}, storyBeatIds: ${storyBeatIds.length}`);
+
+      if (!isLLMConfigured()) {
+        const { message, suggestion } = getMissingKeyError();
+        throw new BadRequestError(message, suggestion);
+      }
+
+      const llmClient = createLLMClient();
+
+      const request: ProposeScenesRequest = {
+        storyBeatIds,
+        scenesPerBeat,
+        maxScenesPerPackage,
+        expansionScope,
+        packageCount,
+        creativity,
+      };
+      if (direction) {
+        request.direction = direction;
+      }
+
+      // Check for streaming request
+      const wantsStream = req.headers.accept === 'text/event-stream';
+
+      if (wantsStream) {
+        // Set up SSE
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.flushHeaders();
+
+        const streamCallbacks: StreamCallbacks = {
+          onToken: (token) => {
+            res.write(`data: ${JSON.stringify({ type: 'token', content: token })}\n\n`);
+          },
+          onComplete: (response) => {
+            res.write(`data: ${JSON.stringify({ type: 'usage', usage: response.usage })}\n\n`);
+          },
+          onError: (error) => {
+            res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+          },
+        };
+
+        const result = await proposeScenes(id, request, ctx, llmClient, streamCallbacks);
+
+        // Enrich packages with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
+        res.write(`data: ${JSON.stringify({ type: 'result', data: enrichedResult })}\n\n`);
+        res.write('data: [DONE]\n\n');
+        res.end();
+      } else {
+        const result = await proposeScenes(id, request, ctx, llmClient);
+
+        // Enrich packages with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
+        res.json({
+          success: true,
+          data: enrichedResult,
+        });
+      }
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+// =============================================================================
+// Propose Expand Handler (Generic node expansion)
+// =============================================================================
+
+interface ProposeExpandResponseData {
+  sessionId: string;
+  packages: ai.NarrativePackage[];
+  expandedTarget: {
+    type: 'node' | 'story-context';
+    nodeId?: string;
+    nodeType?: string;
+    section?: ai.ContextSection;
+  };
+}
+
+interface ProposeExpandRequestBody {
+  target: ai.ExpandTarget;
+  depth?: 'surface' | 'deep';
+  maxNodesPerPackage?: number;
+  expansionScope?: ai.ExpansionScope;
+  direction?: string;
+  packageCount?: number;
+  creativity?: number;
+}
+
+/**
+ * POST /stories/:id/propose/expand
+ *
+ * Expand a node or story context into related content.
+ */
+export function createProposeExpandHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string }, unknown, ProposeExpandRequestBody>,
+    res: Response<APIResponse<ProposeExpandResponseData>>,
+    next: NextFunction
+  ): Promise<void> => {
+    console.log('[proposeExpandHandler] Received propose expand request');
+    try {
+      const { id } = req.params;
+      const {
+        target,
+        depth = 'deep',
+        maxNodesPerPackage = 5,
+        expansionScope = 'flexible',
+        direction,
+        packageCount = 3,
+        creativity = 0.5,
+      } = req.body;
+
+      if (!target || !target.type) {
+        throw new BadRequestError('target with type is required');
+      }
+
+      if (target.type === 'node' && !target.nodeId) {
+        throw new BadRequestError('nodeId is required for node expansion');
+      }
+
+      if (target.type === 'story-context-section' && !target.section) {
+        throw new BadRequestError('section is required for story-context-section expansion');
+      }
+
+      console.log(`[proposeExpandHandler] Story: ${id}, target type: ${target.type}`);
+
+      if (!isLLMConfigured()) {
+        const { message, suggestion } = getMissingKeyError();
+        throw new BadRequestError(message, suggestion);
+      }
+
+      const llmClient = createLLMClient();
+
+      const request: ProposeExpandRequest = {
+        target,
+        depth,
+        maxNodesPerPackage,
+        expansionScope,
+        packageCount,
+        creativity,
+      };
+      if (direction) {
+        request.direction = direction;
+      }
+
+      // Check for streaming request
+      const wantsStream = req.headers.accept === 'text/event-stream';
+
+      if (wantsStream) {
+        // Set up SSE
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.flushHeaders();
+
+        const streamCallbacks: StreamCallbacks = {
+          onToken: (token) => {
+            res.write(`data: ${JSON.stringify({ type: 'token', content: token })}\n\n`);
+          },
+          onComplete: (response) => {
+            res.write(`data: ${JSON.stringify({ type: 'usage', usage: response.usage })}\n\n`);
+          },
+          onError: (error) => {
+            res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+          },
+        };
+
+        const result = await proposeExpand(id, request, ctx, llmClient, streamCallbacks);
+
+        // Enrich packages with edge names
+        const graph = await loadGraphById(id, ctx);
+        const enrichedResult = {
+          ...result,
+          packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+        };
+
+        res.write(`data: ${JSON.stringify({ type: 'result', data: enrichedResult })}\n\n`);
+        res.write('data: [DONE]\n\n');
+        res.end();
+      } else {
+        const result = await proposeExpand(id, request, ctx, llmClient);
 
         // Enrich packages with edge names
         const graph = await loadGraphById(id, ctx);

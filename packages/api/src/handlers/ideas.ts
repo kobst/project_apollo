@@ -26,6 +26,10 @@ import type { APIResponse, NodeData } from '../types.js';
 interface IdeaData extends NodeData {
   source: 'user' | 'ai';
   suggestedType?: string;
+  status?: 'active' | 'promoted' | 'dismissed';
+  category?: 'character' | 'plot' | 'scene' | 'worldbuilding' | 'general';
+  sourcePackageId?: string;
+  relatedNodeIds?: string[];
 }
 
 interface IdeasListData {
@@ -72,6 +76,10 @@ function toIdeaData(idea: Idea): IdeaData {
     data: sanitizeIdeaData(idea),
     source: idea.source,
     ...(idea.suggestedType && { suggestedType: idea.suggestedType }),
+    ...(idea.status && { status: idea.status }),
+    ...(idea.category && { category: idea.category }),
+    ...(idea.sourcePackageId && { sourcePackageId: idea.sourcePackageId }),
+    ...(idea.relatedNodeIds && { relatedNodeIds: idea.relatedNodeIds }),
   };
 }
 
@@ -84,6 +92,10 @@ interface CreateIdeaBody {
   description: string;
   source?: 'user' | 'ai';
   suggestedType?: 'StoryBeat' | 'Scene' | 'Character' | 'Location' | 'Object';
+  status?: 'active' | 'promoted' | 'dismissed';
+  category?: 'character' | 'plot' | 'scene' | 'worldbuilding' | 'general';
+  sourcePackageId?: string;
+  relatedNodeIds?: string[];
 }
 
 export function createIdeaHandler(ctx: StorageContext) {
@@ -94,7 +106,16 @@ export function createIdeaHandler(ctx: StorageContext) {
   ): Promise<void> => {
     try {
       const { id } = req.params;
-      const { title, description, source = 'user', suggestedType } = req.body;
+      const {
+        title,
+        description,
+        source = 'user',
+        suggestedType,
+        status = 'active',
+        category,
+        sourcePackageId,
+        relatedNodeIds,
+      } = req.body;
 
       if (!title || title.trim() === '') {
         throw new BadRequestError('title is required');
@@ -133,10 +154,14 @@ export function createIdeaHandler(ctx: StorageContext) {
         title: title.trim(),
         description: description.trim(),
         source,
+        status,
         createdAt: timestamp,
       };
 
       if (suggestedType) idea.suggestedType = suggestedType;
+      if (category) idea.category = category;
+      if (sourcePackageId) idea.sourcePackageId = sourcePackageId;
+      if (relatedNodeIds) idea.relatedNodeIds = relatedNodeIds;
 
       // Build patch operations
       const ops: Patch['ops'] = [
@@ -191,6 +216,8 @@ export function createIdeaHandler(ctx: StorageContext) {
 interface ListIdeasQuery {
   source?: string;
   suggestedType?: string;
+  status?: string;
+  category?: string;
   limit?: string;
   offset?: string;
 }
@@ -203,7 +230,7 @@ export function listIdeasHandler(ctx: StorageContext) {
   ): Promise<void> => {
     try {
       const { id } = req.params;
-      const { source, suggestedType, limit: limitStr, offset: offsetStr } = req.query;
+      const { source, suggestedType, status, category, limit: limitStr, offset: offsetStr } = req.query;
 
       const state = await loadVersionedStateById(id, ctx);
       if (!state) {
@@ -229,6 +256,12 @@ export function listIdeasHandler(ctx: StorageContext) {
       }
       if (suggestedType) {
         ideas = ideas.filter((i) => i.suggestedType === suggestedType);
+      }
+      if (status) {
+        ideas = ideas.filter((i) => (i.status || 'active') === status);
+      }
+      if (category) {
+        ideas = ideas.filter((i) => i.category === category);
       }
 
       // Sort by createdAt descending (newest first)

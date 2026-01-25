@@ -324,4 +324,6 @@ export interface MissingBeatInfo {
   act: 1 | 2 | 3 | 4 | 5;
   /** Position index within the story structure */
   position: number;
+  /** Whether there is a StoryBeat aligned to this beat (false if missing) */
+  hasStoryBeat: boolean;
 }

@@ -75,6 +75,9 @@ import {
   createCommitProposalHandler,
   createRefineProposalHandler,
   createProposeStoryBeatsHandler,
+  createProposeCharactersHandler,
+  createProposeScenesHandler,
+  createProposeExpandHandler,
   createListSavedPackagesHandler,
   createGetSavedPackageHandler,
   createSavePackageHandler,
@@ -180,6 +183,9 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.post('/:id/propose/commit', createCommitProposalHandler(ctx));
   router.post('/:id/propose/refine', createRefineProposalHandler(ctx));
   router.post('/:id/propose/story-beats', createProposeStoryBeatsHandler(ctx));
+  router.post('/:id/propose/characters', createProposeCharactersHandler(ctx));
+  router.post('/:id/propose/scenes', createProposeScenesHandler(ctx));
+  router.post('/:id/propose/expand', createProposeExpandHandler(ctx));
 
   // Session management (for active proposal)
   router.get('/:id/session', createGetSessionHandler(ctx));
