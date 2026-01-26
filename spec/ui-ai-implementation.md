@@ -1,39 +1,61 @@
 # AI UI Implementation Plan
 
-**Version:** 1.0.0
-**Date:** 2026-01-12
-**Status:** Ready for Implementation
+**Version:** 2.0.0
+**Date:** 2026-01-25
+**Status:** Implemented
 
 ---
 
 ## Overview
 
-Implement UI components to expose the AI generation capabilities defined in `aiIntegration.md`. The backend is complete with 8 endpoints; this plan covers the frontend integration.
+UI components exposing the four-mode AI generation system defined in `aiIntegration.md` and `unifiedAPI.md`. The system provides specialized endpoints for Story Beats, Characters, Scenes, and Expand modes with expansion scope control.
 
 ---
 
 ## Current State
 
 ### Backend Endpoints (Complete)
-| Endpoint | Handler | Purpose |
-|----------|---------|---------|
-| `POST /stories/:id/interpret` | `interpretOrchestrator` | Parse freeform input → proposals |
-| `POST /stories/:id/generate` | `generateOrchestrator` | Entry point → N packages |
-| `POST /stories/:id/regenerate` | `generateOrchestrator` | Re-run with same params |
-| `POST /stories/:id/refine` | `refineOrchestrator` | Base package → variations |
-| `GET /stories/:id/session` | session.ts | Get current session state |
-| `DELETE /stories/:id/session` | session.ts | Abandon session |
-| `POST /stories/:id/proposal-to-package` | - | Convert proposal to package |
-| `POST /stories/:id/accept-package` | - | Apply package to graph |
-| `POST /stories/:id/regenerate-element` | `regenerateElementOrchestrator` | Regenerate single element → N options |
-| `POST /stories/:id/apply-element-option` | - | Apply selected option to package |
-| `POST /stories/:id/update-package-element` | - | Manual edit of element |
-| `POST /stories/:id/validate-package` | - | Validate package against graph |
 
-### Existing UI Components
-- `InputPanel.tsx` - Basic extraction (non-AI, uses `/extract`)
-- `ClusterControls.tsx`, `ClusterCard.tsx` - Legacy cluster system
-- `WorkspaceView.tsx` - Main workspace with tabs
+**Four-Mode Generation:**
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /stories/:id/propose/story-beats` | Generate StoryBeat nodes |
+| `POST /stories/:id/propose/characters` | Generate Character nodes |
+| `POST /stories/:id/propose/scenes` | Generate Scene nodes |
+| `POST /stories/:id/propose/expand` | Expand nodes/Story Context |
+
+**Session Management:**
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /stories/:id/propose/active` | Get active proposal |
+| `DELETE /stories/:id/propose/active` | Discard session |
+| `POST /stories/:id/propose/commit` | Commit package |
+| `POST /stories/:id/propose/refine` | Refine package |
+
+**Package Editing:**
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /stories/:id/regenerate-element` | Regenerate single element |
+| `POST /stories/:id/apply-element-option` | Apply selected option |
+| `POST /stories/:id/update-package-element` | Manual edit |
+| `POST /stories/:id/validate-package` | Validate package |
+
+**Saved Packages:**
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /stories/:id/saved-packages` | List saved |
+| `POST /stories/:id/saved-packages` | Save package |
+| `POST /stories/:id/saved-packages/:spId/apply` | Apply saved |
+
+### Implemented UI Components
+- `GenerationPanel.tsx` - Main generation panel with four-mode system
+- `ComposeForm.tsx` - Mode selector and options
+- `ModeSelector.tsx` - Four-mode tab selector
+- `ExpansionScopeToggle.tsx` - Constrained/Flexible toggle
+- `StoryBeatsOptions.tsx`, `CharactersOptions.tsx`, `ScenesOptions.tsx`, `ExpandOptions.tsx` - Mode-specific forms
+- `PackageCard.tsx` - Package display with Primary/Supporting/Suggestions sections
+- `StashSection.tsx` - Unified stash for unassigned items and ideas
+- `IdeasSection.tsx` - Ideas management
 
 ---
 

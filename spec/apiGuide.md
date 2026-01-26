@@ -1111,30 +1111,41 @@ curl -X POST http://localhost:3000/stories/my-story/update-package-element \
 
 ---
 
-### Propose Story Beats (StoryBeat-Only Generation)
+### Four-Mode AI Generation System
+
+Apollo provides four specialized AI generation endpoints, each focused on a specific output type with optional supporting content.
+
+**Common Parameters (all endpoints):**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `expansionScope` | string | `flexible` | `constrained` (primary only) or `flexible` (includes supporting nodes) |
+| `direction` | string | - | Freeform guidance text |
+| `packageCount` | number | 3 | Number of packages (1-10) |
+| `creativity` | number | 0.5 | Creativity level (0-1) |
+
+---
+
+### Propose Story Beats
 
 ```
 POST /stories/:id/propose/story-beats
 ```
 
-Generates **only StoryBeat nodes** to fill structural gaps (beats without ALIGNS_WITH edges from any StoryBeat). This specialized endpoint ensures strict output constraints - no Scene, Character, Location, or Object nodes are generated.
+Generates StoryBeat nodes that align to Save the Cat structural beats.
 
 **Request Body:**
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `priorityBeats` | string[] | No | Beat IDs or BeatTypes to always include (e.g., `['Catalyst', 'Midpoint']`) |
-| `packageCount` | number | No | Number of packages (default: 3) |
+| `priorityBeats` | string[] | No | Beat IDs or BeatTypes to prioritize |
+| `targetAct` | number | No | Focus on specific act (1-5) |
 | `maxStoryBeatsPerPackage` | number | No | Max StoryBeats per package (default: 5) |
-| `direction` | string | No | User guidance for generation |
-| `creativity` | number | No | 0-1 creativity level (default: 0.5) |
 
 ```bash
 curl -X POST http://localhost:3000/stories/my-story/propose/story-beats \
   -H 'Content-Type: application/json' \
   -d '{
     "priorityBeats": ["Catalyst", "Midpoint"],
-    "packageCount": 3,
-    "maxStoryBeatsPerPackage": 3,
+    "expansionScope": "flexible",
     "direction": "Focus on dramatic tension"
   }'
 ```
@@ -1149,64 +1160,158 @@ curl -X POST http://localhost:3000/stories/my-story/propose/story-beats \
       {
         "id": "pkg_12345_abc",
         "title": "Dramatic Catalyst Moment",
-        "rationale": "Creates a pivotal catalyst that sets the story in motion",
-        "confidence": 0.85,
-        "style_tags": ["dramatic", "revelation"],
-        "changes": {
-          "nodes": [
-            {
-              "operation": "add",
-              "node_type": "StoryBeat",
-              "node_id": "storybeat_12345_xyz",
-              "data": {
-                "title": "Marcus discovers the truth",
-                "summary": "Marcus finds evidence that reveals the conspiracy.",
-                "intent": "plot",
-                "priority": "high",
-                "stakes_change": "raise"
-              }
-            }
-          ],
-          "edges": [
-            {
-              "operation": "add",
-              "edge_type": "ALIGNS_WITH",
-              "from": "storybeat_12345_xyz",
-              "to": "beat_Catalyst"
-            }
-          ]
+        "summary": "Creates a pivotal catalyst that sets the story in motion",
+        "primary": {
+          "type": "StoryBeat",
+          "nodes": [...],
+          "edges": [...]
         },
-        "impact": {
-          "fulfills_gaps": ["derived_missing_beat_Catalyst"],
-          "creates_gaps": [],
-          "conflicts": []
+        "supporting": {
+          "characters": [...],
+          "edges": []
+        },
+        "suggestions": {
+          "contextAdditions": [...],
+          "stashedIdeas": [...]
         }
       }
     ],
     "missingBeats": [
-      {
-        "beatId": "beat_Catalyst",
-        "beatType": "Catalyst",
-        "act": 1,
-        "position": 4
-      },
-      {
-        "beatId": "beat_Midpoint",
-        "beatType": "Midpoint",
-        "act": 3,
-        "position": 9
-      }
+      { "beatId": "beat_Catalyst", "beatType": "Catalyst", "act": 1, "position": 4 }
     ]
   }
 }
 ```
 
-**Notes:**
-- Output is strictly filtered to only StoryBeat nodes
-- Only ALIGNS_WITH and PRECEDES edge types are allowed
-- `missingBeats` shows all beats that currently lack StoryBeat alignment
-- Use this endpoint when you want to fill structural gaps without generating scenes or other elements
-- The session can be reviewed and committed using the standard `/propose/commit` endpoint
+---
+
+### Propose Characters
+
+```
+POST /stories/:id/propose/characters
+```
+
+Generates Character nodes with descriptions and optional arc development.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `focus` | string | Yes | `develop_existing`, `new_protagonist`, `new_antagonist`, `new_supporting`, `fill_gaps` |
+| `characterId` | string | No | Required when focus is `develop_existing` |
+| `includeArcs` | boolean | No | Generate CharacterArc nodes (default: true) |
+| `maxCharactersPerPackage` | number | No | Max characters per package (default: 3) |
+
+```bash
+curl -X POST http://localhost:3000/stories/my-story/propose/characters \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "focus": "new_antagonist",
+    "expansionScope": "flexible",
+    "includeArcs": true,
+    "direction": "A corrupt authority figure"
+  }'
+```
+
+---
+
+### Propose Scenes
+
+```
+POST /stories/:id/propose/scenes
+```
+
+Generates Scene nodes that satisfy committed StoryBeats. **Note:** Only works with committed (not proposed) StoryBeats.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `storyBeatIds` | string[] | Yes | Committed StoryBeat IDs to develop scenes for |
+| `scenesPerBeat` | number | No | Scenes per beat (default: 1, max: 3) |
+| `maxScenesPerPackage` | number | No | Max scenes per package (default: 5) |
+
+```bash
+curl -X POST http://localhost:3000/stories/my-story/propose/scenes \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "storyBeatIds": ["storybeat_catalyst_1", "storybeat_midpoint_1"],
+    "expansionScope": "flexible",
+    "direction": "Noir atmosphere, tense confrontations"
+  }'
+```
+
+**Response includes:**
+- `validatedBeats`: StoryBeats that will be developed
+- `rejectedBeats`: StoryBeats that couldn't be used (with reason: `not_found`, `not_committed`, `already_has_scenes`)
+
+---
+
+### Propose Expand
+
+```
+POST /stories/:id/propose/expand
+```
+
+Develops any existing node or Story Context with more detail.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `target` | object | Yes | What to expand (see below) |
+| `depth` | string | No | `surface` or `deep` (default: `deep`) |
+| `maxNodesPerPackage` | number | No | Max nodes per package (default: 5) |
+
+**Target Types:**
+- `{ "type": "node", "nodeId": "char_123" }` - Expand a specific node
+- `{ "type": "story-context" }` - Expand entire Story Context
+- `{ "type": "story-context-section", "section": "themes" }` - Expand specific section
+
+```bash
+curl -X POST http://localhost:3000/stories/my-story/propose/expand \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "target": { "type": "node", "nodeId": "char_cain" },
+    "expansionScope": "flexible",
+    "depth": "deep",
+    "direction": "Explore his past and what drives him"
+  }'
+```
+
+---
+
+### Proposal Session Management
+
+```
+GET /stories/:id/propose/active
+```
+Returns the current active proposal session.
+
+```
+DELETE /stories/:id/propose/active
+```
+Discards the active proposal session.
+
+```
+POST /stories/:id/propose/commit
+```
+Commits a package from the active session to the graph.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `packageId` | string | Yes | Package ID to commit |
+
+```
+POST /stories/:id/propose/refine
+```
+Generates variations of an existing package.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `basePackageId` | string | Yes | Package to refine |
+| `keepElements` | string[] | No | Element IDs to preserve |
+| `regenerateElements` | string[] | No | Element IDs to regenerate |
+| `guidance` | string | Yes | Refinement direction |
 
 ---
 
@@ -1246,6 +1351,232 @@ curl -X POST http://localhost:3000/stories/my-story/validate-package \
   }
 }
 ```
+
+---
+
+## StoryBeat Management
+
+### Create StoryBeat
+
+```
+POST /stories/:id/story-beats
+```
+
+Creates a new StoryBeat node.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | string | Yes | StoryBeat title |
+| `summary` | string | No | Description/summary |
+| `intent` | string | No | `plot`, `character`, or `tone` |
+| `priority` | string | No | `high`, `medium`, `low` |
+| `stakes_change` | string | No | `raise`, `lower`, `maintain` |
+| `beatId` | string | No | Beat ID to align with |
+
+### List StoryBeats
+
+```
+GET /stories/:id/story-beats
+```
+
+Returns all StoryBeats in the story.
+
+### Get StoryBeat
+
+```
+GET /stories/:id/story-beats/:sbId
+```
+
+Returns a specific StoryBeat by ID.
+
+### Update StoryBeat
+
+```
+PATCH /stories/:id/story-beats/:sbId
+```
+
+Updates a StoryBeat's fields.
+
+### Delete StoryBeat
+
+```
+DELETE /stories/:id/story-beats/:sbId
+```
+
+Deletes a StoryBeat and its edges.
+
+---
+
+## Scene Management
+
+### Create Scene
+
+```
+POST /stories/:id/scenes
+```
+
+Creates a new Scene node.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `heading` | string | Yes | Scene heading (e.g., "INT. LOCATION - DAY") |
+| `scene_overview` | string | Yes | Scene description (min 20 chars) |
+| `mood` | string | No | Scene mood/atmosphere |
+| `int_ext` | string | No | `INT` or `EXT` |
+| `time_of_day` | string | No | `DAY`, `NIGHT`, etc. |
+| `storyBeatId` | string | No | StoryBeat to satisfy |
+
+### List Scenes
+
+```
+GET /stories/:id/scenes
+```
+
+Returns all Scenes in the story.
+
+### Get Scene
+
+```
+GET /stories/:id/scenes/:sceneId
+```
+
+Returns a specific Scene by ID.
+
+### Update Scene
+
+```
+PATCH /stories/:id/scenes/:sceneId
+```
+
+Updates a Scene's fields.
+
+### Delete Scene
+
+```
+DELETE /stories/:id/scenes/:sceneId
+```
+
+Deletes a Scene and its edges.
+
+---
+
+## Ideas Management
+
+Ideas are stashed concepts from AI generation that can be developed later.
+
+### Create Idea
+
+```
+POST /stories/:id/ideas
+```
+
+Manually creates an idea.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `content` | string | Yes | Idea text |
+| `category` | string | No | `character`, `plot`, `scene`, `worldbuilding`, `general` |
+| `relatedNodeIds` | string[] | No | Related node IDs |
+
+### List Ideas
+
+```
+GET /stories/:id/ideas
+```
+
+Returns all ideas for the story.
+
+### Get Idea
+
+```
+GET /stories/:id/ideas/:ideaId
+```
+
+Returns a specific idea.
+
+### Update Idea
+
+```
+PATCH /stories/:id/ideas/:ideaId
+```
+
+Updates an idea's content or status.
+
+### Delete Idea
+
+```
+DELETE /stories/:id/ideas/:ideaId
+```
+
+Deletes an idea.
+
+---
+
+## Saved Packages
+
+Packages can be saved for later use without immediately applying them.
+
+### List Saved Packages
+
+```
+GET /stories/:id/saved-packages
+```
+
+Returns all saved packages for the story.
+
+### Get Saved Package
+
+```
+GET /stories/:id/saved-packages/:spId
+```
+
+Returns a specific saved package with compatibility status.
+
+### Save Package
+
+```
+POST /stories/:id/saved-packages
+```
+
+Saves a package for later use.
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `package` | object | Yes | The NarrativePackage to save |
+| `notes` | string | No | Optional notes |
+
+### Update Saved Package
+
+```
+PATCH /stories/:id/saved-packages/:spId
+```
+
+Updates saved package notes.
+
+### Delete Saved Package
+
+```
+DELETE /stories/:id/saved-packages/:spId
+```
+
+Deletes a saved package.
+
+### Apply Saved Package
+
+```
+POST /stories/:id/saved-packages/:spId/apply
+```
+
+Applies a saved package to the graph.
+
+**Response includes:**
+- `compatible`: Whether the package can be applied without conflicts
+- `outdated`: Whether the graph has changed since saving
+- `conflicting`: Whether there are conflicts to resolve
 
 ---
 

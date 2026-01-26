@@ -164,54 +164,71 @@ The Workspace tab is the main editing environment. It combines coverage tracking
 
 ## Generation Tab
 
-The Generation tab provides AI-assisted story development with three generation modes.
+The Generation tab provides AI-assisted story development with four specialized generation modes.
 
 ### Layout
 
+The Generation Panel is integrated into the Workspace as a slide-out panel on the right side.
+
 ```
-┌──────────────┬──────────────────────────────────────────────┐
-│ SIDEBAR      │ MAIN CONTENT                                 │
-│              │                                              │
-│ Sessions     │ Compose Form (when composing)                │
-│ └─ Active(X) │ OR                                           │
-│              │ Package Detail (when reviewing)              │
-│ Packages     │                                              │
-│ ├─ Pkg 1     │                                              │
-│ └─ Pkg 2     │                                              │
-│              │                                              │
-│ Saved        │                                              │
-│ └─ Pkg A     │                                              │
-│              │                                              │
-│ [New Proposal]                                              │
-└──────────────┴──────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│ AI GENERATION                                           [×]  │
+├──────────────────────────────────────────────────────────────┤
+│ MODE                                                         │
+│ [Story Beats] [Characters] [Scenes] [Expand]                 │
+│                                                              │
+│ SCOPE                                                        │
+│ ○ Constrained    ● Flexible                                  │
+│                                                              │
+│ [MODE-SPECIFIC OPTIONS]                                      │
+│                                                              │
+│ DIRECTION (optional)                                         │
+│ ┌────────────────────────────────────────────────────────┐   │
+│ │ Additional guidance...                                 │   │
+│ └────────────────────────────────────────────────────────┘   │
+│                                                              │
+│                                           [Generate]         │
+│                                                              │
+│ Saved Packages (N)                                       [▶] │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ### Generation Modes
 
-| Mode | Creativity | Packages | Nodes | Use Case |
-|------|-----------|----------|-------|----------|
-| **Add** | 0.5 (Balanced) | 5 | 5 | Create new story elements |
-| **Expand** | 0.3 (Conservative) | 3 | 8 | Build out existing elements |
-| **Explore** | 0.8 (Inventive) | 5 | 6 | Creative alternatives |
+| Mode | Endpoint | Primary Output | Use Case |
+|------|----------|----------------|----------|
+| **Story Beats** | `/propose/story-beats` | StoryBeat nodes | Fill in narrative structure |
+| **Characters** | `/propose/characters` | Character nodes | Develop the cast |
+| **Scenes** | `/propose/scenes` | Scene nodes | Create scenes for story beats |
+| **Expand** | `/propose/expand` | Varies | Develop any existing node |
+
+### Expansion Scope
+
+| Scope | Description |
+|-------|-------------|
+| **Constrained** | Generate only primary output type, reference existing nodes |
+| **Flexible** | Generate primary + supporting nodes (characters, locations, ideas) |
 
 ### Compose Form
 
-- **Mode Selection**: Radio buttons for Add/Expand/Explore
-- **Entry Point**: Where to start (Auto, Beat, Gap, Character, etc.)
+- **Mode Selection**: Four-mode tabs (Story Beats, Characters, Scenes, Expand)
+- **Scope Toggle**: Constrained or Flexible expansion
+- **Mode-Specific Options**:
+  - Story Beats: Focus type (all/act/priority beats), beat selection
+  - Characters: Focus type, character selection for develop_existing, include arcs toggle
+  - Scenes: Story beat selection (committed only), scenes per beat
+  - Expand: Target selection (node or Story Context section), depth
 - **Direction**: Freeform guidance text
 - **Advanced Options** (collapsible):
   - Creativity slider (0-1)
   - Package count (1-10)
-  - Nodes per package (3-15)
 
 ### Package Review
 
-Packages display elements organized by type:
-- Story Context
-- Story Elements (Characters, Locations, Objects)
-- Outline (PlotPoints, Scenes)
-- Relationships (edges)
-- Impact (gaps fulfilled/created, conflicts)
+Packages display elements organized by sections:
+- **Primary**: The main output type (e.g., StoryBeats, Characters, Scenes)
+- **Supporting**: Additional nodes created when scope is Flexible
+- **Suggestions**: Context additions and stashed ideas (can be included or dismissed)
 
 ### Element Operations
 
@@ -239,6 +256,50 @@ Packages display elements organized by type:
 
 ---
 
+## Stash Section
+
+The Stash Section appears at the bottom of the Structure Board and provides a unified view of unassigned items.
+
+### Components
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ STASH                                                           │
+├─────────────────────────────────────────────────────────────────┤
+│ Unassigned Story Beats (2)                              [▼]     │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ "The revelation"                              [Assign] [×]  │ │
+│ │ "Character moment"                            [Assign] [×]  │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│ Unassigned Scenes (1)                                   [▼]     │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ INT. WAREHOUSE - NIGHT                        [Assign] [×]  │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│ Ideas (3)                                               [▼]     │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ "Consider a B-story romance..."               [Develop] [×] │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Item Types
+
+| Type | Description | Actions |
+|------|-------------|---------|
+| **Unassigned Story Beats** | Story beats without ALIGNS_WITH edge to a Beat | Assign, Delete |
+| **Unassigned Scenes** | Scenes without SATISFIED_BY edge from a StoryBeat | Assign, Delete |
+| **Ideas** | Stashed concepts from AI generation | Develop, Delete |
+
+### Actions
+
+- **Assign**: Opens modal to select which Beat (for StoryBeats) or StoryBeat (for Scenes) to assign to
+- **Develop**: Opens Generation Panel in Expand mode with the idea as direction
+- **Delete**: Removes the item (with confirmation)
+
+---
+
 ## Story Map Navigation
 
 The **Story Map** is the left navigation panel in the Workspace. It shows all story categories with progress indicators.
@@ -257,7 +318,7 @@ Story Map
 │
 └── Outline
     ├── Structure Board [==========] 15/15 ✓
-    ├── Plot Points     [          ] 0/3
+    ├── Story Beats     [          ] 0/3
     └── Scenes          [==        ] 3/40
 ```
 
@@ -369,21 +430,21 @@ The beat-by-beat structure view (same as previous Outline tab).
 │  │              │              │ ┌──────────┐ │                        │
 │  │              │              │ │INT. DINER│ │                        │
 │  │              │              │ └──────────┘ │                        │
-│  │ + Plot Point │ + Plot Point │ + Plot Point │                        │
+│  │ + Story Beat │ + Story Beat │ + Story Beat │                        │
 │  └──────────────┴──────────────┴──────────────┘                        │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
 - **Beats**: 15 Save the Cat beats organized by act
-- **Plot Points**: Aligned to beats, shown as collapsible containers
-- **Scenes**: Nested under plot points they satisfy
-- **Unassigned Scenes**: Shown at bottom if not connected to plot points
+- **Story Beats**: Aligned to beats via ALIGNS_WITH edges, shown as collapsible containers
+- **Scenes**: Nested under story beats they satisfy via SATISFIED_BY edges
+- **Stash Section**: Shows unassigned story beats, scenes, and stashed ideas at bottom
 
-### Plot Points
+### Story Beats
 
-List view of all plot points.
+List view of all story beats (narrative milestones that align to structural beats).
 
-- **Fields**: title, summary, intent (optional), priority, urgency
+- **Fields**: title, summary, intent, priority, stakes_change
 - **Intent Types**: PLOT, CHARACTER, TONE
 - **Progress**: Based on SATISFIED_BY edges from scenes
 
@@ -427,7 +488,7 @@ The **Node Editor** allows direct modification of committed graph nodes within t
 | **Scene** | title, heading, scene_overview, mood, int_ext, time_of_day, status |
 | **Character** | name, description, archetype, status |
 | **Location** | name, description, atmosphere |
-| **PlotPoint** | title, summary, intent, priority, urgency, stakes_change, status, act |
+| **StoryBeat** | title, summary, intent, priority, stakes_change, status |
 | **Object** | name, description |
 | **CharacterArc** | arc_type, start_state, end_state, turn_refs, status |
 
@@ -498,7 +559,7 @@ When viewing a node, the Relations section shows:
 │                                                         │
 │ INCOMING (1)                                            │
 │ ┌─────────────────────────────────────────────────────┐ │
-│ │ Hero's Call  PlotPoint → SATISFIED_BY  [✎] [×]     │ │
+│ │ Hero's Call  StoryBeat → SATISFIED_BY  [✎] [×]     │ │
 │ └─────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -523,13 +584,13 @@ Choose the relationship type based on the current node:
 |-----------|-----------------|
 | **PART_OF** | Location → Setting |
 | **SET_IN** | Scene → Setting |
-| **SATISFIED_BY** | PlotPoint → Scene |
-| **ALIGNS_WITH** | PlotPoint → Beat |
+| **SATISFIED_BY** | StoryBeat → Scene |
+| **ALIGNS_WITH** | StoryBeat → Beat |
 | **HAS_CHARACTER** | Scene → Character |
 | **LOCATED_AT** | Scene → Location |
 | **FEATURES_OBJECT** | Scene → Object |
-| **PRECEDES** | PlotPoint → PlotPoint |
-| **ADVANCES** | PlotPoint → CharacterArc |
+| **PRECEDES** | StoryBeat → StoryBeat |
+| **ADVANCES** | StoryBeat → CharacterArc |
 | **HAS_ARC** | Character → CharacterArc |
 | **HAS_TURN_IN** | CharacterArc → Beat/Scene |
 
@@ -621,7 +682,7 @@ Found in the right column of the FoundationsPanel, visible when any category is 
 | **Character** | Extract character nodes |
 | **Location** | Extract location nodes |
 | **Scene** | Extract scene nodes |
-| **PlotPoint** | Extract plot point nodes |
+| **StoryBeat** | Extract story beat nodes |
 | **Object** | Extract significant props/items |
 
 ### Extraction Workflow
@@ -632,7 +693,7 @@ Found in the right column of the FoundationsPanel, visible when any category is 
 4. Review generated proposals
 5. Click **Accept** on proposals you want to apply
 
-**Note:** Extracted scenes will appear in the "Unassigned" section of the Structure Board until they are connected to a PlotPoint via SATISFIED_BY edge.
+**Note:** Extracted scenes will appear in the Stash section of the Structure Board until they are connected to a StoryBeat via SATISFIED_BY edge.
 
 ### Proposal Cards
 
@@ -677,10 +738,10 @@ Soft rules check completeness. They warn but don't block commits.
 | **Location Has Setting** | Location should be part of a Setting |
 | **Scene Has Character** | Scene should have at least one character assigned |
 | **Scene Has Location** | Scene should have a location assigned |
-| **Scene Has PlotPoint** | Scene should be connected to a PlotPoint |
-| **PlotPoint Has Intent** | PlotPoint should have intent specified |
-| **PlotPoint Event Realization** | Approved PlotPoint should have scenes satisfying it |
-| **PlotPoint Has Criteria** | PlotPoint should have satisfaction criteria |
+| **Scene Has StoryBeat** | Scene should be connected to a StoryBeat |
+| **StoryBeat Has Intent** | StoryBeat should have intent specified |
+| **StoryBeat Event Realization** | Approved StoryBeat should have scenes satisfying it |
+| **StoryBeat Has Criteria** | StoryBeat should have satisfaction criteria |
 
 ### Lint Panel Display
 
@@ -862,8 +923,8 @@ When you click **Commit Changes**, the system checks for violations:
 | **OutlineView** | Main | Container for outline grid |
 | **ActRow** | Main | Horizontal row for each act |
 | **BeatColumn** | Within ActRow | Column for each beat |
-| **SceneCard** | Within BeatColumn | Scene display within PlotPoint |
-| **EmptyBeatSlot** | Within BeatColumn | Visual indicator for beats with no PlotPoints |
+| **SceneCard** | Within BeatColumn | Scene display within StoryBeat |
+| **EmptyBeatSlot** | Within BeatColumn | Visual indicator for beats with no StoryBeats |
 
 ### All User Interactions
 

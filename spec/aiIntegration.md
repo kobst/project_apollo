@@ -113,32 +113,30 @@ Regenerate All: Discard all packages, start fresh with same prompt
 
 ### 2.1 Generation Modes
 
-Apollo provides three pre-configured generation modes with optimized defaults:
+Apollo provides four specialized generation modes, each focused on a specific output type:
 
-| Mode | Creativity | Packages | Nodes/Package | Use Case |
-|------|-----------|----------|---------------|----------|
-| **Add** | 0.5 (Balanced) | 5 | 5 | Create new story elements |
-| **Expand** | 0.3 (Conservative) | 3 | 8 | Build out existing elements |
-| **Explore** | 0.8 (Inventive) | 5 | 6 | Creative alternatives |
+| Mode | Endpoint | Primary Output | Use Case |
+|------|----------|----------------|----------|
+| **Story Beats** | `/propose/story-beats` | StoryBeat nodes | Fill in narrative structure |
+| **Characters** | `/propose/characters` | Character nodes | Develop the cast |
+| **Scenes** | `/propose/scenes` | Scene nodes | Create scenes for story beats |
+| **Expand** | `/propose/expand` | Varies by target | Develop any existing node |
 
-### 2.2 Package Depth
-Controls how much each generated package contains.
+### 2.2 Expansion Scope
 
-| Setting | Label | Description | Approximate Budget |
-|---------|-------|-------------|-------------------|
-| narrow | Focused | Just the requested element, minimal supporting material | 1-2 new nodes |
-| medium | Standard | Requested element plus immediate dependencies | 3-5 new nodes |
-| wide | Expansive | Full cascade with downstream implications | 6-10 new nodes |
+All generation endpoints support an expansion scope parameter:
+
+| Scope | Description | Output |
+|-------|-------------|--------|
+| **Constrained** | Primary output only | Just the requested node type, references existing nodes |
+| **Flexible** | Primary + supporting | May create new characters, locations, objects as needed |
+
+Both scopes can produce **suggestions**: Story Context additions and stashed ideas.
 
 ### 2.3 Package Count
-Controls how many alternative packages are generated.
+Controls how many alternative packages are generated (default: 3, max: 10).
 
-| Setting | Label | Packages Generated |
-|---------|-------|-------------------|
-| few | Quick | 2-3 packages |
-| standard | Explore | 4-6 packages |
-| many | Deep dive | 8-12 packages |
-2.3 Direction
+### 2.4 Direction
 Optional freeform text providing guidance for generation.
 Examples:
 
@@ -410,17 +408,27 @@ typescriptinterface GenerationSession {
 
 ## 9. UI Components
 
-### 9.1 Generation Trigger
+### 9.1 Generation Panel
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Generate for: [Midpoint ▼]                                  │
+│ AI GENERATION                                          [×]  │
+├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│ Depth:    ○ Focused  ● Standard  ○ Expansive               │
-│ Options:  ○ Quick    ● Explore   ○ Deep dive               │
+│ MODE                                                        │
+│ ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐    │
+│ │📋 Story   │ │👤 Chars   │ │🎬 Scenes  │ │🔍 Expand  │    │
+│ │  Beats    │ │           │ │           │ │           │    │
+│ └───────────┘ └───────────┘ └───────────┘ └───────────┘    │
 │                                                             │
-│ Direction (optional):                                       │
+│ SCOPE                                                       │
+│ ○ Constrained - Primary output only                        │
+│ ● Flexible - + Characters, Locations, Ideas                │
+│                                                             │
+│ [MODE-SPECIFIC OPTIONS]                                     │
+│                                                             │
+│ DIRECTION (optional):                                       │
 │ ┌─────────────────────────────────────────────────────────┐ │
-│ │                                                         │ │
+│ │ Additional guidance for the AI...                       │ │
 │ └─────────────────────────────────────────────────────────┘ │
 │                                                             │
 │                                            [Generate]       │
@@ -979,11 +987,36 @@ When loading a saved package, the system checks compatibility:
 
 ---
 
-## 17. Summary
+## 17. Stash/Ideas Feature
+
+Stashed ideas are generated by AI alongside primary output and can be developed later.
+
+### 17.1 When Ideas Are Generated
+
+- During AI generation with `expansionScope: 'flexible'`
+- As suggestions alongside primary nodes
+- Can be character concepts, plot ideas, scene ideas, or worldbuilding notes
+
+### 17.2 Idea Workflow
+
+1. AI generates ideas as suggestions in packages
+2. User can include or dismiss suggestions during package review
+3. Included ideas are saved to the Ideas collection on commit
+4. User can later "Develop" an idea (opens Expand mode with idea as direction)
+5. Ideas can also be manually created or deleted
+
+### 17.3 UI Location
+
+Ideas appear in the Story Bible navigation under "Ideas (N)" where N is the count.
+
+---
+
+## 18. Summary
+
 The AI integration provides three phases of assistance:
 
-Interpretation: Transforms freeform input into structured proposals
-Staging: Shows impact before committing changes
-Generation: Produces multiple complete packages for exploration
+1. **Interpretation**: Transforms freeform input into structured proposals
+2. **Staging**: Shows impact before committing changes
+3. **Generation**: Produces multiple complete packages for exploration
 
-Users control generation via depth (focused/standard/expansive) and count (quick/explore/deep dive) parameters. Packages can be refined through a tree structure, allowing iterative exploration. All AI output is proposals—the user always decides what gets committed to the story graph.
+Users control generation via four specialized modes (Story Beats, Characters, Scenes, Expand) with expansion scope (Constrained/Flexible). Packages can be refined through a tree structure, allowing iterative exploration. All AI output is proposals—the user always decides what gets committed to the story graph.
