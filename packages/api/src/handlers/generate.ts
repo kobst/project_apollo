@@ -850,15 +850,6 @@ export function packageToPatch(
   };
 }
 
-// Note: Story Context changes are tracked but applied separately
-// via the PATCH /stories/:id/context endpoint. The function below
-// is kept for future implementation of inline Story Context updates.
-//
-// function applyStoryContextChanges(
-//   currentContext: string | undefined,
-//   changes: ai.StoryContextChange[]
-// ): string { ... }
-
 /**
  * Apply a package directly (without needing a session).
  * Used for interpretation proposals that aren't part of a generation session.
@@ -905,12 +896,27 @@ export function createApplyPackageHandler(ctx: StorageContext) {
       // Apply patch
       graph = applyPatch(graph, patch);
 
-      // Save updated graph
+      // Handle Story Context changes
+      let storyContextUpdated = false;
+      let metadataUpdates: { storyContext?: string; storyContextModifiedAt?: string } | undefined;
+
+      if (pkg.changes.storyContext && pkg.changes.storyContext.length > 0) {
+        const currentContext = state.metadata?.storyContext;
+        const updatedContext = applyStoryContextChanges(currentContext, pkg.changes.storyContext);
+
+        metadataUpdates = {
+          storyContext: updatedContext,
+          storyContextModifiedAt: new Date().toISOString(),
+        };
+        storyContextUpdated = true;
+      }
+
+      // Save updated graph (with optional story context updates)
       const newVersionId = await updateGraphById(
         id,
         graph,
         `Apply package: ${pkg.title}`,
-        undefined,
+        metadataUpdates,
         ctx
       );
 
@@ -931,7 +937,7 @@ export function createApplyPackageHandler(ctx: StorageContext) {
           newVersionId,
           patchOpsApplied: patch.ops.length,
           ...stats,
-          storyContextUpdated: Boolean(pkg.changes.storyContext?.length),
+          storyContextUpdated,
         },
       });
     } catch (error) {
@@ -1038,18 +1044,25 @@ export function createAcceptPackageHandler(ctx: StorageContext) {
 
       // 7. Handle Story Context changes
       let storyContextUpdated = false;
+      let metadataUpdates: { storyContext?: string; storyContextModifiedAt?: string } | undefined;
+
       if (pkg.changes.storyContext && pkg.changes.storyContext.length > 0) {
-        // Note: Story Context updates would be applied separately
-        // through the context endpoint. For now, we track the intent.
+        const currentContext = state.metadata?.storyContext;
+        const updatedContext = applyStoryContextChanges(currentContext, pkg.changes.storyContext);
+
+        metadataUpdates = {
+          storyContext: updatedContext,
+          storyContextModifiedAt: new Date().toISOString(),
+        };
         storyContextUpdated = true;
       }
 
-      // 8. Save updated graph
+      // 8. Save updated graph (with optional story context updates)
       const newVersionId = await updateGraphById(
         id,
         graph,
         `Accept package: ${pkg.title}`,
-        undefined,
+        metadataUpdates,
         ctx
       );
 
@@ -1080,6 +1093,100 @@ export function createAcceptPackageHandler(ctx: StorageContext) {
       next(error);
     }
   };
+}
+
+// =============================================================================
+// Story Context Change Application
+// =============================================================================
+
+/**
+ * Apply story context changes to the existing story context.
+ * Returns the updated story context string.
+ */
+function applyStoryContextChanges(
+  currentContext: string | undefined,
+  changes: ai.StoryContextChange[]
+): string {
+  let context = currentContext ?? '';
+
+  for (const change of changes) {
+    switch (change.operation) {
+      case 'add': {
+        // Find the section or create it
+        const sectionRegex = new RegExp(`^## ${escapeRegex(change.section)}\\s*$`, 'm');
+        const sectionMatch = context.match(sectionRegex);
+
+        if (sectionMatch && sectionMatch.index !== undefined) {
+          // Section exists - find where to insert (before next ## or end of file)
+          const afterSection = context.slice(sectionMatch.index + sectionMatch[0].length);
+          const nextSectionMatch = afterSection.match(/^## /m);
+
+          if (nextSectionMatch && nextSectionMatch.index !== undefined) {
+            // Insert before next section
+            const insertPos = sectionMatch.index + sectionMatch[0].length + nextSectionMatch.index;
+            const before = context.slice(0, insertPos).trimEnd();
+            const after = context.slice(insertPos);
+            context = before + '\n\n' + change.content + '\n\n' + after.trimStart();
+          } else {
+            // No next section - append at end
+            context = context.trimEnd() + '\n\n' + change.content;
+          }
+        } else {
+          // Section doesn't exist - create it at the end
+          context = context.trimEnd() + '\n\n## ' + change.section + '\n\n' + change.content;
+        }
+        break;
+      }
+
+      case 'modify': {
+        if (change.previous_content) {
+          // Replace the previous content with new content
+          const escapedPrevious = escapeRegex(change.previous_content);
+          const modifyRegex = new RegExp(escapedPrevious, 'g');
+          context = context.replace(modifyRegex, change.content);
+        } else {
+          // No previous_content - just add to section
+          const sectionRegex = new RegExp(`^## ${escapeRegex(change.section)}\\s*$`, 'm');
+          const sectionMatch = context.match(sectionRegex);
+
+          if (sectionMatch && sectionMatch.index !== undefined) {
+            // Find the end of section content (next ## or end)
+            const afterSection = context.slice(sectionMatch.index + sectionMatch[0].length);
+            const nextSectionMatch = afterSection.match(/^## /m);
+
+            if (nextSectionMatch && nextSectionMatch.index !== undefined) {
+              const insertPos = sectionMatch.index + sectionMatch[0].length + nextSectionMatch.index;
+              const before = context.slice(0, insertPos).trimEnd();
+              const after = context.slice(insertPos);
+              context = before + '\n\n' + change.content + '\n\n' + after.trimStart();
+            } else {
+              context = context.trimEnd() + '\n\n' + change.content;
+            }
+          }
+        }
+        break;
+      }
+
+      case 'delete': {
+        // Remove the specified content
+        const escapedContent = escapeRegex(change.content);
+        const deleteRegex = new RegExp(escapedContent + '\\s*', 'g');
+        context = context.replace(deleteRegex, '');
+        // Clean up multiple blank lines
+        context = context.replace(/\n{3,}/g, '\n\n');
+        break;
+      }
+    }
+  }
+
+  return context.trim();
+}
+
+/**
+ * Escape special regex characters in a string.
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 // =============================================================================

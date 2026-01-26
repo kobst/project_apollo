@@ -95,3 +95,95 @@
 .lastSaved {
   opacity: 0.6;
 }
+
+/* Staged Changes Section */
+.stagedChanges {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(74, 222, 128, 0.05);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  border-radius: 8px;
+}
+
+.stagedHeader {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-success, #4ade80);
+}
+
+.changesList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.changeItem {
+  padding: 12px;
+  background: var(--bg-primary, #0f0f1a);
+  border-radius: 6px;
+  border-left: 3px solid transparent;
+}
+
+.changeItem.add {
+  border-left-color: var(--badge-addition, #4ade80);
+}
+
+.changeItem.modify {
+  border-left-color: var(--badge-modification, #fb923c);
+}
+
+.changeItem.delete {
+  border-left-color: var(--badge-deletion, #ef4444);
+}
+
+.changeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.changeSection {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary, #fff);
+}
+
+.changeBadge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.changeBadge.add {
+  background: rgba(74, 222, 128, 0.2);
+  color: var(--badge-addition, #4ade80);
+}
+
+.changeBadge.modify {
+  background: rgba(251, 146, 60, 0.2);
+  color: var(--badge-modification, #fb923c);
+}
+
+.changeBadge.delete {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--badge-deletion, #ef4444);
+}
+
+.changeContent {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary, #ccc);
+  white-space: pre-wrap;
+}
+
+.stagedHint {
+  margin: 12px 0 0 0;
+  font-size: 12px;
+  color: var(--text-muted, #666);
+  font-style: italic;
+}

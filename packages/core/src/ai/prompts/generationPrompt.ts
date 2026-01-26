@@ -20,10 +20,13 @@ import { getDepthBudget } from '../config.js';
  * @returns Complete prompt string
  */
 export function buildGenerationPrompt(params: GenerationParams): string {
-  const { entryPoint, storyContext, gaps, direction, depth, count } = params;
+  const { entryPoint, storyContext, gaps, direction, depth, count, ideas } = params;
   const budget = getDepthBudget(depth);
 
   const entryDescription = describeEntryPoint(entryPoint);
+
+  // Build ideas section if provided
+  const ideasSection = ideas ? `\n${ideas}\n` : '';
 
   return `You are an AI assistant helping to develop a screenplay. Your task is to generate EXACTLY ${count} complete narrative packages based on the given entry point.
 
@@ -48,7 +51,7 @@ ${storyContext}
 ## Open Gaps (Opportunities)
 
 ${gaps}
-
+${ideasSection}
 ${direction ? `## User Direction\n\n"${direction}"\n` : ''}
 
 ## Generation Budget

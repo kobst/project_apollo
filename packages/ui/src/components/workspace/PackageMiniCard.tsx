@@ -21,6 +21,7 @@ export function PackageMiniCard({
   const confidence = Math.round(pkg.confidence * 100);
   const nodeCount = pkg.changes.nodes.length;
   const edgeCount = pkg.changes.edges.length;
+  const contextCount = pkg.changes.storyContext?.length ?? 0;
 
   return (
     <button
@@ -36,7 +37,8 @@ export function PackageMiniCard({
         {pkg.title.length > 30 ? `${pkg.title.slice(0, 30)}...` : pkg.title}
       </div>
       <div className={styles.meta}>
-        <span className={styles.count}>{nodeCount} nodes</span>
+        {contextCount > 0 && <span className={styles.count}>{contextCount} context</span>}
+        {nodeCount > 0 && <span className={styles.count}>{nodeCount} nodes</span>}
         {edgeCount > 0 && <span className={styles.count}>{edgeCount} edges</span>}
       </div>
       {isActive && <div className={styles.activeIndicator} />}

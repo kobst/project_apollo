@@ -84,19 +84,33 @@ export async function generatePackages(
   const coverage = computeCoverage(graph);
   const gaps = coverage.gaps;
 
-  // 3. Serialize context
+  // 3. Build system prompt from metadata (stable, cacheable)
+  const systemPromptParams: ai.SystemPromptParams = {
+    storyName: state.metadata?.name,
+    logline: state.metadata?.logline,
+    storyContext: state.metadata?.storyContext,
+  };
+  const systemPrompt = ai.hasSystemPromptContent(systemPromptParams)
+    ? ai.buildSystemPrompt(systemPromptParams)
+    : undefined;
+
+  // 4. Serialize story state (without creative direction - that's in system prompt)
   const metadata: ai.StoryMetadata = {};
   if (state.metadata?.name) metadata.name = state.metadata.name;
   if (state.metadata?.logline) metadata.logline = state.metadata.logline;
-  if (state.metadata?.storyContext) metadata.storyContext = state.metadata.storyContext;
-  const storyContext = ai.serializeStoryContext(graph, metadata);
+  // Note: storyContext intentionally omitted - it's in system prompt now
+  const storyContext = ai.serializeStoryState(graph, metadata);
 
   const gapsText = ai.serializeGaps(gaps);
 
-  // 4. Get package count from config
+  // 5. Get filtered ideas for generation task
+  const entryPointNodeId = entryPoint.targetId;
+  const ideasResult = ai.getIdeasForTask(graph, 'generate', entryPointNodeId, 5);
+
+  // 6. Get package count from config
   const packageCount = ai.getPackageCount(count);
 
-  // 5. Build prompt
+  // 7. Build prompt
   const promptEntryPoint: ai.GenerationEntryPoint = { type: entryPoint.type };
   if (entryPoint.targetId) promptEntryPoint.targetId = entryPoint.targetId;
   if (entryPoint.targetData) promptEntryPoint.targetData = entryPoint.targetData;
@@ -109,19 +123,20 @@ export async function generatePackages(
     count: packageCount,
   };
   if (direction) promptParams.direction = direction;
+  if (ideasResult.serialized) promptParams.ideas = ideasResult.serialized;
 
   const prompt = ai.buildGenerationPrompt(promptParams);
 
-  // 6. Call LLM (with or without streaming)
-  console.log(`[generatePackages] Calling LLM (streaming: ${Boolean(streamCallbacks)})...`);
+  // 8. Call LLM (with or without streaming, include system prompt if available)
+  console.log(`[generatePackages] Calling LLM (streaming: ${Boolean(streamCallbacks)}, systemPrompt: ${Boolean(systemPrompt)})...`);
   let response: string;
 
   try {
     if (streamCallbacks) {
-      const llmResponse = await llmClient.stream(prompt, undefined, streamCallbacks);
+      const llmResponse = await llmClient.stream(prompt, systemPrompt, streamCallbacks);
       response = llmResponse.content;
     } else {
-      const llmResponse = await llmClient.complete(prompt);
+      const llmResponse = await llmClient.complete(prompt, systemPrompt);
       response = llmResponse.content;
     }
     console.log(`[generatePackages] LLM response received, length: ${response.length}`);
@@ -130,7 +145,7 @@ export async function generatePackages(
     throw llmError;
   }
 
-  // 7. Parse response
+  // 10. Parse response
   console.log('Parsing LLM response...');
   let result: ai.GenerationResult;
   try {
@@ -141,7 +156,7 @@ export async function generatePackages(
     throw parseError;
   }
 
-  // 8. Validate and fix IDs
+  // 11. Validate and fix IDs
   const existingNodeIds = new Set(graph.nodes.keys());
   const validation = ai.validateGeneratedIds(result, existingNodeIds);
 
@@ -150,14 +165,14 @@ export async function generatePackages(
     result = ai.regenerateInvalidIds(result, existingNodeIds);
   }
 
-  // 9. Validate edge references
+  // 12. Validate edge references
   const edgeValidation = ai.validateEdgeReferences(result, existingNodeIds);
   if (!edgeValidation.valid) {
     console.warn('Invalid edge references:', edgeValidation.errors);
     // Could attempt to fix or just warn
   }
 
-  // 10. Create or update session
+  // 13. Create or update session
   let session = await loadGenerationSession(storyId, ctx);
 
   // Get current version info for anchoring

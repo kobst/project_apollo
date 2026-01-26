@@ -285,8 +285,9 @@ function validateGenerationSchema(data: unknown): void {
 /**
  * Validate a single package schema.
  *
- * Expected format:
- * { summary, primary: { nodes, edges }, supporting?, suggestions?, impact? }
+ * Accepts two formats:
+ * 1. Enhanced: { summary, primary: { nodes, edges }, supporting?, suggestions?, impact? }
+ * 2. Legacy/Direct: { summary, changes: { storyContext?, nodes, edges }, impact? }
  */
 function validatePackageSchema(pkg: unknown, index: number): void {
   if (typeof pkg !== 'object' || pkg === null) {
@@ -306,9 +307,12 @@ function validatePackageSchema(pkg: unknown, index: number): void {
     throw new ParseError(`Package ${index} missing summary`, pkg);
   }
 
-  // Primary structure required
-  if (!p.primary || typeof p.primary !== 'object') {
-    throw new ParseError(`Package ${index} missing primary`, pkg);
+  // Either 'primary' or 'changes' structure required
+  const hasPrimary = p.primary && typeof p.primary === 'object';
+  const hasChanges = p.changes && typeof p.changes === 'object';
+
+  if (!hasPrimary && !hasChanges) {
+    throw new ParseError(`Package ${index} missing primary or changes`, pkg);
   }
 }
 
@@ -319,16 +323,27 @@ function validatePackageSchema(pkg: unknown, index: number): void {
 /**
  * Normalize a package from raw LLM output.
  *
- * Expected format: { summary, primary, supporting?, suggestions?, impact? }
+ * Accepts two formats:
+ * 1. Enhanced: { summary, primary, supporting?, suggestions?, impact? }
+ * 2. Legacy/Direct: { summary, changes: { storyContext?, nodes, edges }, impact? }
  */
 function normalizePackage(pkg: Record<string, unknown>): NarrativePackage {
   const impact = pkg.impact as Record<string, unknown> | undefined;
   const primary = pkg.primary as Record<string, unknown> | undefined;
   const supporting = pkg.supporting as Record<string, unknown> | undefined;
   const suggestions = pkg.suggestions as Record<string, unknown> | undefined;
+  const directChanges = pkg.changes as Record<string, unknown> | undefined;
 
-  // Merge primary + supporting into changes
-  const changes = normalizePrimarySupporting(primary, supporting, suggestions);
+  // Determine which format to use
+  let changes: { storyContext?: StoryContextChange[]; nodes: NodeChange[]; edges: EdgeChange[] };
+
+  if (directChanges) {
+    // Direct 'changes' format - use it directly
+    changes = normalizeDirectChanges(directChanges);
+  } else {
+    // Enhanced format - merge primary + supporting into changes
+    changes = normalizePrimarySupporting(primary, supporting, suggestions);
+  }
 
   const result: NarrativePackage = {
     id: String(pkg.id),
@@ -399,6 +414,48 @@ function normalizePrimarySupporting(
         operation: (ctx.action as string) === 'append' ? 'add' : (ctx.action as string) ?? 'add',
         section: ctx.section as string,
         content: ctx.content as string,
+      } as StoryContextChange)
+    );
+  }
+
+  return result;
+}
+
+/**
+ * Normalize direct 'changes' structure from LLM output.
+ * This handles the format: { storyContext?, nodes, edges }
+ */
+function normalizeDirectChanges(
+  changes: Record<string, unknown>
+): {
+  storyContext?: StoryContextChange[];
+  nodes: NodeChange[];
+  edges: EdgeChange[];
+} {
+  const nodes: NodeChange[] = [];
+  const edges: EdgeChange[] = [];
+
+  if (Array.isArray(changes.nodes)) {
+    nodes.push(...(changes.nodes as NodeChange[]));
+  }
+  if (Array.isArray(changes.edges)) {
+    edges.push(...(changes.edges as EdgeChange[]));
+  }
+
+  const result: {
+    storyContext?: StoryContextChange[];
+    nodes: NodeChange[];
+    edges: EdgeChange[];
+  } = { nodes, edges };
+
+  // Handle direct storyContext array
+  if (Array.isArray(changes.storyContext)) {
+    result.storyContext = (changes.storyContext as Array<Record<string, unknown>>).map(
+      (ctx) => ({
+        operation: ctx.operation as 'add' | 'modify' | 'delete' ?? 'add',
+        section: ctx.section as string,
+        content: ctx.content as string,
+        previous_content: ctx.previous_content as string | undefined,
       } as StoryContextChange)
     );
   }

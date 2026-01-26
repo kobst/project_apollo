@@ -103,6 +103,20 @@ function generateSavedPackageId(): string {
 // =============================================================================
 
 /**
+ * Migrate a saved package to current schema.
+ * Handles renames like PlotPoint → StoryBeat.
+ */
+function migratePackage(pkg: SavedPackage): SavedPackage {
+  // Migrate node_type: PlotPoint → StoryBeat
+  for (const nodeChange of pkg.package.changes.nodes) {
+    if (nodeChange.node_type === 'PlotPoint') {
+      nodeChange.node_type = 'StoryBeat';
+    }
+  }
+  return pkg;
+}
+
+/**
  * Load saved packages for a story.
  */
 export async function loadSavedPackages(
@@ -111,7 +125,10 @@ export async function loadSavedPackages(
 ): Promise<SavedPackagesState> {
   try {
     const content = await readFile(getSavedPackagesPath(storyId, ctx), 'utf-8');
-    return JSON.parse(content) as SavedPackagesState;
+    const state = JSON.parse(content) as SavedPackagesState;
+    // Migrate packages to current schema
+    state.packages = state.packages.map(migratePackage);
+    return state;
   } catch {
     // Return empty state if file doesn't exist
     return { version: '1.0.0', packages: [] };

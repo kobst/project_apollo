@@ -39,6 +39,8 @@ export interface CharacterPromptParams {
   creativity: number;
   /** Expansion scope for supporting content (default: 'flexible') */
   expansionScope?: ExpansionScope;
+  /** Optional serialized ideas relevant to character generation */
+  ideas?: string;
 }
 
 // =============================================================================
@@ -65,6 +67,7 @@ export function buildCharacterPrompt(params: CharacterPromptParams): string {
     direction,
     creativity,
     expansionScope = 'flexible',
+    ideas,
   } = params;
 
   const creativityLabel = creativity < 0.3 ? 'conservative' : creativity > 0.7 ? 'creative' : 'balanced';
@@ -115,6 +118,7 @@ ${existingCharacters || '[No characters defined yet]'}
 ${existingStoryBeats || '[No story beats defined yet]'}
 
 ${direction ? `## User Direction\n\n"${direction}"\n` : ''}
+${ideas ? `${ideas}\n` : ''}
 ${supportingSection}
 ## Generation Settings
 

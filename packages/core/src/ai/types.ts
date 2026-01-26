@@ -227,6 +227,8 @@ export interface GenerationParams {
   depth: GenerationDepth;
   /** Number of packages to generate */
   count: number;
+  /** Optional serialized ideas relevant to this generation */
+  ideas?: string;
 }
 
 /**
@@ -247,6 +249,8 @@ export interface RefinementParams {
   depth: GenerationDepth;
   /** Number of variations to generate */
   count: number;
+  /** Optional serialized ideas relevant to this refinement */
+  ideas?: string;
 }
 
 /**
@@ -259,6 +263,8 @@ export interface InterpretationParams {
   storyContext: string;
   /** Recently modified node IDs for context */
   recentNodes?: string[];
+  /** Optional serialized ideas relevant to this interpretation */
+  ideas?: string;
 }
 
 // =============================================================================

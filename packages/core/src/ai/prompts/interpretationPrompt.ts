@@ -21,7 +21,10 @@ import type { InterpretationParams } from '../types.js';
 export function buildInterpretationPrompt(
   params: InterpretationParams
 ): string {
-  const { userInput, storyContext, recentNodes } = params;
+  const { userInput, storyContext, recentNodes, ideas } = params;
+
+  // Build ideas section if provided
+  const ideasSection = ideas ? `\n${ideas}\n` : '';
 
   return `You are an AI assistant helping to develop a screenplay. Your task is to interpret the user's freeform input and propose appropriate structured changes to the story.
 
@@ -48,7 +51,7 @@ export function buildInterpretationPrompt(
 ${storyContext}
 
 ${recentNodes?.length ? `## Recently Modified Nodes\n${recentNodes.join('\n')}` : ''}
-
+${ideasSection}
 ## User Input
 
 "${userInput}"

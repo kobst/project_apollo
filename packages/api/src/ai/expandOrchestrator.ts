@@ -118,6 +118,7 @@ export async function proposeExpand(
   // 2. Validate and get target info
   let targetNodeData: string | undefined;
   let targetNodeType: string | undefined;
+  let entryPointNodeId: string | undefined;
 
   if (target.type === 'node') {
     const node = getNode(graph, target.nodeId);
@@ -126,17 +127,31 @@ export async function proposeExpand(
     }
     targetNodeType = node.type;
     targetNodeData = serializeNodeForExpansion(node as ExpandableNode, graph);
+    entryPointNodeId = target.nodeId;
   }
 
-  // 3. Serialize context
+  // 3. Build system prompt from metadata (stable, cacheable)
+  const systemPromptParams: ai.SystemPromptParams = {
+    storyName: state.metadata?.name,
+    logline: state.metadata?.logline,
+    storyContext: state.metadata?.storyContext,
+  };
+  const systemPrompt = ai.hasSystemPromptContent(systemPromptParams)
+    ? ai.buildSystemPrompt(systemPromptParams)
+    : undefined;
+
+  // 4. Serialize story state (without creative direction - that's in system prompt)
   const metadata: ai.StoryMetadata = {};
   if (state.metadata?.name) metadata.name = state.metadata.name;
   if (state.metadata?.logline) metadata.logline = state.metadata.logline;
-  if (state.metadata?.storyContext) metadata.storyContext = state.metadata.storyContext;
+  // Note: storyContext intentionally omitted - it's in system prompt now
 
-  const storyContext = ai.serializeStoryContext(graph, metadata);
+  const storyContext = ai.serializeStoryState(graph, metadata);
 
-  // 4. Build prompt
+  // 5. Get filtered ideas for expand task
+  const ideasResult = ai.getIdeasForTask(graph, 'expand', entryPointNodeId, 5);
+
+  // 6. Build prompt
   const promptParams: ExpandPromptParams = {
     storyContext,
     target,
@@ -155,19 +170,22 @@ export async function proposeExpand(
   if (direction) {
     promptParams.direction = direction;
   }
+  if (ideasResult.serialized) {
+    promptParams.ideas = ideasResult.serialized;
+  }
 
   const prompt = ai.buildExpandPrompt(promptParams);
 
-  // 5. Call LLM
-  console.log(`[proposeExpand] Calling LLM (streaming: ${Boolean(streamCallbacks)})...`);
+  // 7. Call LLM (with system prompt if available)
+  console.log(`[proposeExpand] Calling LLM (streaming: ${Boolean(streamCallbacks)}, systemPrompt: ${Boolean(systemPrompt)})...`);
   let response: string;
 
   try {
     if (streamCallbacks) {
-      const llmResponse = await llmClient.stream(prompt, undefined, streamCallbacks);
+      const llmResponse = await llmClient.stream(prompt, systemPrompt, streamCallbacks);
       response = llmResponse.content;
     } else {
-      const llmResponse = await llmClient.complete(prompt);
+      const llmResponse = await llmClient.complete(prompt, systemPrompt);
       response = llmResponse.content;
     }
     console.log(`[proposeExpand] LLM response received, length: ${response.length}`);
@@ -176,11 +194,16 @@ export async function proposeExpand(
     throw llmError;
   }
 
-  // 6. Parse response
+  // 8. Parse response
   console.log('[proposeExpand] Parsing LLM response...');
+  console.log('[proposeExpand] Raw response (first 3000 chars):', response.slice(0, 3000));
   let result: ai.GenerationResult;
   try {
     result = ai.parseGenerationResponse(response);
+    // Debug: log storyContext changes for each package
+    result.packages.forEach((pkg, i) => {
+      console.log(`[proposeExpand] Package ${i} storyContext:`, JSON.stringify(pkg.changes.storyContext ?? []));
+    });
   } catch (parseError) {
     console.error('[proposeExpand] Failed to parse LLM response:', parseError);
     console.error('Raw response (first 2000 chars):', response.slice(0, 2000));

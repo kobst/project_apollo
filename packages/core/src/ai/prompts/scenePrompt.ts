@@ -37,6 +37,8 @@ export interface ScenePromptParams {
   creativity: number;
   /** Expansion scope for supporting content (default: 'flexible') */
   expansionScope?: ExpansionScope;
+  /** Optional serialized ideas relevant to scene generation */
+  ideas?: string;
 }
 
 // =============================================================================
@@ -62,6 +64,7 @@ export function buildScenePrompt(params: ScenePromptParams): string {
     direction,
     creativity,
     expansionScope = 'flexible',
+    ideas,
   } = params;
 
   const creativityLabel = creativity < 0.3 ? 'conservative' : creativity > 0.7 ? 'creative' : 'balanced';
@@ -122,6 +125,7 @@ ${existingLocations || '[No locations defined - create supporting locations if n
 ${existingScenes || '[No existing scenes]'}
 
 ${direction ? `## User Direction\n\n"${direction}"\n` : ''}
+${ideas ? `${ideas}\n` : ''}
 ${supportingSection}
 ## Generation Settings
 

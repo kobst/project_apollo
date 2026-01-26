@@ -38,6 +38,8 @@ export interface StoryBeatPromptParams {
   expansionScope?: ExpansionScope;
   /** Target specific act for generation */
   targetAct?: 1 | 2 | 3 | 4 | 5;
+  /** Optional serialized ideas relevant to story beat generation */
+  ideas?: string;
 }
 
 // =============================================================================
@@ -70,6 +72,7 @@ export function buildStoryBeatPrompt(params: StoryBeatPromptParams): string {
     creativity,
     expansionScope = 'flexible',
     targetAct,
+    ideas,
   } = params;
 
   const creativityLabel = creativity < 0.3 ? 'conservative' : creativity > 0.7 ? 'creative' : 'balanced';
@@ -132,6 +135,7 @@ ${existingStoryBeats || '[No existing StoryBeats]'}
 ${characters || '[No characters defined yet]'}
 
 ${direction ? `## User Direction\n\n"${direction}"\n` : ''}
+${ideas ? `${ideas}\n` : ''}
 ${supportingSection}
 ## Generation Settings
 

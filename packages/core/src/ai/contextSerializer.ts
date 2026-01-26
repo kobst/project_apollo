@@ -229,6 +229,61 @@ export function serializeStoryContextMd(
   return storyContext;
 }
 
+/**
+ * Serialize story state for user prompts (WITHOUT creative direction).
+ *
+ * This function is designed to work with the system prompt architecture where:
+ * - System prompt contains: story identity + creative direction (stable, cached)
+ * - User prompt contains: current state + specific task + ideas (dynamic)
+ *
+ * Unlike serializeStoryContext, this function omits the storyContext field
+ * since that creative direction is now included in the system prompt.
+ *
+ * @param graph - The story graph
+ * @param metadata - Story metadata (only name/logline used, storyContext ignored)
+ * @param options - Serialization options
+ * @returns Structured markdown string (without creative direction)
+ */
+export function serializeStoryState(
+  graph: GraphState,
+  metadata: StoryMetadata,
+  options: SerializationOptions = {}
+): string {
+  const maxNodes = options.maxNodes ?? defaultConfig.maxContextNodes;
+  const sections: string[] = [];
+
+  // Header (minimal - identity is in system prompt)
+  sections.push(`# Current Story State: ${metadata.name ?? 'Untitled'}`);
+  if (metadata.logline) {
+    sections.push(`Logline: "${metadata.logline}"`);
+  }
+  sections.push('');
+
+  // Note: Creative direction (storyContext) is intentionally omitted
+  // It should be included in the system prompt for caching efficiency
+
+  // Current State Summary
+  sections.push('## State Summary');
+  sections.push('');
+  sections.push(serializeStateSummary(graph));
+  sections.push('');
+
+  // Nodes by type
+  sections.push('## Existing Nodes');
+  sections.push('');
+  sections.push(serializeNodesByType(graph, maxNodes));
+
+  // Edges (optional)
+  if (options.includeEdges) {
+    sections.push('');
+    sections.push('## Relationships');
+    sections.push('');
+    sections.push(serializeEdges(graph));
+  }
+
+  return sections.join('\n');
+}
+
 // =============================================================================
 // Helper Serializers
 // =============================================================================

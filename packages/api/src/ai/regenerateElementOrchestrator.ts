@@ -315,17 +315,27 @@ export async function regenerateElement(
     throw new Error(`Story "${storyId}" state not found`);
   }
 
-  // Serialize story context
+  // 4. Build system prompt from metadata (stable, cacheable)
+  const systemPromptParams: ai.SystemPromptParams = {
+    storyName: state.metadata?.name,
+    logline: state.metadata?.logline,
+    storyContext: state.metadata?.storyContext,
+  };
+  const systemPrompt = ai.hasSystemPromptContent(systemPromptParams)
+    ? ai.buildSystemPrompt(systemPromptParams)
+    : undefined;
+
+  // 5. Serialize story state (without creative direction - that's in system prompt)
   const metadata: ai.StoryMetadata = {};
   if (state.metadata?.name) metadata.name = state.metadata.name;
   if (state.metadata?.logline) metadata.logline = state.metadata.logline;
-  if (state.metadata?.storyContext) metadata.storyContext = state.metadata.storyContext;
-  const storyContext = ai.serializeStoryContext(graph, metadata);
+  // Note: storyContext intentionally omitted - it's in system prompt now
+  const storyContext = ai.serializeStoryState(graph, metadata);
 
-  // 4. Get package count
+  // 6. Get package count
   const packageCount = ai.getPackageCount(count);
 
-  // 5. Build prompt
+  // 7. Build prompt
   const prompt = buildRegenerateElementPrompt({
     pkg,
     elementType,
@@ -336,18 +346,18 @@ export async function regenerateElement(
     count: packageCount,
   });
 
-  // 6. Call LLM
+  // 8. Call LLM (with system prompt if available)
   let response: string;
 
   if (streamCallbacks) {
-    const llmResponse = await llmClient.stream(prompt, undefined, streamCallbacks);
+    const llmResponse = await llmClient.stream(prompt, systemPrompt, streamCallbacks);
     response = llmResponse.content;
   } else {
-    const llmResponse = await llmClient.complete(prompt);
+    const llmResponse = await llmClient.complete(prompt, systemPrompt);
     response = llmResponse.content;
   }
 
-  // 7. Parse response
+  // 9. Parse response
   const options = parseRegenerateResponse(response, elementType);
 
   return { options };

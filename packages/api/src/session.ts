@@ -376,6 +376,21 @@ export async function markSessionArchived(
 }
 
 /**
+ * Migrate a generation session to current schema.
+ * Handles renames like PlotPoint → StoryBeat.
+ */
+function migrateGenerationSession(session: GenerationSession): GenerationSession {
+  for (const pkg of session.packages) {
+    for (const nodeChange of pkg.changes.nodes) {
+      if (nodeChange.node_type === 'PlotPoint') {
+        nodeChange.node_type = 'StoryBeat';
+      }
+    }
+  }
+  return session;
+}
+
+/**
  * Load generation session for a story.
  */
 export async function loadGenerationSession(
@@ -384,7 +399,8 @@ export async function loadGenerationSession(
 ): Promise<GenerationSession | null> {
   try {
     const content = await readFile(getGenerationSessionPath(storyId, ctx), 'utf-8');
-    return JSON.parse(content) as GenerationSession;
+    const session = JSON.parse(content) as GenerationSession;
+    return migrateGenerationSession(session);
   } catch {
     return null;
   }

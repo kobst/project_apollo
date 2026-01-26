@@ -35,6 +35,8 @@ export interface ExpandPromptParams {
   creativity: number;
   /** Expansion scope for supporting content (default: 'flexible') */
   expansionScope?: ExpansionScope;
+  /** Optional serialized ideas relevant to this expansion */
+  ideas?: string;
 }
 
 // =============================================================================
@@ -59,6 +61,7 @@ export function buildExpandPrompt(params: ExpandPromptParams): string {
     direction,
     creativity,
     expansionScope = 'flexible',
+    ideas,
   } = params;
 
   const creativityLabel = creativity < 0.3 ? 'conservative' : creativity > 0.7 ? 'creative' : 'balanced';
@@ -95,7 +98,29 @@ ${storyContext}
 ${targetInstructions}
 
 ${direction ? `## User Direction\n\n"${direction}"\n` : ''}
+${ideas ? `${ideas}\n` : ''}
 ${supportingSection}
+## Available Node Types
+
+- **Character**: name, description, archetype, traits[]
+- **Location**: name, description
+- **Object**: name, description
+- **StoryBeat**: title, summary, intent (plot|character|tone), priority, stakes_change
+- **Scene**: heading, scene_overview, mood, key_actions[]
+
+## Available Edge Types
+
+- HAS_CHARACTER: Scene → Character
+- LOCATED_AT: Scene → Location
+- FEATURES_OBJECT: Scene → Object
+- ALIGNS_WITH: StoryBeat → Beat (aligns with structural beat)
+- SATISFIED_BY: StoryBeat → Scene (scene realizes story beat)
+- PRECEDES: StoryBeat → StoryBeat (causal/temporal ordering)
+- ADVANCES: StoryBeat → CharacterArc
+- PART_OF: Location → Setting
+
+**IMPORTANT**: ONLY use edge types from this list. Do NOT invent new edge types.
+
 ## Generation Settings
 
 - **Expansion Type**: ${expandType}
@@ -152,6 +177,12 @@ function getTargetInstructions(
       targetInstructions: `## Expansion Target: Story Context
 
 You are expanding the entire story context with new thematic, tonal, or structural content.
+
+**IMPORTANT**: Look at the existing sections in the Story Context above (marked with ## headers).
+- PREFER adding content to existing sections rather than creating new ones
+- Use the EXACT section names that already exist in the document
+- Common sections include: "Creative Direction", "Themes & Motifs", "Working Notes", "Constraints & Rules"
+- Only create a new section if the content truly doesn't fit any existing section
 
 Generate:
 - New themes or thematic variations
@@ -320,6 +351,7 @@ function getOutputSchema(expandType: string, isConstrained: boolean): string {
 
 /**
  * Schema for context expansion.
+ * Uses changes.storyContext format to match UI expectations.
  */
 function getContextExpansionSchema(isConstrained: boolean): string {
   if (isConstrained) {
@@ -332,20 +364,21 @@ function getContextExpansionSchema(isConstrained: boolean): string {
       "summary": "Why this expansion makes sense",
       "confidence": 0.85,
       "style_tags": ["thematic", "tonal"],
-      "primary": {
-        "type": "Mixed",
+      "changes": {
+        "storyContext": [
+          {
+            "operation": "add",
+            "section": "Themes & Motifs",
+            "content": "The tension between ambition and integrity drives character choices"
+          },
+          {
+            "operation": "add",
+            "section": "Constraints & Rules",
+            "content": "External pressure from society conflicts with internal moral compass"
+          }
+        ],
         "nodes": [],
         "edges": []
-      },
-      "suggestions": {
-        "contextAdditions": [
-          {
-            "id": "ctx_12345",
-            "section": "themes",
-            "content": "The tension between ambition and integrity",
-            "action": "append"
-          }
-        ]
       },
       "impact": {
         "fulfills_gaps": [],
@@ -355,7 +388,9 @@ function getContextExpansionSchema(isConstrained: boolean): string {
     }
   ]
 }
-\`\`\``;
+\`\`\`
+
+**IMPORTANT**: Use the section names that ALREADY EXIST in the story context. Look at the ## headers in the document and use those exact names.`;
   }
 
   return `\`\`\`json
@@ -367,20 +402,23 @@ function getContextExpansionSchema(isConstrained: boolean): string {
       "summary": "Why this expansion makes sense",
       "confidence": 0.85,
       "style_tags": ["thematic", "tonal"],
-      "primary": {
-        "type": "Mixed",
+      "changes": {
+        "storyContext": [
+          {
+            "operation": "add",
+            "section": "Themes & Motifs",
+            "content": "The tension between ambition and integrity drives character choices"
+          },
+          {
+            "operation": "add",
+            "section": "Constraints & Rules",
+            "content": "External pressure from society conflicts with internal moral compass"
+          }
+        ],
         "nodes": [],
         "edges": []
       },
       "suggestions": {
-        "contextAdditions": [
-          {
-            "id": "ctx_12345",
-            "section": "themes",
-            "content": "The tension between ambition and integrity",
-            "action": "append"
-          }
-        ],
         "stashedIdeas": [
           {
             "id": "idea_12345",
@@ -398,7 +436,9 @@ function getContextExpansionSchema(isConstrained: boolean): string {
     }
   ]
 }
-\`\`\``;
+\`\`\`
+
+**IMPORTANT**: Use the section names that ALREADY EXIST in the story context. Look at the ## headers in the document and use those exact names.`;
 }
 
 /**

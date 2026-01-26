@@ -94,18 +94,31 @@ export async function refinePackage(
     throw new Error(`Story "${storyId}" state not found`);
   }
 
-  // 3. Serialize context
+  // 3. Build system prompt from metadata (stable, cacheable)
+  const systemPromptParams: ai.SystemPromptParams = {
+    storyName: state.metadata?.name,
+    logline: state.metadata?.logline,
+    storyContext: state.metadata?.storyContext,
+  };
+  const systemPrompt = ai.hasSystemPromptContent(systemPromptParams)
+    ? ai.buildSystemPrompt(systemPromptParams)
+    : undefined;
+
+  // 4. Serialize story state (without creative direction - that's in system prompt)
   const metadata: ai.StoryMetadata = {};
   if (state.metadata?.name) metadata.name = state.metadata.name;
   if (state.metadata?.logline) metadata.logline = state.metadata.logline;
-  if (state.metadata?.storyContext) metadata.storyContext = state.metadata.storyContext;
-  const storyContext = ai.serializeStoryContext(graph, metadata);
+  // Note: storyContext intentionally omitted - it's in system prompt now
+  const storyContext = ai.serializeStoryState(graph, metadata);
 
-  // 4. Get package count
+  // 5. Get filtered ideas for refine task
+  const ideasResult = ai.getIdeasForTask(graph, 'refine', undefined, 5);
+
+  // 6. Get package count
   const packageCount = ai.getPackageCount(count);
 
-  // 5. Build prompt
-  const prompt = ai.buildRefinementPrompt({
+  // 7. Build prompt
+  const promptParams: ai.RefinementParams = {
     basePackage,
     keepElements,
     regenerateElements,
@@ -113,23 +126,27 @@ export async function refinePackage(
     storyContext,
     depth,
     count: packageCount,
-  });
+  };
+  if (ideasResult.serialized) {
+    promptParams.ideas = ideasResult.serialized;
+  }
+  const prompt = ai.buildRefinementPrompt(promptParams);
 
-  // 6. Call LLM
+  // 8. Call LLM (with system prompt if available)
   let response: string;
 
   if (streamCallbacks) {
-    const llmResponse = await llmClient.stream(prompt, undefined, streamCallbacks);
+    const llmResponse = await llmClient.stream(prompt, systemPrompt, streamCallbacks);
     response = llmResponse.content;
   } else {
-    const llmResponse = await llmClient.complete(prompt);
+    const llmResponse = await llmClient.complete(prompt, systemPrompt);
     response = llmResponse.content;
   }
 
-  // 7. Parse response
+  // 9. Parse response
   let result = ai.parseGenerationResponse(response);
 
-  // 8. Validate and fix IDs
+  // 10. Validate and fix IDs
   const existingNodeIds = new Set(graph.nodes.keys());
   const validation = ai.validateGeneratedIds(result, existingNodeIds);
 
@@ -138,7 +155,7 @@ export async function refinePackage(
     result = ai.regenerateInvalidIds(result, existingNodeIds);
   }
 
-  // 9. Set parent_package_id on all variations
+  // 11. Set parent_package_id on all variations
   const variations = result.packages.map((pkg) => ({
     ...pkg,
     parent_package_id: basePackageId,

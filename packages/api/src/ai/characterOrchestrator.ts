@@ -132,17 +132,30 @@ export async function proposeCharacters(
   const activeCharacters = characters.filter((c) => c.status !== 'INACTIVE');
   const existingCharacters = computeCharacterSummaries(activeCharacters, graph);
 
-  // 4. Serialize context
+  // 4. Build system prompt from metadata (stable, cacheable)
+  const systemPromptParams: ai.SystemPromptParams = {
+    storyName: state.metadata?.name,
+    logline: state.metadata?.logline,
+    storyContext: state.metadata?.storyContext,
+  };
+  const systemPrompt = ai.hasSystemPromptContent(systemPromptParams)
+    ? ai.buildSystemPrompt(systemPromptParams)
+    : undefined;
+
+  // 5. Serialize story state (without creative direction - that's in system prompt)
   const metadata: ai.StoryMetadata = {};
   if (state.metadata?.name) metadata.name = state.metadata.name;
   if (state.metadata?.logline) metadata.logline = state.metadata.logline;
-  if (state.metadata?.storyContext) metadata.storyContext = state.metadata.storyContext;
+  // Note: storyContext intentionally omitted - it's in system prompt now
 
-  const storyContext = ai.serializeStoryContext(graph, metadata);
+  const storyContext = ai.serializeStoryState(graph, metadata);
   const existingCharactersText = serializeExistingCharacters(activeCharacters);
   const existingStoryBeatsText = serializeExistingStoryBeats(graph);
 
-  // 5. Build prompt
+  // 6. Get filtered ideas for character task
+  const ideasResult = ai.getIdeasForTask(graph, 'character', characterId, 5);
+
+  // 7. Build prompt
   const promptParams: CharacterPromptParams = {
     storyContext,
     existingCharacters: existingCharactersText,
@@ -163,19 +176,22 @@ export async function proposeCharacters(
   if (direction) {
     promptParams.direction = direction;
   }
+  if (ideasResult.serialized) {
+    promptParams.ideas = ideasResult.serialized;
+  }
 
   const prompt = ai.buildCharacterPrompt(promptParams);
 
-  // 6. Call LLM
-  console.log(`[proposeCharacters] Calling LLM (streaming: ${Boolean(streamCallbacks)})...`);
+  // 8. Call LLM (with system prompt if available)
+  console.log(`[proposeCharacters] Calling LLM (streaming: ${Boolean(streamCallbacks)}, systemPrompt: ${Boolean(systemPrompt)})...`);
   let response: string;
 
   try {
     if (streamCallbacks) {
-      const llmResponse = await llmClient.stream(prompt, undefined, streamCallbacks);
+      const llmResponse = await llmClient.stream(prompt, systemPrompt, streamCallbacks);
       response = llmResponse.content;
     } else {
-      const llmResponse = await llmClient.complete(prompt);
+      const llmResponse = await llmClient.complete(prompt, systemPrompt);
       response = llmResponse.content;
     }
     console.log(`[proposeCharacters] LLM response received, length: ${response.length}`);
@@ -184,7 +200,7 @@ export async function proposeCharacters(
     throw llmError;
   }
 
-  // 7. Parse response
+  // 9. Parse response
   console.log('[proposeCharacters] Parsing LLM response...');
   let result: ai.GenerationResult;
   try {
@@ -195,10 +211,10 @@ export async function proposeCharacters(
     throw parseError;
   }
 
-  // 8. Filter packages to ensure only valid node types
+  // 10. Filter packages to ensure only valid node types
   const filteredPackages = filterCharacterPackages(result.packages, includeArcs);
 
-  // 9. Validate and fix IDs
+  // 11. Validate and fix IDs
   const existingNodeIds = new Set(graph.nodes.keys());
   const filteredResult = { packages: filteredPackages };
   const validation = ai.validateGeneratedIds(filteredResult, existingNodeIds);

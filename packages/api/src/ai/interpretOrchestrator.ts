@@ -88,14 +88,27 @@ export async function interpretUserInput(
     }
   }
 
-  // 3. Serialize context
+  // 3. Build system prompt from metadata (stable, cacheable)
+  const systemPromptParams: ai.SystemPromptParams = {
+    storyName: state.metadata?.name,
+    logline: state.metadata?.logline,
+    storyContext: state.metadata?.storyContext,
+  };
+  const systemPrompt = ai.hasSystemPromptContent(systemPromptParams)
+    ? ai.buildSystemPrompt(systemPromptParams)
+    : undefined;
+
+  // 4. Serialize story state (without creative direction - that's in system prompt)
   const metadata: ai.StoryMetadata = {};
   if (state.metadata?.name) metadata.name = state.metadata.name;
   if (state.metadata?.logline) metadata.logline = state.metadata.logline;
-  if (state.metadata?.storyContext) metadata.storyContext = state.metadata.storyContext;
-  const storyContext = ai.serializeStoryContext(graph, metadata);
+  // Note: storyContext intentionally omitted - it's in system prompt now
+  const storyContext = ai.serializeStoryState(graph, metadata);
 
-  // 4. Build prompt
+  // 5. Get filtered ideas for interpret task
+  const ideasResult = ai.getIdeasForTask(graph, 'interpret', undefined, 5);
+
+  // 6. Build prompt
   // If targetType is specified, add it as a hint in the user input
   let enrichedInput = userInput;
   if (targetType) {
@@ -109,20 +122,23 @@ export async function interpretUserInput(
   if (recentNodes.length > 0) {
     promptParams.recentNodes = recentNodes;
   }
+  if (ideasResult.serialized) {
+    promptParams.ideas = ideasResult.serialized;
+  }
   const prompt = ai.buildInterpretationPrompt(promptParams);
 
-  // 5. Call LLM
+  // 7. Call LLM (with system prompt if available)
   let response: string;
 
   if (streamCallbacks) {
-    const llmResponse = await llmClient.stream(prompt, undefined, streamCallbacks);
+    const llmResponse = await llmClient.stream(prompt, systemPrompt, streamCallbacks);
     response = llmResponse.content;
   } else {
-    const llmResponse = await llmClient.complete(prompt);
+    const llmResponse = await llmClient.complete(prompt, systemPrompt);
     response = llmResponse.content;
   }
 
-  // 6. Parse response
+  // 8. Parse response
   const result = ai.parseInterpretationResponse(response);
 
   const response_: InterpretResponse = {

@@ -129,9 +129,28 @@ export function serializeGraph(graph: GraphState): SerializedGraph {
   };
 }
 
+/**
+ * Migrate legacy node types to current schema.
+ * Handles renames like PlotPoint → StoryBeat.
+ */
+function migrateNodeType(node: KGNode): KGNode {
+  // Migrate PlotPoint → StoryBeat (legacy data may have old type name)
+  const nodeType = node.type as string;
+  if (nodeType === 'PlotPoint') {
+    return { ...node, type: 'StoryBeat' } as KGNode;
+  }
+  return node;
+}
+
 export function deserializeGraph(data: SerializedGraph): GraphState {
+  // Migrate nodes to current schema (e.g., PlotPoint → StoryBeat)
+  const nodes = new Map<string, KGNode>();
+  for (const [id, node] of Object.entries(data.nodes)) {
+    nodes.set(id, migrateNodeType(node));
+  }
+
   return {
-    nodes: new Map(Object.entries(data.nodes)),
+    nodes,
     // Normalize edges to ensure they have IDs (migration for old data)
     edges: data.edges.map(edge => normalizeEdge(edge)),
   };

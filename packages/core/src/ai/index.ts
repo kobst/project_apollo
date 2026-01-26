@@ -170,11 +170,38 @@ export type { IdGenerator } from './idGenerator.js';
 
 export {
   serializeStoryContext,
+  serializeStoryState,
   serializeNodeContext,
   serializeGaps,
   serializeStoryContextMd,
 } from './contextSerializer.js';
 export type { StoryMetadata, SerializationOptions } from './contextSerializer.js';
+
+// =============================================================================
+// System Prompt Builder
+// =============================================================================
+
+export {
+  buildSystemPrompt,
+  hasSystemPromptContent,
+} from './systemPromptBuilder.js';
+export type { SystemPromptParams } from './systemPromptBuilder.js';
+
+// =============================================================================
+// Ideas Serialization
+// =============================================================================
+
+export {
+  getCategoryForTaskType,
+  filterIdeas,
+  serializeIdeas,
+  getIdeasForTask,
+} from './ideasSerializer.js';
+export type {
+  IdeaTaskType,
+  IdeasFilterOptions,
+  IdeasSerializationResult,
+} from './ideasSerializer.js';
 
 // =============================================================================
 // Output Parsing

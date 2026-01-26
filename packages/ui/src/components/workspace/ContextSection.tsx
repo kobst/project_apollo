@@ -8,6 +8,7 @@ import { useStory } from '../../context/StoryContext';
 import { useGeneration } from '../../context/GenerationContext';
 import { api } from '../../api/client';
 import { CollapsibleSection } from './CollapsibleSection';
+import type { StoryContextChange } from '../../api/types';
 import styles from './ContextSection.module.css';
 
 // Default template for new/empty Story Context
@@ -31,7 +32,12 @@ Story-specific rules that guide generation.
 
 export function ContextSection() {
   const { currentStoryId, refreshStatus } = useStory();
-  const { sectionChangeCounts } = useGeneration();
+  const { sectionChangeCounts, staging, session } = useGeneration();
+
+  // Get staged story context changes
+  const stagedContextChanges: StoryContextChange[] = useMemo(() => {
+    return staging.stagedPackage?.changes.storyContext ?? [];
+  }, [staging.stagedPackage]);
 
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
@@ -39,11 +45,22 @@ export function ContextSection() {
   const [error, setError] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedContentRef = useRef<string>('');
+  const prevSessionStatusRef = useRef<string | null>(null);
 
-  // Fetch context on mount
+  // Track session status changes to trigger refetch when package is accepted
+  useEffect(() => {
+    if (session?.status === 'accepted' && prevSessionStatusRef.current === 'active') {
+      // Package was just accepted - trigger a refetch
+      setRefreshTrigger((prev) => prev + 1);
+    }
+    prevSessionStatusRef.current = session?.status ?? null;
+  }, [session?.status]);
+
+  // Fetch context on mount and when refreshTrigger changes
   useEffect(() => {
     async function fetchContext() {
       if (!currentStoryId) return;
@@ -66,7 +83,7 @@ export function ContextSection() {
     }
 
     void fetchContext();
-  }, [currentStoryId]);
+  }, [currentStoryId, refreshTrigger]);
 
   // Auto-save with debounce
   const saveContext = useCallback(async (newContent: string) => {
@@ -205,6 +222,31 @@ export function ContextSection() {
             </span>
           )}
         </div>
+
+        {/* Staged Story Context Changes - only show when session is active */}
+        {stagedContextChanges.length > 0 && session?.status === 'active' && (
+          <div className={styles.stagedChanges}>
+            <h4 className={styles.stagedHeader}>
+              Proposed Changes ({stagedContextChanges.length})
+            </h4>
+            <div className={styles.changesList}>
+              {stagedContextChanges.map((change, idx) => (
+                <div key={idx} className={`${styles.changeItem} ${styles[change.operation]}`}>
+                  <div className={styles.changeHeader}>
+                    <span className={styles.changeSection}>{change.section}</span>
+                    <span className={`${styles.changeBadge} ${styles[change.operation]}`}>
+                      {change.operation}
+                    </span>
+                  </div>
+                  <p className={styles.changeContent}>{change.content}</p>
+                </div>
+              ))}
+            </div>
+            <p className={styles.stagedHint}>
+              Accept or reject the package to apply these changes.
+            </p>
+          </div>
+        )}
       </div>
     </CollapsibleSection>
   );

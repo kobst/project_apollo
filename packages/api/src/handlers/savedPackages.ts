@@ -301,6 +301,14 @@ export function createApplySavedPackageHandler(ctx: StorageContext) {
       // Convert package to patch using existing function
       const patch: Patch = packageToPatch(pkg, state.history.currentVersionId);
 
+      console.log(`[applySavedPackage] Converting package "${pkg.title}" to patch with ${patch.ops.length} ops`);
+      for (const op of patch.ops.slice(0, 10)) { // Log first 10 ops for debugging
+        console.log(`  - ${op.op}: ${JSON.stringify(op).substring(0, 200)}`);
+      }
+      if (patch.ops.length > 10) {
+        console.log(`  ... and ${patch.ops.length - 10} more ops`);
+      }
+
       if (patch.ops.length === 0) {
         res.json({
           success: true,
@@ -316,6 +324,10 @@ export function createApplySavedPackageHandler(ctx: StorageContext) {
       // Validate patch
       const validation = validatePatch(graph, patch);
       if (!validation.success) {
+        console.error('[applySavedPackage] Validation failed:');
+        for (const err of validation.errors) {
+          console.error(`  - [${err.code}] ${err.message}${err.node_id ? ` (node: ${err.node_id})` : ''}${err.field ? ` (field: ${err.field})` : ''}`);
+        }
         throw new BadRequestError(
           'Package validation failed',
           validation.errors.map((e) => e.message).join('; ')

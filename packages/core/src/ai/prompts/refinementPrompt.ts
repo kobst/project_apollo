@@ -29,8 +29,12 @@ export function buildRefinementPrompt(params: RefinementParams): string {
     storyContext,
     depth,
     count,
+    ideas,
   } = params;
   const budget = getDepthBudget(depth);
+
+  // Build ideas section if provided
+  const ideasSection = ideas ? `\n${ideas}\n` : '';
 
   return `You are an AI assistant helping to develop a screenplay. Your task is to generate ${count} variations of an existing narrative package based on user feedback.
 
@@ -65,7 +69,7 @@ ${regenerateElements.length > 0 ? regenerateElements.map((id) => `- ${id}`).join
 ## Current Story State
 
 ${storyContext}
-
+${ideasSection}
 ## Budget
 
 - **Depth**: ${depth}

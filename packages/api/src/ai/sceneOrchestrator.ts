@@ -132,18 +132,32 @@ export async function proposeScenes(
 
   console.log(`[proposeScenes] Validated ${validatedBeats.length} StoryBeats, rejected ${rejectedBeats.length}`);
 
-  // 3. Serialize context
+  // 3. Build system prompt from metadata (stable, cacheable)
+  const systemPromptParams: ai.SystemPromptParams = {
+    storyName: state.metadata?.name,
+    logline: state.metadata?.logline,
+    storyContext: state.metadata?.storyContext,
+  };
+  const systemPrompt = ai.hasSystemPromptContent(systemPromptParams)
+    ? ai.buildSystemPrompt(systemPromptParams)
+    : undefined;
+
+  // 4. Serialize story state (without creative direction - that's in system prompt)
   const metadata: ai.StoryMetadata = {};
   if (state.metadata?.name) metadata.name = state.metadata.name;
   if (state.metadata?.logline) metadata.logline = state.metadata.logline;
-  if (state.metadata?.storyContext) metadata.storyContext = state.metadata.storyContext;
+  // Note: storyContext intentionally omitted - it's in system prompt now
 
-  const storyContext = ai.serializeStoryContext(graph, metadata);
+  const storyContext = ai.serializeStoryState(graph, metadata);
   const existingCharacters = serializeExistingCharacters(graph);
   const existingLocations = serializeExistingLocations(graph);
   const existingScenes = serializeExistingScenes(graph);
 
-  // 4. Build prompt
+  // 5. Get filtered ideas for scene task
+  const entryPointNodeId = storyBeatIds.length > 0 ? storyBeatIds[0] : undefined;
+  const ideasResult = ai.getIdeasForTask(graph, 'scene', entryPointNodeId, 5);
+
+  // 6. Build prompt
   const promptParams: ScenePromptParams = {
     storyContext,
     validatedBeats,
@@ -159,19 +173,22 @@ export async function proposeScenes(
   if (direction) {
     promptParams.direction = direction;
   }
+  if (ideasResult.serialized) {
+    promptParams.ideas = ideasResult.serialized;
+  }
 
   const prompt = ai.buildScenePrompt(promptParams);
 
-  // 5. Call LLM
-  console.log(`[proposeScenes] Calling LLM (streaming: ${Boolean(streamCallbacks)})...`);
+  // 7. Call LLM (with system prompt if available)
+  console.log(`[proposeScenes] Calling LLM (streaming: ${Boolean(streamCallbacks)}, systemPrompt: ${Boolean(systemPrompt)})...`);
   let response: string;
 
   try {
     if (streamCallbacks) {
-      const llmResponse = await llmClient.stream(prompt, undefined, streamCallbacks);
+      const llmResponse = await llmClient.stream(prompt, systemPrompt, streamCallbacks);
       response = llmResponse.content;
     } else {
-      const llmResponse = await llmClient.complete(prompt);
+      const llmResponse = await llmClient.complete(prompt, systemPrompt);
       response = llmResponse.content;
     }
     console.log(`[proposeScenes] LLM response received, length: ${response.length}`);
@@ -180,7 +197,7 @@ export async function proposeScenes(
     throw llmError;
   }
 
-  // 6. Parse response
+  // 8. Parse response
   console.log('[proposeScenes] Parsing LLM response...');
   let result: ai.GenerationResult;
   try {
@@ -191,10 +208,10 @@ export async function proposeScenes(
     throw parseError;
   }
 
-  // 7. Filter packages to ensure valid node types and edges
+  // 9. Filter packages to ensure valid node types and edges
   const filteredPackages = filterScenePackages(result.packages, validatedBeats);
 
-  // 8. Validate and fix IDs
+  // 10. Validate and fix IDs
   const existingNodeIds = new Set(graph.nodes.keys());
   const filteredResult = { packages: filteredPackages };
   const validation = ai.validateGeneratedIds(filteredResult, existingNodeIds);
