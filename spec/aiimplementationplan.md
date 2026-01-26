@@ -48,14 +48,34 @@ packages/core/src/ai/
 ├── config.ts                   # AIConfig, defaults, budgets
 ├── idGenerator.ts              # Injectable ID generation
 ├── contextSerializer.ts        # GraphState → structured markdown
+├── systemPromptBuilder.ts      # Build cacheable system prompts with storyContext
+├── ideasSerializer.ts          # Filter and serialize Ideas for prompts
 ├── outputParser.ts             # LLM response → typed objects
 ├── packageToPatches.ts         # NarrativePackage → Patch conversion
 └── prompts/
     ├── index.ts                # Prompt exports
     ├── interpretationPrompt.ts # Freeform input → structured proposals
     ├── generationPrompt.ts     # Entry point → N packages
-    └── refinementPrompt.ts     # Base package + constraints → variations
+    ├── refinementPrompt.ts     # Base package + constraints → variations
+    ├── expandPrompt.ts         # Node/context expansion
+    ├── characterPrompt.ts      # Character generation
+    ├── scenePrompt.ts          # Scene generation
+    └── storyBeatPrompt.ts      # StoryBeat generation
 ```
+
+### System Prompt vs User Prompt Separation
+
+The prompt architecture separates stable content (system prompt) from dynamic content (user prompt):
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| Story identity (name, logline) | System prompt | Cacheable, high priority |
+| Story Context (themes, constraints) | System prompt | Cacheable, high priority |
+| Current graph state | User prompt | Dynamic, changes each request |
+| Filtered ideas | User prompt | Dynamic, task-specific |
+| Task instructions | User prompt | Dynamic, request-specific |
+
+This enables Anthropic's prompt caching to reuse the system prompt across multiple generation requests.
 
 ---
 
@@ -693,6 +713,226 @@ function capitalize(s: string): string {
 function truncate(s: string, maxLen: number): string {
   if (s.length <= maxLen) return s;
   return s.slice(0, maxLen - 3) + '...';
+}
+```
+
+### 2.2 System Prompt Builder (`systemPromptBuilder.ts`)
+
+Builds cacheable system prompts containing stable story identity and creative direction.
+
+```typescript
+export interface SystemPromptParams {
+  storyName?: string | undefined;
+  logline?: string | undefined;
+  storyContext?: string | undefined;
+}
+
+/**
+ * Build a system prompt with story context for prompt caching.
+ * System prompts are stable across requests, enabling Anthropic prompt caching.
+ */
+export function buildSystemPrompt(params: SystemPromptParams): string {
+  const { storyName, logline, storyContext } = params;
+
+  const sections: string[] = [];
+
+  // Role and story identity
+  sections.push(`You are an AI story development assistant working on "${storyName ?? 'an untitled story'}".`);
+
+  if (logline) {
+    sections.push(`\nLogline: "${logline}"`);
+  }
+
+  // Creative direction (full storyContext)
+  if (storyContext) {
+    sections.push('\n## Creative Direction & Story Context\n');
+    sections.push(storyContext);
+  }
+
+  // Standard guidelines
+  sections.push('\n## Guidelines\n');
+  sections.push('- Maintain consistency with established story elements');
+  sections.push('- Respect constraints defined in the Story Context');
+  sections.push('- Generate content that aligns with the creative direction');
+  sections.push('- Reference existing nodes by their IDs when creating relationships');
+
+  return sections.join('\n');
+}
+
+/**
+ * Check if system prompt would have meaningful content.
+ */
+export function hasSystemPromptContent(params: SystemPromptParams): boolean {
+  return Boolean(params.storyName || params.logline || params.storyContext);
+}
+```
+
+### 2.3 Ideas Serializer (`ideasSerializer.ts`)
+
+Filters and serializes Idea nodes for inclusion in user prompts.
+
+```typescript
+import type { GraphState, Idea, IdeaCategory } from '../types.js';
+import { getNodesByType, getEdgesTo } from '../core/graph.js';
+
+export type IdeaTaskType = 'character' | 'storyBeat' | 'scene' | 'expand' | 'generate' | 'interpret' | 'refine';
+
+export interface IdeasFilterOptions {
+  category?: IdeaCategory | IdeaCategory[];
+  relatedNodeIds?: string[];
+  activeOnly?: boolean;  // default: true
+  maxIdeas?: number;     // default: 5
+}
+
+export interface IdeasSerializationResult {
+  serialized: string;
+  includedCount: number;
+  includedIds: string[];
+}
+
+/**
+ * Get idea categories relevant to a task type.
+ */
+export function getCategoryForTaskType(taskType: IdeaTaskType): IdeaCategory[] {
+  switch (taskType) {
+    case 'character':
+      return ['character', 'general'];
+    case 'storyBeat':
+      return ['plot', 'general'];
+    case 'scene':
+      return ['scene', 'plot', 'general'];
+    case 'expand':
+    case 'generate':
+    case 'interpret':
+    case 'refine':
+      return ['character', 'plot', 'scene', 'worldbuilding', 'general'];
+    default:
+      return ['general'];
+  }
+}
+
+/**
+ * Filter ideas based on options.
+ */
+export function filterIdeas(graph: GraphState, options: IdeasFilterOptions = {}): Idea[] {
+  const { category, relatedNodeIds, activeOnly = true, maxIdeas = 5 } = options;
+
+  const ideas = getNodesByType<Idea>(graph, 'Idea');
+
+  return ideas
+    .filter(idea => {
+      if (activeOnly && idea.status !== 'active') return false;
+      if (category) {
+        const categories = Array.isArray(category) ? category : [category];
+        if (!categories.includes(idea.category)) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      // Prioritize ideas related to specified nodes
+      if (relatedNodeIds?.length) {
+        const aRelated = a.relatedNodeIds?.some(id => relatedNodeIds.includes(id)) ?? false;
+        const bRelated = b.relatedNodeIds?.some(id => relatedNodeIds.includes(id)) ?? false;
+        if (aRelated && !bRelated) return -1;
+        if (bRelated && !aRelated) return 1;
+      }
+      return 0;
+    })
+    .slice(0, maxIdeas);
+}
+
+/**
+ * Serialize ideas for prompt inclusion.
+ */
+export function serializeIdeas(ideas: Idea[]): IdeasSerializationResult {
+  if (ideas.length === 0) {
+    return { serialized: '', includedCount: 0, includedIds: [] };
+  }
+
+  const lines: string[] = [];
+  lines.push('## Existing Ideas to Consider');
+  lines.push('The following ideas have been captured but not yet developed. Consider incorporating relevant ones:\n');
+
+  for (let i = 0; i < ideas.length; i++) {
+    const idea = ideas[i];
+    lines.push(`${i + 1}. [${idea.category}] ${idea.description}`);
+  }
+
+  return {
+    serialized: lines.join('\n'),
+    includedCount: ideas.length,
+    includedIds: ideas.map(i => i.id),
+  };
+}
+
+/**
+ * Convenience function: filter and serialize in one call.
+ */
+export function getIdeasForTask(
+  graph: GraphState,
+  taskType: IdeaTaskType,
+  entryPointNodeId?: string,
+  maxIdeas: number = 5
+): IdeasSerializationResult {
+  const categories = getCategoryForTaskType(taskType);
+  const relatedNodeIds = entryPointNodeId ? [entryPointNodeId] : undefined;
+
+  const ideas = filterIdeas(graph, {
+    category: categories,
+    relatedNodeIds,
+    activeOnly: true,
+    maxIdeas,
+  });
+
+  return serializeIdeas(ideas);
+}
+```
+
+### 2.4 Story State Serializer (`serializeStoryState`)
+
+Added to `contextSerializer.ts` - serializes graph state WITHOUT creative direction (for user prompts when storyContext is in system prompt).
+
+```typescript
+/**
+ * Serialize story state for user prompts (without creative direction).
+ * Use this when storyContext is already in the system prompt.
+ */
+export function serializeStoryState(
+  graph: GraphState,
+  metadata: StoryMetadata,
+  options: SerializationOptions = {}
+): string {
+  const config = defaultConfig;
+  const maxNodes = options.maxNodes ?? config.maxContextNodes;
+
+  const sections: string[] = [];
+
+  // Header (without storyContext)
+  sections.push(`# Story: ${metadata.name ?? 'Untitled'}`);
+  if (metadata.logline) {
+    sections.push(`Logline: "${metadata.logline}"`);
+  }
+  sections.push('');
+
+  // Note: storyContext intentionally omitted - it's in system prompt
+
+  // Current State Summary
+  sections.push('## Current State Summary');
+  sections.push(serializeStateSummary(graph));
+  sections.push('');
+
+  // Nodes by type
+  sections.push('## Nodes');
+  sections.push(serializeNodesByType(graph, maxNodes));
+
+  // Edges (optional)
+  if (options.includeEdges) {
+    sections.push('');
+    sections.push('## Relationships');
+    sections.push(serializeEdges(graph));
+  }
+
+  return sections.join('\n');
 }
 ```
 

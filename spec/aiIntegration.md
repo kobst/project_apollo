@@ -317,14 +317,60 @@ When AI detects that a proposed change conflicts with existing content:
 
 ## 6. Story Context Integration
 
-### 6.1 Reading Story Context
+### 6.1 System Prompt Architecture
+
+Story Context is placed in the **system prompt** rather than the user prompt for two key benefits:
+
+1. **Prompt Caching**: Anthropic's prompt caching can reuse the system prompt across multiple requests, reducing latency and cost
+2. **Higher Priority**: System prompt content is treated with higher priority by the LLM, ensuring better adherence to creative direction and constraints
+
+**System Prompt Structure:**
+```
+You are an AI story development assistant working on "[Story Name]".
+[logline if present]
+
+## Creative Direction & Story Context
+[Full storyContext markdown content]
+
+[Standard guidelines about maintaining consistency, respecting constraints, etc.]
+```
+
+When storyContext is empty or undefined, no system prompt is sent (graceful fallback).
+
+### 6.2 Ideas in User Prompts
+
+Idea nodes are filtered and included in user prompts based on task type:
+
+| Task Type | Idea Categories Included |
+|-----------|-------------------------|
+| character | character, general |
+| storyBeat | plot, general |
+| scene | scene, plot, general |
+| expand/generate | all categories |
+| interpret/refine | all categories |
+
+**Filtering Logic:**
+- Only `active` ideas are included (not `dismissed` or `promoted`)
+- Ideas related to the entry point node are prioritized
+- Maximum of 5 ideas per prompt (configurable)
+
+**Format in Prompt:**
+```
+## Existing Ideas to Consider
+The following ideas have been captured but not yet developed. Consider incorporating relevant ones:
+
+1. [character] Character concept for a corrupt official who...
+2. [plot] The protagonist could discover that...
+```
+
+### 6.3 Reading Story Context
 
 AI consults Story Context when:
 - Generating packages (for thematic alignment)
 - Interpreting user input (for context)
 - Proposing node types (to match creative direction)
 
-### 6.2 Writing to Story Context
+### 6.4 Writing to Story Context
 
 Story Context can be modified through:
 
@@ -336,7 +382,19 @@ Story Context can be modified through:
 - Packages can include Story Context changes
 - Example: New character implies theme → Package includes Story Context addition
 
-### 6.3 Story Context Change Display
+### 6.5 Story Context Change Application
+
+When a package with Story Context changes is accepted, the changes are automatically applied:
+
+| Operation | Behavior |
+|-----------|----------|
+| `add` | Finds the section by name and appends content; creates section if not found |
+| `modify` | Replaces `previous_content` with new `content` in the document |
+| `delete` | Removes the specified `content` from the document |
+
+**Important**: The AI is instructed to use existing section names from the document (e.g., "Themes & Motifs", "Constraints & Rules") rather than creating new sections.
+
+### 6.6 Story Context Change Display
 ```
 STORY CONTEXT
 ┌────────────────────────────────────────────────────────────────┐
