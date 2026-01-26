@@ -12,9 +12,11 @@ interface StoryBeatSwimlaneProps {
   storyBeat: MergedOutlineStoryBeat;
   onEditStoryBeat?: (() => void) | undefined;
   onEditScene?: ((scene: MergedOutlineScene) => void) | undefined;
+  onDeleteScene?: ((scene: MergedOutlineScene) => void) | undefined;
   onAddScene?: (() => void) | undefined;
   onEditProposed?: ((nodeId: string, updates: Partial<Record<string, unknown>>) => void) | undefined;
   onRemoveProposed?: ((nodeId: string) => void) | undefined;
+  onDelete?: (() => void) | undefined;
   isRemoved?: boolean | undefined;
 }
 
@@ -31,8 +33,10 @@ export function StoryBeatSwimlane({
   storyBeat,
   onEditStoryBeat,
   onEditScene,
+  onDeleteScene,
   onAddScene,
   onRemoveProposed,
+  onDelete,
   isRemoved,
 }: StoryBeatSwimlaneProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -106,6 +110,11 @@ export function StoryBeatSwimlane({
               Edit
             </button>
           )}
+          {!isProposed && onDelete && (
+            <button type="button" className={styles.deleteBtn} onClick={onDelete}>
+              Delete
+            </button>
+          )}
           {isProposed && operation === 'add' && onRemoveProposed && !isRemoved && (
             <button type="button" className={styles.removeBtn} onClick={handleRemove}>
               Remove
@@ -169,6 +178,7 @@ export function StoryBeatSwimlane({
                 key={scene.id}
                 scene={scene}
                 onClick={() => onEditScene?.(scene)}
+                onDelete={!scene._isProposed && onDeleteScene ? () => onDeleteScene(scene) : undefined}
               />
             ))}
 

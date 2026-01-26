@@ -14,6 +14,8 @@ interface ActSwimlaneProps {
   act: MergedOutlineAct;
   onEditStoryBeat?: (pp: MergedOutlineStoryBeat) => void;
   onEditScene?: (scene: MergedOutlineScene, storyBeatId: string) => void;
+  onDeleteStoryBeat?: (pp: MergedOutlineStoryBeat) => void;
+  onDeleteScene?: (scene: MergedOutlineScene) => void;
   onAddStoryBeat?: (beatId: string) => void;
   onAddScene?: () => void;
   onEditProposed?: (nodeId: string, updates: Partial<Record<string, unknown>>) => void;
@@ -64,6 +66,8 @@ export function ActSwimlane({
   act,
   onEditStoryBeat,
   onEditScene,
+  onDeleteStoryBeat,
+  onDeleteScene,
   onAddStoryBeat,
   onAddScene,
   onEditProposed,
@@ -220,6 +224,8 @@ export function ActSwimlane({
                         storyBeat={pp}
                         onEditStoryBeat={onEditStoryBeat ? () => onEditStoryBeat(pp) : undefined}
                         onEditScene={onEditScene ? (scene) => onEditScene(scene, pp.id) : undefined}
+                        onDelete={!pp._isProposed && onDeleteStoryBeat ? () => onDeleteStoryBeat(pp) : undefined}
+                        onDeleteScene={onDeleteScene}
                         onAddScene={onAddScene}
                         onEditProposed={onEditProposed}
                         onRemoveProposed={pp._operation === 'add' ? onRemoveProposed : undefined}
@@ -249,6 +255,8 @@ export function ActSwimlane({
                             storyBeat={pp}
                             onEditStoryBeat={onEditStoryBeat ? () => onEditStoryBeat(pp) : undefined}
                             onEditScene={onEditScene ? (scene) => onEditScene(scene, pp.id) : undefined}
+                            onDelete={!pp._isProposed && onDeleteStoryBeat ? () => onDeleteStoryBeat(pp) : undefined}
+                            onDeleteScene={onDeleteScene}
                             onAddScene={onAddScene}
                             onEditProposed={onEditProposed}
                             onRemoveProposed={pp._operation === 'add' ? onRemoveProposed : undefined}

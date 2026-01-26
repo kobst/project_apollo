@@ -8,10 +8,11 @@ import styles from './SwimlaneSceneCard.module.css';
 
 interface SwimlaneSceneCardProps {
   scene: MergedOutlineScene;
-  onClick?: () => void;
+  onClick?: (() => void) | undefined;
+  onDelete?: (() => void) | undefined;
 }
 
-export function SwimlaneSceneCard({ scene, onClick }: SwimlaneSceneCardProps) {
+export function SwimlaneSceneCard({ scene, onClick, onDelete }: SwimlaneSceneCardProps) {
   const isProposed = scene._isProposed;
   const operation = scene._operation;
 
@@ -27,6 +28,11 @@ export function SwimlaneSceneCard({ scene, onClick }: SwimlaneSceneCardProps) {
     ? scene.overview.length > 80 ? scene.overview.slice(0, 80) + '...' : scene.overview
     : '';
 
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete?.();
+  };
+
   return (
     <div
       className={`${styles.card} ${isProposed ? styles.proposed : ''} ${operation === 'add' ? styles.opAdd : ''} ${operation === 'modify' ? styles.opModify : ''}`}
@@ -40,6 +46,18 @@ export function SwimlaneSceneCard({ scene, onClick }: SwimlaneSceneCardProps) {
         <div className={`${styles.badge} ${styles[`badge${operation.charAt(0).toUpperCase() + operation.slice(1)}`]}`}>
           {operation === 'add' ? 'NEW' : operation === 'modify' ? 'MOD' : 'DEL'}
         </div>
+      )}
+
+      {/* Delete button - only for non-proposed scenes */}
+      {onDelete && !isProposed && (
+        <button
+          type="button"
+          className={styles.deleteBtn}
+          onClick={handleDeleteClick}
+          aria-label="Delete scene"
+        >
+          &times;
+        </button>
       )}
 
       <div className={styles.heading}>{headerDisplay}</div>

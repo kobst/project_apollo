@@ -36,15 +36,19 @@ interface BeatContext {
   act: 1 | 2 | 3 | 4 | 5;
 }
 
-// Context for triggering edits (passed down to children)
+// Context for triggering edits and deletes (passed down to children)
 interface StructureEditContextValue {
   onEditStoryBeat: (pp: OutlineStoryBeat) => void;
   onEditScene: (scene: OutlineScene) => void;
+  onDeleteStoryBeat: (storyBeat: MergedOutlineStoryBeat) => void;
+  onDeleteScene: (scene: MergedOutlineScene) => void;
 }
 
 const StructureEditContext = createContext<StructureEditContextValue>({
   onEditStoryBeat: () => {},
   onEditScene: () => {},
+  onDeleteStoryBeat: () => {},
+  onDeleteScene: () => {},
 });
 
 export function useStructureEdit() {
@@ -398,6 +402,8 @@ export function StructureSection({ onElementClick, nodeSelectionMode }: Structur
   const editContextValue: StructureEditContextValue = {
     onEditStoryBeat: handleEditStoryBeat,
     onEditScene: handleEditScene,
+    onDeleteStoryBeat: handleDeleteStoryBeat,
+    onDeleteScene: handleDeleteScene,
   };
 
   if (loading) {
@@ -489,6 +495,8 @@ export function StructureSection({ onElementClick, nodeSelectionMode }: Structur
                 act={act}
                 onEditStoryBeat={handleEditStoryBeat}
                 onEditScene={handleEditScene}
+                onDeleteStoryBeat={handleDeleteStoryBeat}
+                onDeleteScene={handleDeleteScene}
                 onAddStoryBeat={handleOpenAddStoryBeat}
                 onAddScene={() => setShowSceneModal(true)}
                 onEditProposed={handleEditProposedNode}
