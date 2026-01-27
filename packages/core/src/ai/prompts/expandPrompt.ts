@@ -37,6 +37,8 @@ export interface ExpandPromptParams {
   expansionScope?: ExpansionScope;
   /** Optional serialized ideas relevant to this expansion */
   ideas?: string;
+  /** Optional serialized soft guidelines filtered for this task */
+  guidelines?: string;
 }
 
 // =============================================================================
@@ -62,6 +64,7 @@ export function buildExpandPrompt(params: ExpandPromptParams): string {
     creativity,
     expansionScope = 'flexible',
     ideas,
+    guidelines,
   } = params;
 
   const creativityLabel = creativity < 0.3 ? 'conservative' : creativity > 0.7 ? 'creative' : 'balanced';
@@ -99,6 +102,7 @@ ${targetInstructions}
 
 ${direction ? `## User Direction\n\n"${direction}"\n` : ''}
 ${ideas ? `${ideas}\n` : ''}
+${guidelines ? `${guidelines}\n` : ''}
 ${supportingSection}
 ## Available Node Types
 
@@ -176,21 +180,27 @@ function getTargetInstructions(
       expandType: 'Story Context',
       targetInstructions: `## Expansion Target: Story Context
 
-You are expanding the entire story context with new thematic, tonal, or structural content.
+You are expanding the story context using STRUCTURED OPERATIONS.
 
-**IMPORTANT**: Look at the existing sections in the Story Context above (marked with ## headers).
-- PREFER adding content to existing sections rather than creating new ones
-- Use the EXACT section names that already exist in the document
-- Common sections include: "Creative Direction", "Themes & Motifs", "Working Notes", "Constraints & Rules"
-- Only create a new section if the content truly doesn't fit any existing section
+**CRITICAL**: You MUST use ONLY the specific operation types listed below.
+- Do NOT use "addSection" - INVALID
+- Do NOT use "addText" - INVALID
+- Do NOT invent operation types
 
-Generate:
-- New themes or thematic variations
-- Tonal adjustments or enhancements
-- Conflict elaborations
-- Constraint refinements
-- Motif additions`,
-      outputType: 'Context Additions',
+VALID operation types:
+- **addThematicPillar**: For core themes (e.g., "redemption vs corruption", "loyalty vs self-preservation")
+- **setConstitutionField**: For premise, toneEssence fields (field: "premise"|"toneEssence", value: "text")
+- **addHardRule**: For rules the AI must never violate (include rule.id and rule.text)
+- **addGuideline**: For soft writing guidelines (include guideline.id, tags[], and text)
+- **addBanned**: For elements to avoid (item: "string")
+
+Generate a mix of:
+- Thematic pillars that capture the story's core tensions
+- A premise that expands on the logline
+- Tone/voice description
+- Hard rules for consistency
+- Soft guidelines for writing style`,
+      outputType: 'Structured Context Operations',
     };
   } else if (target.type === 'story-context-section') {
     return getContextSectionInstructions(target.section);
@@ -351,7 +361,7 @@ function getOutputSchema(expandType: string, isConstrained: boolean): string {
 
 /**
  * Schema for context expansion.
- * Uses changes.storyContext format to match UI expectations.
+ * Uses structured storyContext operations format.
  */
 function getContextExpansionSchema(isConstrained: boolean): string {
   if (isConstrained) {
@@ -366,16 +376,9 @@ function getContextExpansionSchema(isConstrained: boolean): string {
       "style_tags": ["thematic", "tonal"],
       "changes": {
         "storyContext": [
-          {
-            "operation": "add",
-            "section": "Themes & Motifs",
-            "content": "The tension between ambition and integrity drives character choices"
-          },
-          {
-            "operation": "add",
-            "section": "Constraints & Rules",
-            "content": "External pressure from society conflicts with internal moral compass"
-          }
+          { "operation": { "type": "addThematicPillar", "pillar": "The tension between ambition and integrity" } },
+          { "operation": { "type": "addHardRule", "rule": { "id": "hr_timestamp_xxxx", "text": "Character choices must have consequences" } } },
+          { "operation": { "type": "addGuideline", "guideline": { "id": "sg_timestamp_xxxx", "tags": ["character", "general"], "text": "External pressure from society conflicts with internal moral compass" } } }
         ],
         "nodes": [],
         "edges": []
@@ -390,7 +393,12 @@ function getContextExpansionSchema(isConstrained: boolean): string {
 }
 \`\`\`
 
-**IMPORTANT**: Use the section names that ALREADY EXIST in the story context. Look at the ## headers in the document and use those exact names.`;
+**IMPORTANT**: Use the appropriate operation type for each change:
+- \`addThematicPillar\` for themes
+- \`addHardRule\` for inviolable rules (include generated id like "hr_timestamp_xxxx")
+- \`addGuideline\` for soft guidelines (include id, tags from: character|dialogue|scene|action|pacing|plot|worldbuilding|general)
+- \`setConstitutionField\` for logline, premise, toneEssence, version
+- \`setWorkingNotes\` for freeform notes`;
   }
 
   return `\`\`\`json
@@ -404,16 +412,8 @@ function getContextExpansionSchema(isConstrained: boolean): string {
       "style_tags": ["thematic", "tonal"],
       "changes": {
         "storyContext": [
-          {
-            "operation": "add",
-            "section": "Themes & Motifs",
-            "content": "The tension between ambition and integrity drives character choices"
-          },
-          {
-            "operation": "add",
-            "section": "Constraints & Rules",
-            "content": "External pressure from society conflicts with internal moral compass"
-          }
+          { "operation": { "type": "addThematicPillar", "pillar": "The tension between ambition and integrity" } },
+          { "operation": { "type": "addGuideline", "guideline": { "id": "sg_timestamp_xxxx", "tags": ["character"], "text": "Guideline text here" } } }
         ],
         "nodes": [],
         "edges": []
@@ -438,7 +438,13 @@ function getContextExpansionSchema(isConstrained: boolean): string {
 }
 \`\`\`
 
-**IMPORTANT**: Use the section names that ALREADY EXIST in the story context. Look at the ## headers in the document and use those exact names.`;
+**CRITICAL**: Use ONLY these operation types - do NOT use "addSection":
+- \`addThematicPillar\` for themes
+- \`addHardRule\` for inviolable rules
+- \`addGuideline\` for soft guidelines
+- \`setConstitutionField\` for premise, toneEssence
+- \`addBanned\` for things to avoid
+- \`setWorkingNotes\` for freeform notes`;
 }
 
 /**

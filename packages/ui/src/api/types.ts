@@ -838,13 +838,72 @@ export interface GapsData {
 // Story Context Types
 // =============================================================================
 
+/**
+ * Tags for categorizing soft guidelines.
+ */
+export type GuidelineTag =
+  | 'character'
+  | 'dialogue'
+  | 'scene'
+  | 'action'
+  | 'pacing'
+  | 'plot'
+  | 'worldbuilding'
+  | 'general';
+
+/**
+ * A hard rule that the AI must not violate.
+ */
+export interface HardRule {
+  id: string;
+  text: string;
+}
+
+/**
+ * A soft guideline that applies when relevant.
+ */
+export interface SoftGuideline {
+  id: string;
+  tags: GuidelineTag[];
+  text: string;
+}
+
+/**
+ * Story constitution - stable creative direction (cached in system prompt).
+ */
+export interface StoryContextConstitution {
+  logline: string;
+  premise: string;
+  thematicPillars: string[];
+  hardRules: HardRule[];
+  toneEssence: string;
+  banned: string[];
+  version: string;
+}
+
+/**
+ * Operational story context - dynamic content filtered per-task.
+ */
+export interface StoryContextOperational {
+  softGuidelines: SoftGuideline[];
+  workingNotes?: string;
+}
+
+/**
+ * Complete structured Story Context.
+ */
+export interface StoryContext {
+  constitution: StoryContextConstitution;
+  operational: StoryContextOperational;
+}
+
 export interface StoryContextData {
-  context: string | null;
+  context: StoryContext | null;
   modifiedAt: string | null;
 }
 
 export interface UpdateContextData {
-  context: string;
+  context: StoryContext;
   modifiedAt: string;
   newVersionId: string;
 }
@@ -928,11 +987,36 @@ export interface EdgeChangeAI {
   properties?: Record<string, unknown>;
 }
 
+/**
+ * Operation types for structured StoryContext changes.
+ */
+export type StoryContextChangeOperation =
+  // Constitution string fields
+  | { type: 'setConstitutionField'; field: 'logline' | 'premise' | 'toneEssence' | 'version'; value: string }
+  // Thematic pillars
+  | { type: 'setThematicPillars'; pillars: string[] }
+  | { type: 'addThematicPillar'; pillar: string }
+  | { type: 'removeThematicPillar'; index: number }
+  // Banned elements
+  | { type: 'setBanned'; banned: string[] }
+  | { type: 'addBanned'; item: string }
+  | { type: 'removeBanned'; index: number }
+  // Hard rules
+  | { type: 'addHardRule'; rule: { id: string; text: string } }
+  | { type: 'updateHardRule'; id: string; text: string }
+  | { type: 'removeHardRule'; id: string }
+  // Soft guidelines
+  | { type: 'addGuideline'; guideline: { id: string; tags: string[]; text: string } }
+  | { type: 'updateGuideline'; id: string; changes: { tags?: string[]; text?: string } }
+  | { type: 'removeGuideline'; id: string }
+  // Working notes
+  | { type: 'setWorkingNotes'; content: string };
+
+/**
+ * A change to the structured StoryContext.
+ */
 export interface StoryContextChange {
-  operation: 'add' | 'modify' | 'delete';
-  section: string;
-  content: string;
-  previous_content?: string;
+  operation: StoryContextChangeOperation;
 }
 
 export interface ConflictInfo {
@@ -996,8 +1080,8 @@ export interface RefinableElement {
 }
 
 export interface RefinableStoryContextChange {
-  section: string;
-  operation: 'add' | 'modify' | 'delete';
+  operationType: string;
+  summary: string;
 }
 
 export interface RefinableElements {

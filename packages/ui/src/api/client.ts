@@ -67,6 +67,7 @@ import type {
   CheckoutData,
   StoryContextData,
   UpdateContextData,
+  StoryContext,
   IdeaData,
   IdeasListData,
   CreateIdeaRequest,
@@ -334,7 +335,7 @@ export const api = {
   // Story Context
   getContext: (storyId: string) =>
     GET<StoryContextData>(`/stories/${storyId}/context`),
-  updateContext: (storyId: string, context: string) =>
+  updateContext: (storyId: string, context: StoryContext) =>
     PATCH<UpdateContextData>(`/stories/${storyId}/context`, { context }),
 
   // Ideas

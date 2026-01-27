@@ -130,11 +130,11 @@ export async function proposeExpand(
     entryPointNodeId = target.nodeId;
   }
 
-  // 3. Build system prompt from metadata (stable, cacheable)
+  // 3. Build system prompt from metadata (stable, cacheable - constitution only)
   const systemPromptParams: ai.SystemPromptParams = {
     storyName: state.metadata?.name,
     logline: state.metadata?.logline,
-    storyContext: state.metadata?.storyContext,
+    constitution: state.metadata?.storyContext?.constitution,
   };
   const systemPrompt = ai.hasSystemPromptContent(systemPromptParams)
     ? ai.buildSystemPrompt(systemPromptParams)
@@ -150,6 +150,12 @@ export async function proposeExpand(
 
   // 5. Get filtered ideas for expand task
   const ideasResult = ai.getIdeasForTask(graph, 'expand', entryPointNodeId, 5);
+
+  // 5b. Get filtered guidelines for expand task
+  const guidelinesResult = ai.getGuidelinesForTask(
+    state.metadata?.storyContext?.operational,
+    'expand'
+  );
 
   // 6. Build prompt
   const promptParams: ExpandPromptParams = {
@@ -172,6 +178,9 @@ export async function proposeExpand(
   }
   if (ideasResult.serialized) {
     promptParams.ideas = ideasResult.serialized;
+  }
+  if (guidelinesResult.serialized) {
+    promptParams.guidelines = guidelinesResult.serialized;
   }
 
   const prompt = ai.buildExpandPrompt(promptParams);

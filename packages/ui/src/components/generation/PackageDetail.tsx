@@ -156,11 +156,60 @@ const propagateNameChange = (
     return updated;
   });
 
-  // Update story context
+  // Update story context operations that contain text
   if (pkg.changes.storyContext) {
     updatedPkg.changes.storyContext = pkg.changes.storyContext.map((ctx) => {
-      const updatedContent = replaceName(ctx.content);
-      return updatedContent !== ctx.content ? { ...ctx, content: updatedContent! } : ctx;
+      const op = ctx.operation;
+      let updatedOp = op;
+
+      // Update text content within the operation based on its type
+      switch (op.type) {
+        case 'setConstitutionField': {
+          const updatedValue = replaceName(op.value);
+          if (updatedValue !== op.value) {
+            updatedOp = { ...op, value: updatedValue! };
+          }
+          break;
+        }
+        case 'addThematicPillar': {
+          const updatedPillar = replaceName(op.pillar);
+          if (updatedPillar !== op.pillar) {
+            updatedOp = { ...op, pillar: updatedPillar! };
+          }
+          break;
+        }
+        case 'addHardRule': {
+          const updatedText = replaceName(op.rule.text);
+          if (updatedText !== op.rule.text) {
+            updatedOp = { ...op, rule: { ...op.rule, text: updatedText! } };
+          }
+          break;
+        }
+        case 'updateHardRule': {
+          const updatedText = replaceName(op.text);
+          if (updatedText !== op.text) {
+            updatedOp = { ...op, text: updatedText! };
+          }
+          break;
+        }
+        case 'addGuideline': {
+          const updatedText = replaceName(op.guideline.text);
+          if (updatedText !== op.guideline.text) {
+            updatedOp = { ...op, guideline: { ...op.guideline, text: updatedText! } };
+          }
+          break;
+        }
+        case 'setWorkingNotes': {
+          const updatedContent = replaceName(op.content);
+          if (updatedContent !== op.content) {
+            updatedOp = { ...op, content: updatedContent! };
+          }
+          break;
+        }
+        // Other operations don't have text content to update
+      }
+
+      return updatedOp !== op ? { operation: updatedOp } : ctx;
     });
   }
 

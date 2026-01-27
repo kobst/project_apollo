@@ -6,6 +6,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import { isValidStoryContext } from '@apollo/core';
 import type { StorageContext } from '../config.js';
 import {
   loadVersionedStateById,
@@ -65,8 +66,10 @@ export function createUpdateContextHandler(ctx: StorageContext) {
       const { id } = req.params;
       const { context } = req.body;
 
-      if (typeof context !== 'string') {
-        throw new BadRequestError(`'context' must be a string, got ${typeof context}`);
+      if (!isValidStoryContext(context)) {
+        throw new BadRequestError(
+          `'context' must be a valid StoryContext object with constitution and operational fields`
+        );
       }
 
       const state = await loadVersionedStateById(id, ctx);

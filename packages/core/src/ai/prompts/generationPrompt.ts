@@ -20,13 +20,15 @@ import { getDepthBudget } from '../config.js';
  * @returns Complete prompt string
  */
 export function buildGenerationPrompt(params: GenerationParams): string {
-  const { entryPoint, storyContext, gaps, direction, depth, count, ideas } = params;
+  const { entryPoint, storyContext, gaps, direction, depth, count, ideas, guidelines } = params;
   const budget = getDepthBudget(depth);
 
   const entryDescription = describeEntryPoint(entryPoint);
 
   // Build ideas section if provided
   const ideasSection = ideas ? `\n${ideas}\n` : '';
+  // Build guidelines section if provided
+  const guidelinesSection = guidelines ? `\n${guidelines}\n` : '';
 
   return `You are an AI assistant helping to develop a screenplay. Your task is to generate EXACTLY ${count} complete narrative packages based on the given entry point.
 
@@ -52,6 +54,7 @@ ${storyContext}
 
 ${gaps}
 ${ideasSection}
+${guidelinesSection}
 ${direction ? `## User Direction\n\n"${direction}"\n` : ''}
 
 ## Generation Budget
@@ -102,11 +105,9 @@ Schema:
       "style_tags": ["betrayal", "dramatic"],
       "changes": {
         "storyContext": [
-          {
-            "operation": "add",
-            "section": "Thematic Concerns",
-            "content": "New thematic element"
-          }
+          { "operation": { "type": "addThematicPillar", "pillar": "New thematic element" } },
+          { "operation": { "type": "setConstitutionField", "field": "toneEssence", "value": "Updated tone" } },
+          { "operation": { "type": "addGuideline", "guideline": { "id": "sg_timestamp_xxxx", "tags": ["character"], "text": "Guideline text" } } }
         ],
         "nodes": [
           {

@@ -16,6 +16,7 @@ import type {
   NarrativePackage,
   NodeChange,
   EdgeChange,
+  StoryContextChangeOperation,
   StoryContextChange,
   ConflictInfo,
   ValidationResult,
@@ -408,17 +409,122 @@ function normalizePrimarySupporting(
   } = { nodes, edges };
 
   // Handle suggestions.contextAdditions -> storyContext
+  // New format: { operation: { type: "addThematicPillar", pillar: "..." } }
   if (suggestions && Array.isArray(suggestions.contextAdditions)) {
     result.storyContext = (suggestions.contextAdditions as Array<Record<string, unknown>>).map(
-      (ctx) => ({
-        operation: (ctx.action as string) === 'append' ? 'add' : (ctx.action as string) ?? 'add',
-        section: ctx.section as string,
-        content: ctx.content as string,
-      } as StoryContextChange)
+      (ctx) => normalizeStoryContextChange(ctx)
     );
   }
 
   return result;
+}
+
+/**
+ * Normalize a single story context change from LLM output.
+ * Handles the new structured operation format.
+ */
+function normalizeStoryContextChange(ctx: Record<string, unknown>): StoryContextChange {
+  // List of legacy/non-standard operation types that need conversion
+  const legacyTypes = ['addsection', 'addtext', 'modifysection', 'appendtext'];
+
+  // New format with wrapper: { operation: { type: "...", ... } }
+  if (ctx.operation && typeof ctx.operation === 'object') {
+    const op = ctx.operation as Record<string, unknown>;
+    const opType = String(op.type ?? '').toLowerCase();
+    // Check if it's a legacy format and convert
+    if (legacyTypes.includes(opType)) {
+      return { operation: convertLegacyOperation(op) };
+    }
+    return { operation: op as StoryContextChangeOperation };
+  }
+
+  // Handle direct operation format (LLM might return without wrapper):
+  // { type: "addThematicPillar", pillar: "..." }
+  if (ctx.type && typeof ctx.type === 'string') {
+    const opType = String(ctx.type).toLowerCase();
+    // Check if it's a legacy format and convert
+    if (legacyTypes.includes(opType)) {
+      return { operation: convertLegacyOperation(ctx) };
+    }
+    return { operation: ctx as unknown as StoryContextChangeOperation };
+  }
+
+  // Should not reach here with new format, but handle gracefully
+  throw new ParseError('Invalid story context change format', ctx);
+}
+
+/**
+ * Convert legacy/non-standard operation formats to new structured operations.
+ * Handles: addSection, addText, and other legacy formats
+ */
+function convertLegacyOperation(op: Record<string, unknown>): StoryContextChangeOperation {
+  const opType = String(op.type ?? '').toLowerCase();
+  const section = String(op.section ?? op.field ?? '').toLowerCase();
+  const content = String(op.content ?? op.text ?? op.value ?? '');
+  const timestamp = Date.now();
+  const rand = Math.random().toString(36).slice(2, 6);
+
+  // Handle addText - typically used for premise, tone, or general content
+  if (opType === 'addtext') {
+    // Check if there's a target field specified
+    if (section === 'premise') {
+      return { type: 'setConstitutionField', field: 'premise', value: content };
+    }
+    if (section === 'tone' || section === 'toneessence' || section === 'voice') {
+      return { type: 'setConstitutionField', field: 'toneEssence', value: content };
+    }
+    // Default addText to a guideline
+    return {
+      type: 'addGuideline',
+      guideline: { id: `sg_${timestamp}_${rand}`, tags: ['general'], text: content }
+    };
+  }
+
+  // Handle addSection format
+  switch (section) {
+    case 'themes':
+    case 'theme':
+    case 'thematic':
+    case 'pillars':
+      return { type: 'addThematicPillar', pillar: content };
+
+    case 'premise':
+      return { type: 'setConstitutionField', field: 'premise', value: content };
+
+    case 'tone':
+    case 'toneessence':
+    case 'voice':
+      return { type: 'setConstitutionField', field: 'toneEssence', value: content };
+
+    case 'rules':
+    case 'hardrules':
+    case 'constraints':
+      return {
+        type: 'addHardRule',
+        rule: { id: `hr_${timestamp}_${rand}`, text: content }
+      };
+
+    case 'guidelines':
+    case 'softguidelines':
+      return {
+        type: 'addGuideline',
+        guideline: { id: `sg_${timestamp}_${rand}`, tags: ['general'], text: content }
+      };
+
+    case 'banned':
+      return { type: 'addBanned', item: content };
+
+    case 'workingnotes':
+    case 'notes':
+      return { type: 'setWorkingNotes', content };
+
+    default:
+      // Default to adding as a guideline
+      return {
+        type: 'addGuideline',
+        guideline: { id: `sg_${timestamp}_${rand}`, tags: ['general'], text: content || `[${section}]` }
+      };
+  }
 }
 
 /**
@@ -448,15 +554,10 @@ function normalizeDirectChanges(
     edges: EdgeChange[];
   } = { nodes, edges };
 
-  // Handle direct storyContext array
+  // Handle direct storyContext array (new structured format)
   if (Array.isArray(changes.storyContext)) {
     result.storyContext = (changes.storyContext as Array<Record<string, unknown>>).map(
-      (ctx) => ({
-        operation: ctx.operation as 'add' | 'modify' | 'delete' ?? 'add',
-        section: ctx.section as string,
-        content: ctx.content as string,
-        previous_content: ctx.previous_content as string | undefined,
-      } as StoryContextChange)
+      (ctx) => normalizeStoryContextChange(ctx)
     );
   }
 

@@ -3,10 +3,103 @@ import type {
   NodeChangeAI,
   EdgeChangeAI,
   StoryContextChange,
+  StoryContextChangeOperation,
   PackageElementType,
   GenerationCount,
 } from '../../api/types';
 import styles from './EditableElement.module.css';
+
+/**
+ * Get display label for a story context operation type.
+ */
+function getOperationLabel(op: StoryContextChangeOperation): string {
+  switch (op.type) {
+    case 'setConstitutionField':
+      return `Set ${op.field}`;
+    case 'addThematicPillar':
+      return 'Add Pillar';
+    case 'removeThematicPillar':
+      return 'Remove Pillar';
+    case 'setThematicPillars':
+      return 'Set Pillars';
+    case 'addBanned':
+      return 'Add Banned';
+    case 'removeBanned':
+      return 'Remove Banned';
+    case 'setBanned':
+      return 'Set Banned';
+    case 'addHardRule':
+      return 'Add Rule';
+    case 'updateHardRule':
+      return 'Update Rule';
+    case 'removeHardRule':
+      return 'Remove Rule';
+    case 'addGuideline':
+      return 'Add Guideline';
+    case 'updateGuideline':
+      return 'Update Guideline';
+    case 'removeGuideline':
+      return 'Remove Guideline';
+    case 'setWorkingNotes':
+      return 'Set Notes';
+    default:
+      return 'Unknown';
+  }
+}
+
+/**
+ * Get display content for a story context operation.
+ */
+function getOperationContent(op: StoryContextChangeOperation): string {
+  switch (op.type) {
+    case 'setConstitutionField':
+      return op.value;
+    case 'addThematicPillar':
+      return op.pillar;
+    case 'removeThematicPillar':
+      return `Index ${op.index}`;
+    case 'setThematicPillars':
+      return op.pillars.join(', ');
+    case 'addBanned':
+      return op.item;
+    case 'removeBanned':
+      return `Index ${op.index}`;
+    case 'setBanned':
+      return op.banned.join(', ');
+    case 'addHardRule':
+      return op.rule.text;
+    case 'updateHardRule':
+      return op.text;
+    case 'removeHardRule':
+      return op.id;
+    case 'addGuideline':
+      return op.guideline.text;
+    case 'updateGuideline':
+      return op.changes.text ?? `ID: ${op.id}`;
+    case 'removeGuideline':
+      return op.id;
+    case 'setWorkingNotes':
+      return op.content;
+    default:
+      return '';
+  }
+}
+
+/**
+ * Get the operation category for display styling.
+ */
+function getOperationCategory(op: StoryContextChangeOperation): 'add' | 'modify' | 'delete' {
+  if (op.type.startsWith('add') || op.type.startsWith('set')) {
+    return 'add';
+  }
+  if (op.type.startsWith('update')) {
+    return 'modify';
+  }
+  if (op.type.startsWith('remove')) {
+    return 'delete';
+  }
+  return 'add';
+}
 
 interface EditableElementProps {
   elementType: PackageElementType;
@@ -130,7 +223,18 @@ export function EditableElement({
     setEditedElement(element);
   }, [element]);
 
-  const { icon, className } = getOpDisplay(element.operation);
+  // Get operation display - handle both string operations (node/edge) and structured operations (storyContext)
+  const opDisplayInfo = (() => {
+    if (elementType === 'storyContext') {
+      const ctx = element as StoryContextChange;
+      const category = getOperationCategory(ctx.operation);
+      return getOpDisplay(category);
+    }
+    // For nodes and edges, operation is a string
+    const op = (element as NodeChangeAI | EdgeChangeAI).operation;
+    return getOpDisplay(op);
+  })();
+  const { icon, className } = opDisplayInfo;
 
   const handleSaveEdit = async () => {
     setSaving(true);
@@ -242,11 +346,11 @@ export function EditableElement({
 // Story Context Element Renderer
 function renderStoryContextElement(
   element: StoryContextChange,
-  editedElement: StoryContextChange,
+  _editedElement: StoryContextChange,
   mode: 'view' | 'edit' | 'regenerate',
   setMode: (m: 'view' | 'edit' | 'regenerate') => void,
-  setEditedElement: (e: StoryContextChange) => void,
-  handleSaveEdit: () => void,
+  _setEditedElement: (e: StoryContextChange) => void,
+  _handleSaveEdit: () => void,
   handleCancelEdit: () => void,
   handleStartRegenerate: () => void,
   handleSelectOption: (opt: StoryContextChange) => void,
@@ -255,7 +359,7 @@ function renderStoryContextElement(
   count: GenerationCount,
   setCount: (c: GenerationCount) => void,
   loading: boolean,
-  saving: boolean,
+  _saving: boolean,
   regenerateOptions: StoryContextChange[] | undefined,
   icon: string,
   className: string,
@@ -263,22 +367,19 @@ function renderStoryContextElement(
   isRemoved?: boolean,
   onUndoRemove?: () => void
 ) {
+  // Extract display info from structured operation
+  const operationLabel = getOperationLabel(element.operation);
+  const operationContent = getOperationContent(element.operation);
+
   return (
     <div className={`${styles.container} ${className} ${isRemoved ? styles.removed : ''}`}>
       <div className={styles.header}>
         <span className={styles.opIcon}>{icon}</span>
-        <span className={styles.type}>{element.section}</span>
+        <span className={styles.type}>{operationLabel}</span>
         <div className={styles.actions}>
           {mode === 'view' && !isRemoved && (
             <>
-              <button
-                className={styles.actionBtn}
-                onClick={() => setMode('edit')}
-                disabled={loading}
-                type="button"
-              >
-                Edit
-              </button>
+              {/* Edit disabled for structured operations - use StoryContextEditor instead */}
               <button
                 className={styles.actionBtn}
                 onClick={() => setMode('regenerate')}
@@ -304,7 +405,7 @@ function renderStoryContextElement(
 
       {isRemoved && (
         <div className={styles.removedOverlay}>
-          <span>Will not be added</span>
+          <span>Will not be applied</span>
           {onUndoRemove && (
             <button onClick={onUndoRemove} type="button">
               Undo
@@ -314,36 +415,22 @@ function renderStoryContextElement(
       )}
 
       {mode === 'view' && !isRemoved && (
-        <p className={styles.content}>"{element.content}"</p>
+        <p className={styles.content}>"{operationContent}"</p>
       )}
 
+      {/* Edit mode - show read-only for structured operations */}
       {mode === 'edit' && (
         <div className={styles.editForm}>
-          <textarea
-            className={styles.textarea}
-            value={editedElement.content}
-            onChange={(e) =>
-              setEditedElement({ ...editedElement, content: e.target.value })
-            }
-            rows={4}
-            disabled={saving}
-          />
+          <p className={styles.description}>
+            Edit story context changes directly in the Story Context Editor.
+          </p>
           <div className={styles.editActions}>
             <button
               className={styles.cancelBtn}
               onClick={handleCancelEdit}
-              disabled={saving}
               type="button"
             >
-              Cancel
-            </button>
-            <button
-              className={styles.saveBtn}
-              onClick={handleSaveEdit}
-              disabled={saving}
-              type="button"
-            >
-              {saving ? 'Saving...' : 'Save'}
+              Back
             </button>
           </div>
         </div>
@@ -399,7 +486,7 @@ function renderStoryContextElement(
               onClick={() => handleSelectOption(opt)}
               type="button"
             >
-              <p className={styles.optionContent}>"{opt.content}"</p>
+              <p className={styles.optionContent}>"{getOperationContent(opt.operation)}"</p>
             </button>
           ))}
           <button

@@ -1,13 +1,14 @@
 /**
  * Migration utility for Conflict, Theme, and Motif nodes.
  *
- * Converts these nodes to markdown sections in Story Context,
+ * Converts these nodes to structured Story Context,
  * then returns IDs for deletion. These node types are no longer
- * supported as formal graph nodes - they are now stored as prose
- * in Story Context.
+ * supported as formal graph nodes - they are now stored in
+ * Story Context.
  */
 
-import type { GraphState } from '@apollo/core';
+import type { GraphState, StoryContext, SoftGuideline, GuidelineTag } from '@apollo/core';
+import { createDefaultStoryContext } from '@apollo/core';
 
 // =============================================================================
 // Legacy Node Types (for migration only)
@@ -44,8 +45,8 @@ type LegacyNode = LegacyConflict | LegacyTheme | LegacyMotif;
 // =============================================================================
 
 export interface MigrationResult {
-  /** New Story Context content (appended with migrated data) */
-  newContext: string;
+  /** New Story Context (with migrated data) */
+  newContext: StoryContext;
   /** Node IDs to delete */
   nodesToDelete: string[];
   /** Edge IDs to delete */
@@ -101,20 +102,27 @@ function isLegacyNode(node: unknown): node is LegacyNode {
   return isLegacyConflict(node) || isLegacyTheme(node) || isLegacyMotif(node);
 }
 
+/**
+ * Generate a unique ID for migrated elements.
+ */
+function generateId(prefix: string): string {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+}
+
 // =============================================================================
 // Migration Function
 // =============================================================================
 
 /**
- * Migrate Conflict, Theme, and Motif nodes to Story Context.
+ * Migrate Conflict, Theme, and Motif nodes to structured Story Context.
  *
  * @param graph - The current graph state
- * @param existingContext - Existing Story Context content (if any)
+ * @param existingContext - Existing Story Context (if any)
  * @returns Migration result with new context and IDs to delete
  */
 export function migrateConflictsThemesToContext(
   graph: GraphState,
-  existingContext: string | undefined
+  existingContext: StoryContext | undefined
 ): MigrationResult {
   // Find legacy nodes from the Map (cast to unknown for runtime checks)
   const allNodes = Array.from(graph.nodes.values()) as unknown[];
@@ -122,10 +130,15 @@ export function migrateConflictsThemesToContext(
   const themes = allNodes.filter(isLegacyTheme);
   const motifs = allNodes.filter(isLegacyMotif);
 
+  // Start with existing context or create default
+  const context: StoryContext = existingContext
+    ? structuredClone(existingContext)
+    : createDefaultStoryContext();
+
   // If no legacy nodes, return early
   if (conflicts.length === 0 && themes.length === 0 && motifs.length === 0) {
     return {
-      newContext: existingContext ?? '',
+      newContext: context,
       nodesToDelete: [],
       edgesToDelete: [],
       migrated: false,
@@ -145,48 +158,46 @@ export function migrateConflictsThemesToContext(
     .filter((e) => nodesToDelete.includes(e.from) || nodesToDelete.includes(e.to))
     .map((e) => e.id);
 
-  // Build markdown sections
-  const sections: string[] = [];
-
-  if (themes.length > 0) {
-    sections.push('## Thematic Concerns\n');
-    for (const theme of themes) {
-      const priority = theme.priority ? ` (${theme.priority})` : '';
-      sections.push(`- ${theme.statement}${priority}`);
-    }
-    sections.push('');
+  // Convert themes to thematic pillars
+  for (const theme of themes) {
+    const pillar = theme.priority
+      ? `${theme.statement} (${theme.priority})`
+      : theme.statement;
+    context.constitution.thematicPillars.push(pillar);
   }
 
-  if (conflicts.length > 0) {
-    sections.push('## Central Conflicts\n');
-    for (const conflict of conflicts) {
-      const type = conflict.conflict_type ? ` (${conflict.conflict_type})` : '';
-      const desc = conflict.description ? `: ${conflict.description}` : '';
-      sections.push(`- **${conflict.name}**${type}${desc}`);
-    }
-    sections.push('');
+  // Convert conflicts to soft guidelines
+  for (const conflict of conflicts) {
+    const text = conflict.description
+      ? `${conflict.name}: ${conflict.description}`
+      : conflict.name;
+    const guideline: SoftGuideline = {
+      id: generateId('sg'),
+      tags: ['plot', 'character'] as GuidelineTag[],
+      text: conflict.conflict_type
+        ? `[${conflict.conflict_type}] ${text}`
+        : text,
+    };
+    context.operational.softGuidelines.push(guideline);
   }
 
-  if (motifs.length > 0) {
-    sections.push('## Recurring Motifs\n');
-    for (const motif of motifs) {
-      const type = motif.motif_type ? ` (${motif.motif_type})` : '';
-      const desc = motif.description ? `: ${motif.description}` : '';
-      sections.push(`- **${motif.name}**${type}${desc}`);
-    }
-    sections.push('');
+  // Convert motifs to soft guidelines
+  for (const motif of motifs) {
+    const text = motif.description
+      ? `${motif.name}: ${motif.description}`
+      : motif.name;
+    const guideline: SoftGuideline = {
+      id: generateId('sg'),
+      tags: ['general'] as GuidelineTag[],
+      text: motif.motif_type
+        ? `[${motif.motif_type} motif] ${text}`
+        : `[Motif] ${text}`,
+    };
+    context.operational.softGuidelines.push(guideline);
   }
-
-  // Combine with existing context
-  const migratedContent = sections.join('\n');
-  const separator = existingContext ? '\n\n---\n\n' : '';
-  const migrationNote =
-    '<!-- Migrated from legacy Conflict/Theme/Motif nodes -->\n\n';
-  const newContext =
-    (existingContext ?? '') + separator + migrationNote + migratedContent;
 
   return {
-    newContext: newContext.trim(),
+    newContext: context,
     nodesToDelete,
     edgesToDelete,
     migrated: true,
@@ -199,7 +210,10 @@ export function migrateConflictsThemesToContext(
 }
 
 /**
- * Check if a graph has any legacy Conflict/Theme/Motif nodes.
+ * Check if a graph has any legacy nodes that need migration.
+ *
+ * @param graph - The graph state to check
+ * @returns True if migration is needed
  */
 export function hasLegacyNodes(graph: GraphState): boolean {
   const allNodes = Array.from(graph.nodes.values()) as unknown[];

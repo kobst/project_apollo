@@ -94,11 +94,11 @@ export async function refinePackage(
     throw new Error(`Story "${storyId}" state not found`);
   }
 
-  // 3. Build system prompt from metadata (stable, cacheable)
+  // 3. Build system prompt from metadata (stable, cacheable - constitution only)
   const systemPromptParams: ai.SystemPromptParams = {
     storyName: state.metadata?.name,
     logline: state.metadata?.logline,
-    storyContext: state.metadata?.storyContext,
+    constitution: state.metadata?.storyContext?.constitution,
   };
   const systemPrompt = ai.hasSystemPromptContent(systemPromptParams)
     ? ai.buildSystemPrompt(systemPromptParams)
@@ -113,6 +113,12 @@ export async function refinePackage(
 
   // 5. Get filtered ideas for refine task
   const ideasResult = ai.getIdeasForTask(graph, 'refine', undefined, 5);
+
+  // 5b. Get filtered guidelines for refine task
+  const guidelinesResult = ai.getGuidelinesForTask(
+    state.metadata?.storyContext?.operational,
+    'refine'
+  );
 
   // 6. Get package count
   const packageCount = ai.getPackageCount(count);
@@ -129,6 +135,9 @@ export async function refinePackage(
   };
   if (ideasResult.serialized) {
     promptParams.ideas = ideasResult.serialized;
+  }
+  if (guidelinesResult.serialized) {
+    promptParams.guidelines = guidelinesResult.serialized;
   }
   const prompt = ai.buildRefinementPrompt(promptParams);
 
@@ -174,7 +183,7 @@ export async function refinePackage(
  */
 export function getRefinableElements(pkg: ai.NarrativePackage): {
   nodes: Array<{ id: string; type: string; label: string }>;
-  storyContextChanges: Array<{ section: string; operation: string }>;
+  storyContextChanges: Array<{ operationType: string; summary: string }>;
 } {
   const nodes = pkg.changes.nodes.map((change) => ({
     id: change.node_id,
@@ -186,10 +195,51 @@ export function getRefinableElements(pkg: ai.NarrativePackage): {
     ),
   }));
 
-  const storyContextChanges = (pkg.changes.storyContext ?? []).map((change) => ({
-    section: change.section,
-    operation: change.operation,
-  }));
+  const storyContextChanges = (pkg.changes.storyContext ?? []).map((change) => {
+    const op = change.operation;
+    return {
+      operationType: op.type,
+      summary: formatOperationSummary(op),
+    };
+  });
 
   return { nodes, storyContextChanges };
+}
+
+/**
+ * Format a story context operation for display.
+ */
+function formatOperationSummary(op: ai.StoryContextChangeOperation): string {
+  switch (op.type) {
+    case 'setConstitutionField':
+      return `Set ${op.field}`;
+    case 'addThematicPillar':
+      return `Add pillar: ${op.pillar.slice(0, 30)}...`;
+    case 'removeThematicPillar':
+      return `Remove pillar at index ${op.index}`;
+    case 'setThematicPillars':
+      return `Set ${op.pillars.length} pillars`;
+    case 'addBanned':
+      return `Add banned: ${op.item}`;
+    case 'removeBanned':
+      return `Remove banned at index ${op.index}`;
+    case 'setBanned':
+      return `Set ${op.banned.length} banned items`;
+    case 'addHardRule':
+      return `Add rule: ${op.rule.text.slice(0, 30)}...`;
+    case 'updateHardRule':
+      return `Update rule ${op.id}`;
+    case 'removeHardRule':
+      return `Remove rule ${op.id}`;
+    case 'addGuideline':
+      return `Add guideline: ${op.guideline.text.slice(0, 30)}...`;
+    case 'updateGuideline':
+      return `Update guideline ${op.id}`;
+    case 'removeGuideline':
+      return `Remove guideline ${op.id}`;
+    case 'setWorkingNotes':
+      return `Set working notes`;
+    default:
+      return 'Unknown operation';
+  }
 }

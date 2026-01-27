@@ -84,11 +84,11 @@ export async function generatePackages(
   const coverage = computeCoverage(graph);
   const gaps = coverage.gaps;
 
-  // 3. Build system prompt from metadata (stable, cacheable)
+  // 3. Build system prompt from metadata (stable, cacheable - constitution only)
   const systemPromptParams: ai.SystemPromptParams = {
     storyName: state.metadata?.name,
     logline: state.metadata?.logline,
-    storyContext: state.metadata?.storyContext,
+    constitution: state.metadata?.storyContext?.constitution,
   };
   const systemPrompt = ai.hasSystemPromptContent(systemPromptParams)
     ? ai.buildSystemPrompt(systemPromptParams)
@@ -107,6 +107,12 @@ export async function generatePackages(
   const entryPointNodeId = entryPoint.targetId;
   const ideasResult = ai.getIdeasForTask(graph, 'generate', entryPointNodeId, 5);
 
+  // 5b. Get filtered guidelines for generation task
+  const guidelinesResult = ai.getGuidelinesForTask(
+    state.metadata?.storyContext?.operational,
+    'generate'
+  );
+
   // 6. Get package count from config
   const packageCount = ai.getPackageCount(count);
 
@@ -124,6 +130,7 @@ export async function generatePackages(
   };
   if (direction) promptParams.direction = direction;
   if (ideasResult.serialized) promptParams.ideas = ideasResult.serialized;
+  if (guidelinesResult.serialized) promptParams.guidelines = guidelinesResult.serialized;
 
   const prompt = ai.buildGenerationPrompt(promptParams);
 

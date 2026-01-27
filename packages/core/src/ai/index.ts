@@ -68,6 +68,7 @@ export type {
   NarrativePackage,
   NodeChange,
   EdgeChange,
+  StoryContextChangeOperation,
   StoryContextChange,
   ConflictInfo,
   // Parameter types
@@ -135,6 +136,41 @@ export {
   getTemperatureForCreativity,
 } from './config.js';
 export type { AIConfig, DepthBudget, CreativityConfig } from './config.js';
+
+// =============================================================================
+// Structured Story Context
+// =============================================================================
+
+export {
+  createDefaultStoryContext,
+  createHardRule,
+  createSoftGuideline,
+  isValidStoryContext,
+  hasStoryContextContent,
+} from './storyContextTypes.js';
+export type {
+  GuidelineTag,
+  HardRule,
+  SoftGuideline,
+  StoryContextConstitution,
+  StoryContextOperational,
+  StoryContext,
+} from './storyContextTypes.js';
+
+// =============================================================================
+// Guidelines Serialization
+// =============================================================================
+
+export {
+  getTagsForTaskType,
+  filterGuidelines,
+  serializeGuidelines,
+  getGuidelinesForTask,
+} from './guidelinesSerializer.js';
+export type {
+  GuidelineTaskType,
+  GuidelinesSerializationResult,
+} from './guidelinesSerializer.js';
 
 // =============================================================================
 // Mode Defaults

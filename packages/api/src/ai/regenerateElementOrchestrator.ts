@@ -84,7 +84,7 @@ ${guidance ? `## User Guidance\n"${guidance}"\n` : ''}
 Generate exactly ${count} alternative version${count > 1 ? 's' : ''} of ONLY this ${elementTypeLabel.toLowerCase()}.
 ${elementType === 'node' ? `Keep the same operation ("${(currentElement as ai.NodeChange).operation}") and node_id ("${(currentElement as ai.NodeChange).node_id}").` : ''}
 ${elementType === 'edge' ? `Keep the same operation ("${(currentElement as ai.EdgeChange).operation}").` : ''}
-${elementType === 'storyContext' ? `Keep the same operation ("${(currentElement as ai.StoryContextChange).operation}") and section ("${(currentElement as ai.StoryContextChange).section}").` : ''}
+${elementType === 'storyContext' ? `Keep the same operation type ("${(currentElement as ai.StoryContextChange).operation.type}").` : ''}
 Each option should ${guidance ? 'interpret the guidance differently' : 'offer a meaningfully different alternative'}.
 Ensure coherence with the other elements in the package.
 
@@ -114,7 +114,7 @@ function formatOtherElements(
     const items = pkg.changes.storyContext
       .map((sc, i) => {
         if (excludeType === 'storyContext' && i === excludeIndex) return null;
-        return `  - [${sc.operation}] ${sc.section}: "${sc.content.slice(0, 100)}${sc.content.length > 100 ? '...' : ''}"`;
+        return `  - [${sc.operation.type}] ${JSON.stringify(sc.operation).slice(0, 100)}`;
       })
       .filter(Boolean);
     if (items.length > 0) {
@@ -165,7 +165,8 @@ function getElementTemplate(
     return `{ "operation": "${edge.operation}", "edge_type": "...", "from": "...", "to": "..." }`;
   } else {
     const sc = current as ai.StoryContextChange;
-    return `{ "operation": "${sc.operation}", "section": "${sc.section}", "content": "..." }`;
+    // Show template based on operation type
+    return `{ "operation": ${JSON.stringify(sc.operation)} }`;
   }
 }
 
@@ -228,8 +229,9 @@ function parseRegenerateResponse(
       }
       return option as unknown as ai.EdgeChange;
     } else {
-      if (!option.operation || !option.section || !option.content) {
-        throw new Error(`Option ${i} missing required storyContext fields`);
+      // storyContext: operation should be an object with a type field
+      if (!option.operation || typeof option.operation !== 'object' || !(option.operation as Record<string, unknown>).type) {
+        throw new Error(`Option ${i} missing required storyContext operation`);
       }
       return option as unknown as ai.StoryContextChange;
     }
@@ -315,11 +317,11 @@ export async function regenerateElement(
     throw new Error(`Story "${storyId}" state not found`);
   }
 
-  // 4. Build system prompt from metadata (stable, cacheable)
+  // 4. Build system prompt from metadata (stable, cacheable - constitution only)
   const systemPromptParams: ai.SystemPromptParams = {
     storyName: state.metadata?.name,
     logline: state.metadata?.logline,
-    storyContext: state.metadata?.storyContext,
+    constitution: state.metadata?.storyContext?.constitution,
   };
   const systemPrompt = ai.hasSystemPromptContent(systemPromptParams)
     ? ai.buildSystemPrompt(systemPromptParams)

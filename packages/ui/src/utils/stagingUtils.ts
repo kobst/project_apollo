@@ -50,12 +50,11 @@ export interface MergedEdge {
 
 // Merged story context change
 export interface MergedStoryContextChange {
-  section: string;
-  content: string;
+  operationType: string;
+  summary: string;
   _isProposed: boolean;
   _packageId?: string | undefined;
-  _operation: 'add' | 'modify' | 'delete';
-  _previousContent?: string | undefined;
+  _operation: import('../api/types').StoryContextChangeOperation;
 }
 
 // Complete merged view
@@ -102,13 +101,15 @@ export function computeSectionChangeCounts(pkg: NarrativePackage | null): Sectio
     }
   }
 
-  // Count story context changes
+  // Count story context changes based on operation type
   for (const change of pkg.changes.storyContext ?? []) {
-    if (change.operation === 'add') {
+    const opType = change.operation.type;
+    // Categorize operation types
+    if (opType.startsWith('add') || opType.startsWith('set')) {
       counts.storyContext.additions++;
-    } else if (change.operation === 'modify') {
+    } else if (opType.startsWith('update')) {
       counts.storyContext.modifications++;
-    } else if (change.operation === 'delete') {
+    } else if (opType.startsWith('remove')) {
       counts.storyContext.deletions++;
     }
   }
@@ -295,6 +296,45 @@ export function computeMergedEdges(
 }
 
 /**
+ * Format a story context operation for display.
+ */
+function formatOperationSummary(op: import('../api/types').StoryContextChangeOperation): string {
+  switch (op.type) {
+    case 'setConstitutionField':
+      return `Set ${op.field}: ${op.value.slice(0, 50)}${op.value.length > 50 ? '...' : ''}`;
+    case 'addThematicPillar':
+      return `Add pillar: ${op.pillar.slice(0, 50)}${op.pillar.length > 50 ? '...' : ''}`;
+    case 'removeThematicPillar':
+      return `Remove pillar at index ${op.index}`;
+    case 'setThematicPillars':
+      return `Set ${op.pillars.length} pillars`;
+    case 'addBanned':
+      return `Add banned: ${op.item}`;
+    case 'removeBanned':
+      return `Remove banned at index ${op.index}`;
+    case 'setBanned':
+      return `Set ${op.banned.length} banned items`;
+    case 'addHardRule':
+      return `Add rule: ${op.rule.text.slice(0, 50)}${op.rule.text.length > 50 ? '...' : ''}`;
+    case 'updateHardRule':
+      return `Update rule ${op.id}`;
+    case 'removeHardRule':
+      return `Remove rule ${op.id}`;
+    case 'addGuideline':
+      return `Add guideline: ${op.guideline.text.slice(0, 50)}${op.guideline.text.length > 50 ? '...' : ''}`;
+    case 'updateGuideline':
+      return `Update guideline ${op.id}`;
+    case 'removeGuideline':
+      return `Remove guideline ${op.id}`;
+    case 'setWorkingNotes':
+      return `Set working notes`;
+    default:
+      // Show the actual operation type for debugging
+      return `Unknown operation: ${(op as { type?: string }).type ?? JSON.stringify(op).slice(0, 50)}`;
+  }
+}
+
+/**
  * Compute merged story context changes
  */
 export function computeMergedStoryContext(
@@ -303,12 +343,11 @@ export function computeMergedStoryContext(
   if (!stagedPackage?.changes.storyContext) return [];
 
   return stagedPackage.changes.storyContext.map((change) => ({
-    section: change.section,
-    content: change.content,
+    operationType: change.operation.type,
+    summary: formatOperationSummary(change.operation),
     _isProposed: true,
     _packageId: stagedPackage.id,
     _operation: change.operation,
-    _previousContent: change.previous_content,
   }));
 }
 

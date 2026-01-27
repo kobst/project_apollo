@@ -132,11 +132,11 @@ export async function proposeScenes(
 
   console.log(`[proposeScenes] Validated ${validatedBeats.length} StoryBeats, rejected ${rejectedBeats.length}`);
 
-  // 3. Build system prompt from metadata (stable, cacheable)
+  // 3. Build system prompt from metadata (stable, cacheable - constitution only)
   const systemPromptParams: ai.SystemPromptParams = {
     storyName: state.metadata?.name,
     logline: state.metadata?.logline,
-    storyContext: state.metadata?.storyContext,
+    constitution: state.metadata?.storyContext?.constitution,
   };
   const systemPrompt = ai.hasSystemPromptContent(systemPromptParams)
     ? ai.buildSystemPrompt(systemPromptParams)
@@ -157,6 +157,12 @@ export async function proposeScenes(
   const entryPointNodeId = storyBeatIds.length > 0 ? storyBeatIds[0] : undefined;
   const ideasResult = ai.getIdeasForTask(graph, 'scene', entryPointNodeId, 5);
 
+  // 5b. Get filtered guidelines for scene task
+  const guidelinesResult = ai.getGuidelinesForTask(
+    state.metadata?.storyContext?.operational,
+    'scene'
+  );
+
   // 6. Build prompt
   const promptParams: ScenePromptParams = {
     storyContext,
@@ -175,6 +181,9 @@ export async function proposeScenes(
   }
   if (ideasResult.serialized) {
     promptParams.ideas = ideasResult.serialized;
+  }
+  if (guidelinesResult.serialized) {
+    promptParams.guidelines = guidelinesResult.serialized;
   }
 
   const prompt = ai.buildScenePrompt(promptParams);

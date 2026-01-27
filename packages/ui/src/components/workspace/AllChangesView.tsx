@@ -7,6 +7,7 @@ import { useMemo, useCallback } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { useGeneration } from '../../context/GenerationContext';
 import type { MergedNode, MergedEdge, MergedStoryContextChange } from '../../utils/stagingUtils';
+import { computeMergedStoryContext } from '../../utils/stagingUtils';
 import { InlineEditor } from './InlineEditor';
 import styles from './AllChangesView.module.css';
 
@@ -70,17 +71,8 @@ export function AllChangesView() {
       _operation: edgeChange.operation,
     }));
 
-    // Compute story context changes
-    const storyContext: MergedStoryContextChange[] = (
-      stagedPackage.changes.storyContext ?? []
-    ).map((change) => ({
-      section: change.section,
-      content: change.content,
-      _isProposed: true,
-      _packageId: stagedPackage.id,
-      _operation: change.operation,
-      _previousContent: change.previous_content,
-    }));
+    // Compute story context changes using the utility
+    const storyContext = computeMergedStoryContext(stagedPackage);
 
     return { nodes, edges, storyContext };
   }, [stagedPackage, staging.editedNodes, staging.removedNodeIds]);
@@ -193,21 +185,15 @@ export function AllChangesView() {
               Story Context ({proposedChanges.storyContext.length})
             </h3>
             <div className={styles.changeList}>
-              {proposedChanges.storyContext.map((change) => (
-                <div key={change.section} className={styles.contextChange}>
+              {proposedChanges.storyContext.map((change, index) => (
+                <div key={`${change.operationType}-${index}`} className={styles.contextChange}>
                   <div className={styles.contextHeader}>
-                    <span className={styles.contextSection}>{change.section}</span>
-                    <span className={`${styles.opBadge} ${styles[change._operation]}`}>
-                      {change._operation}
+                    <span className={styles.contextSection}>{change.operationType}</span>
+                    <span className={`${styles.opBadge} ${styles.add}`}>
+                      change
                     </span>
                   </div>
-                  <p className={styles.contextContent}>{change.content}</p>
-                  {change._previousContent && (
-                    <p className={styles.contextPrevious}>
-                      <span className={styles.previousLabel}>Previous:</span>{' '}
-                      {change._previousContent}
-                    </p>
-                  )}
+                  <p className={styles.contextContent}>{change.summary}</p>
                 </div>
               ))}
             </div>

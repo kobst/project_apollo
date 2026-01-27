@@ -2,7 +2,7 @@
  * API request and response types
  */
 
-import type { OQDomain } from '@apollo/core';
+import type { OQDomain, StoryContext } from '@apollo/core';
 
 // =============================================================================
 // Response Types
@@ -319,16 +319,16 @@ export interface OutlineData {
 // =============================================================================
 
 export interface StoryContextData {
-  context: string | null;
+  context: StoryContext | null;
   modifiedAt: string | null;
 }
 
 export interface UpdateContextData {
-  context: string;
+  context: StoryContext;
   modifiedAt: string;
   newVersionId: string;
 }
 
 export interface UpdateContextRequest {
-  context: string;
+  context: StoryContext;
 }

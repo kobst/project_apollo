@@ -82,7 +82,7 @@ export function RefineModal({
   // Keep all
   const keepAll = useCallback(() => {
     setKeepIds(new Set(refinableElements.nodes.map((n) => n.id)));
-    setKeepSections(new Set(refinableElements.storyContextChanges.map((s) => s.section)));
+    setKeepSections(new Set(refinableElements.storyContextChanges.map((s) => s.operationType)));
   }, [refinableElements]);
 
   // Keep none
@@ -172,21 +172,21 @@ export function RefineModal({
 
             <div className={styles.elementsList}>
               {/* Story Context changes */}
-              {refinableElements.storyContextChanges.map((change) => (
+              {refinableElements.storyContextChanges.map((change, idx) => (
                 <label
-                  key={change.section}
-                  className={`${styles.element} ${keepSections.has(change.section) ? styles.kept : styles.regenerate}`}
+                  key={`${change.operationType}-${idx}`}
+                  className={`${styles.element} ${keepSections.has(change.operationType) ? styles.kept : styles.regenerate}`}
                 >
                   <input
                     type="checkbox"
-                    checked={keepSections.has(change.section)}
-                    onChange={() => toggleKeepSection(change.section)}
+                    checked={keepSections.has(change.operationType)}
+                    onChange={() => toggleKeepSection(change.operationType)}
                     className={styles.checkbox}
                   />
                   <span className={styles.elementType}>Story Context:</span>
-                  <span className={styles.elementLabel}>{change.section}</span>
+                  <span className={styles.elementLabel}>{change.summary}</span>
                   <span className={styles.elementStatus}>
-                    {keepSections.has(change.section) ? 'keep' : 'regenerate'}
+                    {keepSections.has(change.operationType) ? 'keep' : 'regenerate'}
                   </span>
                 </label>
               ))}

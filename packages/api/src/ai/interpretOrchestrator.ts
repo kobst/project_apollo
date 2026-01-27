@@ -88,11 +88,11 @@ export async function interpretUserInput(
     }
   }
 
-  // 3. Build system prompt from metadata (stable, cacheable)
+  // 3. Build system prompt from metadata (stable, cacheable - constitution only)
   const systemPromptParams: ai.SystemPromptParams = {
     storyName: state.metadata?.name,
     logline: state.metadata?.logline,
-    storyContext: state.metadata?.storyContext,
+    constitution: state.metadata?.storyContext?.constitution,
   };
   const systemPrompt = ai.hasSystemPromptContent(systemPromptParams)
     ? ai.buildSystemPrompt(systemPromptParams)
@@ -107,6 +107,12 @@ export async function interpretUserInput(
 
   // 5. Get filtered ideas for interpret task
   const ideasResult = ai.getIdeasForTask(graph, 'interpret', undefined, 5);
+
+  // 5b. Get filtered guidelines for interpret task
+  const guidelinesResult = ai.getGuidelinesForTask(
+    state.metadata?.storyContext?.operational,
+    'interpret'
+  );
 
   // 6. Build prompt
   // If targetType is specified, add it as a hint in the user input
@@ -124,6 +130,9 @@ export async function interpretUserInput(
   }
   if (ideasResult.serialized) {
     promptParams.ideas = ideasResult.serialized;
+  }
+  if (guidelinesResult.serialized) {
+    promptParams.guidelines = guidelinesResult.serialized;
   }
   const prompt = ai.buildInterpretationPrompt(promptParams);
 
@@ -179,13 +188,24 @@ export function proposalToPackage(
     // because we can't determine the correct edge type without knowing
     // the types of the related nodes. Users can add edges manually.
   } else if (proposal.type === 'storyContext') {
-    changes.storyContext = [
-      {
-        operation: proposal.operation,
-        section: String(proposal.data.section ?? 'Working Notes'),
-        content: String(proposal.data.content ?? ''),
-      },
-    ];
+    // Convert interpretation proposal to structured operation
+    const content = String(proposal.data.content ?? '');
+    const section = String(proposal.data.section ?? '').toLowerCase();
+
+    // Map section to appropriate operation
+    let operation: ai.StoryContextChangeOperation;
+    if (section.includes('theme') || section.includes('pillar')) {
+      operation = { type: 'addThematicPillar', pillar: content };
+    } else if (section.includes('rule') || section.includes('constraint')) {
+      operation = { type: 'addHardRule', rule: { id: `hr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, text: content } };
+    } else if (section.includes('note') || section.includes('working')) {
+      operation = { type: 'setWorkingNotes', content };
+    } else {
+      // Default to adding as a soft guideline
+      operation = { type: 'addGuideline', guideline: { id: `sg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, tags: ['general'], text: content } };
+    }
+
+    changes.storyContext = [{ operation }];
   }
 
   return {

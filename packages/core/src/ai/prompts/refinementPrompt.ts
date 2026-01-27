@@ -30,11 +30,14 @@ export function buildRefinementPrompt(params: RefinementParams): string {
     depth,
     count,
     ideas,
+    guidelines,
   } = params;
   const budget = getDepthBudget(depth);
 
   // Build ideas section if provided
   const ideasSection = ideas ? `\n${ideas}\n` : '';
+  // Build guidelines section if provided
+  const guidelinesSection = guidelines ? `\n${guidelines}\n` : '';
 
   return `You are an AI assistant helping to develop a screenplay. Your task is to generate ${count} variations of an existing narrative package based on user feedback.
 
@@ -70,6 +73,7 @@ ${regenerateElements.length > 0 ? regenerateElements.map((id) => `- ${id}`).join
 
 ${storyContext}
 ${ideasSection}
+${guidelinesSection}
 ## Budget
 
 - **Depth**: ${depth}
@@ -110,6 +114,44 @@ Respond with only the JSON object.`;
 }
 
 /**
+ * Format a story context operation for display.
+ */
+function formatContextOperation(op: import('../types.js').StoryContextChangeOperation): string {
+  switch (op.type) {
+    case 'setConstitutionField':
+      return `[set ${op.field}]: "${op.value}"`;
+    case 'addThematicPillar':
+      return `[add pillar]: "${op.pillar}"`;
+    case 'removeThematicPillar':
+      return `[remove pillar at index ${op.index}]`;
+    case 'setThematicPillars':
+      return `[set pillars]: ${op.pillars.join(', ')}`;
+    case 'addBanned':
+      return `[add banned]: "${op.item}"`;
+    case 'removeBanned':
+      return `[remove banned at index ${op.index}]`;
+    case 'setBanned':
+      return `[set banned]: ${op.banned.join(', ')}`;
+    case 'addHardRule':
+      return `[add rule ${op.rule.id}]: "${op.rule.text}"`;
+    case 'updateHardRule':
+      return `[update rule ${op.id}]: "${op.text}"`;
+    case 'removeHardRule':
+      return `[remove rule ${op.id}]`;
+    case 'addGuideline':
+      return `[add guideline ${op.guideline.id}]: [${op.guideline.tags.join(',')}] "${op.guideline.text}"`;
+    case 'updateGuideline':
+      return `[update guideline ${op.id}]: ${JSON.stringify(op.changes)}`;
+    case 'removeGuideline':
+      return `[remove guideline ${op.id}]`;
+    case 'setWorkingNotes':
+      return `[set working notes]: "${op.content.slice(0, 50)}..."`;
+    default:
+      return `[unknown operation]`;
+  }
+}
+
+/**
  * Format package changes for display in the prompt.
  */
 function formatPackageChanges(pkg: NarrativePackage): string {
@@ -118,7 +160,7 @@ function formatPackageChanges(pkg: NarrativePackage): string {
   if (pkg.changes.storyContext?.length) {
     lines.push('**Story Context Changes:**');
     for (const change of pkg.changes.storyContext) {
-      lines.push(`- [${change.operation}] ${change.section}: "${change.content}"`);
+      lines.push(`- ${formatContextOperation(change.operation)}`);
     }
   }
 

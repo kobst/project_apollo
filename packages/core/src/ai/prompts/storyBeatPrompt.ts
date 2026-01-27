@@ -40,6 +40,8 @@ export interface StoryBeatPromptParams {
   targetAct?: 1 | 2 | 3 | 4 | 5;
   /** Optional serialized ideas relevant to story beat generation */
   ideas?: string;
+  /** Optional serialized soft guidelines filtered for this task */
+  guidelines?: string;
 }
 
 // =============================================================================
@@ -73,6 +75,7 @@ export function buildStoryBeatPrompt(params: StoryBeatPromptParams): string {
     expansionScope = 'flexible',
     targetAct,
     ideas,
+    guidelines,
   } = params;
 
   const creativityLabel = creativity < 0.3 ? 'conservative' : creativity > 0.7 ? 'creative' : 'balanced';
@@ -136,6 +139,7 @@ ${characters || '[No characters defined yet]'}
 
 ${direction ? `## User Direction\n\n"${direction}"\n` : ''}
 ${ideas ? `${ideas}\n` : ''}
+${guidelines ? `${guidelines}\n` : ''}
 ${supportingSection}
 ## Generation Settings
 
@@ -295,12 +299,7 @@ function getFlexibleSchema(): string {
       },
       "suggestions": {
         "contextAdditions": [
-          {
-            "id": "ctx_12345",
-            "section": "conflicts",
-            "content": "Marcus's discovery puts him at odds with those he trusted",
-            "action": "append"
-          }
+          { "operation": { "type": "addGuideline", "guideline": { "id": "sg_timestamp_xxxx", "tags": ["plot", "character"], "text": "Marcus's discovery puts him at odds with those he trusted" } } }
         ]
       },
       "impact": {

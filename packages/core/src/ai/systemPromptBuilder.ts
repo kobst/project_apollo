@@ -1,15 +1,19 @@
 /**
  * System Prompt Builder
  *
- * Builds system prompts that contain stable story context (themes, constraints,
- * creative direction) for Anthropic prompt caching efficiency.
+ * Builds system prompts that contain stable story context (constitution) for
+ * Anthropic prompt caching efficiency.
  *
  * The system prompt establishes:
  * - AI role definition
  * - Story identity (name, logline)
- * - Creative direction (full storyContext markdown)
+ * - Story constitution (themes, hard rules, tone, banned elements)
  * - General guidelines for consistency
+ *
+ * Dynamic content (soft guidelines) is NOT included here - it goes in user prompts.
  */
+
+import type { StoryContextConstitution } from './storyContextTypes.js';
 
 // =============================================================================
 // Types
@@ -23,8 +27,8 @@ export interface SystemPromptParams {
   storyName?: string | undefined;
   /** One-sentence story summary */
   logline?: string | undefined;
-  /** Story Context markdown (themes, conflicts, constraints, creative direction) */
-  storyContext?: string | undefined;
+  /** Story constitution (stable creative direction) */
+  constitution?: StoryContextConstitution | undefined;
 }
 
 // =============================================================================
@@ -34,7 +38,7 @@ export interface SystemPromptParams {
 /**
  * Check if there is meaningful content to include in a system prompt.
  *
- * Returns true if any of the story identity or creative direction fields
+ * Returns true if any of the story identity or constitution fields
  * have content. This allows callers to skip system prompt entirely if
  * there's nothing to include (graceful fallback).
  *
@@ -42,14 +46,82 @@ export interface SystemPromptParams {
  * @returns True if system prompt would have meaningful content
  */
 export function hasSystemPromptContent(params: SystemPromptParams): boolean {
-  const { storyName, logline, storyContext } = params;
+  const { storyName, logline, constitution } = params;
 
-  // Check if we have any meaningful content
+  // Check story identity
   const hasStoryName = Boolean(storyName && storyName.trim());
   const hasLogline = Boolean(logline && logline.trim());
-  const hasStoryContext = Boolean(storyContext && storyContext.trim());
 
-  return hasStoryName || hasLogline || hasStoryContext;
+  // Check constitution - any non-empty field
+  const hasConstitution = Boolean(
+    constitution && (
+      constitution.logline.trim() ||
+      constitution.premise.trim() ||
+      constitution.thematicPillars.length > 0 ||
+      constitution.hardRules.length > 0 ||
+      constitution.toneEssence.trim() ||
+      constitution.banned.length > 0
+    )
+  );
+
+  return hasStoryName || hasLogline || hasConstitution;
+}
+
+/**
+ * Serialize constitution to structured markdown for the system prompt.
+ *
+ * @param constitution - Story constitution
+ * @returns Markdown representation
+ */
+function serializeConstitution(constitution: StoryContextConstitution): string {
+  const sections: string[] = [];
+
+  // Logline (may be redundant with metadata logline, but constitution's is authoritative)
+  if (constitution.logline.trim()) {
+    sections.push(`**Logline**: ${constitution.logline.trim()}`);
+  }
+
+  // Premise
+  if (constitution.premise.trim()) {
+    sections.push('');
+    sections.push(`**Premise**: ${constitution.premise.trim()}`);
+  }
+
+  // Thematic Pillars
+  if (constitution.thematicPillars.length > 0) {
+    sections.push('');
+    sections.push('### Thematic Pillars');
+    for (const pillar of constitution.thematicPillars) {
+      sections.push(`- ${pillar}`);
+    }
+  }
+
+  // Hard Rules
+  if (constitution.hardRules.length > 0) {
+    sections.push('');
+    sections.push('### Hard Rules (DO NOT VIOLATE)');
+    for (const rule of constitution.hardRules) {
+      sections.push(`- [${rule.id}] ${rule.text}`);
+    }
+  }
+
+  // Tone & Voice
+  if (constitution.toneEssence.trim()) {
+    sections.push('');
+    sections.push('### Tone & Voice');
+    sections.push(constitution.toneEssence.trim());
+  }
+
+  // Banned Elements
+  if (constitution.banned.length > 0) {
+    sections.push('');
+    sections.push('### Banned Elements (NEVER include)');
+    for (const item of constitution.banned) {
+      sections.push(`- ${item}`);
+    }
+  }
+
+  return sections.join('\n');
 }
 
 /**
@@ -61,13 +133,13 @@ export function hasSystemPromptContent(params: SystemPromptParams): boolean {
  * - Contain "who we are" information (identity + creative direction)
  *
  * This separates creative direction from the user prompt, which contains
- * "what to do now" (current state, specific task, filtered ideas).
+ * "what to do now" (current state, specific task, filtered guidelines).
  *
  * @param params - System prompt parameters
  * @returns Complete system prompt string
  */
 export function buildSystemPrompt(params: SystemPromptParams): string {
-  const { storyName, logline, storyContext } = params;
+  const { storyName, logline, constitution } = params;
 
   const sections: string[] = [];
 
@@ -88,14 +160,17 @@ export function buildSystemPrompt(params: SystemPromptParams): string {
     sections.push('');
   }
 
-  // Creative direction (Story Context)
-  if (storyContext && storyContext.trim()) {
-    sections.push('## Creative Direction');
-    sections.push('');
-    sections.push('The following creative direction has been established for this story. All generated content should align with these themes, constraints, and guidelines.');
-    sections.push('');
-    sections.push(storyContext.trim());
-    sections.push('');
+  // Story Constitution
+  if (constitution) {
+    const constitutionContent = serializeConstitution(constitution);
+    if (constitutionContent.trim()) {
+      sections.push('## Story Constitution');
+      sections.push('');
+      sections.push('The following creative constitution has been established for this story. All generated content MUST align with these elements. Hard rules are absolute constraints.');
+      sections.push('');
+      sections.push(constitutionContent);
+      sections.push('');
+    }
   }
 
   // General guidelines
@@ -107,6 +182,7 @@ export function buildSystemPrompt(params: SystemPromptParams): string {
   sections.push('- Generate content that serves the story\'s logline and central premise');
   sections.push('- Consider how new elements connect to and support existing content');
   sections.push('- Prioritize narrative coherence over novelty');
+  sections.push('- NEVER violate hard rules or include banned elements');
 
   return sections.join('\n');
 }

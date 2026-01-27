@@ -250,33 +250,20 @@ export function getTemperatureForCreativity(creativity: number): number {
 }
 
 // =============================================================================
-// Story Context Template
+// Story Context
 // =============================================================================
 
+import type { StoryContext } from './storyContextTypes.js';
+import { createDefaultStoryContext } from './storyContextTypes.js';
+
 /**
- * Default Story Context template for new stories.
+ * Default Story Context for new stories.
  *
- * Provides expected sections that guide AI generation and help
- * users structure their creative direction.
+ * Provides an empty structured context that users can populate.
+ * This replaces the previous markdown template.
  *
- * NOTE: Keep in sync with placeholder in StoryContextEditor.tsx
+ * The structure separates:
+ * - Constitution: stable creative direction (cached in system prompt)
+ * - Operational: dynamic guidelines (filtered per-task)
  */
-export const DEFAULT_STORY_CONTEXT = `# Story Context
-
-## Creative Direction
-Overall vision, mood, what makes this story unique.
-(For specific genre/tone, use the GenreTone node)
-
-## Themes & Motifs
-Thematic concerns, recurring symbols, what the story explores.
-This is the designated home for themes since they are prose, not formal nodes.
-
-## Working Notes
-Fragments, unresolved ideas, things still being figured out.
-
-## Reference & Inspiration
-External sources, mood boards, "like X meets Y", visual references.
-
-## Constraints & Rules
-Story-specific rules that guide generation.
-`.trim();
+export const DEFAULT_STORY_CONTEXT: StoryContext = createDefaultStoryContext();

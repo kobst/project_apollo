@@ -159,17 +159,41 @@ export interface EdgeChange {
 }
 
 /**
- * A change to the Story Context markdown.
+ * Operation types for structured StoryContext changes.
+ *
+ * These operations are used by AI to propose changes to the StoryContext,
+ * and by the UI to apply user edits.
+ */
+export type StoryContextChangeOperation =
+  // Constitution string fields
+  | { type: 'setConstitutionField'; field: 'logline' | 'premise' | 'toneEssence' | 'version'; value: string }
+  // Thematic pillars
+  | { type: 'setThematicPillars'; pillars: string[] }
+  | { type: 'addThematicPillar'; pillar: string }
+  | { type: 'removeThematicPillar'; index: number }
+  // Banned elements
+  | { type: 'setBanned'; banned: string[] }
+  | { type: 'addBanned'; item: string }
+  | { type: 'removeBanned'; index: number }
+  // Hard rules
+  | { type: 'addHardRule'; rule: { id: string; text: string } }
+  | { type: 'updateHardRule'; id: string; text: string }
+  | { type: 'removeHardRule'; id: string }
+  // Soft guidelines
+  | { type: 'addGuideline'; guideline: { id: string; tags: string[]; text: string } }
+  | { type: 'updateGuideline'; id: string; changes: { tags?: string[]; text?: string } }
+  | { type: 'removeGuideline'; id: string }
+  // Working notes
+  | { type: 'setWorkingNotes'; content: string };
+
+/**
+ * A change to the structured StoryContext.
+ *
+ * Used by AI to propose changes and by UI to apply edits.
  */
 export interface StoryContextChange {
-  /** Type of operation */
-  operation: 'add' | 'modify' | 'delete';
-  /** Section name (e.g., 'Thematic Concerns', 'Central Conflicts') */
-  section: string;
-  /** Content to add/modify/delete */
-  content: string;
-  /** Previous content for modify operations */
-  previous_content?: string;
+  /** The operation to perform */
+  operation: StoryContextChangeOperation;
 }
 
 /**
@@ -229,6 +253,8 @@ export interface GenerationParams {
   count: number;
   /** Optional serialized ideas relevant to this generation */
   ideas?: string;
+  /** Optional serialized soft guidelines filtered for this task */
+  guidelines?: string;
 }
 
 /**
@@ -251,6 +277,8 @@ export interface RefinementParams {
   count: number;
   /** Optional serialized ideas relevant to this refinement */
   ideas?: string;
+  /** Optional serialized soft guidelines filtered for this task */
+  guidelines?: string;
 }
 
 /**
@@ -265,6 +293,8 @@ export interface InterpretationParams {
   recentNodes?: string[];
   /** Optional serialized ideas relevant to this interpretation */
   ideas?: string;
+  /** Optional serialized soft guidelines filtered for this task */
+  guidelines?: string;
 }
 
 // =============================================================================

@@ -120,11 +120,11 @@ export async function proposeStoryBeats(
     };
   }
 
-  // 3. Build system prompt from metadata (stable, cacheable)
+  // 3. Build system prompt from metadata (stable, cacheable - constitution only)
   const systemPromptParams: ai.SystemPromptParams = {
     storyName: state.metadata?.name,
     logline: state.metadata?.logline,
-    storyContext: state.metadata?.storyContext,
+    constitution: state.metadata?.storyContext?.constitution,
   };
   const systemPrompt = ai.hasSystemPromptContent(systemPromptParams)
     ? ai.buildSystemPrompt(systemPromptParams)
@@ -142,6 +142,12 @@ export async function proposeStoryBeats(
 
   // 5. Get filtered ideas for storyBeat task
   const ideasResult = ai.getIdeasForTask(graph, 'storyBeat', undefined, 5);
+
+  // 5b. Get filtered guidelines for storyBeat task
+  const guidelinesResult = ai.getGuidelinesForTask(
+    state.metadata?.storyContext?.operational,
+    'storyBeat'
+  );
 
   // 6. Build prompt
   const promptParams: ai.StoryBeatPromptParams = {
@@ -163,6 +169,9 @@ export async function proposeStoryBeats(
   }
   if (ideasResult.serialized) {
     promptParams.ideas = ideasResult.serialized;
+  }
+  if (guidelinesResult.serialized) {
+    promptParams.guidelines = guidelinesResult.serialized;
   }
 
   const prompt = ai.buildStoryBeatPrompt(promptParams);

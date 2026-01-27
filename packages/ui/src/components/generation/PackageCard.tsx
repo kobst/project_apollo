@@ -3,9 +3,80 @@ import type {
   NodeChangeAI,
   EdgeChangeAI,
   StoryContextChange,
+  StoryContextChangeOperation,
   ConflictInfo,
 } from '../../api/types';
 import styles from './PackageCard.module.css';
+
+// Get operation category from structured operation
+function getOperationCategory(op: StoryContextChangeOperation): 'add' | 'modify' | 'delete' {
+  if (op.type.startsWith('add') || op.type.startsWith('set')) {
+    return 'add';
+  }
+  if (op.type.startsWith('update')) {
+    return 'modify';
+  }
+  if (op.type.startsWith('remove')) {
+    return 'delete';
+  }
+  return 'add';
+}
+
+// Get label for operation type
+function getOperationLabel(op: StoryContextChangeOperation): string {
+  switch (op.type) {
+    case 'setConstitutionField':
+      return op.field;
+    case 'addThematicPillar':
+    case 'removeThematicPillar':
+    case 'setThematicPillars':
+      return 'Pillar';
+    case 'addBanned':
+    case 'removeBanned':
+    case 'setBanned':
+      return 'Banned';
+    case 'addHardRule':
+    case 'updateHardRule':
+    case 'removeHardRule':
+      return 'Rule';
+    case 'addGuideline':
+    case 'updateGuideline':
+    case 'removeGuideline':
+      return 'Guideline';
+    case 'setWorkingNotes':
+      return 'Notes';
+    default:
+      return 'Context';
+  }
+}
+
+// Get content preview from operation
+function getOperationContent(op: StoryContextChangeOperation): string {
+  switch (op.type) {
+    case 'setConstitutionField':
+      return op.value;
+    case 'addThematicPillar':
+      return op.pillar;
+    case 'setThematicPillars':
+      return op.pillars.join(', ');
+    case 'addBanned':
+      return op.item;
+    case 'setBanned':
+      return op.banned.join(', ');
+    case 'addHardRule':
+      return op.rule.text;
+    case 'updateHardRule':
+      return op.text;
+    case 'addGuideline':
+      return op.guideline.text;
+    case 'updateGuideline':
+      return op.changes.text ?? op.id;
+    case 'setWorkingNotes':
+      return op.content;
+    default:
+      return '';
+  }
+}
 
 interface PackageCardProps {
   /** The package to display */
@@ -106,11 +177,16 @@ function EdgeChangeItem({ edge }: { edge: EdgeChangeAI }) {
 
 // Render story context change
 function StoryContextItem({ change }: { change: StoryContextChange }) {
+  const category = getOperationCategory(change.operation);
+  const label = getOperationLabel(change.operation);
+  const content = getOperationContent(change.operation);
+  const displayContent = content.length > 60 ? `${content.slice(0, 60)}...` : content;
+
   return (
-    <div className={`${styles.changeItem} ${getOpClass(change.operation)}`}>
-      <span className={styles.opIcon}>{getOpIcon(change.operation)}</span>
-      <span className={styles.nodeType}>{change.section}:</span>
-      <span className={styles.nodeLabel}>"{change.content.slice(0, 60)}..."</span>
+    <div className={`${styles.changeItem} ${getOpClass(category)}`}>
+      <span className={styles.opIcon}>{getOpIcon(category)}</span>
+      <span className={styles.nodeType}>{label}:</span>
+      <span className={styles.nodeLabel}>"{displayContent}"</span>
     </div>
   );
 }

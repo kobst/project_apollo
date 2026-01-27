@@ -132,11 +132,11 @@ export async function proposeCharacters(
   const activeCharacters = characters.filter((c) => c.status !== 'INACTIVE');
   const existingCharacters = computeCharacterSummaries(activeCharacters, graph);
 
-  // 4. Build system prompt from metadata (stable, cacheable)
+  // 4. Build system prompt from metadata (stable, cacheable - constitution only)
   const systemPromptParams: ai.SystemPromptParams = {
     storyName: state.metadata?.name,
     logline: state.metadata?.logline,
-    storyContext: state.metadata?.storyContext,
+    constitution: state.metadata?.storyContext?.constitution,
   };
   const systemPrompt = ai.hasSystemPromptContent(systemPromptParams)
     ? ai.buildSystemPrompt(systemPromptParams)
@@ -154,6 +154,12 @@ export async function proposeCharacters(
 
   // 6. Get filtered ideas for character task
   const ideasResult = ai.getIdeasForTask(graph, 'character', characterId, 5);
+
+  // 6b. Get filtered guidelines for character task
+  const guidelinesResult = ai.getGuidelinesForTask(
+    state.metadata?.storyContext?.operational,
+    'character'
+  );
 
   // 7. Build prompt
   const promptParams: CharacterPromptParams = {
@@ -178,6 +184,9 @@ export async function proposeCharacters(
   }
   if (ideasResult.serialized) {
     promptParams.ideas = ideasResult.serialized;
+  }
+  if (guidelinesResult.serialized) {
+    promptParams.guidelines = guidelinesResult.serialized;
   }
 
   const prompt = ai.buildCharacterPrompt(promptParams);

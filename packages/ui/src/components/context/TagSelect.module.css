@@ -1,0 +1,32 @@
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tag:hover:not(:disabled) {
+  border-color: var(--accent-color);
+}
+
+.tag.selected {
+  color: var(--accent-color);
+  background: rgba(var(--accent-rgb), 0.1);
+  border-color: var(--accent-color);
+}
+
+.tag:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

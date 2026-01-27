@@ -9,3 +9,20 @@ export * from './coverage/index.js';
 
 // AI module exported as namespace to avoid conflicts
 export * as ai from './ai/index.js';
+
+// Re-export StoryContext types directly for convenience
+export {
+  createDefaultStoryContext,
+  createHardRule,
+  createSoftGuideline,
+  isValidStoryContext,
+  hasStoryContextContent,
+} from './ai/storyContextTypes.js';
+export type {
+  GuidelineTag,
+  HardRule,
+  SoftGuideline,
+  StoryContextConstitution,
+  StoryContextOperational,
+  StoryContext,
+} from './ai/storyContextTypes.js';

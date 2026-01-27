@@ -1,33 +1,119 @@
 /**
  * Story Context Editor
  *
- * A full-height markdown editor for story context (creative guidance).
+ * Structured editor for Story Context with separate sections for:
+ * - Constitution (stable creative direction, cached in system prompt)
+ * - Operational (soft guidelines, filtered per-task)
+ *
  * Features auto-save with debounce.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useStory } from '../../context/StoryContext';
+import { useGeneration } from '../../context/GenerationContext';
 import { api } from '../../api/client';
+import type {
+  StoryContext,
+  StoryContextConstitution,
+  HardRule,
+  SoftGuideline,
+  GuidelineTag,
+  StoryContextChange,
+} from '../../api/types';
+import { ListEditor } from './ListEditor';
+import { GuidelineEditor } from './GuidelineEditor';
 import styles from './StoryContextEditor.module.css';
 
-// Default template for new/empty Story Context
-const DEFAULT_TEMPLATE = `# Story Context
+// =============================================================================
+// Proposed Changes Extraction
+// =============================================================================
 
-## Creative Direction
-Overall vision, mood, what makes this story unique.
+interface ProposedChanges {
+  premise?: string;
+  toneEssence?: string;
+  thematicPillars: string[];
+  hardRules: HardRule[];
+  softGuidelines: SoftGuideline[];
+  banned: string[];
+  workingNotes?: string;
+}
 
-## Themes & Motifs
-Thematic concerns, recurring symbols, what the story explores.
+function extractProposedChanges(changes: StoryContextChange[]): ProposedChanges {
+  const proposed: ProposedChanges = {
+    thematicPillars: [],
+    hardRules: [],
+    softGuidelines: [],
+    banned: [],
+  };
 
-## Working Notes
-Fragments, unresolved ideas, things still being figured out.
+  for (const change of changes) {
+    const op = change.operation;
+    switch (op.type) {
+      case 'setConstitutionField':
+        if (op.field === 'premise') proposed.premise = op.value;
+        if (op.field === 'toneEssence') proposed.toneEssence = op.value;
+        break;
+      case 'addThematicPillar':
+        proposed.thematicPillars.push(op.pillar);
+        break;
+      case 'addHardRule':
+        proposed.hardRules.push(op.rule);
+        break;
+      case 'addGuideline':
+        proposed.softGuidelines.push({
+          id: op.guideline.id,
+          tags: op.guideline.tags as GuidelineTag[],
+          text: op.guideline.text,
+        });
+        break;
+      case 'addBanned':
+        proposed.banned.push(op.item);
+        break;
+      case 'setWorkingNotes':
+        proposed.workingNotes = op.content;
+        break;
+    }
+  }
 
-## Reference & Inspiration
-External sources, mood boards, "like X meets Y", visual references.
+  return proposed;
+}
 
-## Constraints & Rules
-Story-specific rules that guide generation.
-`;
+// =============================================================================
+// Factory Functions
+// =============================================================================
+
+function createDefaultContext(): StoryContext {
+  return {
+    constitution: {
+      logline: '',
+      premise: '',
+      thematicPillars: [],
+      hardRules: [],
+      toneEssence: '',
+      banned: [],
+      version: '1.0.0',
+    },
+    operational: {
+      softGuidelines: [],
+    },
+  };
+}
+
+function generateId(prefix: string): string {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+}
+
+function createHardRule(text: string = ''): HardRule {
+  return { id: generateId('hr'), text };
+}
+
+function createSoftGuideline(text: string = '', tags: GuidelineTag[] = ['general']): SoftGuideline {
+  return { id: generateId('sg'), tags, text };
+}
+
+// =============================================================================
+// Component
+// =============================================================================
 
 interface StoryContextEditorProps {
   /** If true, renders in compact mode for drawer */
@@ -36,16 +122,28 @@ interface StoryContextEditorProps {
 
 export function StoryContextEditor({ compact = false }: StoryContextEditorProps) {
   const { currentStoryId, refreshStatus } = useStory();
+  const { staging } = useGeneration();
 
-  const [content, setContent] = useState('');
+  const [context, setContext] = useState<StoryContext>(createDefaultContext());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
 
+  // Section collapse state
+  const [constitutionExpanded, setConstitutionExpanded] = useState(true);
+  const [guidelinesExpanded, setGuidelinesExpanded] = useState(true);
+  const [workingNotesExpanded, setWorkingNotesExpanded] = useState(true);
+
+  // Extract proposed changes from staged package
+  const proposedChanges = useMemo(() => {
+    const stagedContextChanges = staging.stagedPackage?.changes.storyContext ?? [];
+    return extractProposedChanges(stagedContextChanges);
+  }, [staging.stagedPackage]);
+
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastSavedContentRef = useRef<string>('');
+  const lastSavedContextRef = useRef<string>('');
 
   // Fetch context on mount
   useEffect(() => {
@@ -57,13 +155,11 @@ export function StoryContextEditor({ compact = false }: StoryContextEditorProps)
 
       try {
         const data = await api.getContext(currentStoryId);
-        // Use default template if content is empty/null
-        const ctx = data.context?.trim() ? data.context : DEFAULT_TEMPLATE;
-        setContent(ctx);
-        lastSavedContentRef.current = data.context ?? '';
+        const ctx = data.context ?? createDefaultContext();
+        setContext(ctx);
+        lastSavedContextRef.current = JSON.stringify(ctx);
         setLastSaved(data.modifiedAt);
-        // Mark as having changes if we're using the template (needs initial save)
-        setHasChanges(!data.context?.trim());
+        setHasChanges(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load context');
       } finally {
@@ -75,9 +171,11 @@ export function StoryContextEditor({ compact = false }: StoryContextEditorProps)
   }, [currentStoryId]);
 
   // Auto-save with debounce
-  const saveContext = useCallback(async (newContent: string) => {
+  const saveContext = useCallback(async (newContext: StoryContext) => {
     if (!currentStoryId) return;
-    if (newContent === lastSavedContentRef.current) {
+
+    const serialized = JSON.stringify(newContext);
+    if (serialized === lastSavedContextRef.current) {
       setHasChanges(false);
       return;
     }
@@ -86,8 +184,8 @@ export function StoryContextEditor({ compact = false }: StoryContextEditorProps)
     setError(null);
 
     try {
-      const result = await api.updateContext(currentStoryId, newContent);
-      lastSavedContentRef.current = newContent;
+      const result = await api.updateContext(currentStoryId, newContext);
+      lastSavedContextRef.current = serialized;
       setLastSaved(result.modifiedAt);
       setHasChanges(false);
       await refreshStatus();
@@ -98,10 +196,10 @@ export function StoryContextEditor({ compact = false }: StoryContextEditorProps)
     }
   }, [currentStoryId, refreshStatus]);
 
-  // Handle content change with debounced save
-  const handleChange = useCallback((newContent: string) => {
-    setContent(newContent);
-    setHasChanges(newContent !== lastSavedContentRef.current);
+  // Handle context change with debounced save
+  const handleContextChange = useCallback((newContext: StoryContext) => {
+    setContext(newContext);
+    setHasChanges(JSON.stringify(newContext) !== lastSavedContextRef.current);
 
     // Clear existing timeout
     if (saveTimeoutRef.current) {
@@ -110,7 +208,7 @@ export function StoryContextEditor({ compact = false }: StoryContextEditorProps)
 
     // Set new timeout for auto-save (1 second debounce)
     saveTimeoutRef.current = setTimeout(() => {
-      void saveContext(newContent);
+      void saveContext(newContext);
     }, 1000);
   }, [saveContext]);
 
@@ -123,19 +221,111 @@ export function StoryContextEditor({ compact = false }: StoryContextEditorProps)
     };
   }, []);
 
-  // Save on blur (immediate)
-  const handleBlur = useCallback(() => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    if (hasChanges) {
-      void saveContext(content);
-    }
-  }, [content, hasChanges, saveContext]);
+  // =============================================================================
+  // Constitution Handlers
+  // =============================================================================
 
-  // Word and character count
-  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
-  const charCount = content.length;
+  const handleConstitutionFieldChange = useCallback((
+    field: keyof StoryContextConstitution,
+    value: string | string[]
+  ) => {
+    handleContextChange({
+      ...context,
+      constitution: {
+        ...context.constitution,
+        [field]: value,
+      },
+    });
+  }, [context, handleContextChange]);
+
+  const handleAddHardRule = useCallback(() => {
+    handleContextChange({
+      ...context,
+      constitution: {
+        ...context.constitution,
+        hardRules: [...context.constitution.hardRules, createHardRule()],
+      },
+    });
+  }, [context, handleContextChange]);
+
+  const handleHardRuleChange = useCallback((index: number, text: string) => {
+    const updated = [...context.constitution.hardRules];
+    const existing = updated[index];
+    if (existing) {
+      updated[index] = { id: existing.id, text };
+    }
+    handleContextChange({
+      ...context,
+      constitution: {
+        ...context.constitution,
+        hardRules: updated,
+      },
+    });
+  }, [context, handleContextChange]);
+
+  const handleRemoveHardRule = useCallback((index: number) => {
+    const updated = context.constitution.hardRules.filter((_, i) => i !== index);
+    handleContextChange({
+      ...context,
+      constitution: {
+        ...context.constitution,
+        hardRules: updated,
+      },
+    });
+  }, [context, handleContextChange]);
+
+  // =============================================================================
+  // Operational Handlers
+  // =============================================================================
+
+  const handleAddGuideline = useCallback(() => {
+    handleContextChange({
+      ...context,
+      operational: {
+        ...context.operational,
+        softGuidelines: [...context.operational.softGuidelines, createSoftGuideline()],
+      },
+    });
+  }, [context, handleContextChange]);
+
+  const handleGuidelineChange = useCallback((index: number, updated: SoftGuideline) => {
+    const guidelines = [...context.operational.softGuidelines];
+    guidelines[index] = updated;
+    handleContextChange({
+      ...context,
+      operational: {
+        ...context.operational,
+        softGuidelines: guidelines,
+      },
+    });
+  }, [context, handleContextChange]);
+
+  const handleRemoveGuideline = useCallback((index: number) => {
+    const guidelines = context.operational.softGuidelines.filter((_, i) => i !== index);
+    handleContextChange({
+      ...context,
+      operational: {
+        ...context.operational,
+        softGuidelines: guidelines,
+      },
+    });
+  }, [context, handleContextChange]);
+
+  const handleWorkingNotesChange = useCallback((notes: string) => {
+    const operational = { ...context.operational, softGuidelines: context.operational.softGuidelines };
+    if (notes) {
+      operational.workingNotes = notes;
+    }
+    // If notes is empty, don't include workingNotes at all
+    handleContextChange({
+      ...context,
+      operational,
+    });
+  }, [context, handleContextChange]);
+
+  // =============================================================================
+  // Render
+  // =============================================================================
 
   if (!currentStoryId) {
     return (
@@ -168,26 +358,229 @@ export function StoryContextEditor({ compact = false }: StoryContextEditorProps)
 
       {error && <div className={styles.error}>{error}</div>}
 
-      <div className={styles.description}>
-        Creative guidance that can't be captured in formal nodes: vision, themes,
-        working notes, references, and constraints. Changes are auto-saved.
-      </div>
+      <div className={styles.content}>
+        {/* Constitution Section */}
+        <section className={styles.section}>
+          <button
+            type="button"
+            className={styles.sectionHeader}
+            onClick={() => setConstitutionExpanded(!constitutionExpanded)}
+          >
+            <span className={styles.sectionTitle}>
+              Constitution
+              <span className={styles.cacheNote}>(cached in system prompt)</span>
+            </span>
+            <span className={styles.expandIcon}>{constitutionExpanded ? '-' : '+'}</span>
+          </button>
 
-      <div className={styles.editorWrapper}>
-        <textarea
-          className={styles.editor}
-          value={content}
-          onChange={(e) => handleChange(e.target.value)}
-          onBlur={handleBlur}
-          placeholder="Start typing your story context..."
-          disabled={saving}
-        />
+          {constitutionExpanded && (
+            <div className={styles.sectionContent}>
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabel}>Logline</label>
+                <input
+                  type="text"
+                  className={styles.textInput}
+                  value={context.constitution.logline}
+                  onChange={(e) => handleConstitutionFieldChange('logline', e.target.value)}
+                  placeholder="One-sentence story summary..."
+                  disabled={saving}
+                />
+              </div>
+
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabel}>Premise</label>
+                <textarea
+                  className={styles.textArea}
+                  value={context.constitution.premise}
+                  onChange={(e) => handleConstitutionFieldChange('premise', e.target.value)}
+                  placeholder="Extended premise - the core concept and what makes it unique..."
+                  disabled={saving}
+                  rows={3}
+                />
+                {proposedChanges.premise && (
+                  <div className={styles.proposedItem}>
+                    <span className={styles.proposedBadge}>Proposed</span>
+                    <p className={styles.proposedText}>{proposedChanges.premise}</p>
+                  </div>
+                )}
+              </div>
+
+              <ListEditor
+                label="Thematic Pillars"
+                items={context.constitution.thematicPillars}
+                onChange={(items) => handleConstitutionFieldChange('thematicPillars', items)}
+                placeholder="Add thematic pillar..."
+                disabled={saving}
+                proposedItems={proposedChanges.thematicPillars}
+              />
+
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabel}>
+                  Hard Rules
+                  <span className={styles.fieldHint}>(AI must never violate)</span>
+                </label>
+                <div className={styles.rulesList}>
+                  {context.constitution.hardRules.map((rule, index) => (
+                    <div key={rule.id} className={styles.ruleItem}>
+                      <span className={styles.ruleId}>[{rule.id}]</span>
+                      <input
+                        type="text"
+                        className={styles.ruleInput}
+                        value={rule.text}
+                        onChange={(e) => handleHardRuleChange(index, e.target.value)}
+                        placeholder="Rule text..."
+                        disabled={saving}
+                      />
+                      <button
+                        type="button"
+                        className={styles.removeButton}
+                        onClick={() => handleRemoveHardRule(index)}
+                        disabled={saving}
+                      >
+                        x
+                      </button>
+                    </div>
+                  ))}
+                  {/* Proposed hard rules */}
+                  {proposedChanges.hardRules.map((rule) => (
+                    <div key={rule.id} className={`${styles.ruleItem} ${styles.proposedRuleItem}`}>
+                      <span className={styles.proposedBadge}>+</span>
+                      <span className={styles.proposedRuleText}>{rule.text}</span>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className={styles.addButton}
+                    onClick={handleAddHardRule}
+                    disabled={saving}
+                  >
+                    + Add Hard Rule
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabel}>Tone & Voice</label>
+                <textarea
+                  className={styles.textArea}
+                  value={context.constitution.toneEssence}
+                  onChange={(e) => handleConstitutionFieldChange('toneEssence', e.target.value)}
+                  placeholder="The essential tone and voice of the story..."
+                  disabled={saving}
+                  rows={2}
+                />
+                {proposedChanges.toneEssence && (
+                  <div className={styles.proposedItem}>
+                    <span className={styles.proposedBadge}>Proposed</span>
+                    <p className={styles.proposedText}>{proposedChanges.toneEssence}</p>
+                  </div>
+                )}
+              </div>
+
+              <ListEditor
+                label="Banned Elements"
+                items={context.constitution.banned}
+                onChange={(items) => handleConstitutionFieldChange('banned', items)}
+                placeholder="Add banned element..."
+                disabled={saving}
+                proposedItems={proposedChanges.banned}
+              />
+
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabel}>Version</label>
+                <input
+                  type="text"
+                  className={`${styles.textInput} ${styles.versionInput}`}
+                  value={context.constitution.version}
+                  onChange={(e) => handleConstitutionFieldChange('version', e.target.value)}
+                  disabled={saving}
+                />
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Soft Guidelines Section */}
+        <section className={styles.section}>
+          <button
+            type="button"
+            className={styles.sectionHeader}
+            onClick={() => setGuidelinesExpanded(!guidelinesExpanded)}
+          >
+            <span className={styles.sectionTitle}>
+              Soft Guidelines
+              <span className={styles.filterNote}>(filtered per-task)</span>
+            </span>
+            <span className={styles.expandIcon}>{guidelinesExpanded ? '-' : '+'}</span>
+          </button>
+
+          {guidelinesExpanded && (
+            <div className={styles.sectionContent}>
+              <p className={styles.sectionDescription}>
+                Guidelines are filtered by tags and included in user prompts when relevant to the task.
+              </p>
+              <div className={styles.guidelinesList}>
+                {context.operational.softGuidelines.map((guideline, index) => (
+                  <GuidelineEditor
+                    key={guideline.id}
+                    guideline={guideline}
+                    onChange={(updated) => handleGuidelineChange(index, updated)}
+                    onRemove={() => handleRemoveGuideline(index)}
+                    disabled={saving}
+                  />
+                ))}
+                {/* Proposed guidelines */}
+                {proposedChanges.softGuidelines.map((guideline) => (
+                  <div key={guideline.id} className={styles.proposedGuideline}>
+                    <div className={styles.proposedGuidelineHeader}>
+                      <span className={styles.proposedBadge}>+</span>
+                      <span className={styles.proposedGuidelineTags}>
+                        {guideline.tags.join(', ')}
+                      </span>
+                    </div>
+                    <p className={styles.proposedGuidelineText}>{guideline.text}</p>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                className={styles.addButton}
+                onClick={handleAddGuideline}
+                disabled={saving}
+              >
+                + Add Guideline
+              </button>
+            </div>
+          )}
+        </section>
+
+        {/* Working Notes Section */}
+        <section className={styles.section}>
+          <button
+            type="button"
+            className={styles.sectionHeader}
+            onClick={() => setWorkingNotesExpanded(!workingNotesExpanded)}
+          >
+            <span className={styles.sectionTitle}>Working Notes</span>
+            <span className={styles.expandIcon}>{workingNotesExpanded ? '-' : '+'}</span>
+          </button>
+
+          {workingNotesExpanded && (
+            <div className={styles.sectionContent}>
+              <textarea
+                className={styles.workingNotes}
+                value={context.operational.workingNotes ?? ''}
+                onChange={(e) => handleWorkingNotesChange(e.target.value)}
+                placeholder="Freeform working notes, fragments, unresolved ideas..."
+                disabled={saving}
+                rows={6}
+              />
+            </div>
+          )}
+        </section>
       </div>
 
       <div className={styles.footer}>
-        <span className={styles.stats}>
-          {wordCount} words | {charCount} characters
-        </span>
         {lastSaved && (
           <span className={styles.lastSaved}>
             Last saved: {new Date(lastSaved).toLocaleTimeString()}

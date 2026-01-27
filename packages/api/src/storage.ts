@@ -5,8 +5,8 @@
 
 import { readFile, writeFile, mkdir, access, readdir } from 'fs/promises';
 import { join } from 'path';
-import type { GraphState, KGNode, Edge } from '@apollo/core';
-import { normalizeEdge } from '@apollo/core';
+import type { GraphState, KGNode, Edge, StoryContext } from '@apollo/core';
+import { normalizeEdge, createDefaultStoryContext } from '@apollo/core';
 import type { StorageContext } from './config.js';
 
 // =============================================================================
@@ -21,7 +21,7 @@ export interface SerializedGraph {
 export interface StoryMetadata {
   name?: string;
   logline?: string;
-  storyContext?: string;           // Markdown content for creative guidance
+  storyContext?: StoryContext;     // Structured story context
   storyContextModifiedAt?: string; // ISO timestamp for version tracking
 }
 
@@ -336,6 +336,31 @@ function migrateV2ToV3(state: VersionedState): VersionedState {
 }
 
 /**
+ * Migrate string-based storyContext to structured StoryContext.
+ * Clean cutover: replace string with default empty structured context.
+ */
+function migrateStoryContext(state: VersionedState): VersionedState {
+  if (!state.metadata?.storyContext) {
+    return state;
+  }
+
+  // If storyContext is already an object (structured), no migration needed
+  if (typeof state.metadata.storyContext === 'object') {
+    return state;
+  }
+
+  // Clean cutover: replace string with default structured context
+  // The old markdown content is discarded
+  return {
+    ...state,
+    metadata: {
+      ...state.metadata,
+      storyContext: createDefaultStoryContext(),
+    },
+  };
+}
+
+/**
  * Load versioned state by story ID, auto-migrating if needed.
  */
 export async function loadVersionedStateById(
@@ -345,21 +370,34 @@ export async function loadVersionedStateById(
   const state = await loadStateById(storyId, ctx);
   if (!state) return null;
 
+  let needsSave = false;
+  let current: VersionedState;
+
   // Migrate from V1 if needed
   if (!isVersionedState(state)) {
-    const versioned = migrateToVersioned(state);
-    await saveVersionedStateById(storyId, versioned, ctx);
-    return versioned;
+    current = migrateToVersioned(state);
+    needsSave = true;
+  } else {
+    current = state;
   }
 
   // Migrate from V2 to V3 if needed
-  if (!state.history.branches || Object.keys(state.history.branches).length === 0) {
-    const upgraded = migrateV2ToV3(state);
-    await saveVersionedStateById(storyId, upgraded, ctx);
-    return upgraded;
+  if (!current.history.branches || Object.keys(current.history.branches).length === 0) {
+    current = migrateV2ToV3(current);
+    needsSave = true;
   }
 
-  return state;
+  // Migrate string storyContext to structured StoryContext
+  if (current.metadata?.storyContext && typeof current.metadata.storyContext === 'string') {
+    current = migrateStoryContext(current);
+    needsSave = true;
+  }
+
+  if (needsSave) {
+    await saveVersionedStateById(storyId, current, ctx);
+  }
+
+  return current;
 }
 
 /**

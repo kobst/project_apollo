@@ -19,11 +19,13 @@ import {
   computeCoverage,
   getNode,
   isValidEdgeType,
+  createDefaultStoryContext,
   type Patch,
   type PatchOp,
   type NodeType,
   type EdgeType,
   type GraphState,
+  type StoryContext,
 } from '@apollo/core';
 import type { StorageContext } from '../config.js';
 import {
@@ -898,7 +900,7 @@ export function createApplyPackageHandler(ctx: StorageContext) {
 
       // Handle Story Context changes
       let storyContextUpdated = false;
-      let metadataUpdates: { storyContext?: string; storyContextModifiedAt?: string } | undefined;
+      let metadataUpdates: { storyContext?: StoryContext; storyContextModifiedAt?: string } | undefined;
 
       if (pkg.changes.storyContext && pkg.changes.storyContext.length > 0) {
         const currentContext = state.metadata?.storyContext;
@@ -1044,7 +1046,7 @@ export function createAcceptPackageHandler(ctx: StorageContext) {
 
       // 7. Handle Story Context changes
       let storyContextUpdated = false;
-      let metadataUpdates: { storyContext?: string; storyContextModifiedAt?: string } | undefined;
+      let metadataUpdates: { storyContext?: StoryContext; storyContextModifiedAt?: string } | undefined;
 
       if (pkg.changes.storyContext && pkg.changes.storyContext.length > 0) {
         const currentContext = state.metadata?.storyContext;
@@ -1101,92 +1103,118 @@ export function createAcceptPackageHandler(ctx: StorageContext) {
 
 /**
  * Apply story context changes to the existing story context.
- * Returns the updated story context string.
+ * Returns the updated structured StoryContext.
  */
 function applyStoryContextChanges(
-  currentContext: string | undefined,
+  currentContext: StoryContext | undefined,
   changes: ai.StoryContextChange[]
-): string {
-  let context = currentContext ?? '';
+): StoryContext {
+  // Start with a copy of current context or create default
+  const context: StoryContext = currentContext
+    ? structuredClone(currentContext)
+    : createDefaultStoryContext();
 
   for (const change of changes) {
-    switch (change.operation) {
-      case 'add': {
-        // Find the section or create it
-        const sectionRegex = new RegExp(`^## ${escapeRegex(change.section)}\\s*$`, 'm');
-        const sectionMatch = context.match(sectionRegex);
+    const op = change.operation;
 
-        if (sectionMatch && sectionMatch.index !== undefined) {
-          // Section exists - find where to insert (before next ## or end of file)
-          const afterSection = context.slice(sectionMatch.index + sectionMatch[0].length);
-          const nextSectionMatch = afterSection.match(/^## /m);
+    switch (op.type) {
+      // Constitution field setters
+      case 'setConstitutionField':
+        if (op.field === 'logline' || op.field === 'premise' || op.field === 'toneEssence' || op.field === 'version') {
+          context.constitution[op.field] = op.value;
+        }
+        break;
 
-          if (nextSectionMatch && nextSectionMatch.index !== undefined) {
-            // Insert before next section
-            const insertPos = sectionMatch.index + sectionMatch[0].length + nextSectionMatch.index;
-            const before = context.slice(0, insertPos).trimEnd();
-            const after = context.slice(insertPos);
-            context = before + '\n\n' + change.content + '\n\n' + after.trimStart();
-          } else {
-            // No next section - append at end
-            context = context.trimEnd() + '\n\n' + change.content;
-          }
-        } else {
-          // Section doesn't exist - create it at the end
-          context = context.trimEnd() + '\n\n## ' + change.section + '\n\n' + change.content;
+      // Thematic pillars
+      case 'setThematicPillars':
+        context.constitution.thematicPillars = op.pillars;
+        break;
+
+      case 'addThematicPillar':
+        context.constitution.thematicPillars.push(op.pillar);
+        break;
+
+      case 'removeThematicPillar':
+        if (op.index >= 0 && op.index < context.constitution.thematicPillars.length) {
+          context.constitution.thematicPillars.splice(op.index, 1);
+        }
+        break;
+
+      // Banned elements
+      case 'setBanned':
+        context.constitution.banned = op.banned;
+        break;
+
+      case 'addBanned':
+        context.constitution.banned.push(op.item);
+        break;
+
+      case 'removeBanned':
+        if (op.index >= 0 && op.index < context.constitution.banned.length) {
+          context.constitution.banned.splice(op.index, 1);
+        }
+        break;
+
+      // Hard rules
+      case 'addHardRule':
+        context.constitution.hardRules.push(op.rule);
+        break;
+
+      case 'updateHardRule': {
+        const ruleIndex = context.constitution.hardRules.findIndex((r) => r.id === op.id);
+        if (ruleIndex >= 0 && context.constitution.hardRules[ruleIndex]) {
+          context.constitution.hardRules[ruleIndex]!.text = op.text;
         }
         break;
       }
 
-      case 'modify': {
-        if (change.previous_content) {
-          // Replace the previous content with new content
-          const escapedPrevious = escapeRegex(change.previous_content);
-          const modifyRegex = new RegExp(escapedPrevious, 'g');
-          context = context.replace(modifyRegex, change.content);
-        } else {
-          // No previous_content - just add to section
-          const sectionRegex = new RegExp(`^## ${escapeRegex(change.section)}\\s*$`, 'm');
-          const sectionMatch = context.match(sectionRegex);
+      case 'removeHardRule': {
+        const ruleIdx = context.constitution.hardRules.findIndex(r => r.id === op.id);
+        if (ruleIdx >= 0) {
+          context.constitution.hardRules.splice(ruleIdx, 1);
+        }
+        break;
+      }
 
-          if (sectionMatch && sectionMatch.index !== undefined) {
-            // Find the end of section content (next ## or end)
-            const afterSection = context.slice(sectionMatch.index + sectionMatch[0].length);
-            const nextSectionMatch = afterSection.match(/^## /m);
+      // Soft guidelines
+      case 'addGuideline':
+        context.operational.softGuidelines.push({
+          id: op.guideline.id,
+          tags: op.guideline.tags as ai.GuidelineTag[],
+          text: op.guideline.text,
+        });
+        break;
 
-            if (nextSectionMatch && nextSectionMatch.index !== undefined) {
-              const insertPos = sectionMatch.index + sectionMatch[0].length + nextSectionMatch.index;
-              const before = context.slice(0, insertPos).trimEnd();
-              const after = context.slice(insertPos);
-              context = before + '\n\n' + change.content + '\n\n' + after.trimStart();
-            } else {
-              context = context.trimEnd() + '\n\n' + change.content;
-            }
+      case 'updateGuideline': {
+        const guidelineIndex = context.operational.softGuidelines.findIndex((g) => g.id === op.id);
+        const guideline = guidelineIndex >= 0 ? context.operational.softGuidelines[guidelineIndex] : undefined;
+        if (guideline) {
+          if (op.changes.tags) {
+            guideline.tags = op.changes.tags as ai.GuidelineTag[];
+          }
+          if (op.changes.text) {
+            guideline.text = op.changes.text;
           }
         }
         break;
       }
 
-      case 'delete': {
-        // Remove the specified content
-        const escapedContent = escapeRegex(change.content);
-        const deleteRegex = new RegExp(escapedContent + '\\s*', 'g');
-        context = context.replace(deleteRegex, '');
-        // Clean up multiple blank lines
-        context = context.replace(/\n{3,}/g, '\n\n');
+      case 'removeGuideline': {
+        const guidelineIdx = context.operational.softGuidelines.findIndex(g => g.id === op.id);
+        if (guidelineIdx >= 0) {
+          context.operational.softGuidelines.splice(guidelineIdx, 1);
+        }
         break;
       }
+
+      // Working notes
+      case 'setWorkingNotes':
+        context.operational.workingNotes = op.content;
+        break;
     }
   }
 
-  return context.trim();
-}
-
-/**
- * Escape special regex characters in a string.
- */
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return context;
 }
 
 // =============================================================================
@@ -1530,32 +1558,23 @@ export function createValidatePackageHandler(ctx: StorageContext) {
         }
       }
 
-      // Validate story context changes
+      // Validate story context changes (structured operation format)
       const storyContextChanges = pkg.changes.storyContext ?? [];
       for (let i = 0; i < storyContextChanges.length; i++) {
         const sc = storyContextChanges[i]!;
-        if (!sc.section) {
-          errors.push({
-            type: 'storyContext',
-            index: i,
-            field: 'section',
-            message: 'Section is required',
-          });
-        }
-        if (!sc.content && sc.operation !== 'delete') {
-          errors.push({
-            type: 'storyContext',
-            index: i,
-            field: 'content',
-            message: 'Content is required for add/modify operations',
-          });
-        }
-        if (!sc.operation) {
+        if (!sc.operation || typeof sc.operation !== 'object') {
           errors.push({
             type: 'storyContext',
             index: i,
             field: 'operation',
-            message: 'Operation is required',
+            message: 'Operation object is required',
+          });
+        } else if (!sc.operation.type) {
+          errors.push({
+            type: 'storyContext',
+            index: i,
+            field: 'operation.type',
+            message: 'Operation type is required',
           });
         }
       }

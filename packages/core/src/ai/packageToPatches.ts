@@ -19,6 +19,8 @@ import type { Idea } from '../types/nodes.js';
 import type {
   NarrativePackage,
   StoryContextChange,
+  StoryContextChangeOperation,
+  ContextAddition,
   NodeChange,
   EdgeChange,
   StashedIdea,
@@ -37,9 +39,7 @@ export interface ConversionResult {
   patch: Patch;
   /** Story Context update if any changes were included */
   storyContextUpdate?: {
-    /** New Story Context content */
-    newContext: string;
-    /** Changes that were applied */
+    /** Structured changes to apply to the StoryContext */
     changes: StoryContextChange[];
   };
   /** Idea nodes to create from stashed ideas */
@@ -82,7 +82,7 @@ export interface ConversionOptions {
 export function packageToPatch(
   pkg: NarrativePackage,
   baseVersionId: string,
-  currentStoryContext?: string,
+  _currentStoryContext?: string, // Deprecated, no longer used
   options?: ConversionOptions
 ): ConversionResult {
   const ops: PatchOp[] = [];
@@ -187,33 +187,27 @@ export function packageToPatch(
 
   const result: ConversionResult = { patch };
 
-  // Handle Story Context changes
-  // Collect from both legacy storyContext and enhanced contextAdditions
+  // Handle Story Context changes (structured operations format)
+  // Collect from both changes.storyContext and suggestions.contextAdditions
   const storyContextChanges: StoryContextChange[] = [];
 
-  // Legacy Story Context changes
+  // Direct storyContext changes (already in structured format)
   if (pkg.changes.storyContext && pkg.changes.storyContext.length > 0) {
     storyContextChanges.push(...pkg.changes.storyContext);
   }
 
-  // Enhanced contextAdditions (convert to StoryContextChange format)
+  // contextAdditions from suggestions (convert to structured operations)
   if (pkg.suggestions?.contextAdditions && pkg.suggestions.contextAdditions.length > 0) {
     for (const addition of pkg.suggestions.contextAdditions) {
-      storyContextChanges.push({
-        operation: 'add',
-        section: contextSectionToLegacySection(addition.section),
-        content: addition.content,
-      });
+      // Convert section-based addition to structured operation
+      const change = convertContextAddition(addition);
+      storyContextChanges.push(change);
     }
   }
 
-  // Apply Story Context changes if any
+  // Pass through Story Context changes for API layer to apply
   if (storyContextChanges.length > 0) {
     result.storyContextUpdate = {
-      newContext: applyStoryContextChanges(
-        currentStoryContext ?? '',
-        storyContextChanges
-      ),
       changes: storyContextChanges,
     };
   }
@@ -231,20 +225,6 @@ export function packageToPatch(
   }
 
   return result;
-}
-
-/**
- * Convert ContextSection to legacy section name format.
- */
-function contextSectionToLegacySection(section: import('./types.js').ContextSection): string {
-  const sectionMap: Record<import('./types.js').ContextSection, string> = {
-    themes: 'Thematic Concerns',
-    conflicts: 'Central Conflicts',
-    motifs: 'Motifs',
-    tone: 'Tone',
-    constraints: 'Constraints',
-  };
-  return sectionMap[section] || section;
 }
 
 /**
@@ -275,74 +255,48 @@ function convertStashedIdeasToNodes(ideas: StashedIdea[], sourcePackageId: strin
   });
 }
 
-// =============================================================================
-// Story Context Changes
-// =============================================================================
-
 /**
- * Apply Story Context changes to produce new markdown content.
- *
- * @param currentContext - Current Story Context markdown
- * @param changes - Changes to apply
- * @returns Updated Story Context markdown
+ * Convert a ContextAddition to a StoryContextChange.
+ * Maps section-based additions to structured operations.
  */
-function applyStoryContextChanges(
-  currentContext: string,
-  changes: StoryContextChange[]
-): string {
-  let context = currentContext;
+function convertContextAddition(addition: ContextAddition): StoryContextChange {
+  const { section, content } = addition;
+  let operation: StoryContextChangeOperation;
 
-  for (const change of changes) {
-    if (change.operation === 'add') {
-      // Add to section or create new section
-      context = addToSection(context, change.section, change.content);
-    } else if (change.operation === 'modify') {
-      // Replace content in section
-      if (change.previous_content) {
-        context = context.replace(change.previous_content, change.content);
-      }
-    } else if (change.operation === 'delete') {
-      // Remove content from section
-      context = context.replace(change.content, '').replace(/\n\n+/g, '\n\n');
-    }
+  // Map section to appropriate operation type
+  switch (section) {
+    case 'themes':
+      operation = { type: 'addThematicPillar', pillar: content };
+      break;
+    case 'constraints':
+      operation = {
+        type: 'addHardRule',
+        rule: {
+          id: `hr_${Date.now()}_${randomString(4)}`,
+          text: content
+        }
+      };
+      break;
+    case 'tone':
+      // For tone, we set the constitution field
+      operation = { type: 'setConstitutionField', field: 'toneEssence', value: content };
+      break;
+    case 'conflicts':
+    case 'motifs':
+    default:
+      // Default to adding as a soft guideline
+      operation = {
+        type: 'addGuideline',
+        guideline: {
+          id: `sg_${Date.now()}_${randomString(4)}`,
+          tags: ['general'],
+          text: content
+        }
+      };
+      break;
   }
 
-  return context.trim();
-}
-
-/**
- * Add content to a section in Story Context markdown.
- *
- * If the section exists, appends the content.
- * If the section doesn't exist, creates it.
- *
- * @param context - Current Story Context markdown
- * @param section - Section name (e.g., 'Thematic Concerns')
- * @param content - Content to add
- * @returns Updated markdown
- */
-function addToSection(
-  context: string,
-  section: string,
-  content: string
-): string {
-  const sectionHeader = `## ${section}`;
-  const sectionIndex = context.indexOf(sectionHeader);
-
-  if (sectionIndex >= 0) {
-    // Find end of section (next ## or end of string)
-    const afterHeader = sectionIndex + sectionHeader.length;
-    const nextSection = context.indexOf('\n## ', afterHeader);
-    const insertPoint = nextSection >= 0 ? nextSection : context.length;
-
-    // Insert content before next section
-    const before = context.slice(0, insertPoint);
-    const after = context.slice(insertPoint);
-    return `${before.trimEnd()}\n- ${content}\n${after}`;
-  } else {
-    // Section doesn't exist, add it
-    return `${context.trimEnd()}\n\n## ${section}\n- ${content}\n`;
-  }
+  return { operation };
 }
 
 // =============================================================================
