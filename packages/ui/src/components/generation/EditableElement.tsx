@@ -176,16 +176,6 @@ function formatEdgeRelationship(
         label: `${fromName} advances ${toName}`,
         description: 'StoryBeat advances character arc',
       };
-    case 'PART_OF':
-      return {
-        label: `${fromName} part of ${toName}`,
-        description: 'Location is part of setting',
-      };
-    case 'SET_IN':
-      return {
-        label: `${fromName} set in ${toName}`,
-        description: 'Scene set in setting',
-      };
     case 'HAS_ARC':
       return {
         label: `${toName} for ${fromName}`,

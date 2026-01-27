@@ -41,9 +41,6 @@ export interface StoryStats {
   storyBeats: number;
   ideas: number;
   edges: number;
-  loglines: number;
-  settings: number;
-  genreTones: number;
 }
 
 export interface OpenQuestionSummary {
@@ -53,7 +50,6 @@ export interface OpenQuestionSummary {
 export interface StatusData {
   storyId: string;
   name?: string | undefined;
-  logline?: string | undefined;
   currentVersionId: string;
   currentBranch: string | null;
   updatedAt: string;

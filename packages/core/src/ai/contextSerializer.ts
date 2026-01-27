@@ -27,8 +27,6 @@ import { defaultConfig } from './config.js';
 export interface StoryMetadata {
   /** Story name */
   name?: string;
-  /** One-sentence story summary */
-  logline?: string;
   /** Story Context markdown (themes, conflicts, constraints) */
   storyContext?: string;
 }
@@ -78,9 +76,6 @@ export function serializeStoryContext(
 
   // Header
   sections.push(`# Story: ${metadata.name ?? 'Untitled'}`);
-  if (metadata.logline) {
-    sections.push(`Logline: "${metadata.logline}"`);
-  }
   sections.push('');
 
   // Story Context (user's creative direction)
@@ -254,9 +249,6 @@ export function serializeStoryState(
 
   // Header (minimal - identity is in system prompt)
   sections.push(`# Current Story State: ${metadata.name ?? 'Untitled'}`);
-  if (metadata.logline) {
-    sections.push(`Logline: "${metadata.logline}"`);
-  }
   sections.push('');
 
   // Note: Creative direction (storyContext) is intentionally omitted
@@ -302,7 +294,6 @@ function serializeStateSummary(graph: GraphState): string {
     'Character',
     'Location',
     'Object',
-    'Setting',
     'Beat',
     'StoryBeat',
     'Scene',
@@ -331,7 +322,7 @@ function serializeNodesByType(graph: GraphState, maxNodes: number): string {
   // Define serialization order and groupings
   const typeGroups: { header: string; types: string[] }[] = [
     { header: 'Characters', types: ['Character'] },
-    { header: 'Locations & Settings', types: ['Location', 'Setting'] },
+    { header: 'Locations', types: ['Location'] },
     { header: 'Objects', types: ['Object'] },
     { header: 'Structure (Beats)', types: ['Beat'] },
     { header: 'Story Beats', types: ['StoryBeat'] },

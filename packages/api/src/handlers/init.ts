@@ -25,7 +25,6 @@ import type { InitRequest, APIResponse, StoryStats } from '../types.js';
 interface InitResponseData {
   storyId: string;
   name: string;
-  logline?: string;
   versionId: string;
   stats: StoryStats;
 }
@@ -85,15 +84,25 @@ export function createInitHandler(ctx: StorageContext) {
 
       const initializedGraph = applyPatch(graph, initPatch);
 
-      // Save story with default Story Context template
+      // Save story with default Story Context template, seeding logline into constitution
+      const defaultContext = ai.DEFAULT_STORY_CONTEXT;
+      const storyContext = logline
+        ? {
+            ...defaultContext,
+            constitution: {
+              ...defaultContext.constitution,
+              logline,
+            },
+          }
+        : defaultContext;
+
       await createStory(
         storyId,
         initializedGraph,
         versionId,
         {
           name: name ?? storyId,
-          ...(logline && { logline }),
-          storyContext: ai.DEFAULT_STORY_CONTEXT,
+          storyContext,
         },
         ctx
       );
@@ -109,7 +118,6 @@ export function createInitHandler(ctx: StorageContext) {
         data: {
           storyId,
           name: name ?? storyId,
-          ...(logline && { logline }),
           versionId,
           stats: {
             scenes: graphStats.nodeCountByType.Scene ?? 0,
@@ -120,9 +128,6 @@ export function createInitHandler(ctx: StorageContext) {
             storyBeats: graphStats.nodeCountByType.StoryBeat ?? 0,
             ideas: graphStats.nodeCountByType.Idea ?? 0,
             edges: graphStats.edgeCount,
-            loglines: graphStats.nodeCountByType.Logline ?? 0,
-            settings: graphStats.nodeCountByType.Setting ?? 0,
-            genreTones: graphStats.nodeCountByType.GenreTone ?? 0,
           },
         },
       });

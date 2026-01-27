@@ -325,100 +325,11 @@ export interface StoryBeat extends BaseNode {
 }
 
 // =============================================================================
-// 15. Logline
+// 15-17. Logline, Setting, GenreTone - REMOVED
 // =============================================================================
-
-/**
- * Logline - The one-sentence story summary (one per story)
- * Top of the pyramid - everything else serves the logline
- *
- * Note: Replaces the old Premise node. Extended concept/hook/notes
- * are now stored in Story Context (StoryMetadata.storyContext).
- */
-export interface Logline extends BaseNode {
-  type: 'Logline';
-  /** The logline text - one sentence story summary */
-  text: string;
-}
-
-// =============================================================================
-// 16. Setting
-// =============================================================================
-
-/**
- * Setting - Generalized world/time period container
- * Can represent: "1920s Chicago", "Post-apocalyptic wasteland", "Victorian London"
- * Locations are PART_OF a Setting
- */
-export interface Setting extends BaseNode {
-  type: 'Setting';
-  /** Name of the setting/world */
-  name: string;
-  /** Description of atmosphere, rules, feel */
-  description?: string;
-  /** Time period if applicable */
-  time_period?: string;
-  /** Visual/atmospheric keywords */
-  atmosphere?: string;
-  /** Notes about the setting */
-  notes?: string;
-}
-
-// =============================================================================
-// 17. GenreTone
-// =============================================================================
-
-/**
- * GenreTone - Combined genre and tone declaration
- * Handles: pure genre, pure tone, or genre-with-implied-tone
- */
-export type Genre =
-  | 'action'
-  | 'comedy'
-  | 'drama'
-  | 'horror'
-  | 'thriller'
-  | 'romance'
-  | 'sci-fi'
-  | 'fantasy'
-  | 'noir'
-  | 'western'
-  | 'mystery'
-  | 'adventure'
-  | 'musical'
-  | 'documentary'
-  | 'other';
-
-export type Tone =
-  | 'dark'
-  | 'light'
-  | 'gritty'
-  | 'whimsical'
-  | 'satirical'
-  | 'earnest'
-  | 'cynical'
-  | 'hopeful'
-  | 'melancholic'
-  | 'tense'
-  | 'comedic'
-  | 'dramatic'
-  | 'neutral';
-
-export interface GenreTone extends BaseNode {
-  type: 'GenreTone';
-  /** Primary genre (optional - some stories defy genre) */
-  genre?: Genre;
-  /** Secondary/hybrid genre */
-  secondary_genre?: Genre;
-  /** Tone description */
-  tone?: Tone;
-  /** Freeform tone description for nuanced cases */
-  tone_description?: string;
-  /** Genre conventions this story follows or subverts */
-  conventions?: string;
-  /** Notes */
-  notes?: string;
-}
+// Logline is now stored in StoryContext.constitution.logline
+// Setting is now stored in StoryContext.constitution.setting
+// GenreTone is now stored in StoryContext.constitution.genre and .toneEssence
 
 // =============================================================================
 // 18. Idea
@@ -475,9 +386,6 @@ export type ContentNode =
   | StoryObject
   | CharacterArc
   | StoryBeat
-  | Logline
-  | Setting
-  | GenreTone
   | Idea;
 
 /**
@@ -495,9 +403,6 @@ export type NodeType =
   | 'Object'
   | 'CharacterArc'
   | 'StoryBeat'
-  | 'Logline'
-  | 'Setting'
-  | 'GenreTone'
   | 'Idea';
 
 /**
@@ -515,8 +420,5 @@ export const NODE_TYPES: NodeType[] = [
   'Object',
   'CharacterArc',
   'StoryBeat',
-  'Logline',
-  'Setting',
-  'GenreTone',
   'Idea',
 ];

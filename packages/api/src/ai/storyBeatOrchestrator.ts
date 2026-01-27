@@ -123,7 +123,6 @@ export async function proposeStoryBeats(
   // 3. Build system prompt from metadata (stable, cacheable - constitution only)
   const systemPromptParams: ai.SystemPromptParams = {
     storyName: state.metadata?.name,
-    logline: state.metadata?.logline,
     constitution: state.metadata?.storyContext?.constitution,
   };
   const systemPrompt = ai.hasSystemPromptContent(systemPromptParams)
@@ -133,7 +132,6 @@ export async function proposeStoryBeats(
   // 4. Serialize story state (without creative direction - that's in system prompt)
   const metadata: ai.StoryMetadata = {};
   if (state.metadata?.name) metadata.name = state.metadata.name;
-  if (state.metadata?.logline) metadata.logline = state.metadata.logline;
   // Note: storyContext intentionally omitted - it's in system prompt now
 
   const storyContext = ai.serializeStoryState(graph, metadata);

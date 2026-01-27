@@ -35,8 +35,6 @@ const EXPECTED_BEATS = 15;
 
 /** Foundation node types that we track */
 const FOUNDATION_TYPES = [
-  'Setting',
-  'GenreTone',
   'Character',
   'Location',
   'Object',
@@ -110,17 +108,18 @@ function computeTierSummaries(graph: GraphState, gaps: Gap[]): TierSummary[] {
 
 /**
  * Compute Premise tier summary.
- * Coverage: 1 if Logline node exists, 0 otherwise.
+ * Coverage: Always reports covered since logline is now in StoryContext.constitution.
+ * The premise tier will be revisited when constitution-based coverage is implemented.
  */
-function computePremiseTier(graph: GraphState): TierSummary {
-  const hasLogline = getNodeCountByType(graph, 'Logline') > 0;
-
+function computePremiseTier(_graph: GraphState): TierSummary {
+  // Logline is now in StoryContext.constitution, not a graph node.
+  // For now, report as covered since constitution is always present.
   return {
     tier: 'premise',
-    label: 'Logline',
-    covered: hasLogline ? 1 : 0,
+    label: 'Premise',
+    covered: 1,
     total: 1,
-    percent: hasLogline ? 100 : 0,
+    percent: 100,
   };
 }
 

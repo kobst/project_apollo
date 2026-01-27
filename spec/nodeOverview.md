@@ -12,54 +12,11 @@ This document catalogs the node types used to represent narrative structure, cau
 
 **Notes:** Holds references to all major artifacts
 
-### Premise
+**Premise** — REMOVED. Consolidated into `StoryContext.constitution`. See `storyContext.md`.
 
-**Purpose:** The core story concept (one per story)
+**Setting** — REMOVED. Consolidated into `StoryContext.constitution.setting`. Locations remain as graph nodes.
 
-**Abstraction:** Level 0 (Story Intent)
-
-**Required Fields:** logline
-
-**Optional Fields:** concept, hook, notes
-
-**Notes:**
-- Top of the pyramid - everything else serves the premise
-- Typically only one Premise node per story
-
-**Examples:** Logline, core setup
-
-### Setting
-
-**Purpose:** Generalized world/time period container
-
-**Abstraction:** Level 0-1
-
-**Required Fields:** name
-
-**Optional Fields:** description, time_period, atmosphere, notes
-
-**Notes:**
-- Can represent: "1920s Chicago", "Post-apocalyptic wasteland", "Victorian London"
-- Locations connect to Settings via PART_OF edge
-- Scenes can be SET_IN a Setting for broader context
-
-**Examples:** "Victorian London", "Near-future dystopia", "1950s suburban America"
-
-### GenreTone
-
-**Purpose:** Combined genre and tonal declaration
-
-**Abstraction:** Level 0
-
-**Optional Fields:** genre, secondary_genre, tone, tone_description, conventions, notes
-
-**Notes:**
-- Combined node because genre and tone are deeply intertwined
-- Some stories have tone without clear genre (art films)
-- Some genres imply tone (noir → dark/cynical)
-- Typically only one GenreTone node per story
-
-**Examples:** "noir / cynical", "comedy / light", "thriller / tense"
+**GenreTone** — REMOVED. Genre and tone are now `StoryContext.constitution.genre` and `.toneEssence`.
 
 ## 2. Structural Planning Nodes (Macro / Meso)
 
@@ -183,7 +140,6 @@ This document catalogs the node types used to represent narrative structure, cau
 **Abstraction:** Level 3–4
 
 **Notes:**
-- Can be connected to a Setting via PART_OF edge
 - Scenes are LOCATED_AT a Location
 - Supports hierarchical locations via parent_location_id
 

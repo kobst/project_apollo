@@ -70,7 +70,6 @@ export function initCommand(program: Command): void {
           // Save story
           await createStory(storyId, initializedGraph, versionId, {
             name: options.name ?? storyId,
-            ...(logline && { logline }),
           });
 
           // Clear any existing session

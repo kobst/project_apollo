@@ -91,17 +91,6 @@ const NODE_FIELD_CONFIGS: Record<string, FieldConfig[]> = {
     },
     { key: 'guidance', label: 'Guidance', type: 'textarea', rows: 2 },
   ],
-  Logline: [
-    { key: 'text', label: 'Logline', type: 'textarea', rows: 3 },
-  ],
-  Setting: [
-    { key: 'name', label: 'Name', type: 'text' },
-    { key: 'description', label: 'Description', type: 'textarea', rows: 3 },
-  ],
-  GenreTone: [
-    { key: 'genre', label: 'Genre', type: 'text' },
-    { key: 'tone', label: 'Tone', type: 'text' },
-  ],
 };
 
 // Get operation display

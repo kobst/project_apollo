@@ -100,9 +100,6 @@ export function StoriesView() {
           <>
             <div className={styles.storyHeader}>
               <h2 className={styles.storyName}>{status.name || currentStoryId}</h2>
-              {status.logline && (
-                <p className={styles.logline}>{status.logline}</p>
-              )}
               <div className={styles.stats}>
                 <div className={styles.stat}>
                   <span className={styles.statValue}>{status.stats.scenes}</span>

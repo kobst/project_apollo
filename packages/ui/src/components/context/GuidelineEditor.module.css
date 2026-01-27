@@ -1,5 +1,5 @@
 .container {
-  padding: 12px;
+  padding: 10px 12px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 6px;
@@ -12,10 +12,37 @@
   margin-bottom: 8px;
 }
 
-.id {
-  font-family: var(--font-mono);
+.tagChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.tagChip {
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--accent-color);
+  background: rgba(var(--accent-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+  border-radius: 10px;
+}
+
+.editTagsButton {
+  padding: 2px 8px;
   font-size: 10px;
   color: var(--text-tertiary);
+  background: transparent;
+  border: 1px dashed var(--border-color);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.editTagsButton:hover {
+  color: var(--text-secondary);
+  border-color: var(--text-secondary);
 }
 
 .removeButton {
@@ -27,6 +54,7 @@
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.15s;
+  flex-shrink: 0;
 }
 
 .removeButton:hover:not(:disabled) {
@@ -37,6 +65,13 @@
 .removeButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.tagsSection {
+  margin-bottom: 8px;
+  padding: 8px;
+  background: var(--bg-primary);
+  border-radius: 4px;
 }
 
 .textInput {
@@ -60,18 +95,4 @@
 .textInput:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.tagsSection {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.tagsLabel {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  padding-top: 4px;
 }

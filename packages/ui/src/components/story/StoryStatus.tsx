@@ -27,9 +27,6 @@ export function StoryStatus() {
   return (
     <div className={styles.container}>
       {status.name && <div className={styles.name}>{status.name}</div>}
-      {status.logline && (
-        <div className={styles.logline}>{status.logline}</div>
-      )}
 
       <div className={styles.meta}>
         <div className={styles.item}>

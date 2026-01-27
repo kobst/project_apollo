@@ -8,7 +8,6 @@
 
 import { useState, useCallback } from 'react';
 import { useStory } from '../../context/StoryContext';
-import { PremiseHeader } from './PremiseHeader';
 import { StoryBible } from './StoryBible';
 import { GenerationPanel } from './GenerationPanel';
 import { ElementDetailModal } from './ElementDetailModal';
@@ -91,9 +90,6 @@ export function WorkspaceView() {
 
   return (
     <div className={styles.container}>
-      {/* Top: Premise Header */}
-      <PremiseHeader />
-
       {/* Main Area: TOC + Story Bible + Generation Panel */}
       <div className={styles.mainArea}>
         <StoryBible

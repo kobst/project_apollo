@@ -50,8 +50,7 @@ export function WorkspaceSidebar({
 }: WorkspaceSidebarProps) {
   // Compute total changes for "All Changes" badge
   const totalChanges = sectionChangeCounts
-    ? (sectionChangeCounts.premise.additions + sectionChangeCounts.premise.modifications +
-       sectionChangeCounts.structure.additions + sectionChangeCounts.structure.modifications +
+    ? (sectionChangeCounts.structure.additions + sectionChangeCounts.structure.modifications +
        sectionChangeCounts.elements.additions + sectionChangeCounts.elements.modifications +
        sectionChangeCounts.storyContext.additions + sectionChangeCounts.storyContext.modifications)
     : 0;
@@ -103,21 +102,6 @@ export function WorkspaceSidebar({
             )}
           </button>
         )}
-
-        <button
-          className={`${styles.navItem} ${activeView === 'premise' ? styles.active : ''}`}
-          onClick={() => onViewChange('premise')}
-          type="button"
-        >
-          <span className={styles.navIcon}>{'\uD83D\uDCDD'}</span>
-          <span className={styles.navLabel}>Premise</span>
-          {sectionChangeCounts && (
-            <ChangeBadge
-              additions={sectionChangeCounts.premise.additions}
-              modifications={sectionChangeCounts.premise.modifications}
-            />
-          )}
-        </button>
 
         <button
           className={`${styles.navItem} ${activeView === 'structure' ? styles.active : ''}`}

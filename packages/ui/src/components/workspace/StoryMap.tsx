@@ -2,11 +2,8 @@ import { useStory } from '../../context/StoryContext';
 import styles from './StoryMap.module.css';
 
 export type StoryMapCategory =
-  // Premise (umbrella)
+  // Context
   | 'storyContext'
-  | 'logline'
-  | 'genreTone'
-  | 'setting'
   // Story Elements
   | 'characters'
   | 'locations'
@@ -29,9 +26,6 @@ interface CategoryConfig {
 
 const PREMISE_CATEGORIES: CategoryConfig[] = [
   { id: 'storyContext', label: 'Story Context', special: true },
-  { id: 'logline', label: 'Logline', statKey: 'loglines', singleton: true },
-  { id: 'genreTone', label: 'Genre/Tone', statKey: 'genreTones', singleton: true },
-  { id: 'setting', label: 'Setting', statKey: 'settings', singleton: true },
 ];
 
 const STORY_ELEMENTS_CATEGORIES: CategoryConfig[] = [

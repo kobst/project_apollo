@@ -166,7 +166,7 @@ export interface EdgeChange {
  */
 export type StoryContextChangeOperation =
   // Constitution string fields
-  | { type: 'setConstitutionField'; field: 'logline' | 'premise' | 'toneEssence' | 'version'; value: string }
+  | { type: 'setConstitutionField'; field: 'logline' | 'premise' | 'genre' | 'setting' | 'toneEssence' | 'version'; value: string }
   // Thematic pillars
   | { type: 'setThematicPillars'; pillars: string[] }
   | { type: 'addThematicPillar'; pillar: string }

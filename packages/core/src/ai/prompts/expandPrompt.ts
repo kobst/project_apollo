@@ -121,7 +121,6 @@ ${supportingSection}
 - SATISFIED_BY: StoryBeat → Scene (scene realizes story beat)
 - PRECEDES: StoryBeat → StoryBeat (causal/temporal ordering)
 - ADVANCES: StoryBeat → CharacterArc
-- PART_OF: Location → Setting
 
 **IMPORTANT**: ONLY use edge types from this list. Do NOT invent new edge types.
 
@@ -189,7 +188,7 @@ You are expanding the story context using STRUCTURED OPERATIONS.
 
 VALID operation types:
 - **addThematicPillar**: For core themes (e.g., "redemption vs corruption", "loyalty vs self-preservation")
-- **setConstitutionField**: For premise, toneEssence fields (field: "premise"|"toneEssence", value: "text")
+- **setConstitutionField**: For premise, genre, setting, toneEssence fields (field: "premise"|"genre"|"setting"|"toneEssence", value: "text")
 - **addHardRule**: For rules the AI must never violate (include rule.id and rule.text)
 - **addGuideline**: For soft writing guidelines (include guideline.id, tags[], and text)
 - **addBanned**: For elements to avoid (item: "string")
@@ -397,7 +396,7 @@ function getContextExpansionSchema(isConstrained: boolean): string {
 - \`addThematicPillar\` for themes
 - \`addHardRule\` for inviolable rules (include generated id like "hr_timestamp_xxxx")
 - \`addGuideline\` for soft guidelines (include id, tags from: character|dialogue|scene|action|pacing|plot|worldbuilding|general)
-- \`setConstitutionField\` for logline, premise, toneEssence, version
+- \`setConstitutionField\` for logline, premise, genre, setting, toneEssence, version
 - \`setWorkingNotes\` for freeform notes`;
   }
 
@@ -442,7 +441,7 @@ function getContextExpansionSchema(isConstrained: boolean): string {
 - \`addThematicPillar\` for themes
 - \`addHardRule\` for inviolable rules
 - \`addGuideline\` for soft guidelines
-- \`setConstitutionField\` for premise, toneEssence
+- \`setConstitutionField\` for premise, genre, setting, toneEssence
 - \`addBanned\` for things to avoid
 - \`setWorkingNotes\` for freeform notes`;
 }

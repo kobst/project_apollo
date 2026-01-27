@@ -3,11 +3,34 @@
  * Re-implements CLI's store functions with configurable data directory.
  */
 
-import { readFile, writeFile, mkdir, access, readdir } from 'fs/promises';
+import { readFile, writeFile, mkdir, access, readdir, rename } from 'fs/promises';
 import { join } from 'path';
+import { randomBytes } from 'crypto';
 import type { GraphState, KGNode, Edge, StoryContext } from '@apollo/core';
 import { normalizeEdge, createDefaultStoryContext } from '@apollo/core';
 import type { StorageContext } from './config.js';
+
+// =============================================================================
+// Per-story lock to prevent concurrent read-write race conditions
+// =============================================================================
+
+const storyLocks = new Map<string, Promise<unknown>>();
+
+/**
+ * Serialize async operations on a per-story basis.
+ * Prevents concurrent file reads/writes from corrupting state.json.
+ */
+function withStoryLock<T>(storyId: string, fn: () => Promise<T>): Promise<T> {
+  const previous = storyLocks.get(storyId) ?? Promise.resolve();
+  const next = previous.then(fn, fn); // run fn after previous completes (even on error)
+  storyLocks.set(storyId, next);
+  // Clean up lock entry when chain settles
+  next.then(
+    () => { if (storyLocks.get(storyId) === next) storyLocks.delete(storyId); },
+    () => { if (storyLocks.get(storyId) === next) storyLocks.delete(storyId); }
+  );
+  return next;
+}
 
 // =============================================================================
 // Types (mirror CLI's store types)
@@ -20,7 +43,6 @@ export interface SerializedGraph {
 
 export interface StoryMetadata {
   name?: string;
-  logline?: string;
   storyContext?: StoryContext;     // Structured story context
   storyContextModifiedAt?: string; // ISO timestamp for version tracking
 }
@@ -71,7 +93,6 @@ export type StoredState = PersistedState | VersionedState;
 export interface StoryInfo {
   id: string;
   name?: string;
-  logline?: string;
   updatedAt: string;
 }
 
@@ -216,7 +237,6 @@ export async function listStories(ctx: StorageContext): Promise<StoryInfo[]> {
           stories.push({
             id: dir,
             ...(state.metadata?.name && { name: state.metadata.name }),
-            ...(state.metadata?.logline && { logline: state.metadata.logline }),
             updatedAt: state.updatedAt,
           });
         }
@@ -361,9 +381,56 @@ function migrateStoryContext(state: VersionedState): VersionedState {
 }
 
 /**
- * Load versioned state by story ID, auto-migrating if needed.
+ * Migrate metadata.logline to constitution.logline.
+ * If the old metadata had a logline and the constitution doesn't, copy it over.
  */
-export async function loadVersionedStateById(
+function migrateLoglineToConstitution(state: VersionedState): VersionedState {
+  // Check if legacy logline exists on the raw metadata
+  const rawMetadata = state.metadata as Record<string, unknown> | undefined;
+  const legacyLogline = rawMetadata?.logline;
+  if (typeof legacyLogline !== 'string' || !legacyLogline.trim()) {
+    return state;
+  }
+
+  // Ensure storyContext exists
+  const storyContext = state.metadata?.storyContext ?? createDefaultStoryContext();
+
+  // Only copy if constitution.logline is empty
+  if (storyContext.constitution.logline.trim()) {
+    return state;
+  }
+
+  // Copy legacy logline to constitution and remove from metadata
+  const { logline: _removed, ...cleanMetadata } = rawMetadata as Record<string, unknown>;
+
+  return {
+    ...state,
+    metadata: {
+      ...cleanMetadata,
+      storyContext: {
+        ...storyContext,
+        constitution: {
+          ...storyContext.constitution,
+          logline: legacyLogline.trim(),
+        },
+      },
+    } as StoryMetadata,
+  };
+}
+
+/**
+ * Load versioned state by story ID, auto-migrating if needed.
+ * Wrapped in a per-story lock to prevent concurrent reads from seeing
+ * a partially-written file during migration saves.
+ */
+export function loadVersionedStateById(
+  storyId: string,
+  ctx: StorageContext
+): Promise<VersionedState | null> {
+  return withStoryLock(storyId, () => loadVersionedStateByIdUnsafe(storyId, ctx));
+}
+
+async function loadVersionedStateByIdUnsafe(
   storyId: string,
   ctx: StorageContext
 ): Promise<VersionedState | null> {
@@ -393,6 +460,33 @@ export async function loadVersionedStateById(
     needsSave = true;
   }
 
+  // Migrate metadata.logline to constitution.logline
+  const rawMeta = current.metadata as Record<string, unknown> | undefined;
+  if (rawMeta && typeof rawMeta.logline === 'string') {
+    current = migrateLoglineToConstitution(current);
+    needsSave = true;
+  }
+
+  // Backfill genre/setting fields on constitution (added in consolidation)
+  const constitution = current.metadata?.storyContext?.constitution;
+  if (constitution && (constitution.genre === undefined || constitution.setting === undefined)) {
+    current = {
+      ...current,
+      metadata: {
+        ...current.metadata,
+        storyContext: {
+          ...current.metadata!.storyContext!,
+          constitution: {
+            ...constitution,
+            genre: constitution.genre ?? '',
+            setting: constitution.setting ?? '',
+          },
+        },
+      },
+    };
+    needsSave = true;
+  }
+
   if (needsSave) {
     await saveVersionedStateById(storyId, current, ctx);
   }
@@ -402,14 +496,20 @@ export async function loadVersionedStateById(
 
 /**
  * Save versioned state by story ID.
+ * Uses atomic write (temp file + rename) to prevent concurrent reads
+ * from seeing a partially-written file.
  */
 export async function saveVersionedStateById(
   storyId: string,
   state: VersionedState,
   ctx: StorageContext
 ): Promise<void> {
-  await mkdir(getStoryDir(storyId, ctx), { recursive: true });
-  await writeFile(getStatePath(storyId, ctx), JSON.stringify(state, null, 2), 'utf-8');
+  const dir = getStoryDir(storyId, ctx);
+  await mkdir(dir, { recursive: true });
+  const statePath = getStatePath(storyId, ctx);
+  const tmpPath = join(dir, `.state.${randomBytes(4).toString('hex')}.tmp`);
+  await writeFile(tmpPath, JSON.stringify(state, null, 2), 'utf-8');
+  await rename(tmpPath, statePath);
 }
 
 /**

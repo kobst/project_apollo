@@ -108,75 +108,27 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ---
 
-## B. CONTEXT LAYER (3)
+## B. CONTEXT LAYER (consolidated)
 
-These nodes establish the "top of the pyramid" - the foundational context that everything else serves.
+These foundational context concepts have been consolidated into the structured `StoryContext` type. They are no longer separate graph nodes. See Section G and `storyContext.md` for full details.
 
 ---
 
 ### 5) `Premise`
-**Purpose:** The core story concept (one per story)
 
-**Required:**
-- `id`
-- `logline` *(one sentence story summary)*
-
-**Optional:**
-- `concept` *(extended concept description)*
-- `hook` *(what makes this story unique)*
-- `notes`
-
-**Active Phase:** Outline
-
-**Notes:**
-- Top of the pyramid - everything else serves the premise
-- Typically only one Premise node per story
+**Premise** — REMOVED. Logline, premise, genre, and setting are now fields on `StoryContext.constitution`. See `storyContext.md` for details.
 
 ---
 
 ### 6) `Setting`
-**Purpose:** Generalized world/time period container
 
-**Required:**
-- `id`
-- `name`
-
-**Optional:**
-- `description` *(atmosphere, rules, feel)*
-- `time_period`
-- `atmosphere` *(visual/atmospheric keywords)*
-- `notes`
-
-**Active Phase:** Outline
-
-**Notes:**
-- Can represent: "1920s Chicago", "Post-apocalyptic wasteland", "Victorian London"
-- Locations connect to Settings via `PART_OF` edge
-- More flexible than "World" - handles both sci-fi worlds and historical periods
+**Setting** — REMOVED. Setting is now a string field on `StoryContext.constitution.setting`. Locations still exist as graph nodes.
 
 ---
 
 ### 7) `GenreTone`
-**Purpose:** Combined genre and tone declaration
 
-**Required:**
-- `id`
-
-**Optional:**
-- `genre` (enum: action, comedy, drama, horror, thriller, romance, sci-fi, fantasy, noir, western, mystery, adventure, musical, documentary, other)
-- `secondary_genre` *(for hybrid genres)*
-- `tone` (enum: dark, light, gritty, whimsical, satirical, earnest, cynical, hopeful, melancholic, tense, comedic, dramatic, neutral)
-- `tone_description` *(freeform for nuanced cases)*
-- `conventions` *(genre conventions followed or subverted)*
-- `notes`
-
-**Active Phase:** Outline
-
-**Notes:**
-- Combined node because genre and tone are deeply intertwined
-- Some stories have tone without clear genre (art films)
-- Some genres imply tone (noir → dark/cynical)
-- Typically only one GenreTone node per story
+**GenreTone** — REMOVED. Genre is `StoryContext.constitution.genre` and tone is `StoryContext.constitution.toneEssence`.
 
 ---
 
@@ -367,28 +319,43 @@ These nodes establish the "top of the pyramid" - the foundational context that e
 
 ---
 
-## G. STORY CONTEXT (Metadata)
+## G. STORY CONTEXT (Structured Type)
 
-**Story Context** is a prose field on story metadata (not a graph node) that captures interpretive concepts:
+**Story Context** is a structured type (not a graph node and no longer a markdown string) that captures both stable identity and dynamic guidance for the story. It has two parts:
 
-**Contains:**
-- Thematic concerns and themes
-- Central conflicts
-- Recurring motifs
-- Symbolic elements
-- Tone notes
+### Constitution (stable, cached in system prompt)
+The immutable creative identity of the story. Cached in the AI system prompt for every request.
+
+**Fields:**
+- `logline` — one-sentence story summary
+- `premise` — extended concept / hook
+- `genre` — primary genre string
+- `setting` — world, time period, atmosphere
+- `thematicPillars` — array of core themes (max 4)
+- `hardRules` — array of inviolable constraints
+- `toneEssence` — short tonal description (max 20 words)
+- `banned` — array of elements to never include
+- `version` — integer, incremented on any constitution edit
+
+### Operational (dynamic, filtered per-task)
+Evolving guidance that the AI receives selectively based on the current task.
+
+**Fields:**
+- `softGuidelines` — array of guidelines, each with `text` and `tags[]` for filtering
+- `workingNotes` — freeform scratchpad for the writer
 
 **Purpose:**
-- Provides context for AI during generation
+- Provides structured context for AI during generation
 - Captures concepts that are *about* the story, not entities *in* it
 - Serves as the "claude.md" equivalent for the story
+- Constitution replaces the former Premise, Setting, and GenreTone graph nodes
 
-**Location:** `state.metadata.storyContext` (markdown string)
+**Location:** `state.metadata.storyContext` (structured `StoryContext` type)
 
 **Notes:**
-- AI reads Story Context when generating proposals
-- Users can edit directly in the Premise/Context panel
-- Legacy Conflict/Theme/Motif nodes are auto-migrated here on load
+- Constitution is included in the system prompt and benefits from prompt caching
+- Operational guidelines are filtered by tag and injected into the user message per task
+- See `storyContext.md` for full type definitions and usage details
 
 ---
 
@@ -401,10 +368,6 @@ These nodes establish the "top of the pyramid" - the foundational context that e
 **Preferred hierarchy (v1.1+):**
 - `PlotPoint -[ALIGNS_WITH]-> Beat` *(PlotPoint aligns to structural beat)*
 - `PlotPoint -[SATISFIED_BY]-> Scene` *(Scene realizes the PlotPoint)*
-
-### Context Layer
-- `Location -[PART_OF]-> Setting` *(location belongs to a setting/world)*
-- `Scene -[SET_IN]-> Setting` *(scene takes place in a setting - broader than location)*
 
 ### Participation & Setting
 - `Scene -[HAS_CHARACTER]-> Character`
@@ -466,10 +429,8 @@ These nodes establish the "top of the pyramid" - the foundational context that e
   → `PP_EVENT_REALIZATION` *(Draft)*
 
 ### Context Layer (soft rules - warnings)
-- **Story has no Premise node**
-  → `STORY_HAS_PREMISE` *(Outline)*
-- **Location has no PART_OF edge to Setting**
-  → `LOCATION_HAS_SETTING` *(Outline)*
+- **StoryContext.constitution is missing required fields (logline, premise, genre)**
+  → `STORY_HAS_CONTEXT` *(Outline)*
 
 ---
 

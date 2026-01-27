@@ -80,7 +80,6 @@ ${direction ? `## User Direction\n\n"${direction}"\n` : ''}
 - SATISFIED_BY: StoryBeat → Scene
 - PRECEDES: StoryBeat → StoryBeat (causal ordering)
 - ADVANCES: StoryBeat → CharacterArc
-- PART_OF: Location → Setting
 
 ## Output Format
 

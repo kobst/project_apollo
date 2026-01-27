@@ -25,7 +25,11 @@ export type GuidelineTag =
   | 'pacing'
   | 'plot'
   | 'worldbuilding'
-  | 'general';
+  | 'general'
+  | 'structure'
+  | 'tone'
+  | 'theme'
+  | (string & {});  // allow arbitrary AI-generated tags
 
 // =============================================================================
 // Constitution Types (Stable, Cached)
@@ -49,10 +53,14 @@ export interface HardRule {
  * Changes to constitution invalidate the prompt cache.
  */
 export interface StoryContextConstitution {
-  /** One-sentence story summary (may duplicate metadata logline) */
+  /** One-sentence story summary */
   logline: string;
   /** Extended premise - the core concept and what makes it unique */
   premise: string;
+  /** Genre of the story (e.g., "sci-fi thriller", "romantic comedy") */
+  genre: string;
+  /** Setting/world description (e.g., "1920s Chicago", "Post-apocalyptic wasteland") */
+  setting: string;
   /** Core thematic pillars the story explores */
   thematicPillars: string[];
   /** Rules the AI must never violate */
@@ -133,6 +141,8 @@ export function createDefaultStoryContext(): StoryContext {
     constitution: {
       logline: '',
       premise: '',
+      genre: '',
+      setting: '',
       thematicPillars: [],
       hardRules: [],
       toneEssence: '',
@@ -181,24 +191,11 @@ export function createSoftGuideline(
 // =============================================================================
 
 /**
- * Valid guideline tags for validation.
- */
-const VALID_GUIDELINE_TAGS: Set<string> = new Set([
-  'character',
-  'dialogue',
-  'scene',
-  'action',
-  'pacing',
-  'plot',
-  'worldbuilding',
-  'general',
-]);
-
-/**
  * Type guard to check if a value is a valid GuidelineTag.
+ * Accepts any string since the AI can generate tags beyond the predefined set.
  */
 function isGuidelineTag(value: unknown): value is GuidelineTag {
-  return typeof value === 'string' && VALID_GUIDELINE_TAGS.has(value);
+  return typeof value === 'string';
 }
 
 /**
@@ -234,6 +231,9 @@ function isConstitution(value: unknown): value is StoryContextConstitution {
   // Check required string fields
   if (typeof obj.logline !== 'string') return false;
   if (typeof obj.premise !== 'string') return false;
+  // genre and setting are new fields - allow missing (treated as empty string)
+  if (obj.genre !== undefined && typeof obj.genre !== 'string') return false;
+  if (obj.setting !== undefined && typeof obj.setting !== 'string') return false;
   if (typeof obj.toneEssence !== 'string') return false;
   if (typeof obj.version !== 'string') return false;
 
@@ -301,6 +301,8 @@ export function hasStoryContextContent(context: StoryContext | undefined): boole
   const hasConstitution = Boolean(
     constitution.logline.trim() ||
     constitution.premise.trim() ||
+    constitution.genre.trim() ||
+    constitution.setting.trim() ||
     constitution.thematicPillars.length > 0 ||
     constitution.hardRules.length > 0 ||
     constitution.toneEssence.trim() ||

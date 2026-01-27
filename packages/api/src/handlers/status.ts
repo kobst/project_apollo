@@ -94,7 +94,6 @@ export function createStatusHandler(ctx: StorageContext) {
         data: {
           storyId: id,
           name: state.metadata?.name,
-          logline: state.metadata?.logline,
           currentVersionId: state.history.currentVersionId,
           currentBranch: state.history.currentBranch,
           updatedAt: state.updatedAt,
@@ -108,9 +107,6 @@ export function createStatusHandler(ctx: StorageContext) {
             storyBeats: stats.nodeCountByType.StoryBeat ?? 0,
             ideas: stats.nodeCountByType.Idea ?? 0,
             edges: stats.edgeCount,
-            loglines: stats.nodeCountByType.Logline ?? 0,
-            settings: stats.nodeCountByType.Setting ?? 0,
-            genreTones: stats.nodeCountByType.GenreTone ?? 0,
           },
           openQuestions: {
             total: questions.length,

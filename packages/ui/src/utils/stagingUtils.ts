@@ -18,7 +18,7 @@ export interface SectionChangeCounts {
 }
 
 // Node types that belong to each section
-const PREMISE_NODE_TYPES = ['Logline', 'Setting', 'GenreTone'];
+const PREMISE_NODE_TYPES: string[] = []; // Logline, Setting, GenreTone moved to StoryContext constitution
 const STRUCTURE_NODE_TYPES = ['Beat', 'StoryBeat', 'Scene'];
 const ELEMENT_NODE_TYPES = ['Character', 'Location', 'Object'];
 const IDEAS_NODE_TYPES = ['Idea'];

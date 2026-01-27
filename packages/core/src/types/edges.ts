@@ -16,7 +16,6 @@ import type { NodeType } from './nodes.js';
  * HAS_CHARACTER: Scene → Character
  * LOCATED_AT: Scene → Location
  * FEATURES_OBJECT: Scene → Object
- * SET_IN: Scene → Setting (scene takes place in setting)
  *
  * Character edges:
  * HAS_ARC: Character → CharacterArc
@@ -27,10 +26,7 @@ import type { NodeType } from './nodes.js';
  * PRECEDES: StoryBeat → StoryBeat (causal/temporal chain, DAG)
  * ADVANCES: StoryBeat → CharacterArc
  *
- * Location edges:
- * PART_OF: Location → Setting (location is part of setting/world)
- *
- * Note: Conflict, Theme, and Motif nodes have been removed.
+ * Note: Conflict, Theme, Motif, Setting, Logline, and GenreTone nodes have been removed.
  * These concepts are now stored as prose in Story Context.
  */
 export type EdgeType =
@@ -41,9 +37,7 @@ export type EdgeType =
   | 'ALIGNS_WITH'
   | 'SATISFIED_BY'
   | 'PRECEDES'
-  | 'ADVANCES'
-  | 'PART_OF'
-  | 'SET_IN';
+  | 'ADVANCES';
 
 // =============================================================================
 // Edge Properties and Metadata
@@ -172,18 +166,6 @@ export const EDGE_RULES: Record<EdgeType, EdgeRule> = {
     source: ['StoryBeat'],
     target: ['CharacterArc'],
   },
-
-  // Location → Setting (location is part of setting/world)
-  PART_OF: {
-    source: ['Location'],
-    target: ['Setting'],
-  },
-
-  // Scene → Setting (scene takes place in setting)
-  SET_IN: {
-    source: ['Scene'],
-    target: ['Setting'],
-  },
 };
 
 /**
@@ -198,8 +180,6 @@ export const EDGE_TYPES: EdgeType[] = [
   'SATISFIED_BY',
   'PRECEDES',
   'ADVANCES',
-  'PART_OF',
-  'SET_IN',
 ];
 
 // =============================================================================

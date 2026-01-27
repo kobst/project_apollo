@@ -236,34 +236,6 @@ function getNodeLabel(node: KGNode): string {
     return formatted;
   }
 
-  // For Logline nodes, use text truncated
-  if (node.type === 'Logline' && typeof nodeRecord.text === 'string') {
-    const text = nodeRecord.text as string;
-    if (text.length > 50) {
-      return text.slice(0, 47) + '...';
-    }
-    return text;
-  }
-
-  // For GenreTone nodes, combine genre and tone
-  if (node.type === 'GenreTone') {
-    const parts: string[] = [];
-    if (typeof nodeRecord.genre === 'string') {
-      parts.push(nodeRecord.genre);
-    }
-    if (typeof nodeRecord.tone === 'string') {
-      parts.push(nodeRecord.tone);
-    }
-    if (parts.length > 0) {
-      return parts.join(' / ');
-    }
-    if (typeof nodeRecord.tone_description === 'string') {
-      const desc = nodeRecord.tone_description as string;
-      return desc.length > 50 ? desc.slice(0, 47) + '...' : desc;
-    }
-    return 'Genre/Tone';
-  }
-
   // For Scene nodes, combine heading with title or truncated overview
   if (node.type === 'Scene') {
     const heading = nodeRecord.heading as string | undefined;

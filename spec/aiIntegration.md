@@ -193,12 +193,15 @@ interface EdgeChange {
   properties?: Record<string, any>;
 }
 
-interface StoryContextChange {
-  operation: 'add' | 'modify' | 'delete';
-  section: string;                       // e.g., "Themes & Motifs"
-  content: string;
-  previous_content?: string;             // For modify
-}
+// StoryContext changes use structured operations rather than freeform section/content.
+// See storyContext.md for the full structured type specification.
+type StoryContextChange =
+  | { operation: 'setConstitutionField'; field: 'logline' | 'premise' | 'genre' | 'setting' | 'toneEssence' | 'version'; value: string }
+  | { operation: 'addThematicPillar'; pillar: string }
+  | { operation: 'addHardRule'; rule: { id: string; text: string } }
+  | { operation: 'addGuideline'; guideline: { id: string; tags: string[]; text: string } }
+  | { operation: 'addBanned'; item: string }
+  | { operation: 'setWorkingNotes'; notes: string };
 
 interface ConflictInfo {
   type: 'contradicts' | 'duplicates' | 'interferes';
@@ -319,7 +322,7 @@ When AI detects that a proposed change conflicts with existing content:
 
 ### 6.1 System Prompt Architecture
 
-Story Context is placed in the **system prompt** rather than the user prompt for two key benefits:
+The system prompt contains the serialized **constitution** from `StoryContext`. The logline is not a separate parameter — it comes from `constitution.logline`.
 
 1. **Prompt Caching**: Anthropic's prompt caching can reuse the system prompt across multiple requests, reducing latency and cost
 2. **Higher Priority**: System prompt content is treated with higher priority by the LLM, ensuring better adherence to creative direction and constraints
@@ -327,13 +330,21 @@ Story Context is placed in the **system prompt** rather than the user prompt for
 **System Prompt Structure:**
 ```
 You are an AI story development assistant working on "[Story Name]".
-[logline if present]
 
-## Creative Direction & Story Context
-[Full storyContext markdown content]
+## Story Constitution
+Logline: [constitution.logline]
+Premise: [constitution.premise]
+Genre: [constitution.genre]
+Setting: [constitution.setting]
+Thematic Pillars: [constitution.thematicPillars]
+Hard Rules: [constitution.hardRules]
+Tone Essence: [constitution.toneEssence]
+Banned Items: [constitution.banned]
 
 [Standard guidelines about maintaining consistency, respecting constraints, etc.]
 ```
+
+**Note:** Operational guidelines are NOT included in the system prompt. They are injected into **user prompts**, filtered by task type (e.g., character guidelines for character generation tasks).
 
 When storyContext is empty or undefined, no system prompt is sent (graceful fallback).
 
@@ -384,15 +395,7 @@ Story Context can be modified through:
 
 ### 6.5 Story Context Change Application
 
-When a package with Story Context changes is accepted, the changes are automatically applied:
-
-| Operation | Behavior |
-|-----------|----------|
-| `add` | Finds the section by name and appends content; creates section if not found |
-| `modify` | Replaces `previous_content` with new `content` in the document |
-| `delete` | Removes the specified `content` from the document |
-
-**Important**: The AI is instructed to use existing section names from the document (e.g., "Themes & Motifs", "Constraints & Rules") rather than creating new sections.
+When a package with Story Context changes is accepted, the structured operations are applied directly to the `StoryContext` object (e.g., `setConstitutionField` updates the corresponding field, `addThematicPillar` appends to the pillars array, etc.). See `storyContext.md` for the full type specification.
 
 ### 6.6 Story Context Change Display
 ```
@@ -829,11 +832,12 @@ Maps the proposed node type to story tiers and checks which gaps would be addres
 
 | Node Type | Tier | Gap Types Fulfilled |
 |-----------|------|---------------------|
-| Logline | premise | Missing logline |
 | Character, Location, Object | foundations | Missing foundations |
 | Beat | structure | Unrealized beats |
 | PlotPoint | plotPoints | Missing plot points |
 | Scene | scenes | Missing scenes, unplaced content |
+
+**Note:** Premise-tier gaps (logline, genre, setting, etc.) are now covered by `StoryContext.constitution` fields, not by node types.
 
 **Fulfillment Levels:**
 - **Full**: Proposal directly addresses the gap (e.g., "Missing Character" → adding Character)

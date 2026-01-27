@@ -65,9 +65,6 @@ export function loadCommand(program: Command): void {
           );
         }
 
-        // Extract logline from storyVersion if available (v1 format)
-        const logline = data.storyVersion?.logline ?? data.metadata?.logline;
-
         // Validate graph
         const graph = deserializeGraph(data.graph);
         const validation = validateGraph(graph);
@@ -82,7 +79,7 @@ export function loadCommand(program: Command): void {
         // Determine story ID
         const storyId = generateStoryId(
           options.name,
-          data.storyId ?? data.metadata?.name ?? data.metadata?.logline
+          data.storyId ?? data.metadata?.name
         );
 
         // Check if story already exists
@@ -96,7 +93,6 @@ export function loadCommand(program: Command): void {
         // Create story
         await createStory(storyId, graph, storyVersionId, {
           name: options.name ?? data.storyVersion?.label ?? data.metadata?.name ?? storyId,
-          ...(logline && { logline }),
         });
 
         // Clear any existing session

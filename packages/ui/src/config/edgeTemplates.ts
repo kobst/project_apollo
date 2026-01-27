@@ -101,24 +101,6 @@ export const EDGE_TEMPLATES: Record<EdgeType, EdgeTemplate> = {
       notes: {},
     },
   },
-  PART_OF: {
-    label: 'Part Of',
-    description: 'Location is part of a setting/world',
-    sourceTypes: ['Location'],
-    targetTypes: ['Setting'],
-    properties: {
-      notes: {},
-    },
-  },
-  SET_IN: {
-    label: 'Set In',
-    description: 'Scene takes place in a setting/world',
-    sourceTypes: ['Scene'],
-    targetTypes: ['Setting'],
-    properties: {
-      notes: {},
-    },
-  },
 };
 
 /**

@@ -37,7 +37,6 @@ export function saveCommand(program: Command): void {
             parent_story_version_id: null, // Linear history for now
             created_at: state.createdAt,
             label: state.metadata?.name ?? state.storyId,
-            ...(state.metadata?.logline && { logline: state.metadata.logline }),
             tags: [],
           },
           // Keep storyVersionId for backward compatibility

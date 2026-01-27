@@ -25,8 +25,8 @@ export type GapType = 'structural' | 'narrative';
  * Ordered from top (most abstract) to bottom (most concrete).
  */
 export type GapTier =
-  | 'premise' // Top: Logline node (0-1)
-  | 'foundations' // Setting, GenreTone, Character, Location, Object
+  | 'premise' // Top: Premise/Logline in constitution
+  | 'foundations' // Character, Location, Object
   | 'structure' // Beat nodes (15 STC beats)
   | 'storyBeats' // StoryBeat nodes
   | 'scenes'; // Scene nodes
@@ -176,7 +176,7 @@ export interface TierConfig {
  * Tier configuration lookup.
  */
 export const TIER_CONFIG: Record<GapTier, TierConfig> = {
-  premise: { label: 'Logline', order: 1 },
+  premise: { label: 'Premise', order: 1 },
   foundations: { label: 'Foundations', order: 2 },
   structure: { label: 'Structure', order: 3 },
   storyBeats: { label: 'Story Beats', order: 4 },

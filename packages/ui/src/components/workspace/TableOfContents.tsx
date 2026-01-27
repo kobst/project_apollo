@@ -49,8 +49,6 @@ interface TableOfContentsProps {
   elementCounts?: ElementCounts | undefined;
   /** Overall progress */
   progress?: Progress | undefined;
-  /** Whether premise section has content */
-  hasPremise?: boolean | undefined;
   /** Whether context section has content */
   hasContext?: boolean | undefined;
   /** Ideas count */
@@ -86,7 +84,6 @@ export function TableOfContents({
   actData = [],
   elementCounts,
   progress,
-  hasPremise,
   hasContext,
   ideasCount = 0,
 }: TableOfContentsProps) {
@@ -149,25 +146,6 @@ export function TableOfContents({
       </div>
 
       <ul className={styles.nav}>
-        {/* Premise */}
-        <li>
-          <button
-            className={`${styles.navItem} ${activeSectionId === 'premise' ? styles.active : ''}`}
-            onClick={() => handleClick('premise')}
-            type="button"
-          >
-            <span className={styles.navIcon}>{'\uD83D\uDCDD'}</span>
-            <span className={styles.navLabel}>Premise</span>
-            {hasPremise && <span className={styles.checkmark}>{'\u2713'}</span>}
-            {hasStagedPackage && sectionChangeCounts?.premise && (
-              <ChangeBadge
-                additions={sectionChangeCounts.premise.additions}
-                modifications={sectionChangeCounts.premise.modifications}
-              />
-            )}
-          </button>
-        </li>
-
         {/* Elements with sub-items */}
         <li>
           <button

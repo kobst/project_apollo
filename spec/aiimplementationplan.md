@@ -26,7 +26,7 @@ Implement the prompt engineering layer for Apollo's AI integration. This layer s
 | ID generation | Injectable generator | Deterministic for tests, random for production |
 | Conflict detection | LLM + lint validation | LLM provides best-effort flags; lint system is source of truth |
 | Story Context input | Raw markdown | LLM understands markdown naturally |
-| Story Context output | Structured changes | Enables programmatic application |
+| Story Context output | Structured changes | Enables programmatic application; see `storyContext.md` for full type spec |
 | AI output format | NarrativePackage → Patch | Separation of concerns; validation layer; audit trail |
 | Multi-provider support | Anthropic + OpenAI | Flexibility for users; different model strengths |
 
@@ -69,8 +69,8 @@ The prompt architecture separates stable content (system prompt) from dynamic co
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| Story identity (name, logline) | System prompt | Cacheable, high priority |
-| Story Context (themes, constraints) | System prompt | Cacheable, high priority |
+| Story identity (name) | System prompt | Cacheable, high priority |
+| Story Context (constitution, themes, constraints) | System prompt | Cacheable, high priority; logline is now part of constitution (see `storyContext.md`) |
 | Current graph state | User prompt | Dynamic, changes each request |
 | Filtered ideas | User prompt | Dynamic, task-specific |
 | Task instructions | User prompt | Dynamic, request-specific |
@@ -160,11 +160,22 @@ export interface EdgeChange {
   properties?: Record<string, unknown>;
 }
 
+/**
+ * Structured operations for Story Context changes.
+ * See storyContext.md for the full structured type spec.
+ *
+ * Operation types:
+ * - setConstitutionField: Update a field in constitution (logline, premise, setting, timePeriod)
+ * - addThematicPillar: Add a new thematic pillar
+ * - addHardRule: Add a hard rule / constraint
+ * - addGuideline: Add a soft guideline
+ * - addBanned: Add a banned element
+ * - setWorkingNotes: Update working notes
+ */
 export interface StoryContextChange {
-  operation: 'add' | 'modify' | 'delete';
-  section: string;
-  content: string;
-  previous_content?: string;
+  operation: 'setConstitutionField' | 'addThematicPillar' | 'addHardRule' | 'addGuideline' | 'addBanned' | 'setWorkingNotes';
+  field?: string;              // For setConstitutionField: which field to set
+  value: string;               // The value to set or add
 }
 
 export interface ConflictInfo {
@@ -364,7 +375,7 @@ import { defaultConfig, type AIConfig } from './config.js';
 
 interface StoryMetadata {
   name?: string;
-  logline?: string;
+  // Note: logline has moved to storyContext.constitution.logline (see storyContext.md)
   storyContext?: string;
 }
 
@@ -395,9 +406,7 @@ export function serializeStoryContext(
 
   // Header
   sections.push(`# Story: ${metadata.name ?? 'Untitled'}`);
-  if (metadata.logline) {
-    sections.push(`Logline: "${metadata.logline}"`);
-  }
+  // Note: logline now comes from storyContext.constitution.logline
   sections.push('');
 
   // Story Context (user's creative direction)
@@ -526,7 +535,7 @@ function serializeStateSummary(graph: GraphState): string {
 
   const lines: string[] = [];
   const displayOrder = [
-    'Character', 'Location', 'Object', 'Setting',
+    'Character', 'Location', 'Object',
     'Beat', 'PlotPoint', 'Scene',
     'CharacterArc', 'Idea'
   ];
@@ -549,7 +558,7 @@ function serializeNodesByType(graph: GraphState, maxNodes: number): string {
   // Define serialization order and groupings
   const typeGroups: { header: string; types: string[] }[] = [
     { header: 'Characters', types: ['Character'] },
-    { header: 'Locations & Settings', types: ['Location', 'Setting'] },
+    { header: 'Locations', types: ['Location'] },
     { header: 'Objects', types: ['Object'] },
     { header: 'Structure (Beats)', types: ['Beat'] },
     { header: 'Plot Points', types: ['PlotPoint'] },
@@ -723,7 +732,7 @@ Builds cacheable system prompts containing stable story identity and creative di
 ```typescript
 export interface SystemPromptParams {
   storyName?: string | undefined;
-  logline?: string | undefined;
+  // Note: logline has moved to storyContext.constitution.logline (see storyContext.md)
   storyContext?: string | undefined;
 }
 
@@ -732,16 +741,13 @@ export interface SystemPromptParams {
  * System prompts are stable across requests, enabling Anthropic prompt caching.
  */
 export function buildSystemPrompt(params: SystemPromptParams): string {
-  const { storyName, logline, storyContext } = params;
+  const { storyName, storyContext } = params;
 
   const sections: string[] = [];
 
   // Role and story identity
   sections.push(`You are an AI story development assistant working on "${storyName ?? 'an untitled story'}".`);
-
-  if (logline) {
-    sections.push(`\nLogline: "${logline}"`);
-  }
+  // Note: logline is now included as part of storyContext (constitution.logline)
 
   // Creative direction (full storyContext)
   if (storyContext) {
@@ -763,7 +769,7 @@ export function buildSystemPrompt(params: SystemPromptParams): string {
  * Check if system prompt would have meaningful content.
  */
 export function hasSystemPromptContent(params: SystemPromptParams): boolean {
-  return Boolean(params.storyName || params.logline || params.storyContext);
+  return Boolean(params.storyName || params.storyContext);
 }
 ```
 
@@ -909,9 +915,7 @@ export function serializeStoryState(
 
   // Header (without storyContext)
   sections.push(`# Story: ${metadata.name ?? 'Untitled'}`);
-  if (metadata.logline) {
-    sections.push(`Logline: "${metadata.logline}"`);
-  }
+  // Note: logline now comes from storyContext.constitution.logline
   sections.push('');
 
   // Note: storyContext intentionally omitted - it's in system prompt
@@ -1642,7 +1646,7 @@ ${direction ? `## User Direction\n\n"${direction}"\n` : ''}
 - SATISFIED_BY: PlotPoint → Scene
 - PRECEDES: PlotPoint → PlotPoint (causal ordering)
 - ADVANCES: PlotPoint → CharacterArc
-- PART_OF: Location → Setting
+- PART_OF: Location → Location (parent location)
 
 ## Output Format
 

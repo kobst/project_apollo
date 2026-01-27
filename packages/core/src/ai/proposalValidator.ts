@@ -120,9 +120,6 @@ const EXACT_MATCH_THRESHOLD = 0.95;
 
 /** Mapping from node types to their coverage tier */
 const NODE_TYPE_TO_TIER: Record<string, GapTier> = {
-  Logline: 'premise',
-  Setting: 'foundations',
-  GenreTone: 'foundations',
   Character: 'foundations',
   Location: 'foundations',
   Object: 'foundations',
@@ -139,8 +136,6 @@ const SIMILARITY_FIELDS: Record<string, string[]> = {
   Scene: ['heading', 'title'],
   StoryBeat: ['title'],
   Idea: ['title'],
-  Setting: ['name'],
-  GenreTone: ['genre', 'tone'],
 };
 
 /** Valid edges from new node type to existing target types */
@@ -149,14 +144,11 @@ const OUTGOING_EDGES: Record<string, Array<{ edgeType: EdgeType; targetType: str
     { edgeType: 'HAS_CHARACTER', targetType: 'Character' },
     { edgeType: 'LOCATED_AT', targetType: 'Location' },
     { edgeType: 'FEATURES_OBJECT', targetType: 'Object' },
-    { edgeType: 'SET_IN', targetType: 'Setting' },
   ],
   Character: [
     { edgeType: 'HAS_ARC', targetType: 'CharacterArc' },
   ],
-  Location: [
-    { edgeType: 'PART_OF', targetType: 'Setting' },
-  ],
+  Location: [],
   StoryBeat: [
     { edgeType: 'ALIGNS_WITH', targetType: 'Beat' },
     { edgeType: 'PRECEDES', targetType: 'StoryBeat' },
@@ -184,10 +176,6 @@ const INCOMING_EDGES: Record<string, Array<{ edgeType: EdgeType; sourceType: str
   ],
   Scene: [
     { edgeType: 'SATISFIED_BY', sourceType: 'StoryBeat' },
-  ],
-  Setting: [
-    { edgeType: 'PART_OF', sourceType: 'Location' },
-    { edgeType: 'SET_IN', sourceType: 'Scene' },
   ],
 };
 

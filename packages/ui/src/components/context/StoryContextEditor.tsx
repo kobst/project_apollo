@@ -30,6 +30,8 @@ import styles from './StoryContextEditor.module.css';
 
 interface ProposedChanges {
   premise?: string;
+  genre?: string;
+  setting?: string;
   toneEssence?: string;
   thematicPillars: string[];
   hardRules: HardRule[];
@@ -51,6 +53,8 @@ function extractProposedChanges(changes: StoryContextChange[]): ProposedChanges 
     switch (op.type) {
       case 'setConstitutionField':
         if (op.field === 'premise') proposed.premise = op.value;
+        if (op.field === 'genre') proposed.genre = op.value;
+        if (op.field === 'setting') proposed.setting = op.value;
         if (op.field === 'toneEssence') proposed.toneEssence = op.value;
         break;
       case 'addThematicPillar':
@@ -87,6 +91,8 @@ function createDefaultContext(): StoryContext {
     constitution: {
       logline: '',
       premise: '',
+      genre: '',
+      setting: '',
       thematicPillars: [],
       hardRules: [],
       toneEssence: '',
@@ -405,6 +411,42 @@ export function StoryContextEditor({ compact = false }: StoryContextEditorProps)
                 )}
               </div>
 
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabel}>Genre</label>
+                <input
+                  type="text"
+                  className={styles.textInput}
+                  value={context.constitution.genre}
+                  onChange={(e) => handleConstitutionFieldChange('genre', e.target.value)}
+                  placeholder="Genre (e.g., sci-fi thriller, romantic comedy)..."
+                  disabled={saving}
+                />
+                {proposedChanges.genre && (
+                  <div className={styles.proposedItem}>
+                    <span className={styles.proposedBadge}>Proposed</span>
+                    <p className={styles.proposedText}>{proposedChanges.genre}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabel}>Setting</label>
+                <textarea
+                  className={styles.textArea}
+                  value={context.constitution.setting}
+                  onChange={(e) => handleConstitutionFieldChange('setting', e.target.value)}
+                  placeholder="Setting/world (e.g., 1920s Chicago, post-apocalyptic wasteland)..."
+                  disabled={saving}
+                  rows={2}
+                />
+                {proposedChanges.setting && (
+                  <div className={styles.proposedItem}>
+                    <span className={styles.proposedBadge}>Proposed</span>
+                    <p className={styles.proposedText}>{proposedChanges.setting}</p>
+                  </div>
+                )}
+              </div>
+
               <ListEditor
                 label="Thematic Pillars"
                 items={context.constitution.thematicPillars}
@@ -422,7 +464,7 @@ export function StoryContextEditor({ compact = false }: StoryContextEditorProps)
                 <div className={styles.rulesList}>
                   {context.constitution.hardRules.map((rule, index) => (
                     <div key={rule.id} className={styles.ruleItem}>
-                      <span className={styles.ruleId}>[{rule.id}]</span>
+                      <span className={styles.ruleNumber}>{index + 1}.</span>
                       <input
                         type="text"
                         className={styles.ruleInput}

@@ -25,8 +25,6 @@ import type { StoryContextConstitution } from './storyContextTypes.js';
 export interface SystemPromptParams {
   /** Story name */
   storyName?: string | undefined;
-  /** One-sentence story summary */
-  logline?: string | undefined;
   /** Story constitution (stable creative direction) */
   constitution?: StoryContextConstitution | undefined;
 }
@@ -46,17 +44,18 @@ export interface SystemPromptParams {
  * @returns True if system prompt would have meaningful content
  */
 export function hasSystemPromptContent(params: SystemPromptParams): boolean {
-  const { storyName, logline, constitution } = params;
+  const { storyName, constitution } = params;
 
   // Check story identity
   const hasStoryName = Boolean(storyName && storyName.trim());
-  const hasLogline = Boolean(logline && logline.trim());
 
   // Check constitution - any non-empty field
   const hasConstitution = Boolean(
     constitution && (
       constitution.logline.trim() ||
       constitution.premise.trim() ||
+      constitution.genre.trim() ||
+      constitution.setting.trim() ||
       constitution.thematicPillars.length > 0 ||
       constitution.hardRules.length > 0 ||
       constitution.toneEssence.trim() ||
@@ -64,7 +63,7 @@ export function hasSystemPromptContent(params: SystemPromptParams): boolean {
     )
   );
 
-  return hasStoryName || hasLogline || hasConstitution;
+  return hasStoryName || hasConstitution;
 }
 
 /**
@@ -76,7 +75,7 @@ export function hasSystemPromptContent(params: SystemPromptParams): boolean {
 function serializeConstitution(constitution: StoryContextConstitution): string {
   const sections: string[] = [];
 
-  // Logline (may be redundant with metadata logline, but constitution's is authoritative)
+  // Logline
   if (constitution.logline.trim()) {
     sections.push(`**Logline**: ${constitution.logline.trim()}`);
   }
@@ -85,6 +84,18 @@ function serializeConstitution(constitution: StoryContextConstitution): string {
   if (constitution.premise.trim()) {
     sections.push('');
     sections.push(`**Premise**: ${constitution.premise.trim()}`);
+  }
+
+  // Genre
+  if (constitution.genre.trim()) {
+    sections.push('');
+    sections.push(`**Genre**: ${constitution.genre.trim()}`);
+  }
+
+  // Setting
+  if (constitution.setting.trim()) {
+    sections.push('');
+    sections.push(`**Setting**: ${constitution.setting.trim()}`);
   }
 
   // Thematic Pillars
@@ -139,7 +150,7 @@ function serializeConstitution(constitution: StoryContextConstitution): string {
  * @returns Complete system prompt string
  */
 export function buildSystemPrompt(params: SystemPromptParams): string {
-  const { storyName, logline, constitution } = params;
+  const { storyName, constitution } = params;
 
   const sections: string[] = [];
 
@@ -148,15 +159,10 @@ export function buildSystemPrompt(params: SystemPromptParams): string {
   sections.push('');
 
   // Story identity section
-  if (storyName || logline) {
+  if (storyName) {
     sections.push('## Story Identity');
     sections.push('');
-    if (storyName) {
-      sections.push(`**Title**: ${storyName}`);
-    }
-    if (logline) {
-      sections.push(`**Logline**: ${logline}`);
-    }
+    sections.push(`**Title**: ${storyName}`);
     sections.push('');
   }
 

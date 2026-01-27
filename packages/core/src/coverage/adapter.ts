@@ -16,13 +16,9 @@ import type { Gap, GapTier, GapType } from './types.js';
  * Map rule IDs to their corresponding tier.
  */
 const RULE_TO_TIER: Record<string, GapTier> = {
-  // Premise tier
-  STORY_HAS_LOGLINE: 'premise',
-
   // Foundations tier
   THEME_NOT_ORPHANED: 'foundations',
   MOTIF_NOT_ORPHANED: 'foundations',
-  LOCATION_HAS_SETTING: 'foundations',
 
   // Structure tier
   STC_BEAT_ORDERING: 'structure',
@@ -45,9 +41,6 @@ const RULE_TO_TIER: Record<string, GapTier> = {
  * Used as fallback when rule mapping doesn't exist.
  */
 const NODE_TYPE_TO_TIER: Record<string, GapTier> = {
-  Logline: 'premise',
-  Setting: 'foundations',
-  GenreTone: 'foundations',
   Conflict: 'foundations',
   Theme: 'foundations',
   Motif: 'foundations',
@@ -64,13 +57,9 @@ const NODE_TYPE_TO_TIER: Record<string, GapTier> = {
  * Human-readable labels for rule IDs.
  */
 const RULE_LABELS: Record<string, string> = {
-  // Premise
-  STORY_HAS_LOGLINE: 'Missing Logline',
-
   // Foundations
   THEME_NOT_ORPHANED: 'Orphaned Theme',
   MOTIF_NOT_ORPHANED: 'Orphaned Motif',
-  LOCATION_HAS_SETTING: 'Location Without Setting',
 
   // Structure
   STC_BEAT_ORDERING: 'Beat Order Issue',

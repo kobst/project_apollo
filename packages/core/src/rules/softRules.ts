@@ -6,7 +6,7 @@
 
 import type { GraphState } from '../core/graph.js';
 import { getNodesByType } from '../core/graph.js';
-import type { StoryBeat, Logline, Location } from '../types/nodes.js';
+import type { StoryBeat } from '../types/nodes.js';
 import type { Rule, RuleViolation, LintScope } from './types.js';
 import { getScenesInScope, isNodeInScope, createViolation } from './utils.js';
 import { registerRule } from './engine.js';
@@ -215,91 +215,14 @@ export const SCENE_HAS_STORYBEAT: Rule = {
 };
 
 // =============================================================================
-// STORY_HAS_LOGLINE
+// STORY_HAS_LOGLINE - REMOVED
 // =============================================================================
-
-/**
- * Story should have a Logline node defined.
- * The logline provides the one-sentence summary of the story.
- */
-export const STORY_HAS_LOGLINE: Rule = {
-  id: 'STORY_HAS_LOGLINE',
-  name: 'Story Should Have Logline',
-  severity: 'soft',
-  category: 'completeness',
-  description: 'Stories should define a logline',
-
-  evaluate: (graph: GraphState, _scope: LintScope): RuleViolation[] => {
-    const loglines = getNodesByType<Logline>(graph, 'Logline');
-
-    if (loglines.length === 0) {
-      return [
-        createViolation(
-          'STORY_HAS_LOGLINE',
-          'soft',
-          'completeness',
-          'Story has no logline defined. Consider adding a logline to establish the core concept.',
-          {}
-        ),
-      ];
-    }
-
-    return [];
-  },
-};
+// Logline is now stored in StoryContext.constitution.logline, not as a graph node.
 
 // =============================================================================
-// LOCATION_HAS_SETTING
+// LOCATION_HAS_SETTING - REMOVED
 // =============================================================================
-
-/**
- * Location should be part of a Setting (PART_OF edge).
- * This is a soft rule because locations can exist without a broader setting.
- */
-export const LOCATION_HAS_SETTING: Rule = {
-  id: 'LOCATION_HAS_SETTING',
-  name: 'Location Should Have Setting',
-  severity: 'soft',
-  category: 'completeness',
-  description: 'Locations should be part of a Setting/World',
-
-  evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
-    const violations: RuleViolation[] = [];
-    const locations = getNodesByType<Location>(graph, 'Location');
-
-    // Get all locations that have a PART_OF edge to a Setting
-    const locationsWithSetting = new Set(
-      graph.edges
-        .filter((e) => e.type === 'PART_OF')
-        .map((e) => e.from)
-    );
-
-    for (const location of locations) {
-      // Skip if not in scope
-      if (!isNodeInScope(scope, location.id)) continue;
-
-      if (!locationsWithSetting.has(location.id)) {
-        violations.push(
-          createViolation(
-            'LOCATION_HAS_SETTING',
-            'soft',
-            'completeness',
-            `Location "${location.name}" is not part of any Setting`,
-            {
-              nodeId: location.id,
-              nodeType: 'Location',
-              context: {
-                locationName: location.name,
-              },
-            }
-          )
-        );
-      }
-    }
-
-    return violations;
-  },
-};
+// Setting nodes no longer exist. Setting is stored in StoryContext.constitution.setting.
 
 // =============================================================================
 // Exports
@@ -313,8 +236,6 @@ export const SOFT_RULES: Rule[] = [
   SCENE_HAS_LOCATION,
   SCENE_HAS_STORYBEAT,
   SB_EVENT_REALIZATION,
-  STORY_HAS_LOGLINE,
-  LOCATION_HAS_SETTING,
 ];
 
 /**

@@ -11,7 +11,6 @@ import { useStory } from '../../context/StoryContext';
 import { api } from '../../api/client';
 import type { OutlineData } from '../../api/types';
 import { computeDetailedStructureCounts } from '../../utils/stagingUtils';
-import { PremiseSection } from './PremiseSection';
 import { ElementsSection } from './ElementsSection';
 import { StructureSection } from './StructureSection';
 import { ContextSection } from './ContextSection';
@@ -33,7 +32,7 @@ interface StoryBibleProps {
   nodeSelectionMode?: boolean;
 }
 
-const SECTION_IDS = ['premise', 'elements', 'structure', 'context', 'ideas'];
+const SECTION_IDS = ['elements', 'structure', 'context', 'ideas'];
 
 export function StoryBible({
   onElementClick,
@@ -160,7 +159,6 @@ export function StoryBible({
         actData={actData}
         elementCounts={elementCounts}
         progress={progress}
-        hasPremise={Boolean(status?.logline)}
         hasContext={status?.hasStoryContext ?? false}
         ideasCount={status?.stats?.ideas ?? 0}
       />
@@ -173,8 +171,6 @@ export function StoryBible({
             </span>
           </div>
         )}
-        <PremiseSection />
-
         <ElementsSection
           onElementClick={onElementClick}
           onAddElement={onAddElement}

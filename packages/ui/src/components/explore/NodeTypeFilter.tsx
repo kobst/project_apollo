@@ -2,9 +2,6 @@ import type { StoryStats } from '../../api/types';
 import styles from './NodeTypeFilter.module.css';
 
 export type NodeTypeOption =
-  | 'Logline'
-  | 'Setting'
-  | 'GenreTone'
   | 'Beat'
   | 'Scene'
   | 'Character'
@@ -19,10 +16,6 @@ interface NodeTypeFilterProps {
 }
 
 const NODE_TYPES: { type: NodeTypeOption; label: string; statKey?: keyof StoryStats }[] = [
-  // Context Layer (top of pyramid)
-  { type: 'Logline', label: 'Logline', statKey: 'loglines' },
-  { type: 'Setting', label: 'Settings', statKey: 'settings' },
-  { type: 'GenreTone', label: 'Genre/Tone', statKey: 'genreTones' },
   // Structure & content
   { type: 'Beat', label: 'Beats', statKey: 'beats' },
   { type: 'StoryBeat', label: 'Story Beats', statKey: 'storyBeats' },

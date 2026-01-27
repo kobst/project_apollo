@@ -34,9 +34,6 @@ export function openCommand(program: Command): void {
         if (state?.metadata?.name && state.metadata.name !== storyId) {
           console.log(pc.dim('Name:'), state.metadata.name);
         }
-        if (state?.metadata?.logline) {
-          console.log(pc.dim('Logline:'), `"${state.metadata.logline}"`);
-        }
       } catch (error) {
         handleError(error);
       }

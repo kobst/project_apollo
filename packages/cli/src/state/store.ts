@@ -20,7 +20,6 @@ export interface SerializedGraph {
 
 export interface StoryMetadata {
   name?: string;
-  logline?: string;
   storyContext?: string;           // Markdown content for creative guidance
   storyContextModifiedAt?: string; // ISO timestamp for version tracking
 }
@@ -96,7 +95,6 @@ export function isVersionedState(state: StoredState): state is VersionedState {
 export interface StoryInfo {
   id: string;
   name?: string;
-  logline?: string;
   updatedAt: string;
   isCurrent: boolean;
 }
@@ -245,7 +243,6 @@ export async function listStories(): Promise<StoryInfo[]> {
           stories.push({
             id: dir,
             ...(state.metadata?.name && { name: state.metadata.name }),
-            ...(state.metadata?.logline && { logline: state.metadata.logline }),
             updatedAt: state.updatedAt,
             isCurrent: dir === currentId,
           });

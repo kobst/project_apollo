@@ -34,12 +34,9 @@ export function listCommand(program: Command): void {
           const name = story.name && story.name !== story.id
             ? pc.cyan(`(${story.name})`)
             : '';
-          const logline = story.logline
-            ? pc.dim(`"${story.logline.slice(0, 40)}${story.logline.length > 40 ? '...' : ''}"`)
-            : pc.dim('(no logline)');
           const current = story.isCurrent ? pc.green(' (current)') : '';
 
-          console.log(`${marker} ${id}  ${name} ${logline}${current}`);
+          console.log(`${marker} ${id}  ${name}${current}`);
         }
 
         console.log();

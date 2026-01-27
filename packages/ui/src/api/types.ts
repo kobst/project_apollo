@@ -23,9 +23,6 @@ export interface StoryStats {
   storyBeats: number;
   ideas: number;
   edges: number;
-  loglines: number;
-  settings: number;
-  genreTones: number;
 }
 
 export interface OpenQuestionSummary {
@@ -35,7 +32,6 @@ export interface OpenQuestionSummary {
 export interface StatusData {
   storyId: string;
   name?: string;
-  logline?: string;
   currentVersionId: string;
   currentBranch: string | null;
   updatedAt: string;
@@ -226,7 +222,6 @@ export interface CheckoutData {
 export interface InitData {
   storyId: string;
   name?: string;
-  logline: string;
   versionId: string;
   stats: StoryStats;
 }
@@ -448,9 +443,7 @@ export type EdgeType =
   | 'ALIGNS_WITH'
   | 'SATISFIED_BY'
   | 'PRECEDES'
-  | 'ADVANCES'
-  | 'PART_OF'
-  | 'SET_IN';
+  | 'ADVANCES';
 
 export type EdgeStatus = 'proposed' | 'approved' | 'rejected';
 
@@ -874,6 +867,8 @@ export interface SoftGuideline {
 export interface StoryContextConstitution {
   logline: string;
   premise: string;
+  genre: string;
+  setting: string;
   thematicPillars: string[];
   hardRules: HardRule[];
   toneEssence: string;
@@ -992,7 +987,7 @@ export interface EdgeChangeAI {
  */
 export type StoryContextChangeOperation =
   // Constitution string fields
-  | { type: 'setConstitutionField'; field: 'logline' | 'premise' | 'toneEssence' | 'version'; value: string }
+  | { type: 'setConstitutionField'; field: 'logline' | 'premise' | 'genre' | 'setting' | 'toneEssence' | 'version'; value: string }
   // Thematic pillars
   | { type: 'setThematicPillars'; pillars: string[] }
   | { type: 'addThematicPillar'; pillar: string }
