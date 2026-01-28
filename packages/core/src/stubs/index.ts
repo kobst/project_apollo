@@ -8,5 +8,4 @@
 // Extractor stub - input → Patch
 export * from './extractorStub.js';
 
-// Cluster stub - OQ → MoveCluster[]
-export * from './clusterStub.js';
+// Cluster/move stubs removed

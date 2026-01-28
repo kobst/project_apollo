@@ -9,9 +9,6 @@ import {
   createListStoriesHandler,
   createStatusHandler,
   createOQsHandler,
-  createClustersHandler,
-  createPreviewHandler,
-  createAcceptHandler,
   createInputHandler,
   createDiffHandler,
   createBranchHandler,
@@ -96,9 +93,7 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.post('/init', createInitHandler(ctx));
   router.get('/:id/status', createStatusHandler(ctx));
   router.get('/:id/open-questions', createOQsHandler(ctx));
-  router.post('/:id/clusters', createClustersHandler(ctx));
-  router.get('/:id/moves/:moveId/preview', createPreviewHandler(ctx));
-  router.post('/:id/accept', createAcceptHandler(ctx));
+  // Legacy cluster/move endpoints removed in favor of propose/session workflow
   router.post('/:id/input', createInputHandler(ctx));
   router.get('/:id/diff', createDiffHandler(ctx));
 

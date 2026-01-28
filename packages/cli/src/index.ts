@@ -11,9 +11,7 @@ import { openCommand } from './commands/open.js';
 import { currentCommand } from './commands/current.js';
 import { statusCommand } from './commands/status.js';
 import { oqsCommand } from './commands/oqs.js';
-import { clusterCommand } from './commands/cluster.js';
-import { acceptCommand } from './commands/accept.js';
-import { previewCommand } from './commands/preview.js';
+// Legacy move/cluster commands removed
 import { saveCommand } from './commands/save.js';
 import { loadCommand } from './commands/load.js';
 import { addCommand } from './commands/add.js';
@@ -39,9 +37,7 @@ openCommand(program);
 currentCommand(program);
 statusCommand(program);
 oqsCommand(program);
-clusterCommand(program);
-acceptCommand(program);
-previewCommand(program);
+// Removed legacy cluster/move commands
 saveCommand(program);
 loadCommand(program);
 addCommand(program);

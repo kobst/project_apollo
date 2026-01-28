@@ -8,7 +8,6 @@ import { NodeDetailPanel } from './NodeDetailPanel';
 import { NodeEditor } from './NodeEditor';
 import { PatchBuilder } from './PatchBuilder';
 import { CommitPanel } from './CommitPanel';
-import { ClusterCard } from '../clusters/ClusterCard';
 import { PatchPreview } from '../preview/PatchPreview';
 import { ValidationStatus } from '../preview/ValidationStatus';
 import { EditEdgeModal } from './EditEdgeModal';
@@ -39,9 +38,7 @@ export function ExploreView() {
     scopedNodeId,
     selectedMoveId,
     preview,
-    generateScopedCluster,
-    acceptMove,
-    rejectAll,
+    // cluster/move UI removed
     loading,
     refreshStatus,
   } = useStory();
@@ -184,16 +181,7 @@ export function ExploreView() {
   }, [currentStoryId]);
 
   // Handle generate for selected node
-  const handleGenerate = useCallback(() => {
-    if (selectedNodeId) {
-      void generateScopedCluster(selectedNodeId);
-    }
-  }, [selectedNodeId, generateScopedCluster]);
-
-  // Handle accept
-  const handleAccept = useCallback(() => {
-    void acceptMove();
-  }, [acceptMove]);
+  // Cluster/move actions removed
 
   // Handle entering edit mode
   const handleStartEdit = useCallback(() => {
@@ -537,8 +525,8 @@ export function ExploreView() {
               <NodeDetailPanel
                 relations={nodeRelations}
                 loading={relationsLoading}
-                onGenerate={handleGenerate}
-                generating={clusterLoading}
+                onGenerate={() => { /* removed */ }}
+                generating={false}
                 onEdit={handleStartEdit}
                 onDelete={handleDeleteNode}
                 onEditEdge={handleEditEdge}
@@ -565,44 +553,8 @@ export function ExploreView() {
           )}
         </div>
 
-        {/* Right: Cluster + Preview */}
-        <div className={styles.clusterPane}>
-          {/* Cluster results when available */}
-          {hasClusterForNode ? (
-            <div className={styles.clusterContent}>
-              <div className={styles.clusterHeader}>
-                <h3>Generated Moves</h3>
-                <button
-                  className={styles.rejectBtn}
-                  onClick={rejectAll}
-                  type="button"
-                >
-                  Clear
-                </button>
-              </div>
-
-              {/* Use context-based ClusterCard which renders MoveCards internally */}
-              <ClusterCard />
-
-              {selectedMoveId && (
-                <div className={styles.previewSection}>
-                  <PatchPreview />
-                  <ValidationStatus />
-                  <button
-                    className={styles.acceptBtn}
-                    onClick={handleAccept}
-                    disabled={!canAccept || loading}
-                    type="button"
-                  >
-                    {loading ? 'Accepting...' : 'Accept Move'}
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : clusterLoading ? (
-            <div className={styles.loading}>Generating moves...</div>
-          ) : null}
-        </div>
+        {/* Right pane reserved (cluster/move UI removed) */}
+        <div className={styles.clusterPane} />
       </div>
 
       {/* Edge editing modals */}

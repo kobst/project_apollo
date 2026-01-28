@@ -49,9 +49,7 @@ export function NodeDetailModal({
 }: NodeDetailModalProps) {
   const {
     currentStoryId,
-    clusterLoading,
-    generateScopedCluster,
-    acceptMove,
+    // cluster/move features removed
     refreshStatus,
   } = useStory();
 
@@ -90,8 +88,7 @@ export function NodeDetailModal({
     },
   });
 
-  // Keep acceptMove reference
-  void acceptMove;
+  // Cluster/move features removed
 
   // Fetch full edges for a node
   const fetchFullEdges = useCallback(async (nodeId: string): Promise<EdgeData[]> => {
@@ -138,8 +135,8 @@ export function NodeDetailModal({
 
   // Generate handler
   const handleGenerate = useCallback(() => {
-    void generateScopedCluster(node.id);
-  }, [node.id, generateScopedCluster]);
+    // Removed
+  }, []);
 
   // Edit handlers
   const handleStartEdit = useCallback(() => {
@@ -424,7 +421,7 @@ export function NodeDetailModal({
                 relations={nodeRelations}
                 loading={relationsLoading}
                 onGenerate={handleGenerate}
-                generating={clusterLoading}
+                generating={false}
                 onEdit={handleStartEdit}
                 onDelete={handleDeleteNode}
                 onEditEdge={handleEditEdge}

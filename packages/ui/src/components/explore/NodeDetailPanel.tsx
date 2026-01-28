@@ -136,14 +136,7 @@ export function NodeDetailPanel({
         >
           Edit Node
         </button>
-        <button
-          className={styles.actionBtn}
-          onClick={onGenerate}
-          disabled={generating}
-          type="button"
-        >
-          {generating ? 'Generating...' : 'Generate Moves'}
-        </button>
+        {/* Generate moves button removed */}
         <button
           className={styles.deleteBtn}
           onClick={onDelete}
