@@ -41,7 +41,7 @@ Consult existing graph state (nodes, edges, gaps)
 Consult Story Context (themes, constraints, creative direction)
 Determine the most appropriate output form:
 
-Concrete node (Character, Location, Scene, PlotPoint, Object)
+Concrete node (Character, Location, Scene, StoryBeat, Object)
 Idea node (if concept is not yet ready to be concrete)
 Story Context addition (if content is thematic/directional/constraint)
 Combination of the above
@@ -163,7 +163,7 @@ typescriptinterface NarrativePackage {
     storyContext?: StoryContextChange[];
     premise?: NodeChange[];
     storyElements?: NodeChange[];        // Characters, Locations, Objects
-    outline?: NodeChange[];              // PlotPoints, Scenes, Beats
+  outline?: NodeChange[];              // StoryBeats, Scenes, Beats
   };
   
   // Edges to create/modify/delete
@@ -228,10 +228,10 @@ STORY ELEMENTS
   ~ Character (existing): modify description
 
 OUTLINE
-  + PlotPoint: "..."
+  + StoryBeat: "..."
     └─ ALIGNS_WITH → Beat
   + Scene: "..."
-    └─ SATISFIES → PlotPoint
+    └─ SATISFIED_BY ← StoryBeat
     └─ HAS_CHARACTER → Character
     └─ LOCATED_AT → Location
 
@@ -412,7 +412,7 @@ STORY CONTEXT
 7. Entry Points
 Generation can be triggered from multiple locations in the UI.
 7.1 Entry Point Types
-Entry PointContext ProvidedTypical GenerationEmpty BeatBeat type, act, positionPlotPoints + supporting elementsBeat with PlotPointsBeat + existing PlotPointsScenes to satisfy PlotPointsPlotPointPlotPoint detailsScenes, supporting characters/locationsCharacterCharacter detailsArcs, scenes featuring characterGap itemGap type and targetWhatever resolves the gapNaked/GlobalFull graph stateAI determines highest-value additionsStory Context sectionSection contentNodes that realize thematic elementsIdea nodeIdea contentPromotion to concrete node(s)
+Entry PointContext ProvidedTypical GenerationEmpty BeatBeat type, act, positionStoryBeats + supporting elementsBeat with StoryBeatsBeat + existing StoryBeatsScenes to satisfy StoryBeatsStoryBeatStoryBeat detailsScenes, supporting characters/locationsCharacterCharacter detailsArcs, scenes featuring characterGap itemGap type and targetWhatever resolves the gapNaked/GlobalFull graph stateAI determines highest-value additionsStory Context sectionSection contentNodes that realize thematic elementsIdea nodeIdea contentPromotion to concrete node(s)
 7.2 Entry Point Behavior
 Each entry point pre-fills generation context:
 
@@ -526,7 +526,7 @@ typescriptinterface GenerationSession {
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │ Current package contains:                                                   │
-│ • PlotPoint: Mike discovers partner's betrayal                              │
+│ • StoryBeat: Mike discovers partner's betrayal                              │
 │ • Character: Agent Torres (Internal Affairs)                                │
 │ • Location: Police Evidence Room                                            │
 │ • Story Context: Theme addition                                             │
@@ -538,7 +538,7 @@ typescriptinterface GenerationSession {
 │ └─────────────────────────────────────────────────────────────────────────┘ │
 │                                                                             │
 │ Keep unchanged:                                                             │
-│ ☑ PlotPoint concept                                                        │
+│ ☑ StoryBeat concept                                                        │
 │ ☐ Character (will regenerate)                                              │
 │ ☐ Location (will regenerate)                                               │
 │ ☑ Story Context addition                                                   │
@@ -570,9 +570,7 @@ Package metadata stored with version for audit trail
 Refinement tree can be reconstructed from version history
 
 10.4 Existing Cluster/Move System
-The existing MoveCluster and NarrativeMove types are extended to support this architecture:
-
-NarrativePackage is an enhanced NarrativeMove
+All proposals are represented as NarrativePackage objects staged for review; legacy MoveCluster/NarrativeMove concepts have been removed.
 Refinement tree tracked via parent_package_id
 Session state extends existing session.json
 
@@ -714,7 +712,7 @@ Validation happens automatically as part of the interpret response - no separate
 POST /stories/:id/interpret
 {
   "userInput": "Cain realizes the cops are connected to the drug ring",
-  "targetType": "PlotPoint"  // Optional hint
+  "targetType": "StoryBeat"  // Optional hint
 }
 ```
 
@@ -729,7 +727,7 @@ POST /stories/:id/interpret
     {
       "type": "node",
       "operation": "add",
-      "target_type": "PlotPoint",
+      "target_type": "StoryBeat",
       "data": {
         "title": "Cain discovers police corruption",
         "summary": "Cain realizes the cops are connected..."
@@ -741,7 +739,7 @@ POST /stories/:id/interpret
   "validations": {
     "0": {
       "similarities": [],
-      "fulfillsGaps": [{ "gapId": "...", "gapTitle": "Missing PlotPoint", "fulfillment": "full" }],
+      "fulfillsGaps": [{ "gapId": "...", "gapTitle": "Missing StoryBeat", "fulfillment": "full" }],
       "suggestedConnections": [{ "nodeId": "...", "nodeName": "Cain", "edgeType": "ADVANCES" }],
       "warnings": [],
       "score": 0.95
@@ -823,7 +821,7 @@ Compares proposed node name/title against existing nodes of the same type using 
 | Character | `name` | `archetype` |
 | Location | `name` | - |
 | Scene | `heading`, `title` | `scene_overview` |
-| PlotPoint | `title` | `summary` |
+| StoryBeat | `title` | `summary` |
 | Object | `name` | - |
 
 #### Gap Fulfillment
@@ -834,7 +832,7 @@ Maps the proposed node type to story tiers and checks which gaps would be addres
 |-----------|------|---------------------|
 | Character, Location, Object | foundations | Missing foundations |
 | Beat | structure | Unrealized beats |
-| PlotPoint | plotPoints | Missing plot points |
+| StoryBeat | storyBeats | Missing story beats |
 | Scene | scenes | Missing scenes, unplaced content |
 
 **Note:** Premise-tier gaps (logline, genre, setting, etc.) are now covered by `StoryContext.constitution` fields, not by node types.
@@ -861,9 +859,9 @@ Based on valid edge rules for the node type:
 | Scene | HAS_CHARACTER | Characters |
 | Scene | LOCATED_AT | Locations |
 | Scene | FEATURES_OBJECT | Objects |
-| PlotPoint | PRECEDES | Other PlotPoints |
-| PlotPoint | ALIGNS_WITH | Beats |
-| PlotPoint | ADVANCES | Character Arcs |
+| StoryBeat | PRECEDES | Other StoryBeats |
+| StoryBeat | ALIGNS_WITH | Beats |
+| StoryBeat | ADVANCES | Character Arcs |
 | Character | HAS_ARC | Character Arcs |
 | Location | PART_OF | Settings |
 
@@ -961,7 +959,7 @@ Validation results are shown automatically with each proposal (no "Check" button
 │                                                             │
 │ ┌─ Validation Results ────────────────────────────────────┐ │
 │ │ ⚠️ Similar to: Police corruption revealed (72%)         │ │
-│ │ ✓ Fills gaps: Missing PlotPoint in Act 2               │ │
+│ │ ✓ Fills gaps: Missing StoryBeat in Act 2               │ │
 │ │ 💡 Possible connections:                                │ │
 │ │    Could precede "Cain gets arrested"                  │ │
 │ │    Could advance "Cain's moral arc"                    │ │

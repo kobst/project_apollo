@@ -182,7 +182,7 @@ curl http://localhost:3000/stories/my-story/status
 GET /stories/:id/outline
 ```
 
-Returns the story structure organized by acts and beats, with PlotPoints and Scenes nested appropriately. Also returns unassigned items that haven't been placed in the structure yet.
+Returns the story structure organized by acts and beats, with StoryBeats and Scenes nested appropriately. Also returns unassigned items that haven't been placed in the structure yet.
 
 ```bash
 curl http://localhost:3000/stories/my-story/outline
@@ -205,9 +205,9 @@ curl http://localhost:3000/stories/my-story/outline
             "positionIndex": 1,
             "guidance": "Visual snapshot of the hero's world...",
             "status": "REALIZED",
-            "plotPoints": [
+            "storyBeats": [
               {
-                "id": "pp_1234",
+                "id": "sb_1234",
                 "title": "Establish detective's lonely life",
                 "intent": "character",
                 "status": "approved",
@@ -224,9 +224,9 @@ curl http://localhost:3000/stories/my-story/outline
         ]
       }
     ],
-    "unassignedPlotPoints": [
+    "unassignedStoryBeats": [
       {
-        "id": "pp_5678",
+        "id": "sb_5678",
         "title": "Car chase through downtown",
         "intent": "plot",
         "status": "proposed",
@@ -243,8 +243,8 @@ curl http://localhost:3000/stories/my-story/outline
     "summary": {
       "totalBeats": 15,
       "totalScenes": 5,
-      "totalPlotPoints": 8,
-      "unassignedPlotPointCount": 2,
+      "totalStoryBeats": 8,
+      "unassignedStoryBeatCount": 2,
       "unassignedSceneCount": 1
     }
   }
@@ -252,8 +252,8 @@ curl http://localhost:3000/stories/my-story/outline
 ```
 
 **Notes:**
-- `unassignedPlotPoints`: PlotPoints without an `ALIGNS_WITH` edge to any Beat
-- `unassignedScenes`: Scenes without a `SATISFIED_BY` edge from any PlotPoint
+- `unassignedStoryBeats`: StoryBeats without an `ALIGNS_WITH` edge to any Beat
+- `unassignedScenes`: Scenes without a `SATISFIED_BY` edge from any StoryBeat
 - Use the Edges API (`POST /stories/:id/edges`) to assign items to the structure
 
 ---
@@ -302,134 +302,32 @@ curl "http://localhost:3000/stories/my-story/open-questions?domain=STRUCTURE"
 
 ---
 
-## Move Generation
+## Package Workflow
 
-### Generate Move Cluster
+All AI proposals are delivered as NarrativePackages in a staging session and are merged via package commit.
+
+### Get Active Proposal Session
 
 ```
-POST /stories/:id/clusters
+GET /stories/:id/propose/active
 ```
 
-Generates a cluster of possible moves for an open question.
+Returns current session with packages awaiting review.
+
+### Commit a Package
+
+```
+POST /stories/:id/propose/commit
+```
+
+Commits a selected package to the live graph, creating a new version.
 
 **Request Body:**
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `oqId` | string | Yes | Open question ID |
-| `count` | number | No | Number of moves (1-12, default: 4) |
-| `seed` | number | No | Seed for reproducible generation |
+| `packageId` | string | Yes | Package ID from the active session |
 
-```bash
-curl -X POST http://localhost:3000/stories/my-story/clusters \
-  -H 'Content-Type: application/json' \
-  -d '{"oqId": "oq_beat_beat_Catalyst", "count": 4}'
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "clusterId": "cluster_abc123",
-    "title": "Realize Beat: Catalyst",
-    "clusterType": "STRUCTURE",
-    "scope": "OUTLINE",
-    "seed": 1234567890,
-    "moves": [
-      {
-        "id": "mv_abc123_0",
-        "title": "Add scene for Catalyst beat",
-        "rationale": "Creates a scene to realize this structural beat",
-        "confidence": 0.85
-      }
-    ]
-  }
-}
-```
-
----
-
-### Preview Move
-
-```
-GET /stories/:id/moves/:moveId/preview
-```
-
-Returns detailed preview of a move's patch before accepting.
-
-```bash
-curl http://localhost:3000/stories/my-story/moves/mv_abc123_0/preview
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "move": {
-      "id": "mv_abc123_0",
-      "title": "Add scene for Catalyst beat",
-      "rationale": "Creates a scene to realize this structural beat",
-      "confidence": 0.85
-    },
-    "patch": {
-      "id": "patch_mv_abc123_0",
-      "baseVersionId": "sv_1234567890",
-      "ops": [
-        {
-          "op": "ADD_NODE",
-          "type": "Scene",
-          "id": "scene_catalyst_001",
-          "data": { ... }
-        }
-      ]
-    },
-    "validation": {
-      "valid": true
-    }
-  }
-}
-```
-
----
-
-### Accept Moves
-
-```
-POST /stories/:id/accept
-```
-
-Applies one or more moves to the story. Creates a new version.
-
-**Request Body:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `moveIds` | string[] | Yes | Array of move IDs to accept |
-
-```bash
-curl -X POST http://localhost:3000/stories/my-story/accept \
-  -H 'Content-Type: application/json' \
-  -d '{"moveIds": ["mv_abc123_0"]}'
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "accepted": [
-      {
-        "moveId": "mv_abc123_0",
-        "title": "Add scene for Catalyst beat"
-      }
-    ],
-    "newVersionId": "sv_1234567891",
-    "patchOpsApplied": 3
-  }
-}
-```
-
----
+See the AI Generation section below for proposal, refinement, and validate endpoints.
 
 ## Direct Input
 

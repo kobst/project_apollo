@@ -2,12 +2,12 @@
 
 ## Overview
 
-Project Apollo is a screenplay knowledge graph system that helps writers develop stories using a structured, graph-based approach. The system uses the **Save the Cat** 15-beat structure as its foundation and tracks story elements (characters, locations, objects, scenes, plot points) as nodes in a knowledge graph.
+Project Apollo is a screenplay knowledge graph system that helps writers develop stories using a structured, graph-based approach. The system uses the **Save the Cat** 15-beat structure as its foundation and tracks story elements (characters, locations, objects, scenes, story beats) as nodes in a knowledge graph.
 
 The CLI provides an interactive way to:
 - Initialize stories with or without a logline
 - Track open questions (gaps in your story)
-- Generate move options to address those gaps
+- Generate package options to address those gaps
 - Apply changes and iterate on your story
 
 ## Current System Architecture
@@ -26,11 +26,11 @@ packages/
 | Concept | Description |
 |---------|-------------|
 | **GraphState** | The in-memory knowledge graph containing all story nodes and edges |
-| **Nodes** | Story elements: Beat, Scene, Character, Location, Object, PlotPoint, CharacterArc, Idea |
+| **Nodes** | Story elements: Beat, Scene, Character, Location, Object, StoryBeat, CharacterArc, Idea |
 | **Edges** | Relationships between nodes: HAS_CHARACTER, LOCATED_AT, SATISFIED_BY, ALIGNS_WITH, etc. |
 | **Patch** | A set of operations (ADD_NODE, UPDATE_NODE, DELETE_NODE, ADD_EDGE, DELETE_EDGE) |
 | **Open Question (OQ)** | A gap or issue in the story that needs attention |
-| **Move Cluster** | A set of possible moves (patches) to address an open question |
+| **Narrative Package** | A staged bundle of changes to review and merge |
 | **Story Context** | Prose metadata for themes, conflicts, and motifs (not graph nodes) |
 
 ### Edge Types (Relationships)
@@ -39,18 +39,18 @@ Edges connect nodes to form the knowledge graph. The system uses 9 edge types:
 
 | Edge Type | Source → Target | Required | Description |
 |-----------|-----------------|----------|-------------|
-| **FULFILLS** | Scene → Beat | Deprecated | Use PlotPoint hierarchy instead. |
+| **FULFILLS** | Scene → Beat | Deprecated | Use StoryBeat hierarchy instead. |
 | **HAS_CHARACTER** | Scene → Character | Recommended | Character appears in the scene. |
 | **LOCATED_AT** | Scene → Location | Recommended | Scene's primary location. |
 | **FEATURES_OBJECT** | Scene → Object | Optional | Significant prop/object in scene. |
 | **HAS_ARC** | Character → CharacterArc | Optional | Arc belongs to this character. |
-| **ALIGNS_WITH** | PlotPoint → Beat | Optional | PlotPoint aligns to structural beat. |
-| **SATISFIED_BY** | PlotPoint → Scene | Optional | Scene satisfies the plot point. |
-| **PRECEDES** | PlotPoint → PlotPoint | Optional | Causal ordering (must be DAG). |
-| **PART_OF** | Location → Setting | Optional | Location belongs to a setting. |
+| **ALIGNS_WITH** | StoryBeat → Beat | Optional | StoryBeat aligns to structural beat. |
+| **SATISFIED_BY** | StoryBeat → Scene | Optional | Scene satisfies the story beat. |
+| **PRECEDES** | StoryBeat → StoryBeat | Optional | Causal ordering (must be DAG). |
+| **PARENT_OF** | Location → Location | Optional | Location hierarchy (replaces Setting) |
 
 **Notes:**
-- FULFILLS edges are deprecated — use PlotPoint with ALIGNS_WITH and SATISFIED_BY instead.
+- FULFILLS edges are deprecated — use StoryBeat with ALIGNS_WITH and SATISFIED_BY instead.
 - Edges are unique by `(type, from, to)` — no duplicates allowed.
 
 ### The 15-Beat Structure

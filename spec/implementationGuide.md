@@ -35,7 +35,7 @@ project-apollo/
 │   │   └── index.ts
 │   ├── stubs/
 │   │   ├── extractorStub.ts     # Stub: input → Patch
-│   │   └── clusterStub.ts       # Stub: OQ → MoveCluster[]
+│   │   └── generatorStub.ts     # Stub: OQ → NarrativePackage[]
 │   └── cli.ts                   # CLI entry point
 ├── tests/
 │   ├── validator.test.ts
@@ -104,8 +104,8 @@ export interface Scene extends BaseNode {
   type: 'Scene';
   heading: string;
   scene_overview: string;
-  beat_id?: string; // DEPRECATED: Use PlotPoint attachment via SATISFIED_BY edge
-  order_index?: number; // Auto-computed when attached to PlotPoint
+  beat_id?: string; // DEPRECATED: Use StoryBeat attachment via SATISFIED_BY edge
+  order_index?: number; // Auto-computed when attached to StoryBeat
   int_ext?: 'INT' | 'EXT' | 'OTHER';
   time_of_day?: string;
   mood?: string;
@@ -116,9 +116,9 @@ export interface Scene extends BaseNode {
   source_provenance?: 'USER' | 'AI' | 'MIXED';
 }
 
-// PlotPoint - bridges Beats and Scenes
-export interface PlotPoint extends BaseNode {
-  type: 'PlotPoint';
+// StoryBeat - bridges Beats and Scenes
+export interface StoryBeat extends BaseNode {
+  type: 'StoryBeat';
   title: string;
   description?: string;
   order_index?: number; // Auto-computed when attached to Beat via ALIGNS_WITH
@@ -209,59 +209,23 @@ export interface Conflict extends BaseNode {
   notes?: string;
 }
 
-// MoveCluster
-export interface ScopeBudget {
-  max_ops_per_move: number;
-  max_new_nodes_per_move: number;
-  allowed_node_types: string[];
-  allowed_depth: 'OUTLINE' | 'DRAFT' | 'REVISION';
-}
-
-export interface MoveCluster extends BaseNode {
-  type: 'MoveCluster';
-  base_story_version_id: string;
-  created_at: string;
-  title: string;
-  description?: string;
-  cluster_type?: 'STRUCTURE' | 'SCENE_LIST' | 'SCENE_QUALITY' | 'CONFLICT' | 'CHARACTER' | 'THEME' | 'MOTIF';
-  primary_open_question_id?: string;
-  supporting_open_question_ids?: string[];
-  scope_budget: ScopeBudget;
-  status?: 'PROPOSED' | 'ARCHIVED';
-}
-
-// NarrativeMove
-export interface NarrativeMove extends BaseNode {
-  type: 'NarrativeMove';
-  cluster_id: string;
-  patch_id: string;
-  title: string;
-  rationale: string;
-  created_at: string;
-  expected_effects?: string[];
-  move_style_tags?: string[];
-  resolves_open_question_ids?: string[];
-  introduces_open_question_ids?: string[];
-  confidence?: number;
-  status?: 'PROPOSED' | 'ACCEPTED' | 'REJECTED';
-  human_edits?: string;
-}
+// NarrativePackage is used for proposals (see aiIntegration.md)
 
 // Patch (see patch.ts)
 
 // Union type for all nodes
 export type KGNode =
-  | StoryVersion | MoveCluster | NarrativeMove | Patch
-  | Beat | Scene | PlotPoint | Character | Location | StoryObject
+  | StoryVersion | Patch
+  | Beat | Scene | StoryBeat | Character | Location | StoryObject
   | Theme | Motif | CharacterArc | Conflict;
 ```
 
 ### 2.2 `src/types/edges.ts`
 ```typescript
 export type EdgeType =
-  | 'FULFILLS'        // Scene → Beat (DEPRECATED: use PlotPoint hierarchy)
-  | 'ALIGNS_WITH'     // PlotPoint → Beat (triggers order computation)
-  | 'SATISFIED_BY'    // PlotPoint → Scene (triggers order computation)
+  | 'FULFILLS'        // Scene → Beat (DEPRECATED: use StoryBeat hierarchy)
+  | 'ALIGNS_WITH'     // StoryBeat → Beat (triggers order computation)
+  | 'SATISFIED_BY'    // StoryBeat → Scene (triggers order computation)
   | 'HAS_CHARACTER'   // Scene → Character
   | 'LOCATED_AT'      // Scene → Location
   | 'FEATURES_OBJECT' // Scene → Object
@@ -281,8 +245,8 @@ export interface Edge {
 // Edge validation rules
 export const EDGE_RULES: Record<EdgeType, { source: string[]; target: string[] }> = {
   FULFILLS: { source: ['Scene'], target: ['Beat'] }, // DEPRECATED
-  ALIGNS_WITH: { source: ['PlotPoint'], target: ['Beat'] },
-  SATISFIED_BY: { source: ['PlotPoint'], target: ['Scene'] },
+  ALIGNS_WITH: { source: ['StoryBeat'], target: ['Beat'] },
+  SATISFIED_BY: { source: ['StoryBeat'], target: ['Scene'] },
   HAS_CHARACTER: { source: ['Scene'], target: ['Character'] },
   LOCATED_AT: { source: ['Scene'], target: ['Location'] },
   FEATURES_OBJECT: { source: ['Scene'], target: ['Object'] },
@@ -968,28 +932,28 @@ function deriveThemeMotifQuestions(graph: GraphState): OpenQuestion[] {
 
 ### 3.5 `src/core/computeOrder.ts` — Auto-computed Ordering
 
-This module computes `order_index` for PlotPoints and Scenes based on their edge relationships.
+This module computes `order_index` for StoryBeats and Scenes based on their edge relationships.
 
 ```typescript
 import { GraphState, getNodesByType, getNode } from './graph';
-import { Beat, PlotPoint, Scene } from '../types/nodes';
+import { Beat, StoryBeat, Scene } from '../types/nodes';
 import { Edge } from '../types/edges';
 import { UpdateNodeOp } from '../types/patch';
 
 export interface ComputeOrderResult {
-  plotPointOrders: Map<string, number | undefined>;
+  storyBeatOrders: Map<string, number | undefined>;
   sceneOrders: Map<string, number | undefined>;
   ops: UpdateNodeOp[]; // Patches to apply for changed orders
 }
 
 /**
- * Computes order_index for PlotPoints and Scenes based on edge relationships:
- * - PlotPoints get order from ALIGNS_WITH edges to Beats (Beat.position_index)
- * - Scenes get order from SATISFIED_BY edges to PlotPoints
+ * Computes order_index for StoryBeats and Scenes based on edge relationships:
+ * - StoryBeats get order from ALIGNS_WITH edges to Beats (Beat.position_index)
+ * - Scenes get order from SATISFIED_BY edges to StoryBeats
  * - Unattached items have order_index = undefined
  */
 export function computeOrder(graph: GraphState): ComputeOrderResult {
-  const plotPointOrders = new Map<string, number | undefined>();
+  const storyBeatOrders = new Map<string, number | undefined>();
   const sceneOrders = new Map<string, number | undefined>();
   const ops: UpdateNodeOp[] = [];
 
@@ -997,21 +961,21 @@ export function computeOrder(graph: GraphState): ComputeOrderResult {
   const beats = getNodesByType<Beat>(graph, 'Beat')
     .sort((a, b) => a.position_index - b.position_index);
 
-  // Get all ALIGNS_WITH edges (PlotPoint → Beat)
+  // Get all ALIGNS_WITH edges (StoryBeat → Beat)
   const alignsWithEdges = graph.edges.filter(e => e.type === 'ALIGNS_WITH');
 
-  // Get all SATISFIED_BY edges (PlotPoint → Scene)
+  // Get all SATISFIED_BY edges (StoryBeat → Scene)
   const satisfiedByEdges = graph.edges.filter(e => e.type === 'SATISFIED_BY');
 
-  let ppOrderCounter = 0;
+  let sbOrderCounter = 0;
   let sceneOrderCounter = 0;
 
   // Process each beat in order
   for (const beat of beats) {
-    // Get PlotPoints aligned to this beat
+    // Get StoryBeats aligned to this beat
     const ppEdges = alignsWithEdges.filter(e => e.to === beat.id);
 
-    // Sort by edge createdAt, then by PlotPoint ID for tie-breaking
+    // Sort by edge createdAt, then by StoryBeat ID for tie-breaking
     const sortedPPEdges = ppEdges.sort((a, b) => {
       if (a.createdAt && b.createdAt) {
         return a.createdAt.localeCompare(b.createdAt);
@@ -1020,12 +984,12 @@ export function computeOrder(graph: GraphState): ComputeOrderResult {
     });
 
     for (const ppEdge of sortedPPEdges) {
-      ppOrderCounter++;
-      const ppId = ppEdge.from;
-      plotPointOrders.set(ppId, ppOrderCounter);
+      sbOrderCounter++;
+      const sbId = ppEdge.from;
+      storyBeatOrders.set(sbId, sbOrderCounter);
 
-      // Get scenes attached to this PlotPoint
-      const sceneEdges = satisfiedByEdges.filter(e => e.from === ppId);
+      // Get scenes attached to this StoryBeat
+      const sceneEdges = satisfiedByEdges.filter(e => e.from === sbId);
 
       // Sort scenes by edge createdAt, then by Scene ID
       const sortedSceneEdges = sceneEdges.sort((a, b) => {
@@ -1042,17 +1006,17 @@ export function computeOrder(graph: GraphState): ComputeOrderResult {
     }
   }
 
-  // Set undefined for unattached PlotPoints
-  for (const pp of getNodesByType<PlotPoint>(graph, 'PlotPoint')) {
-    if (!plotPointOrders.has(pp.id)) {
-      plotPointOrders.set(pp.id, undefined);
+  // Set undefined for unattached StoryBeats
+  for (const sb of getNodesByType<StoryBeat>(graph, 'StoryBeat')) {
+    if (!storyBeatOrders.has(sb.id)) {
+      storyBeatOrders.set(sb.id, undefined);
     }
     // Generate update op if order changed
-    const newOrder = plotPointOrders.get(pp.id);
-    if (pp.order_index !== newOrder) {
+    const newOrder = storyBeatOrders.get(sb.id);
+    if (sb.order_index !== newOrder) {
       ops.push({
         op: 'UPDATE_NODE',
-        id: pp.id,
+        id: sb.id,
         set: newOrder !== undefined ? { order_index: newOrder } : {},
         unset: newOrder === undefined ? ['order_index'] : [],
       });

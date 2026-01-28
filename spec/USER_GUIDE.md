@@ -139,10 +139,8 @@ The Workspace tab is the main editing environment. It combines coverage tracking
 │ STORY MAP    │ MAIN CONTENT                                 │
 │              │                                              │
 │ Foundations  │ (Changes based on Story Map selection)       │
-│ ├─ Premise   │                                              │
-│ ├─ Genre/... │ ┌─────────┬─────────────────┬──────────────┐ │
-│ ├─ Setting   │ │ Node    │ Node Detail     │ Input Panel  │ │
-│ ├─ Chars     │ │ List    │ Panel           │              │ │
+│ ├─ Story Ctx │ ┌─────────┬─────────────────┬──────────────┐ │
+│ ├─ Chars     │ │ Node    │ Node Detail     │ Input Panel  │ │
 │ ├─ Locations │ │         │                 │ [Extract]    │ │
 │ └─ Objects   │ │         │                 │              │ │
 │              │ │         │ [Edit] [Delete] │              │ │
@@ -155,7 +153,7 @@ The Workspace tab is the main editing environment. It combines coverage tracking
 
 ### Key Features
 
-- **Premise Panel**: Card-based editing UI for the story's core premise
+- **Story Context Editor**: Structured editing for constitution and guidelines
 - **Elements Board**: Card-based UI for Characters, Locations, and Objects
 - **Relationship Display**: Human-readable node names in edge visualization
 - **Inline Editing**: Direct field editing with cascading name updates
@@ -309,9 +307,7 @@ The **Story Map** is the left navigation panel in the Workspace. It shows all st
 ```
 Story Map
 ├── Foundations
-│   ├── Premise         [========  ] 1/1  ✓
-│   ├── Genre/Tone      [          ] 0/1
-│   ├── Setting         [====      ] 1/2
+│   ├── Story Context   [====      ] updated
 │   ├── Characters      [======    ] 3/5
 │   ├── Locations       [====      ] 2/4
 │   └── Objects         [===       ] 1/3
@@ -357,47 +353,31 @@ Story Map
 
 ## Foundations Categories
 
-The Foundations section contains the core building blocks of your story.
+The Foundations section contains the core creative direction and key elements of your story.
 
-### Premise
+### Story Context
 
-The central concept of your story.
+Single source of truth for creative direction.
 
-- **Expected**: 1 premise per story
-- **Fields**: logline, concept, hook, notes
-- **Gaps**: "Missing Premise" if none exists
-
-### Genre/Tone
-
-The genre classification and tonal qualities.
-
-- **Expected**: 1 GenreTone node per story
-- **Fields**: genre, secondary_genre, tone, tone_description, conventions
-- **Gaps**: "Missing GenreTone" if none exists
-
-### Setting
-
-The world and time period of your story.
-
-- **Expected**: At least 1 Setting
-- **Fields**: name, description, time_period, atmosphere
-- **Related**: Locations connect to Settings via PART_OF edges
+- **Constitution**: logline, premise, genre, setting, thematicPillars, hardRules, toneEssence, banned
+- **Operational**: softGuidelines (tagged per task), workingNotes
+- **Editing**: Use the StoryContext Editor to update constitution and guidelines; changes to constitution update the cached system prompt
 
 ### Characters
 
 The people in your story.
 
-- **Fields**: name, description, archetype, status
-- **Progress**: Based on character completeness
-- **Gaps**: Character-specific issues from lint rules
+ - **Fields**: name, description, archetype, status
+ - **Progress**: Based on character completeness
+ - **Gaps**: Character-specific issues from lint rules
 
 ### Locations
 
 Specific places where scenes occur.
 
-- **Fields**: name, description, parent_location_id
-- **Related**: Connect to Settings via PART_OF edges
-- **Gaps**: Location without Setting
+- **Fields**: name, description, parent_location_id, tags
+- **Hierarchy**: Optional parent/child relationships
+- **Note**: Global Setting lives in StoryContext; there is no Setting node
 
 ### Objects
 
@@ -481,9 +461,6 @@ The **Node Editor** allows direct modification of committed graph nodes within t
 
 | Node Type | Editable Fields |
 |-----------|-----------------|
-| **Premise** | logline, concept, hook, notes |
-| **Setting** | name, description, time_period, atmosphere, notes |
-| **GenreTone** | genre, secondary_genre, tone, tone_description, conventions, notes |
 | **Beat** | guidance, notes, status |
 | **Scene** | title, heading, scene_overview, mood, int_ext, time_of_day, status |
 | **Character** | name, description, archetype, status |
@@ -582,8 +559,7 @@ Choose the relationship type based on the current node:
 
 | Edge Type | Source → Target |
 |-----------|-----------------|
-| **PART_OF** | Location → Setting |
-| **SET_IN** | Scene → Setting |
+| **PARENT_OF** | Location → Location (hierarchy) |
 | **SATISFIED_BY** | StoryBeat → Scene |
 | **ALIGNS_WITH** | StoryBeat → Beat |
 | **HAS_CHARACTER** | Scene → Character |
@@ -676,9 +652,7 @@ Found in the right column of the FoundationsPanel, visible when any category is 
 | Type | Result |
 |------|--------|
 | **Auto-detect** | System determines best extraction type |
-| **Premise** | Extract story premise/logline |
-| **Setting** | Extract world/time period setting |
-| **GenreTone** | Extract genre and tone |
+| **Story Context** | Extract constitution fields and guidelines |
 | **Character** | Extract character nodes |
 | **Location** | Extract location nodes |
 | **Scene** | Extract scene nodes |
@@ -734,8 +708,8 @@ Soft rules check completeness. They warn but don't block commits.
 
 | Rule | Description |
 |------|-------------|
-| **Story Has Premise** | Story should have a Premise node with logline |
-| **Location Has Setting** | Location should be part of a Setting |
+| **Story Has Logline** | StoryContext.constitution.logline should be set |
+| **Location Tagged** | Locations should include a descriptive tag or parent |
 | **Scene Has Character** | Scene should have at least one character assigned |
 | **Scene Has Location** | Scene should have a location assigned |
 | **Scene Has StoryBeat** | Scene should be connected to a StoryBeat |

@@ -19,7 +19,7 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ## 2. Node Types
 
-### A. WORKFLOW / META NODES (4)
+### A. WORKFLOW / META NODES (2)
 
 ---
 
@@ -45,47 +45,7 @@ The system prioritizes **structural scaffolding (Save the Cat + Film Crit Hulk 5
 
 ---
 
-### 2) `MoveCluster`
-**Purpose:** A batch of alternative narrative proposals generated from a base version
-
-**Required:**
-- `id`
-- `base_story_version_id`
-- `created_at`
-- `title`
-
-**Optional:**
-- `description`
-- `cluster_type` (`STRUCTURE`, `SCENE_LIST`, `CHARACTER`)
-- `target_open_question_ids[]`
-- `status` (`PROPOSED`, `ARCHIVED`)
-
-**Active Phase:** Outline
-
----
-
-### 3) `NarrativeMove`
-**Purpose:** A single candidate narrative change
-
-**Required:**
-- `id`
-- `cluster_id`
-- `patch_id`
-- `title`
-- `rationale`
-- `created_at`
-
-**Optional:**
-- `expected_effects[]`
-- `resolves_open_question_ids[]`
-- `introduces_open_question_ids[]`
-- `confidence`
-- `status` (`PROPOSED`, `ACCEPTED`, `REJECTED`)
-- `human_edits`
-
-**Active Phase:** Outline
-
----
+// Legacy MoveCluster/NarrativeMove removed. Proposals are handled as NarrativePackages in staging.
 
 ### 4) `Patch`
 **Purpose:** Declarative diff applied to the graph
@@ -169,7 +129,7 @@ These foundational context concepts have been consolidated into the structured `
 - `order_index`
 
 **Deprecated:**
-- `beat_id` *(use SATISFIED_BY edge to PlotPoint instead)*
+- `beat_id` *(use SATISFIED_BY edge to StoryBeat instead)*
 
 **Optional:**
 - `int_ext`
@@ -238,7 +198,7 @@ These foundational context concepts have been consolidated into the structured `
 
 ---
 
-### 13) `PlotPoint`
+### 13) `StoryBeat`
 **Purpose:** Writer-declared "this must happen" unit of story causality
 
 **Required:**
@@ -261,9 +221,9 @@ These foundational context concepts have been consolidated into the structured `
 - `ownerId`
 
 **Notes:**
-- Plot points can exist before scenes are created
+- Story beats can exist before scenes are created
 - They represent narrative promises that must be fulfilled
-- Can align to STC beats via `ALIGNS_WITH` edge
+- Align to STC beats via `ALIGNS_WITH` edge
 - Fulfilled by one or more scenes via `SATISFIED_BY` edge
 - Form causal chains via `PRECEDES` edge (must be DAG)
 
@@ -309,11 +269,11 @@ These foundational context concepts have been consolidated into the structured `
 - `createdAt`
 
 **Optional:**
-- `suggestedType` (`PlotPoint`, `Scene`, `Character`, `Location`, `Object`)
+- `suggestedType` (`StoryBeat`, `Scene`, `Character`, `Location`, `Object`)
 
 **Notes:**
 - Ideas live in the "Unassigned" area of the Outline view
-- Can be promoted to a concrete node type (PlotPoint, Scene, etc.)
+- Can be promoted to a concrete node type (StoryBeat, Scene, etc.)
 - Allows capturing creative thoughts without immediately committing to structure
 - When promoted, the Idea is deleted and a new node of the target type is created
 
@@ -362,12 +322,12 @@ Evolving guidance that the AI receives selectively based on the current task.
 ## 3. Relationships (Edges)
 
 ### Structure & Realization
-- `Scene -[FULFILLS]-> Beat` *(deprecated - use PlotPoint edges instead)*
+- `Scene -[FULFILLS]-> Beat` *(deprecated - use StoryBeat edges instead)*
 - `Beat -[REALIZED_BY]-> Scene` *(derived, deprecated)*
 
 **Preferred hierarchy (v1.1+):**
-- `PlotPoint -[ALIGNS_WITH]-> Beat` *(PlotPoint aligns to structural beat)*
-- `PlotPoint -[SATISFIED_BY]-> Scene` *(Scene realizes the PlotPoint)*
+- `StoryBeat -[ALIGNS_WITH]-> Beat` *(StoryBeat aligns to structural beat)*
+- `StoryBeat -[SATISFIED_BY]-> Scene` *(Scene realizes the StoryBeat)*
 
 ### Participation & Setting
 - `Scene -[HAS_CHARACTER]-> Character`
@@ -379,17 +339,14 @@ Evolving guidance that the AI receives selectively based on the current task.
 - `CharacterArc -[HAS_TURN_IN]-> Scene`
 - `Character -[HAS_ARC]-> CharacterArc`
 
-### PlotPoint
-- `PlotPoint -[ALIGNS_WITH]-> Beat` *(optional alignment to STC beat)*
-- `PlotPoint -[SATISFIED_BY]-> Scene` *(with order property)*
-- `PlotPoint -[PRECEDES]-> PlotPoint` *(causal chain, must be DAG)*
-- `PlotPoint -[ADVANCES]-> CharacterArc`
+### StoryBeat
+- `StoryBeat -[ALIGNS_WITH]-> Beat` *(optional alignment to STC beat)*
+- `StoryBeat -[SATISFIED_BY]-> Scene` *(with order property)*
+- `StoryBeat -[PRECEDES]-> StoryBeat` *(causal chain, must be DAG)*
+- `StoryBeat -[ADVANCES]-> CharacterArc`
 
 ### Workflow
 - `StoryVersion -[HAS]-> Beat/Scene/Character/...`
-- `MoveCluster -[BASED_ON]-> StoryVersion`
-- `NarrativeMove -[PART_OF]-> MoveCluster`
-- `NarrativeMove -[HAS_PATCH]-> Patch`
 - `Patch -[APPLIES_TO]-> StoryVersion`
 
 ---
@@ -416,17 +373,17 @@ Evolving guidance that the AI receives selectively based on the current task.
 - **CharacterArc exists, no turn_refs**
   → `ArcUngrounded(character_arc_id)`
 
-### PlotPoint (hard rules - block commit)
+### StoryBeat (hard rules - block commit)
 - **PRECEDES edges form a cycle**
-  → `PP_DAG_NO_CYCLES` *(no auto-fix)*
+  → `SB_DAG_NO_CYCLES` *(no auto-fix)*
 - **Multiple SATISFIED_BY edges have same order**
-  → `PP_ORDER_UNIQUE` *(auto-fix: reindex)*
-- **PlotPoint.act mismatches aligned Beat.act**
-  → `PP_ACT_ALIGNMENT` *(auto-fix: update act)*
+  → `SB_ORDER_UNIQUE` *(auto-fix: reindex)*
+- **StoryBeat.act mismatches aligned Beat.act**
+  → `SB_ACT_ALIGNMENT` *(auto-fix: update act)*
 
-### PlotPoint (soft rules - warnings)
-- **Approved PlotPoint has no SATISFIED_BY scenes**
-  → `PP_EVENT_REALIZATION` *(Draft)*
+### StoryBeat (soft rules - warnings)
+- **Approved StoryBeat has no SATISFIED_BY scenes**
+  → `SB_EVENT_REALIZATION` *(Draft)*
 
 ### Context Layer (soft rules - warnings)
 - **StoryContext.constitution is missing required fields (logline, premise, genre)**
@@ -437,8 +394,8 @@ Evolving guidance that the AI receives selectively based on the current task.
 ## 5. Notes & Known v1 Limitations
 
 - No explicit `StateChange` node (deferred to v2)
-- Causality captured via `PlotPoint` nodes and `PRECEDES` edges
-- PlotPoints represent writer intent; scenes realize that intent via `SATISFIED_BY`
+- Causality captured via `StoryBeat` nodes and `PRECEDES` edges
+- StoryBeats represent writer intent; scenes realize that intent via `SATISFIED_BY`
 - DialogueLine deferred; notable dialogue stored on Scene
 - Conflicts, themes, and motifs are captured as prose in Story Context, not as graph nodes
 - Structure is enforced as an attractor, not a gate

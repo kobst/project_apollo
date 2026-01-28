@@ -194,7 +194,7 @@ export type GenerationDepth = 'narrow' | 'medium' | 'wide';
 export type GenerationCount = 'few' | 'standard' | 'many';
 
 export interface GenerationEntryPoint {
-  type: 'beat' | 'plotPoint' | 'character' | 'gap' | 'idea' | 'naked';
+  type: 'beat' | 'storyBeat' | 'character' | 'gap' | 'idea' | 'naked';
   targetId?: string;
   targetData?: Record<string, unknown>;
 }
@@ -493,7 +493,7 @@ export function serializeGaps(gaps: Gap[]): string {
 
   // Group by tier
   const byTier = groupBy(gaps, g => g.tier);
-  const tierOrder = ['premise', 'foundations', 'structure', 'plotPoints', 'scenes'];
+  const tierOrder = ['premise', 'foundations', 'structure', 'storyBeats', 'scenes'];
 
   for (const tier of tierOrder) {
     const tierGaps = byTier.get(tier);
@@ -536,7 +536,7 @@ function serializeStateSummary(graph: GraphState): string {
   const lines: string[] = [];
   const displayOrder = [
     'Character', 'Location', 'Object',
-    'Beat', 'PlotPoint', 'Scene',
+    'Beat', 'StoryBeat', 'Scene',
     'CharacterArc', 'Idea'
   ];
 
@@ -561,7 +561,7 @@ function serializeNodesByType(graph: GraphState, maxNodes: number): string {
     { header: 'Locations', types: ['Location'] },
     { header: 'Objects', types: ['Object'] },
     { header: 'Structure (Beats)', types: ['Beat'] },
-    { header: 'Plot Points', types: ['PlotPoint'] },
+    { header: 'Story Beats', types: ['StoryBeat'] },
     { header: 'Scenes', types: ['Scene'] },
     { header: 'Character Arcs', types: ['CharacterArc'] },
     { header: 'Ideas (Unassigned)', types: ['Idea'] },
@@ -1527,7 +1527,7 @@ export function buildInterpretationPrompt(params: InterpretationParams): string 
 - **Character**: A person or entity with agency in the story
 - **Location**: A physical space where scenes can occur
 - **Object**: A significant prop or item with narrative relevance
-- **PlotPoint**: A narrative event that must happen (story causality)
+- **StoryBeat**: A narrative event that must happen (story causality)
 - **Scene**: A unit of dramatic action (heading + overview)
 - **Idea**: An unassigned creative concept (use when uncertain)
 - **Story Context addition**: Thematic/directional content (themes, constraints, motifs)
@@ -1634,7 +1634,7 @@ ${direction ? `## User Direction\n\n"${direction}"\n` : ''}
 - **Character**: name, description, archetype, traits[]
 - **Location**: name, description, parent_location_id
 - **Object**: name, description
-- **PlotPoint**: title, summary, intent (plot|character|tone), priority, stakes_change
+- **StoryBeat**: title, summary, intent (plot|character|tone), priority, stakes_change
 - **Scene**: heading, scene_overview, order_index, mood, key_actions[]
 
 ## Available Edge Types
@@ -1642,10 +1642,10 @@ ${direction ? `## User Direction\n\n"${direction}"\n` : ''}
 - HAS_CHARACTER: Scene → Character
 - LOCATED_AT: Scene → Location
 - FEATURES_OBJECT: Scene → Object
-- ALIGNS_WITH: PlotPoint → Beat
-- SATISFIED_BY: PlotPoint → Scene
-- PRECEDES: PlotPoint → PlotPoint (causal ordering)
-- ADVANCES: PlotPoint → CharacterArc
+- ALIGNS_WITH: StoryBeat → Beat
+- SATISFIED_BY: StoryBeat → Scene
+- PRECEDES: StoryBeat → StoryBeat (causal ordering)
+- ADVANCES: StoryBeat → CharacterArc
 - PART_OF: Location → Location (parent location)
 
 ## Output Format
@@ -1723,9 +1723,9 @@ function describeEntryPoint(entryPoint: GenerationParams['entryPoint']): string 
       return `Generate content to realize structural beat: ${entryPoint.targetId}
 ${entryPoint.targetData ? `Beat details: ${JSON.stringify(entryPoint.targetData)}` : ''}`;
 
-    case 'plotPoint':
-      return `Generate scenes and supporting elements for PlotPoint: ${entryPoint.targetId}
-${entryPoint.targetData ? `PlotPoint details: ${JSON.stringify(entryPoint.targetData)}` : ''}`;
+    case 'storyBeat':
+      return `Generate scenes and supporting elements for StoryBeat: ${entryPoint.targetId}
+${entryPoint.targetData ? `StoryBeat details: ${JSON.stringify(entryPoint.targetData)}` : ''}`;
 
     case 'character':
       return `Generate story developments featuring Character: ${entryPoint.targetId}
@@ -1952,7 +1952,7 @@ Create the following test fixtures:
 |------|-------------|
 | `empty_graph.json` | Empty graph (only Beat nodes) |
 | `sparse_graph.json` | Beats + 1-2 characters |
-| `rich_graph.json` | Multiple characters, scenes, plot points |
+| `rich_graph.json` | Multiple characters, scenes, story beats |
 | `graph_with_gaps.json` | Graph with open gaps |
 | `valid_generation_response.json` | Well-formed LLM response |
 | `malformed_response.json` | JSON with common issues |
@@ -2032,7 +2032,7 @@ function addToSection(context: string, section: string, content: string): string
 |---------|------------------|
 | `empty_graph.json` | 15 Beat nodes (always present), empty edges |
 | `sparse_graph.json` | Beats + Logline + 1 Character + 1 Location |
-| `rich_graph.json` | Full example: PlotPoints, Scenes, Edges, CharacterArcs |
+| `rich_graph.json` | Full example: StoryBeats, Scenes, Edges, CharacterArcs |
 | `graph_with_gaps.json` | Use `computeCoverage()` to derive realistic gaps |
 | `valid_generation_response.json` | Well-formed 3-package response |
 | `malformed_response.json` | Trailing commas, single quotes, code block wrapped |

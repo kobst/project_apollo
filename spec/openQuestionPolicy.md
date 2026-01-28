@@ -1,12 +1,12 @@
-# OpenQuestion → Cluster Generation Policy (v1)
+# OpenQuestion → Package Generation Policy (v1)
 
-This document defines how **OpenQuestions (OQs)** are transformed into **clusters of NarrativeMoves** in the screenplay knowledge graph system.
+This document defines how **OpenQuestions (OQs)** drive generation of **NarrativePackages** staged for review and merge.
 
 The policy reflects the core philosophy:
 - Structure (STC + 5-Act) is the primary attractor
 - Exploration is breadth-first, not prescriptive
 - Humans choose directions; the system samples futures
-- Clusters represent *directions*, not “next steps”
+- Packages represent alternative directions; users choose what to merge
 
 ---
 
@@ -17,11 +17,11 @@ A **deterministically derived gap** in the knowledge graph, emitted by schema ru
 
 OQs do not prescribe order. They signal *areas of opportunity*.
 
-### Cluster
-A **bundle of alternative NarrativeMoves** that explore one direction (usually centered on one primary OQ).
+### Proposal Session
+An active generation session that contains a set of alternative NarrativePackages.
 
-### NarrativeMove
-A **small, reversible patch** (KG diff) proposing a possible advance.
+### NarrativePackage
+A staged, reversible bundle of changes (nodes/edges + impact) proposed as one option.
 
 ---
 
@@ -64,79 +64,45 @@ To avoid "one cluster per OQ", OQs are grouped via group_key.
 - CHARACTER:ARC:<character_id>
 - CHARACTER:DETAIL:<character_id>
 
-Each cluster corresponds to one group_key.
+Each proposal session is typically scoped to one group_key.
 
-## 4. Cluster Selection Policy (Frontier Construction)
+## 4. Session Selection Policy (Frontier Construction)
 
 ### Hard Limits (v1 defaults)
-- Clusters per cycle: 3–6 (default: 4)
-- Moves per cluster: 5–12 (default: 8)
+- Sessions per cycle: 1 active per user action
+- Packages per session: 3–8 (default: 3)
 
 ### Structural Bias (non-negotiable)
 When available:
 - ≥2 clusters MUST come from STRUCTURE domain
 
 ### Fill Strategy
-After structural clusters:
-- 1 cluster from CHARACTER (if available)
+Bias toward STRUCTURE when gaps exist; otherwise CHARACTER/SCENE quality.
 
-## 5. Cluster Schema
+## 5. Proposal Session Schema
 
 ```json
-MoveCluster {
-  id: string
-  base_story_version_id: string
-  cluster_type: ClusterType
-  title: string
-  primary_open_question_id: string
-  supporting_open_question_ids: string[]
-  scope_budget: ScopeBudget
+GenerationSession {
+  id: string,
+  story_id: string,
+  entry_point: { type: string, target_id?: string },
+  initial_params: { depth: string, count: string, direction?: string },
+  packages: NarrativePackage[],
+  status: 'active' | 'accepted' | 'abandoned',
+  accepted_package_id?: string
 }
 ```
 
-### ClusterType
-- STRUCTURE
-- SCENE_LIST
-- SCENE_QUALITY
-- CHARACTER
+## 6. Budgets (Depth & Count)
 
-## 6. Scope Budgets (Critical Control Mechanism)
+Budgets are specified via depth (narrow/medium/wide) and count (few/standard/many) and enforced in the AI layer (see aiimplementationplan.md).
 
-Every cluster defines how far a move is allowed to go.
+## 7. NarrativePackage Schema
 
-```json
-ScopeBudget {
-  max_ops_per_move: number
-  max_new_nodes_per_move: number
-  allowed_node_types: string[]
-}
-```
+See aiIntegration.md for the full NarrativePackage structure (changes, edges, impact, lineage).
+## 8. Diversity Policy (Inside a Session)
 
-### Default Budgets by Cluster Type
-
-| Cluster Type | max_ops | max_nodes | Allowed Nodes |
-|---|:---:|:---:|---|
-| STRUCTURE (BeatUnrealized) | 6 | 2 | Scene, Beat |
-| SCENE_LIST (Unplaced) | 5 | 1 | Scene |
-| SCENE_QUALITY | 4 | 0 | Scene |
-| CHARACTER (Arc) | 6 | 1 | CharacterArc |
-
-## 7. NarrativeMove Schema
-
-```json
-NarrativeMove {
-  id: string
-  cluster_id: string
-  patch_id: string
-  title: string
-  rationale: string
-  expected_effects: string[]
-  move_style_tags: string[]
-}
-```
-## 8. Diversity Policy (Inside a Cluster)
-
-Moves within a cluster MUST vary along at least 2 of the following axes:
+Packages within a session MUST vary along at least 2 of the following axes:
 
 ### Diversity Axes
 - Mechanism (reveal, betrayal, loss, decision)
@@ -145,41 +111,38 @@ Moves within a cluster MUST vary along at least 2 of the following axes:
 - Structural emphasis (entry, midpoint, escalation)
 - Thematic resonance (optional link to Theme)
 
-Each move includes:
+Each package includes:
 
 ```json
-move_style_tags: ["betrayal", "protagonist-driven", "bleak"]
+style_tags: ["betrayal", "protagonist-driven", "bleak"]
 ```
 
-Duplicate tag sets are disallowed within the same cluster.
+Duplicate tag sets are disallowed within the same session.
 
 ## 9. Acceptance & Collapse Semantics
 
 User may:
-- accept one move
-- accept multiple moves in one cluster
-- accept moves across clusters
+- accept one package (per session)
+- refine a selected package and accept a child
 
 System behavior:
-1. Merge selected patches
-2. Validate merged patch
-3. If conflicts:
-   - emit ConflictFlags
-   - propose 2–3 fix-moves
+1. Convert selected package to Patch
+2. Validate against current graph; run lint pre-commit
+3. Optionally apply auto-fix transforms
 4. On success → commit new StoryVersion
 
-Clusters remain immutable and reusable for branching.
+Sessions remain immutable and reusable for branching until discarded.
 
-## 10. Default Cluster Sets by Story Maturity
+## 10. Default Session Entry Points by Story Maturity
 
 ### Early (Sparse Graph)
-- STRUCTURE – Populate key beats
+- STRUCTURE – Populate key beats (StoryBeats)
 - STRUCTURE – Place existing scenes
 - CHARACTER – Define main characters
 
 ### Mid (Structure Mostly Present)
 - STRUCTURE – Strengthen weak beats
-- SCENE_LIST – Fill Act 2 escalation
+- SCENES – Fill Act 2 escalation
 - CHARACTER – Arc turning points
 
 ### Late (Polish)
@@ -188,6 +151,6 @@ Clusters remain immutable and reusable for branching.
 
 ## 11. One-Line Summary
 
-OpenQuestions define the search space; clusters sample promising directions; scope budgets prevent runaway changes; human choice collapses the story into its next state.
+OpenQuestions define the search space; sessions produce diverse packages under budgets; human choice collapses the story into its next state.
 
 This policy is the operational core of the system.

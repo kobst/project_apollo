@@ -27,24 +27,24 @@ The coverage pyramid consists of five tiers, ordered from most fundamental (top)
 
 | Tier | Label | What's Counted | Coverage Formula |
 |------|-------|----------------|------------------|
-| `premise` | Premise | Premise nodes | Has Premise? 1/1 or 0/1 |
-| `foundations` | Foundations | Setting, GenreTone, Character, Location, Object | Count of present types / 5 |
+| `storyContext` | Story Context | Constitution logline | Logline set? 1/1 or 0/1 |
+| `foundations` | Foundations | Character, Location, Object | Count of present types / 3 |
 | `structure` | Structure | Distinct Beat types | Unique beat_types / 15 |
-| `plotPoints` | Plot Points | Active PlotPoints with SATISFIED_BY edges | Linked PPs / total active PPs |
+| `storyBeats` | Story Beats | Active StoryBeats with SATISFIED_BY edges | Linked SBs / total active SBs |
 | `scenes` | Scenes | Scenes with Character + Location | Complete scenes / total scenes |
 
 ### 1.1 Tier Computation Details
 
-**Premise Tier:**
-- `covered`: 1 if any Premise node exists, 0 otherwise
+**Story Context Tier:**
+- `covered`: 1 if `StoryContext.constitution.logline` is non-empty, 0 otherwise
 - `total`: 1
 - `percent`: 0% or 100%
 
 **Foundations Tier:**
-- Tracks presence of 5 node types: Setting, GenreTone, Character, Location, Object
+- Tracks presence of 3 node types: Character, Location, Object
 - `covered`: Count of types that have at least one node
-- `total`: 5
-- `percent`: (covered / 5) * 100
+- `total`: 3
+- `percent`: (covered / 3) * 100
 
 **Structure Tier:**
 - Based on Save the Cat 15-beat structure
@@ -52,12 +52,12 @@ The coverage pyramid consists of five tiers, ordered from most fundamental (top)
 - `total`: 15
 - `percent`: (covered / 15) * 100
 
-**Plot Points Tier:**
+**Story Beats Tier:**
 - Active = proposed or approved (excludes deprecated)
-- A plot point is "covered" if it has a SATISFIED_BY edge from a Scene
-- `covered`: Active PPs with SATISFIED_BY edges
-- `total`: All active PPs
-- `percent`: (covered / total) * 100, or 0% if no active PPs
+- A story beat is "covered" if it has a SATISFIED_BY edge from a Scene
+- `covered`: Active StoryBeats with SATISFIED_BY edges
+- `total`: All active StoryBeats
+- `percent`: (covered / total) * 100, or 0% if no active StoryBeats
 
 **Scenes Tier:**
 - A scene is "complete" if it has both HAS_CHARACTER and LOCATED_AT edges
@@ -110,15 +110,15 @@ interface Gap {
 
 Lint rule violations are mapped to coverage tiers:
 
-### Premise Tier
+### Story Context Tier
 | Rule ID | Label |
 |---------|-------|
-| `STORY_HAS_PREMISE` | Missing Premise |
+| `STORY_HAS_LOGLINE` | Missing Logline |
 
 ### Foundations Tier
 | Rule ID | Label |
 |---------|-------|
-| `LOCATION_HAS_SETTING` | Location Without Setting |
+| — | — |
 
 ### Structure Tier
 | Rule ID | Label |
@@ -126,13 +126,13 @@ Lint rule violations are mapped to coverage tiers:
 | `STC_BEAT_ORDERING` | Beat Order Issue |
 | `SCENE_ACT_BOUNDARY` | Scene Act Mismatch |
 
-### Plot Points Tier
+### Story Beats Tier
 | Rule ID | Label |
 |---------|-------|
-| `PP_EVENT_REALIZATION` | Unrealized PlotPoint |
-| `PP_DAG_NO_CYCLES` | PlotPoint Cycle Detected |
-| `PP_ORDER_UNIQUE` | Duplicate PlotPoint Order |
-| `PP_ACT_ALIGNMENT` | PlotPoint Act Mismatch |
+| `SB_EVENT_REALIZATION` | Unrealized StoryBeat |
+| `SB_DAG_NO_CYCLES` | StoryBeat Cycle Detected |
+| `SB_ORDER_UNIQUE` | Duplicate StoryBeat Order |
+| `SB_ACT_ALIGNMENT` | StoryBeat Act Mismatch |
 
 ### Scenes Tier
 | Rule ID | Label |
@@ -140,7 +140,7 @@ Lint rule violations are mapped to coverage tiers:
 | `SCENE_ORDER_UNIQUE` | Duplicate Scene Order |
 | `SCENE_HAS_CHARACTER` | Scene Without Character |
 | `SCENE_HAS_LOCATION` | Scene Without Location |
-| `SCENE_HAS_PLOTPOINT` | Unlinked Scene |
+| `SCENE_HAS_STORYBEAT` | Unlinked Scene |
 | `EDGE_ORDER_UNIQUE` | Duplicate Edge Order |
 
 ---
@@ -176,10 +176,10 @@ interface TierSummary {
   "success": true,
   "data": {
     "summary": [
-      { "tier": "premise", "label": "Premise", "covered": 0, "total": 1, "percent": 0 },
-      { "tier": "foundations", "label": "Foundations", "covered": 3, "total": 5, "percent": 60 },
+      { "tier": "storyContext", "label": "Story Context", "covered": 1, "total": 1, "percent": 100 },
+      { "tier": "foundations", "label": "Foundations", "covered": 2, "total": 3, "percent": 66 },
       { "tier": "structure", "label": "Structure", "covered": 15, "total": 15, "percent": 100 },
-      { "tier": "plotPoints", "label": "Plot Points", "covered": 0, "total": 2, "percent": 0 },
+      { "tier": "storyBeats", "label": "Story Beats", "covered": 0, "total": 2, "percent": 0 },
       { "tier": "scenes", "label": "Scenes", "covered": 0, "total": 3, "percent": 0 }
     ],
     "gaps": [
@@ -207,10 +207,10 @@ interface TierSummary {
 Left navigation panel in Workspace showing all categories:
 
 **Foundations Section:**
-- Premise, Genre/Tone, Setting, Characters, Locations, Objects
+- Story Context, Characters, Locations, Objects
 
 **Outline Section:**
-- Structure Board (beat view), Plot Points, Scenes
+- Structure Board (beat view), Story Beats, Scenes
 
 Each category row displays:
 - Label

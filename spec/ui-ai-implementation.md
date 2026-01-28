@@ -87,7 +87,7 @@ deleteSession: (storyId: string) =>
   DELETE<{ abandoned: boolean }>(`/stories/${storyId}/session`),
 
 acceptPackage: (storyId: string, packageId: string) =>
-  POST<AcceptPackageResponseData>(`/stories/${storyId}/accept-package`, { packageId }),
+  POST<AcceptPackageResponseData>(`/stories/${storyId}/propose/commit`, { packageId }),
 ```
 
 **File:** `packages/ui/src/api/types.ts`
@@ -202,10 +202,10 @@ Display a single package with its contents organized by hierarchy.
 │   + Location: Evidence Room                                 │
 │                                                             │
 │ OUTLINE                                                     │
-│   + PlotPoint: Mike discovers betrayal                      │
+│   + StoryBeat: Mike discovers betrayal                      │
 │     └─ ALIGNS_WITH → Midpoint                              │
 │   + Scene: INT. EVIDENCE ROOM - NIGHT                       │
-│     └─ SATISFIED_BY → PlotPoint                            │
+│     └─ SATISFIED_BY ← StoryBeat                            │
 │     └─ HAS_CHARACTER → Mike, Torres                        │
 │                                                             │
 │ IMPACT                                                      │
@@ -322,7 +322,7 @@ Regenerate Mode:
 **OutlineView - Beat entry point:**
 Add "Generate" button to EmptyBeatSlot or Beat with no scenes.
 
-**NodeDetailPanel - Character/PlotPoint entry point:**
+**NodeDetailPanel - Character/StoryBeat entry point:**
 Add "Generate for this..." action button.
 
 **GapList - Gap entry point:**
@@ -403,7 +403,7 @@ Display interpretation results with options:
 │ └────────────────────────────────────────────────────────────┘ │
 │                                                                │
 │ ALTERNATIVES                                                   │
-│ • "Add confrontation as PlotPoint instead" (78%)              │
+│ • "Add confrontation as StoryBeat instead" (78%)              │
 │ • "Add to Story Context as conflict theme" (65%)              │
 └─────────────────────────────────────────────────────────────────┘
 ```

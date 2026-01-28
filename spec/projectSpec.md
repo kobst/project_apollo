@@ -92,108 +92,9 @@ For each node:
 
 ---
 
-## 1.2 MoveCluster
+## 1.2 Proposals (staged, not graph nodes)
 
-### Fields
-| Field | Type | Req? | Description |
-|---|---|:---:|---|
-| id | string | ✅ | Cluster id |
-| base_story_version_id | string | ✅ | StoryVersion used as base |
-| created_at | string | ✅ | Generation time |
-| title | string | ✅ | Cluster display title |
-| description | string | ❌ | Optional description |
-| cluster_type | string (enum) | ❌ | Category of cluster |
-| primary_open_question_id | string | ❌ | Primary OQ id (if generated from OQs) |
-| supporting_open_question_ids | string[] | ❌ | Supporting OQs |
-| scope_budget | object | ✅ | Scope budget controlling move size |
-| status | string (enum) | ❌ | PROPOSED/ARCHIVED |
-
-### Enums
-- `cluster_type`: STRUCTURE, SCENE_LIST, SCENE_QUALITY, CHARACTER
-- `status`: PROPOSED, ARCHIVED
-
-### ScopeBudget Schema (required)
-```json
-{
-  "max_ops_per_move": "integer (1..20)",
-  "max_new_nodes_per_move": "integer (0..10)",
-  "allowed_node_types": "string[] (subset of node types)"
-}
-```
-
-### Constraints
-- `id` unique.
-- `base_story_version_id` must exist.
-- `title` length 1–120.
-- `scope_budget.max_ops_per_move` 1–20.
-- `scope_budget.max_new_nodes_per_move` 0–10.
-
-### Example
-```json
-{
-  "type": "MoveCluster",
-  "id": "mc_01J0XYZDEF",
-  "base_story_version_id": "sv_01J0XYZABC",
-  "created_at": "2026-01-01T03:25:00Z",
-  "title": "Catalyst options: Medical crisis",
-  "cluster_type": "STRUCTURE",
-  "primary_open_question_id": "oq_01J0OQCATA",
-  "supporting_open_question_ids": [],
-  "scope_budget": {
-    "max_ops_per_move": 6,
-    "max_new_nodes_per_move": 2,
-    "allowed_node_types": ["Scene"]
-  },
-  "status": "PROPOSED"
-}
-```
-
----
-
-## 1.3 NarrativeMove
-
-### Fields
-| Field | Type | Req? | Description |
-|---|---|:---:|---|
-| id | string | ✅ | Move id |
-| cluster_id | string | ✅ | Parent MoveCluster id |
-| patch_id | string | ✅ | Patch id |
-| title | string | ✅ | Short title |
-| rationale | string | ✅ | Why this move helps |
-| created_at | string | ✅ | Creation time |
-| expected_effects | string[] | ❌ | UX-facing expected impact |
-| move_style_tags | string[] | ❌ | Diversity enforcement tags |
-| resolves_open_question_ids | string[] | ❌ | OQs this move resolves |
-| introduces_open_question_ids | string[] | ❌ | OQs introduced |
-| confidence | number | ❌ | 0..1 |
-| status | string (enum) | ❌ | PROPOSED/ACCEPTED/REJECTED |
-| human_edits | string | ❌ | Freeform notes from user |
-
-### Enums
-- `status`: PROPOSED, ACCEPTED, REJECTED
-
-### Constraints
-- `cluster_id` must exist.
-- `patch_id` must exist.
-- `title` length 1–140.
-- `confidence` if present: 0.0–1.0.
-
-### Example
-```json
-{
-  "type": "NarrativeMove",
-  "id": "mv_01J0XYZGHI",
-  "cluster_id": "mc_01J0XYZDEF",
-  "patch_id": "patch_01J0XYZP01",
-  "title": "Catalyst: President collapses; surgeon is only qualified doctor",
-  "rationale": "Creates immediate necessity and forces the protagonist into action under pressure.",
-  "created_at": "2026-01-01T03:25:30Z",
-  "expected_effects": ["Resolves BeatUnrealized(Catalyst)", "Introduces protagonist agency"],
-  "move_style_tags": ["medical-crisis", "protagonist-driven", "ticking-clock"],
-  "status": "PROPOSED",
-  "confidence": 0.72
-}
-```
+Proposals are represented as NarrativePackages within a Generation Session and are not stored as graph nodes. See aiIntegration.md for the NarrativePackage schema and session lifecycle. Legacy MoveCluster/NarrativeMove concepts have been removed.
 
 ---
 
@@ -293,7 +194,7 @@ For each node:
 | id | string | ✅ | Scene id |
 | heading | string | ✅ | Raw scene heading |
 | scene_overview | string | ✅ | Narrative summary (v1 causal carrier) |
-| beat_id | string | ⚠️ | **DEPRECATED** - Use PlotPoint attachment instead |
+| beat_id | string | ⚠️ | **DEPRECATED** - Use StoryBeat attachment instead |
 | order_index | integer (>=1) | ❌ | Auto-computed screenplay order (see Ordering) |
 | int_ext | string (enum) | ❌ | INT/EXT/OTHER |
 | time_of_day | string | ❌ | DAY/NIGHT/UNKNOWN/freeform |
@@ -311,20 +212,20 @@ For each node:
 - `source_provenance`: USER, AI, MIXED
 
 ### Constraints
-- `beat_id` (**deprecated**): Previously required to reference a Beat. Now optional; prefer using PlotPoint attachment via SATISFIED_BY edge.
-- `order_index`: Optional integer ≥ 1. Auto-computed when Scene is attached to a PlotPoint via SATISFIED_BY edge. Undefined for unattached scenes.
+ - `beat_id` (**deprecated**): Previously required to reference a Beat. Now optional; prefer using StoryBeat attachment via SATISFIED_BY edge.
+ - `order_index`: Optional integer ≥ 1. Auto-computed when Scene is attached to a StoryBeat via SATISFIED_BY edge. Undefined for unattached scenes.
 - `scene_overview` length 20–2000 (recommended).
 
 ### Scene Ordering (Auto-computed)
-Scenes get their `order_index` automatically based on their PlotPoint attachment:
-1. Scene is attached to PlotPoint via `SATISFIED_BY` edge
-2. PlotPoint is attached to Beat via `ALIGNS_WITH` edge
-3. Order is computed: Beat position → PlotPoint order → Scene order within PlotPoint
+Scenes get their `order_index` automatically based on their StoryBeat attachment:
+1. Scene is attached to StoryBeat via `SATISFIED_BY` edge
+2. StoryBeat is attached to Beat via `ALIGNS_WITH` edge
+3. Order is computed: Beat position → StoryBeat order → Scene order within StoryBeat
 4. Unattached scenes have `order_index = undefined`
 
 ### Note on FULFILLS Edge (Deprecated)
 The `beat_id` field implicitly creates the FULFILLS relationship. This approach is **deprecated**.
-New implementations should use PlotPoints with SATISFIED_BY edges instead.
+New implementations should use StoryBeats with SATISFIED_BY edges instead.
 
 ### Example
 ```json
@@ -487,16 +388,16 @@ New implementations should use PlotPoints with SATISFIED_BY edges instead.
 
 ---
 
-## 1.11 PlotPoint
+## 1.11 StoryBeat
 
-PlotPoints are intermediate narrative units that bridge Beats and Scenes. They represent specific story points or events that must be satisfied by one or more Scenes.
+StoryBeats are intermediate narrative units that bridge Beats and Scenes. They represent specific story points or events that must be satisfied by one or more Scenes.
 
 ### Fields
 | Field | Type | Req? | Description |
 |---|---|:---:|---|
-| id | string | ✅ | PlotPoint id |
+| id | string | ✅ | StoryBeat id |
 | title | string | ✅ | Short descriptive title |
-| description | string | ❌ | Detailed description of the plot point |
+| description | string | ❌ | Detailed description of the story beat |
 | order_index | integer (>=1) | ❌ | Auto-computed based on Beat attachment |
 | status | string (enum) | ❌ | UNSATISFIED/SATISFIED |
 | notes | string | ❌ | Notes |
@@ -506,19 +407,19 @@ PlotPoints are intermediate narrative units that bridge Beats and Scenes. They r
 
 ### Constraints
 - `title` length 1–120.
-- `order_index`: Optional integer ≥ 1. Auto-computed when attached to a Beat via ALIGNS_WITH edge. Undefined for unattached PlotPoints.
+- `order_index`: Optional integer ≥ 1. Auto-computed when attached to a Beat via ALIGNS_WITH edge. Undefined for unattached StoryBeats.
 
-### PlotPoint Ordering (Auto-computed)
-PlotPoints get their `order_index` automatically based on Beat attachment:
-1. PlotPoint is attached to Beat via `ALIGNS_WITH` edge
+### StoryBeat Ordering (Auto-computed)
+StoryBeats get their `order_index` automatically based on Beat attachment:
+1. StoryBeat is attached to Beat via `ALIGNS_WITH` edge
 2. Order is determined by Beat's `position_index` (1-15 for STC beats)
-3. Multiple PlotPoints on the same Beat are ordered by: edge createdAt → PlotPoint createdAt → ID
-4. Unattached PlotPoints have `order_index = undefined`
+3. Multiple StoryBeats on the same Beat are ordered by: edge createdAt → StoryBeat createdAt → ID
+4. Unattached StoryBeats have `order_index = undefined`
 
 ### Example
 ```json
 {
-  "type": "PlotPoint",
+  "type": "StoryBeat",
   "id": "pp_01J0PP001",
   "title": "President collapses",
   "description": "The president suddenly collapses during the flight, creating the inciting incident.",
@@ -549,35 +450,35 @@ PlotPoints get their `order_index` automatically based on Beat attachment:
 |---|---|
 | Source → Target | Scene → Beat |
 | Cardinality | many-to-one |
-| Required | ⚠️ Deprecated - use PlotPoint hierarchy instead |
+| Required | ⚠️ Deprecated - use StoryBeat hierarchy instead |
 | Meaning | Scene is assigned to and realizes that Beat |
 
 **Note:** This edge is *derived* from Scene.beat_id. This approach is **deprecated**.
-New implementations should use PlotPoints with ALIGNS_WITH and SATISFIED_BY edges.
+New implementations should use StoryBeats with ALIGNS_WITH and SATISFIED_BY edges.
 
 ---
 
 ## 2.2 ALIGNS_WITH
 | Property | Value |
 |---|---|
-| Source → Target | PlotPoint → Beat |
+| Source → Target | StoryBeat → Beat |
 | Cardinality | many-to-one |
-| Required | ❌ Optional (PlotPoints may be unattached) |
-| Meaning | PlotPoint aligns with this Beat in the story structure |
+| Required | ❌ Optional (StoryBeats may be unattached) |
+| Meaning | StoryBeat aligns with this Beat in the story structure |
 
-**Note:** When a PlotPoint has an ALIGNS_WITH edge to a Beat, its `order_index` is auto-computed based on the Beat's `position_index`.
+**Note:** When a StoryBeat has an ALIGNS_WITH edge to a Beat, its `order_index` is auto-computed based on the Beat's `position_index`.
 
 ---
 
 ## 2.3 SATISFIED_BY
 | Property | Value |
 |---|---|
-| Source → Target | PlotPoint → Scene |
+| Source → Target | StoryBeat → Scene |
 | Cardinality | one-to-many |
 | Required | ❌ Optional |
-| Meaning | Scene satisfies/realizes this PlotPoint |
+| Meaning | Scene satisfies/realizes this StoryBeat |
 
-**Note:** When a Scene is attached via SATISFIED_BY, its `order_index` is auto-computed based on the PlotPoint's order and position within the PlotPoint.
+**Note:** When a Scene is attached via SATISFIED_BY, its `order_index` is auto-computed based on the StoryBeat's order and position within the StoryBeat.
 
 ---
 
@@ -774,8 +675,8 @@ When validation fails, return:
 {
   "op": "ADD_NODE",
   "node": {
-    "type": "PlotPoint",
-    "id": "pp_01J0PP001",
+    "type": "StoryBeat",
+    "id": "sb_01J0SB001",
     "title": "Hero discovers the truth",
     "status": "proposed"
   }
@@ -854,7 +755,7 @@ When validation fails, return:
   "op": "ADD_EDGE",
   "edge": {
     "type": "SATISFIED_BY",
-    "from": "pp_01J0PP001",
+    "from": "sb_01J0SB001",
     "to": "scene_01J0SC001"
   }
 }

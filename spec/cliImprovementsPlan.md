@@ -96,7 +96,7 @@ project-apollo accept mv_123 --dry-run
 Shows what would happen without committing.
 
 ### Files to Modify
-- `packages/cli/src/commands/accept.ts` - Enhanced error display + dry-run
+- `packages/cli/src/commands/commit-package.ts` - Enhanced error display + dry-run
 - `packages/cli/src/utils/errors.ts` - Add validation error formatter
 - `spec/cliGuide.md` - Document failure output
 

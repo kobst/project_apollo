@@ -89,7 +89,7 @@ typescriptinterface SectionChangeCounts {
 
 Computed from `stagedPackage` by categorizing proposed nodes:
 - **Premise**: Premise, GenreTone, Setting nodes
-- **Structure Board**: Beat, PlotPoint, Scene nodes
+- **Structure Board**: Beat, StoryBeat, Scene nodes
 - **Elements**: Character, Location, Object nodes
 - **Story Context**: ThematicConcerns, or similar context nodes
 
@@ -440,7 +440,7 @@ typescriptconst nodeFieldConfig: Record<NodeType, FieldConfig[]> = {
     { key: 'archetype', label: 'Archetype', type: 'select', options: archetypeOptions },
     { key: 'status', label: 'Status', type: 'select', options: statusOptions },
   ],
-  PlotPoint: [
+  StoryBeat: [
     { key: 'title', label: 'Title', type: 'text' },
     { key: 'summary', label: 'Summary', type: 'textarea' },
     { key: 'intent', label: 'Intent', type: 'select', options: ['PLOT', 'CHARACTER', 'TONE'] },
@@ -508,7 +508,7 @@ typescriptfunction groupProposedNodes(nodes: ProposedNode[]) {
   return {
     storyContext: nodes.filter(n => ['ThematicConcerns', 'StoryContext'].includes(n.type)),
     elements: nodes.filter(n => ['Character', 'Location', 'Object'].includes(n.type)),
-    structure: nodes.filter(n => ['PlotPoint', 'Scene', 'Beat'].includes(n.type)),
+    structure: nodes.filter(n => ['StoryBeat', 'Scene', 'Beat'].includes(n.type)),
   };
 }
 ```
@@ -529,7 +529,7 @@ Display the package's impact analysis:
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `POST /api/stories/:id/generate` | POST | Generate packages |
-| `POST /api/stories/:id/packages/:pkgId/accept` | POST | Accept package |
+| `POST /api/stories/:id/propose/commit` | POST | Commit accepted package |
 | `DELETE /api/stories/:id/packages/:pkgId` | DELETE | Reject/delete package |
 | `POST /api/stories/:id/packages/:pkgId/save` | POST | Save for later |
 
@@ -563,7 +563,7 @@ Response:
 
 Modify the accept endpoint to include edits:
 ```
-POST /api/stories/:storyId/packages/:packageId/accept
+POST /api/stories/:storyId/propose/commit
 
 Request Body:
 {
@@ -706,7 +706,7 @@ mergedGraphView recomputes with edits applied
 User clicks [Accept]
         │
         ▼
-POST /api/.../accept with edits
+POST /api/.../propose/commit with edits
         │
         ▼
 Response: new version created
@@ -746,8 +746,8 @@ WorkspaceView
 │   ├── StructureBoardView
 │   │   ├── ActRow
 │   │   │   ├── BeatColumn
-│   │   │   │   ├── PlotPointCard (committed)
-│   │   │   │   ├── ProposedPlotPointCard (inline editor)
+│   │   │   │   ├── StoryBeatCard (committed)
+│   │   │   │   ├── ProposedStoryBeatCard (inline editor)
 │   │   │   │   ├── SceneCard (committed)
 │   │   │   │   └── ProposedSceneCard (inline editor)
 │   ├── ElementsView
@@ -971,7 +971,7 @@ typescriptconst nodeSectionMapping: Record<string, Section> = {
   
   // Structure Board section
   Beat: 'structureBoard',
-  PlotPoint: 'structureBoard',
+  StoryBeat: 'structureBoard',
   Scene: 'structureBoard',
   
   // Elements section
