@@ -8,8 +8,7 @@ import { NodeDetailPanel } from './NodeDetailPanel';
 import { NodeEditor } from './NodeEditor';
 import { PatchBuilder } from './PatchBuilder';
 import { CommitPanel } from './CommitPanel';
-import { PatchPreview } from '../preview/PatchPreview';
-import { ValidationStatus } from '../preview/ValidationStatus';
+// Cluster preview components removed
 import { EditEdgeModal } from './EditEdgeModal';
 import { AddRelationModal } from './AddRelationModal';
 import { DeleteNodeModal } from './DeleteNodeModal';
@@ -33,11 +32,6 @@ export function ExploreView() {
   const {
     currentStoryId,
     status,
-    cluster,
-    clusterLoading,
-    scopedNodeId,
-    selectedMoveId,
-    preview,
     // cluster/move UI removed
     loading,
     refreshStatus,
@@ -436,8 +430,7 @@ export function ExploreView() {
   }, [selectedNodeId, nodeRelations, fullEdges]);
 
   // Check if we have a cluster for the current selected node
-  const hasClusterForNode = cluster && scopedNodeId === selectedNodeId;
-  const canAccept = selectedMoveId && preview?.validation.valid;
+  // Cluster/move UI removed
 
   if (!currentStoryId) {
     return (

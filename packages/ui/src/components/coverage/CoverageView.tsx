@@ -13,7 +13,7 @@ export function CoverageView() {
   const [error, setError] = useState<string | null>(null);
   const [selectedTier, setSelectedTier] = useState<GapTier | null>(null);
   const [typeFilter, setTypeFilter] = useState<GapType | 'all'>('all');
-  const [generatingCluster, setGeneratingCluster] = useState(false);
+  // Cluster generation removed; use propose panel instead
 
   const fetchGaps = useCallback(async () => {
     if (!currentStoryId) return;
@@ -36,22 +36,7 @@ export function CoverageView() {
     void fetchGaps();
   }, [fetchGaps]);
 
-  // Handle cluster generation for a narrative gap
-  const handleGenerateCluster = async (gapId: string) => {
-    if (!currentStoryId || generatingCluster) return;
-
-    setGeneratingCluster(true);
-    try {
-      const cluster = await api.generateCluster(currentStoryId, { gapId });
-      // TODO: Navigate to cluster view or show cluster panel
-      console.log('Generated cluster:', cluster);
-      alert(`Generated cluster "${cluster.title}" with ${cluster.moves.length} moves`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate cluster');
-    } finally {
-      setGeneratingCluster(false);
-    }
-  };
+  const handleGenerateCluster = undefined as unknown as (gapId: string) => Promise<void>;
 
   // Filter gaps by selected tier
   const filteredGaps =
@@ -116,12 +101,10 @@ export function CoverageView() {
               gaps={filteredGaps}
               selectedTier={selectedTier}
               gapType={typeFilter === 'all' ? undefined : typeFilter}
-              onGenerateCluster={handleGenerateCluster}
+              onGenerateCluster={undefined}
             />
           )}
-          {generatingCluster && (
-            <div className={styles.generating}>Generating cluster...</div>
-          )}
+          {/* Cluster generation removed */}
         </div>
       </div>
     </div>

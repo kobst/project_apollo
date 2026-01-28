@@ -94,6 +94,27 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.get('/:id/status', createStatusHandler(ctx));
   router.get('/:id/open-questions', createOQsHandler(ctx));
   // Legacy cluster/move endpoints removed in favor of propose/session workflow
+  router.all('/:id/clusters', (_req, res) => {
+    res.status(410).json({
+      success: false,
+      error: 'Endpoint removed',
+      suggestion: 'Use POST /stories/:id/propose* endpoints and /stories/:id/propose/commit',
+    });
+  });
+  router.all('/:id/moves/:moveId/preview', (_req, res) => {
+    res.status(410).json({
+      success: false,
+      error: 'Endpoint removed',
+      suggestion: 'Use POST /stories/:id/validate-package with a NarrativePackage',
+    });
+  });
+  router.all('/:id/accept', (_req, res) => {
+    res.status(410).json({
+      success: false,
+      error: 'Endpoint removed',
+      suggestion: 'Use POST /stories/:id/propose/commit with a packageId',
+    });
+  });
   router.post('/:id/input', createInputHandler(ctx));
   router.get('/:id/diff', createDiffHandler(ctx));
 

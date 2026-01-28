@@ -377,11 +377,8 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
         setLoading(true);
         setError(null);
 
-        // Pass excluded stashed idea IDs to API
-        const excludedIds = staging.excludedStashedIdeaIds.size > 0
-          ? Array.from(staging.excludedStashedIdeaIds)
-          : undefined;
-        await api.acceptPackage(storyId, packageId, excludedIds);
+        // Commit the selected package via propose/commit
+        await api.commitProposal(storyId, packageId);
 
         // Mark session as accepted
         setSession((prev) => {

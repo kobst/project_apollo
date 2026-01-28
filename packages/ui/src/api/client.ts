@@ -6,10 +6,6 @@ import type {
   APIResponse,
   StatusData,
   OpenQuestionsData,
-  ClusterData,
-  ClusterRequest,
-  PreviewData,
-  AcceptData,
   DiffData,
   LogData,
   InitRequest,
@@ -175,15 +171,7 @@ export const api = {
   getOpenQuestions: (id: string) =>
     GET<OpenQuestionsData>(`/stories/${id}/open-questions`),
 
-  // Clusters
-  generateCluster: (id: string, data: ClusterRequest) =>
-    POST<ClusterData>(`/stories/${id}/clusters`, data),
-
-  // Moves
-  previewMove: (storyId: string, moveId: string) =>
-    GET<PreviewData>(`/stories/${storyId}/moves/${moveId}/preview`),
-  acceptMoves: (id: string, moveIds: string[]) =>
-    POST<AcceptData>(`/stories/${id}/accept`, { moveIds }),
+  // Clusters/Moves removed in favor of propose/session workflow
 
   // Version History
   getDiff: (id: string, from?: string, to?: string) => {
@@ -387,15 +375,7 @@ export const api = {
   applyPackage: (storyId: string, pkg: NarrativePackage) =>
     POST<AcceptPackageResponseData>(`/stories/${storyId}/apply-package`, { package: pkg }),
 
-  /**
-   * Accept a package from a session and apply its changes to the graph
-   * @param excludedStashedIdeaIds - IDs of stashed ideas to exclude from conversion to Idea nodes
-   */
-  acceptPackage: (storyId: string, packageId: string, excludedStashedIdeaIds?: string[]) =>
-    POST<AcceptPackageResponseData>(`/stories/${storyId}/accept-package`, {
-      packageId,
-      ...(excludedStashedIdeaIds && excludedStashedIdeaIds.length > 0 ? { excludedStashedIdeaIds } : {}),
-    }),
+  // Deprecated: accept-package. Use commitProposal instead.
 
   // =========================================================================
   // Saved Packages
