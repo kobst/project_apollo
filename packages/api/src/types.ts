@@ -74,26 +74,7 @@ export interface OpenQuestionsData {
 }
 
 // =============================================================================
-// Cluster Response
-// =============================================================================
-
-export interface MoveData {
-  id: string;
-  title: string;
-  rationale: string;
-  confidence: number;
-}
-
-export interface ClusterData {
-  clusterId: string;
-  title: string;
-  clusterType: string;
-  seed: number;
-  moves: MoveData[];
-}
-
-// =============================================================================
-// Preview Response
+// Patch operation (used by extraction preview)
 // =============================================================================
 
 export interface PatchOpData {
@@ -108,18 +89,7 @@ export interface PatchOpData {
   };
 }
 
-export interface PreviewData {
-  move: MoveData;
-  patch: {
-    id: string;
-    baseVersionId: string;
-    ops: PatchOpData[];
-  };
-  validation: {
-    valid: boolean;
-    errors?: ValidationErrorDetail[];
-  };
-}
+// (legacy move preview response removed)
 
 // =============================================================================
 // Diff Response
@@ -215,19 +185,7 @@ export interface InputRequest {
   description?: string;
 }
 
-export interface ClusterRequest {
-  /** Gap ID (new unified model) - preferred */
-  gapId?: string;
-  /** @deprecated Use gapId instead */
-  oqId?: string;
-  scopeNodeId?: string;
-  count?: number;
-  seed?: number;
-}
-
-export interface AcceptRequest {
-  moveIds: string[];
-}
+// (legacy cluster/move requests removed)
 
 export interface BranchRequest {
   name: string;

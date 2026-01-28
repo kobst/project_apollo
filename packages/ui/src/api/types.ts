@@ -52,23 +52,7 @@ export interface OpenQuestionsData {
   questions: OpenQuestionData[];
 }
 
-// Clusters and Moves
-export interface MoveData {
-  id: string;
-  title: string;
-  rationale: string;
-  confidence: number;
-}
-
-export interface ClusterData {
-  clusterId: string;
-  title: string;
-  clusterType: string;
-  seed: number;
-  moves: MoveData[];
-}
-
-// Preview
+// Patch operation (used by extraction preview)
 export interface PatchOpData {
   op: string;
   type?: string;
@@ -88,18 +72,7 @@ export interface ValidationErrorDetail {
   suggested_fix?: string;
 }
 
-export interface PreviewData {
-  move: MoveData;
-  patch: {
-    id: string;
-    baseVersionId: string;
-    ops: PatchOpData[];
-  };
-  validation: {
-    valid: boolean;
-    errors?: ValidationErrorDetail[];
-  };
-}
+// (legacy move preview type removed)
 
 // Diff
 export interface NodeChange {
@@ -177,19 +150,9 @@ export interface InitRequest {
   logline: string;
 }
 
-export interface ClusterRequest {
-  /** Gap ID (new unified model) - preferred */
-  gapId?: string;
-  /** @deprecated Use gapId instead */
-  oqId?: string;
-  scopeNodeId?: string;
-  count?: number;
-  seed?: number;
-}
+// (legacy cluster request removed)
 
-export interface AcceptRequest {
-  moveIds: string[];
-}
+// (legacy move accept request removed)
 
 export interface BranchRequest {
   name: string;
@@ -227,14 +190,7 @@ export interface InitData {
 }
 
 // Accept response
-export interface AcceptData {
-  accepted: Array<{
-    moveId: string;
-    title: string;
-  }>;
-  newVersionId: string;
-  patchOpsApplied: number;
-}
+// (legacy move accept response removed)
 
 // List stories response
 export interface ListStoriesData {
