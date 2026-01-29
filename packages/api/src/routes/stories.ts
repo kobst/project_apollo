@@ -60,7 +60,6 @@ import {
   createDeleteSessionHandler,
   createConvertProposalHandler,
   createApplyPackageHandler,
-  createAcceptPackageHandler,
   createRegenerateElementHandler,
   createApplyElementOptionHandler,
   createValidatePackageHandler,
@@ -210,7 +209,7 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   // Package utilities
   router.post('/:id/proposal-to-package', createConvertProposalHandler(ctx));
   router.post('/:id/apply-package', createApplyPackageHandler(ctx));
-  router.post('/:id/accept-package', createAcceptPackageHandler(ctx));
+  // Deprecated accept-package removed; use /propose/commit
 
   // Package Editing endpoints
   router.post('/:id/regenerate-element', createRegenerateElementHandler(ctx));

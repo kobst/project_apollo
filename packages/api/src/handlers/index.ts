@@ -74,7 +74,6 @@ export {
   createDeleteSessionHandler,
   createConvertProposalHandler,
   createApplyPackageHandler,
-  createAcceptPackageHandler,
   createRegenerateElementHandler,
   createApplyElementOptionHandler,
   createValidatePackageHandler,
