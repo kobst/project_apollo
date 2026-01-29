@@ -7,11 +7,9 @@ interface GapListProps {
   selectedTier: GapTier | null;
   /** Filter by gap type ('structural', 'narrative', or undefined for all) */
   gapType?: GapType | undefined;
-  /** Callback when user clicks "Generate Solutions" on a narrative gap */
-  onGenerateCluster?: ((gapId: string) => void) | undefined;
 }
 
-export function GapList({ gaps, selectedTier, gapType, onGenerateCluster }: GapListProps) {
+export function GapList({ gaps, selectedTier, gapType }: GapListProps) {
   // Apply type filter if specified
   let filteredGaps = gaps;
   if (gapType) {
@@ -43,7 +41,6 @@ export function GapList({ gaps, selectedTier, gapType, onGenerateCluster }: GapL
             <GapItem
               key={gap.id}
               gap={gap}
-              onGenerateCluster={onGenerateCluster}
             />
           ))}
         </div>
@@ -56,7 +53,6 @@ export function GapList({ gaps, selectedTier, gapType, onGenerateCluster }: GapL
             <GapItem
               key={gap.id}
               gap={gap}
-              onGenerateCluster={onGenerateCluster}
             />
           ))}
         </div>

@@ -105,11 +105,9 @@ export function createMockStorageFunctions() {
  * Create a mock session.
  */
 export function createMockSession(overrides: Partial<{
-  recentMoves: Array<{ id: string }>;
   generationSession: unknown;
 }> = {}) {
   return {
-    recentMoves: overrides.recentMoves ?? [],
     generationSession: overrides.generationSession ?? null,
   };
 }

@@ -4,10 +4,9 @@ import styles from './GapItem.module.css';
 
 interface GapItemProps {
   gap: GapData;
-  onGenerateCluster?: ((gapId: string) => void) | undefined;
 }
 
-export function GapItem({ gap, onGenerateCluster }: GapItemProps) {
+export function GapItem({ gap }: GapItemProps) {
   const [expanded, setExpanded] = useState(false);
 
   // Map type to human-readable label
@@ -21,11 +20,6 @@ export function GapItem({ gap, onGenerateCluster }: GapItemProps) {
       event.preventDefault();
       setExpanded(!expanded);
     }
-  };
-
-  const handleGenerate = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onGenerateCluster?.(gap.id);
   };
 
   return (
@@ -62,16 +56,6 @@ export function GapItem({ gap, onGenerateCluster }: GapItemProps) {
           <div className={styles.meta}>
             <span className={styles.source}>Source: {gap.source}</span>
           </div>
-          {/* Only narrative gaps can generate clusters */}
-          {gap.type === 'narrative' && onGenerateCluster && (
-            <button
-              className={styles.generateButton}
-              onClick={handleGenerate}
-              type="button"
-            >
-              Generate Solutions
-            </button>
-          )}
         </div>
       )}
     </div>

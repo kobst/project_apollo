@@ -48,7 +48,7 @@ export function oqsCommand(program: Command): void {
           if (questions.length > 0) {
             console.log();
             console.log(
-              'Run "project-apollo cluster <oq_id>" to generate moves for a question.'
+              'Run "project-apollo propose" to generate narrative proposals.'
             );
           }
         } catch (error) {

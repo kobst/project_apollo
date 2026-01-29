@@ -30,60 +30,7 @@ export interface StoryVersion extends BaseNode {
 }
 
 // =============================================================================
-// 2. MoveCluster
-// =============================================================================
-
-export interface ScopeBudget {
-  max_ops_per_move: number;
-  max_new_nodes_per_move: number;
-  allowed_node_types: string[];
-}
-
-export type ClusterType =
-  | 'STRUCTURE'
-  | 'SCENE_LIST'
-  | 'SCENE_QUALITY'
-  | 'CHARACTER';
-
-export type ClusterStatus = 'PROPOSED' | 'ARCHIVED';
-
-export interface MoveCluster extends BaseNode {
-  type: 'MoveCluster';
-  base_story_version_id: string;
-  created_at: string;
-  title: string;
-  description?: string;
-  cluster_type?: ClusterType;
-  primary_open_question_id?: string;
-  supporting_open_question_ids?: string[];
-  scope_budget: ScopeBudget;
-  status?: ClusterStatus;
-}
-
-// =============================================================================
-// 3. NarrativeMove
-// =============================================================================
-
-export type MoveStatus = 'PROPOSED' | 'ACCEPTED' | 'REJECTED';
-
-export interface NarrativeMove extends BaseNode {
-  type: 'NarrativeMove';
-  cluster_id: string;
-  patch_id: string;
-  title: string;
-  rationale: string;
-  created_at: string;
-  expected_effects?: string[];
-  move_style_tags?: string[];
-  resolves_open_question_ids?: string[];
-  introduces_open_question_ids?: string[];
-  confidence?: number;
-  status?: MoveStatus;
-  human_edits?: string;
-}
-
-// =============================================================================
-// 4. Patch (defined in patch.ts, re-exported here for KGNode union)
+// 2. Patch (defined in patch.ts, re-exported here for KGNode union)
 // =============================================================================
 
 // Note: Patch interface is defined in patch.ts to avoid circular imports
@@ -377,8 +324,6 @@ export interface Idea extends BaseNode {
  */
 export type ContentNode =
   | StoryVersion
-  | MoveCluster
-  | NarrativeMove
   | Beat
   | Scene
   | Character
@@ -393,8 +338,6 @@ export type ContentNode =
  */
 export type NodeType =
   | 'StoryVersion'
-  | 'MoveCluster'
-  | 'NarrativeMove'
   | 'Patch'
   | 'Beat'
   | 'Scene'
@@ -410,8 +353,6 @@ export type NodeType =
  */
 export const NODE_TYPES: NodeType[] = [
   'StoryVersion',
-  'MoveCluster',
-  'NarrativeMove',
   'Patch',
   'Beat',
   'Scene',

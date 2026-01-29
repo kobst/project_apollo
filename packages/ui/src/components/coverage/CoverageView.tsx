@@ -13,8 +13,6 @@ export function CoverageView() {
   const [error, setError] = useState<string | null>(null);
   const [selectedTier, setSelectedTier] = useState<GapTier | null>(null);
   const [typeFilter, setTypeFilter] = useState<GapType | 'all'>('all');
-  // Cluster generation removed; use propose panel instead
-
   const fetchGaps = useCallback(async () => {
     if (!currentStoryId) return;
 
@@ -35,8 +33,6 @@ export function CoverageView() {
   useEffect(() => {
     void fetchGaps();
   }, [fetchGaps]);
-
-  const handleGenerateCluster = undefined as unknown as (gapId: string) => Promise<void>;
 
   // Filter gaps by selected tier
   const filteredGaps =
@@ -101,10 +97,8 @@ export function CoverageView() {
               gaps={filteredGaps}
               selectedTier={selectedTier}
               gapType={typeFilter === 'all' ? undefined : typeFilter}
-              onGenerateCluster={undefined}
             />
           )}
-          {/* Cluster generation removed */}
         </div>
       </div>
     </div>

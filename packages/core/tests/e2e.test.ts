@@ -8,7 +8,6 @@ import {
   extractFromLogline,
   initializeStory,
 } from '../src/stubs/extractorStub.js';
-import { generateClusterForQuestion } from '../src/stubs/clusterStub.js';
 import type { GraphState } from '../src/core/graph.js';
 import type { Patch } from '../src/types/patch.js';
 import { createScene, createCharacter, resetIdCounter } from './helpers/index.js';
@@ -90,25 +89,49 @@ describe('End-to-end loop', () => {
       );
       expect(initialBeatOQs.length).toBe(15);
 
-      // Generate clusters for one OQ
-      const catalystOQ = questions.find(
-        (q) => q.target_node_id === 'beat_Catalyst'
-      );
-      expect(catalystOQ).toBeDefined();
+      // Add a scene to the Catalyst beat via a direct patch
+      const catalystPatch: Patch = {
+        type: 'Patch',
+        id: 'patch_catalyst',
+        base_story_version_id: 'sv0',
+        created_at: new Date().toISOString(),
+        ops: [
+          {
+            op: 'ADD_NODE',
+            node: {
+              type: 'StoryBeat',
+              id: 'sb_catalyst_001',
+              title: 'The inciting incident',
+              intent: 'plot',
+              status: 'proposed',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          },
+          {
+            op: 'ADD_EDGE',
+            edge: edges.alignsWith('sb_catalyst_001', 'beat_Catalyst'),
+          },
+          {
+            op: 'ADD_NODE',
+            node: createScene('beat_Catalyst', { id: 'scene_catalyst_001' }),
+          },
+          {
+            op: 'ADD_EDGE',
+            edge: edges.satisfiedBy('sb_catalyst_001', 'scene_catalyst_001', 1),
+          },
+          {
+            op: 'UPDATE_NODE',
+            id: 'beat_Catalyst',
+            set: { status: 'REALIZED' },
+          },
+        ],
+      };
 
-      const clusterResult = generateClusterForQuestion(
-        catalystOQ!,
-        'sv0',
-        'OUTLINE'
-      );
-      expect(clusterResult.moves.length).toBeGreaterThan(0);
-
-      // Apply first move's patch
-      const firstMove = clusterResult.moves[0]!;
-      const validation = validatePatch(graph, firstMove.patch);
+      const validation = validatePatch(graph, catalystPatch);
       expect(validation.success).toBe(true);
 
-      graph = applyPatch(graph, firstMove.patch);
+      graph = applyPatch(graph, catalystPatch);
 
       // Verify Catalyst OQ is resolved
       questions = deriveOpenQuestions(graph);
@@ -415,40 +438,6 @@ describe('End-to-end loop', () => {
       const result = validatePatch(graph, patch);
 
       expect(result.success).toBe(true);
-    });
-  });
-
-  describe('OQ-driven workflow', () => {
-    it('should resolve OQs by applying generated moves', () => {
-      // Start with story
-      let graph = createEmptyGraph();
-      const initPatch = initializeStory('A hero faces destiny.', 'sv0');
-      graph = applyPatch(graph, initPatch);
-
-      // Get OQs
-      const questions = deriveOpenQuestions(graph);
-      const beatOQs = questions.filter((q) => q.type === 'BeatUnrealized');
-      const initialCount = beatOQs.length;
-
-      // Address each beat one at a time (just do 3 to keep test fast)
-      for (let i = 0; i < 3 && i < beatOQs.length; i++) {
-        const oq = beatOQs[i]!;
-        const cluster = generateClusterForQuestion(oq, 'sv0', 'OUTLINE');
-
-        // Pick first move
-        const move = cluster.moves[0]!;
-
-        // Validate and apply
-        if (validatePatch(graph, move.patch).success) {
-          graph = applyPatch(graph, move.patch);
-        }
-      }
-
-      // Verify OQs are reduced
-      const newQuestions = deriveOpenQuestions(graph);
-      const newBeatOQs = newQuestions.filter((q) => q.type === 'BeatUnrealized');
-
-      expect(newBeatOQs.length).toBeLessThan(initialCount);
     });
   });
 

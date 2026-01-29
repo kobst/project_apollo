@@ -11,7 +11,6 @@ import {
   loadGraphById,
   loadVersionedStateById,
 } from '../storage.js';
-import { loadSessionById } from '../session.js';
 import { LLMClient, type StreamCallbacks } from './llmClient.js';
 
 // =============================================================================
@@ -44,12 +43,10 @@ export interface InterpretResponse {
  *
  * Flow:
  * 1. Load graph state and metadata
- * 2. Get recent nodes from session
- * 3. Serialize context
- * 4. Build interpretation prompt
- * 5. Call LLM
- * 6. Parse response
- * 7. Return proposals
+ * 2. Build interpretation prompt
+ * 3. Call LLM
+ * 4. Parse response
+ * 5. Return proposals
  */
 export async function interpretUserInput(
   storyId: string,
@@ -71,24 +68,7 @@ export async function interpretUserInput(
     throw new Error(`Story "${storyId}" state not found`);
   }
 
-  // 2. Get recent nodes from session (for context)
-  const session = await loadSessionById(storyId, ctx);
-  const recentNodeIds = session.recentMoves
-    .slice(-5)
-    .map((m) => m.id);
-
-  // Get recent node summaries
-  const recentNodes: string[] = [];
-  for (const nodeId of recentNodeIds) {
-    const node = graph.nodes.get(nodeId);
-    if (node) {
-      const data = node as unknown as Record<string, unknown>;
-      const label = String(data.name ?? data.title ?? node.id);
-      recentNodes.push(`- ${node.type}: ${label}`);
-    }
-  }
-
-  // 3. Build system prompt from metadata (stable, cacheable - constitution only)
+  // 2. Build system prompt from metadata (stable, cacheable - constitution only)
   const systemPromptParams: ai.SystemPromptParams = {
     storyName: state.metadata?.name,
     constitution: state.metadata?.storyContext?.constitution,
@@ -123,9 +103,6 @@ export async function interpretUserInput(
     userInput: enrichedInput,
     storyContext,
   };
-  if (recentNodes.length > 0) {
-    promptParams.recentNodes = recentNodes;
-  }
   if (ideasResult.serialized) {
     promptParams.ideas = ideasResult.serialized;
   }

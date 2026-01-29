@@ -356,7 +356,7 @@ export function formatValidationErrors(errors: ValidationError[]): string {
   }
 
   lines.push(pc.bold('Next Actions:'));
-  lines.push(`  ${pc.dim('•')} Regenerate moves: ${pc.cyan('project-apollo cluster <oq_id> --regenerate')}`);
+  lines.push(`  ${pc.dim('•')} Regenerate proposals: ${pc.cyan('project-apollo propose')}`);
   lines.push(`  ${pc.dim('•')} Add missing nodes: ${pc.cyan('project-apollo add <type> --name "..."')}`);
 
   return lines.join('\n');

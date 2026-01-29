@@ -5,7 +5,6 @@
 import type { Command } from 'commander';
 import { getGraphStats, deriveOpenQuestions } from '@apollo/core';
 import { loadGraph, loadVersionedState, getCurrentStoryId } from '../state/store.js';
-import { loadSession } from '../state/session.js';
 import { handleError, CLIError } from '../utils/errors.js';
 import { heading, formatNodeCounts } from '../utils/format.js';
 import pc from 'picocolors';
@@ -35,8 +34,6 @@ export function statusCommand(program: Command): void {
         }
         const stats = getGraphStats(graph);
         const questions = deriveOpenQuestions(graph);
-        const session = await loadSession();
-
         heading('Story Status');
 
         // Story ID and metadata
@@ -65,14 +62,6 @@ export function statusCommand(program: Command): void {
         }
         console.log();
 
-        // Session info
-        if (session.activeClusters.length > 0) {
-          console.log(
-            pc.dim(
-              `Active clusters: ${session.activeClusters.length} (run "project-apollo accept <move_id>" to apply)`
-            )
-          );
-        }
       } catch (error) {
         handleError(error);
       }
