@@ -39,6 +39,7 @@ export {
   createLintHandler,
   createApplyFixHandler,
   createPreCommitLintHandler,
+  createStagedLintHandler,
 } from './lint.js';
 export { createBulkAttachHandler } from './bulkAttach.js';
 export {
@@ -68,7 +69,9 @@ export {
   getIdeaHandler,
   updateIdeaHandler,
   deleteIdeaHandler,
+  createIdeaFromPackageHandler,
 } from './ideas.js';
+export { createOverlayDiffHandler } from './overlay.js';
 export {
   createGetSessionHandler,
   createDeleteSessionHandler,
@@ -101,3 +104,8 @@ export {
   createDeleteSavedPackageHandler,
   createApplySavedPackageHandler,
 } from './savedPackages.js';
+export {
+  createRunAgentHandler,
+  createAgentEventsHandler,
+  createCancelAgentJobHandler,
+} from './agents.js';

@@ -251,6 +251,8 @@ export const api = {
   // Lint (Rule Engine - Milestone 1)
   lint: (storyId: string, data?: LintRequest) =>
     POST<LintData>(`/stories/${storyId}/lint`, data ?? { scope: 'full' }),
+  lintStaged: (storyId: string, packageId: string) =>
+    POST<LintData>(`/stories/${storyId}/lint/staged`, { packageId }),
   applyFix: (storyId: string, data: ApplyFixRequest) =>
     POST<ApplyFixData>(`/stories/${storyId}/lint/apply`, data),
   preCommitLint: (storyId: string) =>
@@ -342,6 +344,8 @@ export const api = {
     PATCH<UpdateIdeaData>(`/stories/${storyId}/ideas/${ideaId}`, { changes }),
   deleteIdea: (storyId: string, ideaId: string) =>
     DELETE<DeleteIdeaData>(`/stories/${storyId}/ideas/${ideaId}`),
+  createIdeaFromPackage: (storyId: string, data: import('./types').IdeaFromPackageRequest) =>
+    POST<CreateIdeaData>(`/stories/${storyId}/ideas/from-package`, data),
 
   // ==========================================================================
   // Session Management
@@ -455,6 +459,16 @@ export const api = {
    */
   propose: (storyId: string, data: ProposeRequest) =>
     POST<ProposeResponseData>(`/stories/${storyId}/propose`, data),
+
+  // Overlay diff for staged package preview
+  getOverlayDiff: (storyId: string, packageId: string) =>
+    GET<import('./types').OverlayDiffData>(`/stories/${storyId}/propose/overlay-diff/${packageId}`),
+
+  // Agent runner
+  runAgent: (storyId: string, payload: { agent: 'interpreter'|'generator'; params?: any }) =>
+    POST<import('./types').RunAgentResponseData>(`/stories/${storyId}/agents/run`, payload),
+  openAgentEvents: (storyId: string, jobId: string): EventSource =>
+    new EventSource(`/api/stories/${storyId}/agents/jobs/${jobId}/events`),
 
   /**
    * Get the active proposal for a story

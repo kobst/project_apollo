@@ -13,6 +13,7 @@ import {
   type LintScope,
   type Fix,
   type RuleCategory,
+  applyPatch,
 } from '@apollo/core';
 import type { StorageContext } from '../config.js';
 import {
@@ -20,6 +21,8 @@ import {
   deserializeGraph,
   updateGraphById,
 } from '../storage.js';
+import { findPackageInSession } from '../session.js';
+import { packageToPatch } from './generate.js';
 import { NotFoundError, BadRequestError } from '../middleware/error.js';
 import type { APIResponse } from '../types.js';
 
@@ -195,6 +198,95 @@ export function createLintHandler(ctx: StorageContext) {
       });
     } catch (error) {
       next(error);
+    }
+  };
+}
+
+// =============================================================================
+// Staged Lint Handler (Package)
+// =============================================================================
+
+interface StagedLintRequest {
+  packageId: string;
+}
+
+/**
+ * POST /stories/:id/lint/staged - Run linting on a hypothetical graph resulting from applying a staged package
+ */
+export function createStagedLintHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string }, unknown, StagedLintRequest>,
+    res: Response<APIResponse<LintResponseData>>,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      ensureRulesRegistered();
+
+      const { id } = req.params;
+      const { packageId } = req.body;
+      if (!packageId) {
+        throw new BadRequestError('packageId is required');
+      }
+
+      const state = await loadVersionedStateById(id, ctx);
+      if (!state) {
+        throw new NotFoundError(`Story "${id}"`, 'Use POST /stories/init to create a story');
+      }
+      const currentVersionId = state.history.currentVersionId;
+      const currentVersion = state.history.versions[currentVersionId];
+      if (!currentVersion) throw new NotFoundError('Current version');
+
+      // Locate package in active session
+      const pkg = await findPackageInSession(id, packageId, ctx);
+      if (!pkg) throw new NotFoundError(`Package "${packageId}"`);
+
+      // Build hypothetical graph: apply package as patch against current
+      const baseGraph = deserializeGraph(currentVersion.graph);
+      const patch = packageToPatch(pkg as any, currentVersionId);
+      const stagedGraph = applyPatch(baseGraph, patch);
+
+      // Run full lint on hypothetical graph
+      const result = lint(stagedGraph, { mode: 'full' });
+
+      // Transform violations/fixes to response shape
+      const violations: LintViolationData[] = result.violations.map((v) => {
+        const data: LintViolationData = {
+          id: v.id,
+          ruleId: v.ruleId,
+          severity: v.severity,
+          category: v.category,
+          message: v.message,
+        };
+        if (v.nodeId !== undefined) data.nodeId = v.nodeId;
+        if (v.nodeType !== undefined) data.nodeType = v.nodeType;
+        if (v.relatedNodeIds && v.relatedNodeIds.length > 0) data.relatedNodeIds = v.relatedNodeIds;
+        return data;
+      });
+
+      const fixes: LintFixData[] = (result.fixes ?? []).map((f) => ({
+        id: f.id,
+        violationId: f.violationId,
+        ruleId: f.violationRuleId,
+        label: f.label,
+        description: f.description,
+        affectedNodeIds: f.affectedNodeIds ?? [],
+        operationCount: f.operationCount,
+      }));
+
+      const responseData: LintResponseData = {
+        violations,
+        fixes,
+        summary: {
+          errorCount: result.errorCount,
+          warningCount: result.warningCount,
+          hasBlockingErrors: result.hasBlockingErrors,
+        },
+        lastCheckedAt: result.lastCheckedAt ?? new Date().toISOString(),
+      };
+
+      res.json({ success: true, data: responseData });
+    } catch (err) {
+      next(err);
     }
   };
 }

@@ -28,6 +28,7 @@ export function ViewTabs({ activeView, onViewChange }: ViewTabsProps) {
       >
         Workspace
       </button>
+      {/* Staging tab removed: staging is integrated into Workspace via GenerationPanel */}
     </div>
   );
 }

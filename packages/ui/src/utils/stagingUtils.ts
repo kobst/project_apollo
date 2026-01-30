@@ -103,7 +103,11 @@ export function computeSectionChangeCounts(pkg: NarrativePackage | null): Sectio
 
   // Count story context changes based on operation type
   for (const change of pkg.changes.storyContext ?? []) {
-    const opType = change.operation.type;
+    const opType = (change as any)?.operation?.type;
+    if (typeof opType !== 'string' || opType.length === 0) {
+      // Malformed change — skip safely
+      continue;
+    }
     // Categorize operation types
     if (opType.startsWith('add') || opType.startsWith('set')) {
       counts.storyContext.additions++;
@@ -203,6 +207,9 @@ export function computeMergedNodes(
   // Then, add new nodes from the package
   if (stagedPackage) {
     for (const nodeChange of stagedPackage.changes.nodes) {
+      if (!nodeChange.node_id) {
+        continue;
+      }
       if (nodeChange.operation === 'add' && !processedIds.has(nodeChange.node_id)) {
         // Skip if removed locally
         if (removedNodeIds.has(nodeChange.node_id)) continue;

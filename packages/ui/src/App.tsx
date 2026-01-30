@@ -22,6 +22,7 @@ export default function App() {
             {viewMode === 'stories' && <StoriesView />}
 
             {viewMode === 'workspace' && <WorkspaceView />}
+            {/* Staging View removed; integrated into Generation panel */}
           </div>
         </SavedPackagesProvider>
       </GenerationProvider>

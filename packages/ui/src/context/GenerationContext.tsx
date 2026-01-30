@@ -372,13 +372,13 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
 
   // Accept package
   const acceptPackage = useCallback(
-    async (storyId: string, packageId: string) => {
+    async (storyId: string, packageId: string): Promise<import('../api/types').AcceptPackageResponseData | void> => {
       try {
         setLoading(true);
         setError(null);
 
         // Commit the selected package via propose/commit
-        await api.commitProposal(storyId, packageId);
+        const resp = await api.commitProposal(storyId, packageId);
 
         // Mark session as accepted
         setSession((prev) => {
@@ -395,6 +395,8 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
           setIsOpen(false);
           setSession(null);
         }, 500);
+
+        return resp;
       } catch (err) {
         setError((err as Error).message);
       } finally {

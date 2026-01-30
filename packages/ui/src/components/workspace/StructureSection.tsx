@@ -16,7 +16,7 @@ import { AddStoryBeatModal } from '../outline/AddStoryBeatModal';
 import { CreateStoryBeatModal } from '../outline/CreateStoryBeatModal';
 import { CreateSceneModal } from '../outline/CreateSceneModal';
 import { CreateIdeaModal } from '../outline/CreateIdeaModal';
-import { DeleteNodeModal } from '../explore/DeleteNodeModal';
+import { DeleteNodeModal } from './DeleteNodeModal';
 import { AssignStoryBeatModal } from '../outline/AssignStoryBeatModal';
 import { AssignSceneModal } from '../outline/AssignSceneModal';
 import { EditPanel } from './EditPanel';

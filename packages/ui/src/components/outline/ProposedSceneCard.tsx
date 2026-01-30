@@ -6,6 +6,8 @@
 import { useState, useCallback } from 'react';
 import type { MergedOutlineScene } from '../../utils/outlineMergeUtils';
 import styles from './ProposedSceneCard.module.css';
+import { useStory } from '../../context/StoryContext';
+import { api } from '../../api/client';
 
 interface ProposedSceneCardProps {
   scene: MergedOutlineScene;
@@ -30,6 +32,7 @@ export function ProposedSceneCard({
   isRemoved = false,
   onUndoRemove,
 }: ProposedSceneCardProps) {
+  const { currentStoryId } = useStory();
   const [isExpanded, setIsExpanded] = useState(false);
   const [localData, setLocalData] = useState({
     heading: scene.heading,
@@ -199,6 +202,18 @@ export function ProposedSceneCard({
               type="button"
             >
               Done
+            </button>
+            <button
+              className={styles.doneButton}
+              onClick={async () => {
+                if (!currentStoryId) return;
+                const title = `Scene: ${localData.heading}`;
+                const description = String(localData.overview ?? '');
+                await api.createIdea(currentStoryId, { title, description, source: 'ai', suggestedType: 'Scene' });
+              }}
+              type="button"
+            >
+              Send to Ideas
             </button>
             {onRemove && scene._operation === 'add' && (
               <button

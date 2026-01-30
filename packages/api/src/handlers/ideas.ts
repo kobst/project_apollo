@@ -18,6 +18,7 @@ import type { StorageContext } from '../config.js';
 import { loadVersionedStateById, saveVersionedStateById, deserializeGraph, serializeGraph } from '../storage.js';
 import { NotFoundError, BadRequestError } from '../middleware/error.js';
 import type { APIResponse, NodeData } from '../types.js';
+import { findPackageInSession } from '../session.js';
 
 // =============================================================================
 // Response Types
@@ -507,6 +508,136 @@ export function deleteIdeaHandler(ctx: StorageContext) {
           newVersionId,
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+// =============================================================================
+// POST /stories/:id/ideas/from-package
+// =============================================================================
+
+interface IdeaFromPackageBody {
+  packageId: string;
+  elementType: 'node' | 'edge' | 'storyContext';
+  elementIndex?: number; // preferred selector
+  elementId?: string;    // optional fallback for nodes
+  title?: string;        // optional override
+  description?: string;  // optional override
+  category?: 'character' | 'plot' | 'scene' | 'worldbuilding' | 'general';
+}
+
+export function createIdeaFromPackageHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string }, unknown, IdeaFromPackageBody>,
+    res: Response<APIResponse<CreateIdeaData>>,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { packageId, elementType, elementIndex, elementId, title, description, category } = req.body;
+
+      if (!packageId || !elementType) {
+        throw new BadRequestError('packageId and elementType are required');
+      }
+
+      const state = await loadVersionedStateById(id, ctx);
+      if (!state) {
+        throw new NotFoundError(`Story "${id}"`, 'Use POST /stories/init to create a story');
+      }
+      const currentVersionId = state.history.currentVersionId;
+      const currentVersion = state.history.versions[currentVersionId];
+      if (!currentVersion) throw new NotFoundError('Current version');
+
+      // Locate package from active session
+      const pkg = await findPackageInSession(id, packageId, ctx);
+      if (!pkg) throw new NotFoundError(`Package "${packageId}"`);
+
+      // Determine idea content from element
+      let derivedTitle = title?.trim();
+      let derivedDesc = description?.trim();
+      let suggestedType: Idea['suggestedType'] | undefined;
+      let relatedNodeIds: string[] | undefined;
+
+      if (elementType === 'node') {
+        const nc = typeof elementIndex === 'number'
+          ? pkg.changes.nodes[elementIndex]
+          : pkg.changes.nodes.find((n) => n.node_id === elementId);
+        if (!nc) throw new NotFoundError('Package node element');
+        suggestedType = nc.node_type as any;
+        relatedNodeIds = [nc.node_id];
+        const name = (nc.data?.name || nc.data?.title || nc.node_id);
+        derivedTitle = derivedTitle || `${nc.operation.toUpperCase()} ${nc.node_type}: ${name}`;
+        const summ = [
+          `Operation: ${nc.operation}`,
+          `Type: ${nc.node_type}`,
+          `Id: ${nc.node_id}`,
+          nc.data ? `Data: ${JSON.stringify(nc.data).slice(0, 400)}` : undefined,
+        ].filter(Boolean).join('\n');
+        derivedDesc = derivedDesc || `${pkg.title || 'Package'} → Node candidate\n\n${summ}`;
+      } else if (elementType === 'edge') {
+        const ec = typeof elementIndex === 'number'
+          ? pkg.changes.edges[elementIndex]
+          : undefined;
+        if (!ec) throw new NotFoundError('Package edge element');
+        suggestedType = undefined;
+        relatedNodeIds = [ec.from, ec.to];
+        derivedTitle = derivedTitle || `${ec.operation.toUpperCase()} EDGE: ${ec.edge_type}`;
+        derivedDesc = derivedDesc || `${pkg.title || 'Package'} → Edge candidate\n\n${JSON.stringify(ec).slice(0, 500)}`;
+      } else if (elementType === 'storyContext') {
+        const sc = typeof elementIndex === 'number'
+          ? (pkg.changes.storyContext ?? [])[elementIndex]
+          : undefined;
+        if (!sc) throw new NotFoundError('Package storyContext element');
+        derivedTitle = derivedTitle || `StoryContext suggestion`;
+        derivedDesc = derivedDesc || `${pkg.title || 'Package'} → StoryContext change\n\n${JSON.stringify(sc).slice(0, 500)}`;
+      }
+
+      if (!derivedTitle || !derivedDesc) {
+        throw new BadRequestError('Failed to derive idea content; provide title/description');
+      }
+
+      // Build idea node and new version (reuse logic from createIdeaHandler)
+      const graph = deserializeGraph(currentVersion.graph);
+      const timestamp = new Date().toISOString();
+      const ideaId = `idea_${Date.now()}`;
+      const patchId = `patch_idea_from_pkg_${Date.now()}`;
+      const newVersionId = `ver_${Date.now()}`;
+
+      const idea: Idea = {
+        type: 'Idea',
+        id: ideaId,
+        title: derivedTitle,
+        description: derivedDesc,
+        source: 'ai',
+        status: 'active',
+        createdAt: timestamp,
+        ...(suggestedType ? { suggestedType } : {}),
+        ...(category ? { category } : {}),
+        sourcePackageId: packageId,
+        ...(relatedNodeIds ? { relatedNodeIds } : {}),
+      };
+
+      const ops: Patch['ops'] = [ { op: 'ADD_NODE', node: idea } ];
+      const patch: Patch = {
+        type: 'Patch', id: patchId, base_story_version_id: currentVersionId, created_at: timestamp, ops,
+        metadata: { source: 'ideas.fromPackage', action: 'create' },
+      };
+
+      const updatedGraph = applyPatch(graph, patch);
+
+      state.history.versions[newVersionId] = {
+        id: newVersionId,
+        parent_id: currentVersionId,
+        label: `Captured Idea from package: ${idea.title}`,
+        created_at: timestamp,
+        graph: serializeGraph(updatedGraph),
+      };
+      state.history.currentVersionId = newVersionId;
+      await saveVersionedStateById(id, state, ctx);
+
+      res.status(201).json({ success: true, data: { idea: toIdeaData(idea), newVersionId } });
     } catch (error) {
       next(error);
     }

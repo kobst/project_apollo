@@ -4,10 +4,12 @@
  */
 
 import { useCallback, useState, useEffect } from 'react';
+import { api } from '../../api/client';
 import { useStory } from '../../context/StoryContext';
 import { useGeneration } from '../../context/GenerationContext';
 import { useSavedPackages } from '../../context/SavedPackagesContext';
 import { useGenerationData } from '../../hooks/useGenerationData';
+import { useAgentJobs } from '../../hooks/useAgentJobs';
 import { ComposeForm, createDefaultFormState, type ComposeFormState } from '../generation/ComposeForm';
 import { SavedPackagesPanel } from '../generation/SavedPackagesPanel';
 import { PackageCarousel } from './PackageCarousel';
@@ -50,6 +52,7 @@ export function GenerationPanel({
     proposeCharacters,
     proposeScenes,
     proposeExpand,
+    refinePackage,
     session,
     loading,
     error,
@@ -59,6 +62,8 @@ export function GenerationPanel({
     acceptPackage,
     rejectPackage,
     clearStaging,
+    loadSession,
+    selectPackage,
   } = useGeneration();
   const { savedPackages, loadSavedPackages, savePackage, applySavedPackage, deleteSavedPackage } = useSavedPackages();
 
@@ -67,6 +72,15 @@ export function GenerationPanel({
 
   // Form state preserved during collapse
   const [formState, setFormState] = useState<ComposeFormState>(createDefaultFormState);
+  const [aiAssisted, setAiAssisted] = useState(false);
+  const { runInterpreter: runAgentInterpreter } = useAgentJobs(currentStoryId, {
+    onJobDone: () => { if (currentStoryId) void loadSession(currentStoryId); },
+  });
+  const [critic, setCritic] = useState(null as null | { errorCount: number; warningCount: number; hasBlockingErrors: boolean; violations: Array<{ id: string; ruleId: string; severity: 'hard'|'soft'; message: string }> });
+  const [criticLoading, setCriticLoading] = useState(false);
+  const [refinePrompt, setRefinePrompt] = useState('Tighten pacing and sharpen conflict');
+  const [overlayDiff, setOverlayDiff] = useState<import('../../api/types').OverlayDiffData | null>(null);
+  const [acceptInfo, setAcceptInfo] = useState<null | { newVersionId: string; patchOpsApplied?: number }>(null);
 
   // Local state for viewing saved package (similar to GenerationView)
   const [viewingSavedPackageId, setViewingSavedPackageId] = useState<string | null>(null);
@@ -82,9 +96,13 @@ export function GenerationPanel({
   const handleGenerateStoryBeats = useCallback(
     async (request: ProposeStoryBeatsRequest) => {
       if (!currentStoryId) return;
-      await proposeStoryBeats(currentStoryId, request);
-      refreshStatus();
-      refreshGenerationData();
+      if (aiAssisted && formState.direction.trim()) {
+        await runAgentInterpreter(formState.direction.trim());
+      } else {
+        await proposeStoryBeats(currentStoryId, request);
+        refreshStatus();
+        refreshGenerationData();
+      }
     },
     [currentStoryId, proposeStoryBeats, refreshStatus, refreshGenerationData]
   );
@@ -92,9 +110,13 @@ export function GenerationPanel({
   const handleGenerateCharacters = useCallback(
     async (request: ProposeCharactersRequest) => {
       if (!currentStoryId) return;
-      await proposeCharacters(currentStoryId, request);
-      refreshStatus();
-      refreshGenerationData();
+      if (aiAssisted && formState.direction.trim()) {
+        await runAgentInterpreter(formState.direction.trim());
+      } else {
+        await proposeCharacters(currentStoryId, request);
+        refreshStatus();
+        refreshGenerationData();
+      }
     },
     [currentStoryId, proposeCharacters, refreshStatus, refreshGenerationData]
   );
@@ -102,9 +124,13 @@ export function GenerationPanel({
   const handleGenerateScenes = useCallback(
     async (request: ProposeScenesRequest) => {
       if (!currentStoryId) return;
-      await proposeScenes(currentStoryId, request);
-      refreshStatus();
-      refreshGenerationData();
+      if (aiAssisted && formState.direction.trim()) {
+        await runAgentInterpreter(formState.direction.trim());
+      } else {
+        await proposeScenes(currentStoryId, request);
+        refreshStatus();
+        refreshGenerationData();
+      }
     },
     [currentStoryId, proposeScenes, refreshStatus, refreshGenerationData]
   );
@@ -112,9 +138,13 @@ export function GenerationPanel({
   const handleGenerateExpand = useCallback(
     async (request: ProposeExpandRequest) => {
       if (!currentStoryId) return;
-      await proposeExpand(currentStoryId, request);
-      refreshStatus();
-      refreshGenerationData();
+      if (aiAssisted && formState.direction.trim()) {
+        await runAgentInterpreter(formState.direction.trim());
+      } else {
+        await proposeExpand(currentStoryId, request);
+        refreshStatus();
+        refreshGenerationData();
+      }
     },
     [currentStoryId, proposeExpand, refreshStatus, refreshGenerationData]
   );
@@ -165,6 +195,15 @@ export function GenerationPanel({
     [stagePackage]
   );
 
+  // Handle staging by package id (for lineage/breadcrumbs)
+  const handleStageById = useCallback((packageId: string) => {
+    const idx = session?.packages.findIndex(p => p.id === packageId) ?? -1;
+    if (idx >= 0) {
+      selectPackage(packageId);
+      stagePackage(idx);
+    }
+  }, [session?.packages, selectPackage, stagePackage]);
+
   // Handle saving the currently staged package
   const handleSavePackage = useCallback(async () => {
     if (!currentStoryId || !staging.stagedPackage) return;
@@ -174,7 +213,10 @@ export function GenerationPanel({
   // Handle accepting the currently staged package
   const handleAcceptPackage = useCallback(async () => {
     if (!currentStoryId || !staging.stagedPackage) return;
-    await acceptPackage(currentStoryId, staging.stagedPackage.id);
+    const resp = await acceptPackage(currentStoryId, staging.stagedPackage.id);
+    if (resp && 'newVersionId' in resp) {
+      setAcceptInfo({ newVersionId: resp.newVersionId, patchOpsApplied: (resp as any).patchOpsApplied });
+    }
     refreshStatus();
   }, [currentStoryId, staging.stagedPackage, acceptPackage, refreshStatus]);
 
@@ -213,6 +255,20 @@ export function GenerationPanel({
     ? savedPackages.find(p => p.id === viewingSavedPackageId)
     : null;
 
+  // Fetch overlay diff when staged package changes
+  useEffect(() => {
+    const fetchDiff = async () => {
+      if (!currentStoryId || !staging.stagedPackage) { setOverlayDiff(null); return; }
+      try {
+        const diff = await api.getOverlayDiff(currentStoryId, staging.stagedPackage.id);
+        setOverlayDiff(diff);
+      } catch {
+        setOverlayDiff(null);
+      }
+    };
+    void fetchDiff();
+  }, [currentStoryId, staging.stagedPackage?.id]);
+
   return (
     <div className={styles.container}>
       {/* Header */}
@@ -230,6 +286,15 @@ export function GenerationPanel({
 
       {/* Content */}
       <div className={styles.content}>
+        {/* AI-assisted toggle (Interpreter behind Direction) */}
+        <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <label style={{ fontSize: 12 }}>
+            <input type="checkbox" checked={aiAssisted} onChange={(e) => setAiAssisted(e.target.checked)} />
+            {' '}Smart mode — let AI decide how to generate
+          </label>
+        </div>
+        
+          {/* Agent quick UI removed per design; Interpreter runs behind Direction when AI-assisted is enabled */}
         {/* Error display */}
         {error && (
           <div className={styles.error}>
@@ -265,6 +330,157 @@ export function GenerationPanel({
             onSavePackage={handleSavePackage}
             loading={loading}
           />
+        )}
+
+        {/* Review section for selected package */}
+        {staging.stagedPackage && !viewingSavedPackage && (
+          <div style={{ marginTop: 12 }}>
+            {/* Accept banner with compact diff */}
+            {overlayDiff && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#11221a', border: '1px solid #1d3a2a', padding: '8px 10px', borderRadius: 6, marginBottom: 8 }}>
+                <div style={{ fontSize: 12 }}>
+                  Nodes +{overlayDiff.nodes.created.length} ~{overlayDiff.nodes.modified.length} -{overlayDiff.nodes.deleted.length}
+                  {'  '}Edges +{overlayDiff.edges.created.length} -{overlayDiff.edges.deleted.length}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={handleAcceptPackage} disabled={loading}>
+                    {loading ? 'Accepting...' : 'Accept'}
+                  </button>
+                  <button type="button" onClick={handleRejectPackage} disabled={loading}>
+                    Reject
+                  </button>
+                  <button type="button" onClick={handleSavePackage} disabled={loading}>
+                    Save
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!currentStoryId) return;
+                  setCriticLoading(true);
+                  try {
+                    const res = await api.lintStaged(currentStoryId, staging.stagedPackage!.id);
+                    setCritic({
+                      errorCount: res.summary.errorCount,
+                      warningCount: res.summary.warningCount,
+                      hasBlockingErrors: res.summary.hasBlockingErrors,
+                      violations: res.violations.map((v: any) => ({ id: v.id, ruleId: v.ruleId, severity: v.severity, message: v.message })),
+                    });
+                  } catch (e) {
+                    setCritic(null);
+                  } finally {
+                    setCriticLoading(false);
+                  }
+                }}
+              >{criticLoading ? 'Running Critic...' : 'Run Critic'}</button>
+              <input
+                value={refinePrompt}
+                onChange={(e) => setRefinePrompt(e.target.value)}
+                placeholder="Refine prompt"
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!currentStoryId || !staging.stagedPackage) return;
+                  await refinePackage(currentStoryId, staging.stagedPackage.id, refinePrompt, 0.5);
+                }}
+              >Refine</button>
+            </div>
+
+            {/* Impact (only if non-empty) */}
+            {staging.stagedPackage.impact && (() => {
+              const imp = staging.stagedPackage!.impact;
+              const hasAny = (imp.fulfills_gaps?.length || 0) + (imp.creates_gaps?.length || 0) + (imp.conflicts?.length || 0) > 0;
+              return hasAny ? (
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Impact</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, fontSize: 12 }}>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>Fulfills</div>
+                      <ul>{(imp.fulfills_gaps || []).map((g: string) => (<li key={g}><code>{g}</code></li>))}</ul>
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>Creates</div>
+                      <ul>{(imp.creates_gaps || []).map((g: string) => (<li key={g}><code>{g}</code></li>))}</ul>
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>Conflicts</div>
+                      <ul>{(imp.conflicts || []).map((c: any, i: number) => (<li key={i}>{c.type}: {c.description}</li>))}</ul>
+                    </div>
+                  </div>
+                </div>
+              ) : null;
+            })()}
+
+            {/* Critic results */}
+            {critic && (
+              <div style={{ fontSize: 12, marginBottom: 8 }}>
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>Critic</div>
+                <div>Errors: {critic.errorCount} · Warnings: {critic.warningCount}</div>
+                <ul>
+                  {critic.violations.map(v => (
+                    <li key={v.id} style={{ color: v.severity === 'hard' ? '#b00020' : '#c38700' }}>
+                      [{v.severity}] {v.ruleId}: {v.message}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Lineage breadcrumbs for current staged package */}
+        {staging.stagedPackage && session && !viewingSavedPackage && (
+          (() => {
+            const current = staging.stagedPackage!;
+            const parent = current.parent_package_id ? session.packages.find(p => p.id === current.parent_package_id) : null;
+            const siblings = parent ? session.packages.filter(p => p.parent_package_id === parent.id) : [];
+            const children = session.packages.filter(p => p.parent_package_id === current.id);
+            if (!parent && children.length === 0) return null;
+            return (
+              <div style={{ marginTop: 8, fontSize: 12, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                {parent && (
+                  <div>
+                    <span style={{ opacity: 0.7 }}>Parent:</span>{' '}
+                    <button type="button" style={{ textDecoration: 'underline' }} onClick={() => handleStageById(parent.id)}>
+                      {parent.title || parent.id.slice(0, 8)}
+                    </button>
+                  </div>
+                )}
+                {siblings.length > 0 && (
+                  <div>
+                    <span style={{ opacity: 0.7 }}>Siblings:</span>{' '}
+                    {siblings.map((s, i) => (
+                      <span key={s.id}>
+                        <button type="button" style={{ textDecoration: 'underline', marginRight: 6 }} onClick={() => handleStageById(s.id)}>
+                          {s.title || s.id.slice(0, 8)}
+                        </button>
+                        {i < siblings.length - 1 ? <span style={{ opacity: 0.5 }}>|</span> : null}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {children.length > 0 && (
+                  <div>
+                    <span style={{ opacity: 0.7 }}>Children:</span>{' '}
+                    {children.map((c, i) => (
+                      <span key={c.id}>
+                        <button type="button" style={{ textDecoration: 'underline', marginRight: 6 }} onClick={() => handleStageById(c.id)}>
+                          {c.title || c.id.slice(0, 8)}
+                        </button>
+                        {i < children.length - 1 ? <span style={{ opacity: 0.5 }}>|</span> : null}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()
         )}
 
         {/* Staged Saved Package */}
@@ -324,6 +540,12 @@ export function GenerationPanel({
           viewingPackageId={viewingSavedPackageId}
         />
       </div>
+      {/* Accept info banner */}
+      {acceptInfo && (
+        <div style={{ margin: '8px 12px', background: '#0f5132', color: '#d1e7dd', border: '1px solid #0f5132', padding: '8px 10px', borderRadius: 6, fontSize: 12 }}>
+          Accepted package. New version: <code>{acceptInfo.newVersionId}</code>
+        </div>
+      )}
     </div>
   );
 }

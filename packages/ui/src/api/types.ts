@@ -736,6 +736,38 @@ export interface DeleteIdeaData {
 }
 
 // =============================================================================
+// Agent Runner & Staging Utilities
+// =============================================================================
+
+export interface RunAgentResponseData {
+  jobId: string;
+  eventsUrl: string;
+}
+
+export type AgentEvent =
+  | { type: 'status'; data: { status: 'queued'|'running'|'succeeded'|'failed'|'canceled' } }
+  | { type: 'progress'; data: { step: string; detail?: string } }
+  | { type: 'packages'; data: { packages: NarrativePackage[]; sessionId?: string } }
+  | { type: 'metrics'; data: Record<string, unknown> }
+  | { type: 'error'; data: { message: string } };
+
+export interface OverlayEdgeData { type: string; from: string; to: string }
+export interface OverlayDiffData {
+  nodes: { created: string[]; modified: string[]; deleted: string[] };
+  edges: { created: OverlayEdgeData[]; modified?: OverlayEdgeData[]; deleted: OverlayEdgeData[] };
+}
+
+export interface IdeaFromPackageRequest {
+  packageId: string;
+  elementType: 'node'|'edge'|'storyContext';
+  elementIndex?: number;
+  elementId?: string;
+  title?: string;
+  description?: string;
+  category?: 'character'|'plot'|'scene'|'worldbuilding'|'general';
+}
+
+// =============================================================================
 // Coverage / Gap Types (Unified Model)
 // =============================================================================
 

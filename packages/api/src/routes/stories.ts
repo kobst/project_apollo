@@ -35,6 +35,7 @@ import {
   createLintHandler,
   createApplyFixHandler,
   createPreCommitLintHandler,
+  createStagedLintHandler,
   createBulkAttachHandler,
   createStoryBeatHandler,
   listStoryBeatsHandler,
@@ -56,6 +57,7 @@ import {
   getIdeaHandler,
   updateIdeaHandler,
   deleteIdeaHandler,
+  createIdeaFromPackageHandler,
   createGetSessionHandler,
   createDeleteSessionHandler,
   createConvertProposalHandler,
@@ -80,6 +82,10 @@ import {
   createUpdateSavedPackageHandler,
   createDeleteSavedPackageHandler,
   createApplySavedPackageHandler,
+  createRunAgentHandler,
+  createAgentEventsHandler,
+  createCancelAgentJobHandler,
+  createOverlayDiffHandler,
 } from '../handlers/index.js';
 
 export function createStoriesRouter(ctx: StorageContext): Router {
@@ -156,6 +162,7 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.post('/:id/lint', createLintHandler(ctx));
   router.post('/:id/lint/apply', createApplyFixHandler(ctx));
   router.get('/:id/lint/precommit', createPreCommitLintHandler(ctx));
+  router.post('/:id/lint/staged', createStagedLintHandler(ctx));
 
   // Coverage endpoint (deprecated - use /gaps instead)
   router.get('/:id/coverage', createCoverageHandler(ctx));
@@ -190,6 +197,7 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.get('/:id/ideas/:ideaId', getIdeaHandler(ctx));
   router.patch('/:id/ideas/:ideaId', updateIdeaHandler(ctx));
   router.delete('/:id/ideas/:ideaId', deleteIdeaHandler(ctx));
+  router.post('/:id/ideas/from-package', createIdeaFromPackageHandler(ctx));
 
   // Unified Propose endpoints (AI pipeline)
   router.post('/:id/propose', createProposeHandler(ctx));
@@ -201,6 +209,7 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.post('/:id/propose/characters', createProposeCharactersHandler(ctx));
   router.post('/:id/propose/scenes', createProposeScenesHandler(ctx));
   router.post('/:id/propose/expand', createProposeExpandHandler(ctx));
+  router.get('/:id/propose/overlay-diff/:packageId', createOverlayDiffHandler(ctx));
 
   // Session management (for active proposal)
   router.get('/:id/session', createGetSessionHandler(ctx));
@@ -224,6 +233,11 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.patch('/:id/saved-packages/:spId', createUpdateSavedPackageHandler(ctx));
   router.delete('/:id/saved-packages/:spId', createDeleteSavedPackageHandler(ctx));
   router.post('/:id/saved-packages/:spId/apply', createApplySavedPackageHandler(ctx));
+
+  // Agents (minimal runner)
+  router.post('/:id/agents/run', createRunAgentHandler(ctx));
+  router.get('/:id/agents/jobs/:jobId/events', createAgentEventsHandler(ctx));
+  router.post('/:id/agents/jobs/:jobId/cancel', createCancelAgentJobHandler(ctx));
 
   return router;
 }

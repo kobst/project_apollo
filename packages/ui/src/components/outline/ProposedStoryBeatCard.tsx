@@ -7,6 +7,8 @@ import { useState, useCallback } from 'react';
 import type { MergedOutlineStoryBeat } from '../../utils/outlineMergeUtils';
 import { ProposedSceneCard } from './ProposedSceneCard';
 import styles from './ProposedStoryBeatCard.module.css';
+import { useStory } from '../../context/StoryContext';
+import { api } from '../../api/client';
 
 interface ProposedStoryBeatCardProps {
   storyBeat: MergedOutlineStoryBeat;
@@ -31,6 +33,7 @@ export function ProposedStoryBeatCard({
   isRemoved = false,
   onUndoRemove,
 }: ProposedStoryBeatCardProps) {
+  const { currentStoryId } = useStory();
   const [isExpanded, setIsExpanded] = useState(false);
   const [localData, setLocalData] = useState({
     title: storyBeat.title,
@@ -226,6 +229,18 @@ export function ProposedStoryBeatCard({
               type="button"
             >
               Done
+            </button>
+            <button
+              className={styles.doneButton}
+              onClick={async () => {
+                if (!currentStoryId) return;
+                const title = `StoryBeat: ${localData.title}`;
+                const description = String(localData.summary ?? '');
+                await api.createIdea(currentStoryId, { title, description, source: 'ai', suggestedType: 'StoryBeat' });
+              }}
+              type="button"
+            >
+              Send to Ideas
             </button>
             {onRemove && storyBeat._operation === 'add' && (
               <button

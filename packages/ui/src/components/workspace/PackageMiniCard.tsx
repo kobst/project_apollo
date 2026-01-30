@@ -19,9 +19,14 @@ export function PackageMiniCard({
   onClick,
 }: PackageMiniCardProps) {
   const confidence = Math.round(pkg.confidence * 100);
-  const nodeCount = pkg.changes.nodes.length;
-  const edgeCount = pkg.changes.edges.length;
-  const contextCount = pkg.changes.storyContext?.length ?? 0;
+  const first = pkg.changes.nodes[0];
+  const human = first?.data && (String((first as any).data.name ?? (first as any).data.title ?? (first as any).data.heading ?? ''));
+  const title = human && human.length > 0 ? `${first?.node_type ?? 'Item'}: ${human}` : (pkg.title || 'Package');
+  const nodesAdded = pkg.changes.nodes.filter(n => n.operation === 'add').length;
+  const nodesModified = pkg.changes.nodes.filter(n => n.operation === 'modify').length;
+  const nodesDeleted = pkg.changes.nodes.filter(n => n.operation === 'delete').length;
+  const edgesAdded = pkg.changes.edges.filter(e => e.operation === 'add').length;
+  const edgesDeleted = pkg.changes.edges.filter(e => e.operation === 'delete').length;
 
   return (
     <button
@@ -34,12 +39,11 @@ export function PackageMiniCard({
         <span className={styles.confidence}>{confidence}%</span>
       </div>
       <div className={styles.title}>
-        {pkg.title.length > 30 ? `${pkg.title.slice(0, 30)}...` : pkg.title}
+        {title.length > 30 ? `${title.slice(0, 30)}...` : title}
       </div>
       <div className={styles.meta}>
-        {contextCount > 0 && <span className={styles.count}>{contextCount} context</span>}
-        {nodeCount > 0 && <span className={styles.count}>{nodeCount} nodes</span>}
-        {edgeCount > 0 && <span className={styles.count}>{edgeCount} edges</span>}
+        <span className={styles.count}>Nodes +{nodesAdded} ~{nodesModified} -{nodesDeleted}</span>
+        <span className={styles.count}>Edges +{edgesAdded} -{edgesDeleted}</span>
       </div>
       {isActive && <div className={styles.activeIndicator} />}
     </button>
