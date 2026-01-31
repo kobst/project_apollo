@@ -7,6 +7,9 @@ export * from './stubs/index.js';
 export * from './rules/index.js';
 export * from './coverage/index.js';
 
+// Mentions module exported as namespace
+export * as mentions from './mentions/index.js';
+
 // AI module exported as namespace to avoid conflicts
 export * as ai from './ai/index.js';
 

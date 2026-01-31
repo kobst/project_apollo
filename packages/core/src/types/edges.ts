@@ -37,7 +37,8 @@ export type EdgeType =
   | 'ALIGNS_WITH'
   | 'SATISFIED_BY'
   | 'PRECEDES'
-  | 'ADVANCES';
+  | 'ADVANCES'
+  | 'MENTIONS';
 
 // =============================================================================
 // Edge Properties and Metadata
@@ -55,6 +56,10 @@ export interface EdgeProperties {
   confidence?: number;
   /** Human-readable annotation */
   notes?: string;
+  /** For MENTIONS edges: which field contains the mention */
+  field?: string;
+  /** For MENTIONS edges: the actual text that was matched */
+  matchedText?: string;
 }
 
 /**
@@ -166,6 +171,13 @@ export const EDGE_RULES: Record<EdgeType, EdgeRule> = {
     source: ['StoryBeat'],
     target: ['CharacterArc'],
   },
+
+  // * → Character|Location|Object (derived from text content)
+  // MENTIONS edges are system-generated to track entity references in text
+  MENTIONS: {
+    source: ['Scene', 'StoryBeat', 'Character', 'Location', 'CharacterArc'],
+    target: ['Character', 'Location', 'Object'],
+  },
 };
 
 /**
@@ -180,6 +192,7 @@ export const EDGE_TYPES: EdgeType[] = [
   'SATISFIED_BY',
   'PRECEDES',
   'ADVANCES',
+  'MENTIONS',
 ];
 
 // =============================================================================
