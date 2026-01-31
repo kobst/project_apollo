@@ -56,7 +56,11 @@ ${JSON_OUTPUT_RULES}
   "parent_package_id": "${basePackage.id}",
   "refinement_prompt": "${escapeForJson(guidance.slice(0, 100))}...",
   "style_tags": ["..."],
-  "changes": {...},
+  "changes": {
+    "storyContext": [{"operation": {"type": "addThematicPillar", "pillar": "..."}}],
+    "nodes": [{"operation": "add", "node_type": "StoryBeat", "node_id": "storybeat_{ts}_{5char}", "data": {"title": "...", "summary": "..."}}],
+    "edges": [{"operation": "add", "edge_type": "ALIGNS_WITH", "from": "storybeat_{ts}_{5char}", "to": "beat_xxx"}]
+  },
   "impact": {"fulfills_gaps": [], "creates_gaps": [], "conflicts": []}
 }]}
 \`\`\`

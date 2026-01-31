@@ -387,20 +387,20 @@ function normalizePrimarySupporting(
   // Add primary nodes/edges
   if (primary) {
     if (Array.isArray(primary.nodes)) {
-      nodes.push(...(primary.nodes as NodeChange[]));
+      nodes.push(...normalizeNodeArray(primary.nodes));
     }
     if (Array.isArray(primary.edges)) {
-      edges.push(...(primary.edges as EdgeChange[]));
+      edges.push(...normalizeEdgeArray(primary.edges));
     }
   }
 
   // Add supporting nodes/edges
   if (supporting) {
     if (Array.isArray(supporting.nodes)) {
-      nodes.push(...(supporting.nodes as NodeChange[]));
+      nodes.push(...normalizeNodeArray(supporting.nodes));
     }
     if (Array.isArray(supporting.edges)) {
-      edges.push(...(supporting.edges as EdgeChange[]));
+      edges.push(...normalizeEdgeArray(supporting.edges));
     }
   }
 
@@ -530,6 +530,102 @@ function convertLegacyOperation(op: Record<string, unknown>): StoryContextChange
 }
 
 /**
+ * Known data fields for each node type (fields that belong inside `data`).
+ */
+const NODE_DATA_FIELDS = new Set([
+  'title', 'name', 'description', 'summary', 'content', 'text',
+  'role', 'traits', 'motivation', 'arc', 'backstory',
+  'setting', 'location', 'mood', 'conflict', 'resolution',
+  'purpose', 'order', 'beat_type', 'significance',
+]);
+
+/**
+ * Normalize a raw node object from LLM output into a proper NodeChange.
+ * Handles common LLM field variations: op→operation, type→node_type, id→node_id,
+ * and collects stray top-level data fields into `data`.
+ */
+function normalizeNodeChange(raw: Record<string, unknown>): NodeChange {
+  const operation = (raw.operation ?? raw.op ?? 'add') as NodeChange['operation'];
+  const node_type = (raw.node_type ?? raw.type ?? '') as string;
+  const node_id = (raw.node_id ?? raw.id ?? '') as string;
+
+  let data: Record<string, unknown> | undefined;
+  if (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data)) {
+    data = raw.data as Record<string, unknown>;
+  } else {
+    // Collect known data fields from top level
+    const collected: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(raw)) {
+      if (NODE_DATA_FIELDS.has(key)) {
+        collected[key] = value;
+      }
+    }
+    if (Object.keys(collected).length > 0) {
+      data = collected;
+    }
+  }
+
+  const result: NodeChange = { operation, node_type, node_id };
+  if (data) result.data = data;
+  if (raw.previous_data && typeof raw.previous_data === 'object') {
+    result.previous_data = raw.previous_data as Record<string, unknown>;
+  }
+  return result;
+}
+
+/**
+ * Infer edge_type from the node ID prefixes of `from` and `to`.
+ */
+function inferEdgeType(from: string, to: string): string {
+  const fp = from.split('_')[0];
+  const tp = to.split('_')[0];
+
+  if (fp === 'scene' && tp === 'char') return 'HAS_CHARACTER';
+  if (fp === 'scene' && tp === 'location') return 'LOCATED_AT';
+  if (fp === 'scene' && tp === 'obj') return 'FEATURES_OBJECT';
+  if (fp === 'storybeat' && tp === 'beat') return 'ALIGNS_WITH';
+  if (fp === 'storybeat' && tp === 'scene') return 'SATISFIED_BY';
+  if (fp === 'scene' && tp === 'scene') return 'PRECEDES';
+  if (fp === 'storybeat' && tp === 'storybeat') return 'PRECEDES';
+  if (fp === 'beat' && tp === 'beat') return 'PRECEDES';
+  return 'RELATED_TO';
+}
+
+/**
+ * Normalize a raw edge object from LLM output into a proper EdgeChange.
+ * Handles: op→operation, infers edge_type when missing.
+ */
+function normalizeEdgeChange(raw: Record<string, unknown>): EdgeChange {
+  const operation = (raw.operation ?? raw.op ?? 'add') as EdgeChange['operation'];
+  const from = (raw.from ?? '') as string;
+  const to = (raw.to ?? '') as string;
+  const edge_type = (raw.edge_type ?? inferEdgeType(from, to)) as string;
+
+  const result: EdgeChange = { operation, edge_type, from, to };
+  if (raw.from_name) result.from_name = raw.from_name as string;
+  if (raw.to_name) result.to_name = raw.to_name as string;
+  if (raw.properties && typeof raw.properties === 'object') {
+    result.properties = raw.properties as Record<string, unknown>;
+  }
+  return result;
+}
+
+/**
+ * Normalize an array of raw node/edge objects using the appropriate normalizer.
+ */
+function normalizeNodeArray(raw: unknown[]): NodeChange[] {
+  return raw
+    .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+    .map(normalizeNodeChange);
+}
+
+function normalizeEdgeArray(raw: unknown[]): EdgeChange[] {
+  return raw
+    .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+    .map(normalizeEdgeChange);
+}
+
+/**
  * Normalize direct 'changes' structure from LLM output.
  * This handles the format: { storyContext?, nodes, edges }
  */
@@ -540,15 +636,12 @@ function normalizeDirectChanges(
   nodes: NodeChange[];
   edges: EdgeChange[];
 } {
-  const nodes: NodeChange[] = [];
-  const edges: EdgeChange[] = [];
-
-  if (Array.isArray(changes.nodes)) {
-    nodes.push(...(changes.nodes as NodeChange[]));
-  }
-  if (Array.isArray(changes.edges)) {
-    edges.push(...(changes.edges as EdgeChange[]));
-  }
+  const nodes: NodeChange[] = Array.isArray(changes.nodes)
+    ? normalizeNodeArray(changes.nodes)
+    : [];
+  const edges: EdgeChange[] = Array.isArray(changes.edges)
+    ? normalizeEdgeArray(changes.edges)
+    : [];
 
   const result: {
     storyContext?: StoryContextChange[];
