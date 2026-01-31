@@ -109,3 +109,10 @@ export {
   createAgentEventsHandler,
   createCancelAgentJobHandler,
 } from './agents.js';
+export {
+  createRenameEntityHandler,
+  createRebuildMentionsHandler,
+  createValidateMentionsHandler,
+  createGetEntityMentionsHandler,
+  createGetIntroductionPointsHandler,
+} from './mentions.js';

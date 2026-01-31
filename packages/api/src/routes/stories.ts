@@ -86,6 +86,12 @@ import {
   createAgentEventsHandler,
   createCancelAgentJobHandler,
   createOverlayDiffHandler,
+  // Mentions handlers
+  createRenameEntityHandler,
+  createRebuildMentionsHandler,
+  createValidateMentionsHandler,
+  createGetEntityMentionsHandler,
+  createGetIntroductionPointsHandler,
 } from '../handlers/index.js';
 
 export function createStoriesRouter(ctx: StorageContext): Router {
@@ -238,6 +244,13 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.post('/:id/agents/run', createRunAgentHandler(ctx));
   router.get('/:id/agents/jobs/:jobId/events', createAgentEventsHandler(ctx));
   router.post('/:id/agents/jobs/:jobId/cancel', createCancelAgentJobHandler(ctx));
+
+  // Mentions/Entity tracking endpoints
+  router.post('/:id/entities/:entityId/rename', createRenameEntityHandler(ctx));
+  router.get('/:id/entities/:entityId/mentions', createGetEntityMentionsHandler(ctx));
+  router.post('/:id/mentions/rebuild', createRebuildMentionsHandler(ctx));
+  router.get('/:id/mentions/validate', createValidateMentionsHandler(ctx));
+  router.get('/:id/mentions/introductions', createGetIntroductionPointsHandler(ctx));
 
   return router;
 }
