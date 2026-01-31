@@ -5,11 +5,11 @@
  * POST /stories/:id/mentions/rebuild - Rebuild all MENTIONS edges
  * GET /stories/:id/mentions/validate - Validate temporal consistency
  * GET /stories/:id/entities/:entityId/mentions - Get mentions of an entity
+ * GET /stories/:id/mentions/stats - Get migration statistics
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { mentions, applyPatch } from '@apollo/core';
-import type { Patch, PatchOp } from '@apollo/core';
+import { mentions } from '@apollo/core';
 import type { StorageContext } from '../config.js';
 import {
   loadVersionedStateById,
@@ -20,6 +20,7 @@ import {
 } from '../storage.js';
 import { NotFoundError, BadRequestError } from '../middleware/error.js';
 import type { APIResponse } from '../types.js';
+import { getMigrationStats } from '../migrations/migrateMentions.js';
 
 // =============================================================================
 // Response Types
@@ -328,6 +329,41 @@ interface IntroductionPointsData {
     introducedAtBeat: string | null;
     introducedAtPosition: number | null;
   }>;
+}
+
+/**
+ * GET /stories/:id/mentions/stats
+ * Get migration statistics for the story.
+ */
+export function createGetMentionsStatsHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string }>,
+    res: Response<APIResponse<{
+      entityCount: number;
+      contentNodeCount: number;
+      existingMentionsCount: number;
+      needsMigration: boolean;
+    }>>,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
+
+      const graph = await loadGraphById(id, ctx);
+      if (!graph) {
+        throw new NotFoundError(`Story "${id}"`);
+      }
+
+      const stats = getMigrationStats(graph);
+
+      res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 /**

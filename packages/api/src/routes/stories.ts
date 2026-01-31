@@ -92,6 +92,7 @@ import {
   createValidateMentionsHandler,
   createGetEntityMentionsHandler,
   createGetIntroductionPointsHandler,
+  createGetMentionsStatsHandler,
 } from '../handlers/index.js';
 
 export function createStoriesRouter(ctx: StorageContext): Router {
@@ -251,6 +252,7 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.post('/:id/mentions/rebuild', createRebuildMentionsHandler(ctx));
   router.get('/:id/mentions/validate', createValidateMentionsHandler(ctx));
   router.get('/:id/mentions/introductions', createGetIntroductionPointsHandler(ctx));
+  router.get('/:id/mentions/stats', createGetMentionsStatsHandler(ctx));
 
   return router;
 }

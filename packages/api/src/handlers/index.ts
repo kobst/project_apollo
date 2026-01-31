@@ -115,4 +115,5 @@ export {
   createValidateMentionsHandler,
   createGetEntityMentionsHandler,
   createGetIntroductionPointsHandler,
+  createGetMentionsStatsHandler,
 } from './mentions.js';
