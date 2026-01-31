@@ -174,26 +174,36 @@ describe('config', () => {
   });
 
   describe('DEFAULT_STORY_CONTEXT', () => {
-    it('should contain expected sections', () => {
-      expect(DEFAULT_STORY_CONTEXT).toContain('## Creative Direction');
-      expect(DEFAULT_STORY_CONTEXT).toContain('## Themes & Motifs');
-      expect(DEFAULT_STORY_CONTEXT).toContain('## Working Notes');
-      expect(DEFAULT_STORY_CONTEXT).toContain('## Reference & Inspiration');
-      expect(DEFAULT_STORY_CONTEXT).toContain('## Constraints & Rules');
+    it('should have constitution with expected fields', () => {
+      expect(DEFAULT_STORY_CONTEXT).toHaveProperty('constitution');
+      expect(DEFAULT_STORY_CONTEXT.constitution).toHaveProperty('logline');
+      expect(DEFAULT_STORY_CONTEXT.constitution).toHaveProperty('premise');
+      expect(DEFAULT_STORY_CONTEXT.constitution).toHaveProperty('genre');
+      expect(DEFAULT_STORY_CONTEXT.constitution).toHaveProperty('setting');
+      expect(DEFAULT_STORY_CONTEXT.constitution).toHaveProperty('thematicPillars');
+      expect(DEFAULT_STORY_CONTEXT.constitution).toHaveProperty('hardRules');
+      expect(DEFAULT_STORY_CONTEXT.constitution).toHaveProperty('toneEssence');
+      expect(DEFAULT_STORY_CONTEXT.constitution).toHaveProperty('banned');
+      expect(DEFAULT_STORY_CONTEXT.constitution).toHaveProperty('version');
     });
 
-    it('should start with Story Context header', () => {
-      expect(DEFAULT_STORY_CONTEXT.startsWith('# Story Context')).toBe(true);
+    it('should have operational with expected fields', () => {
+      expect(DEFAULT_STORY_CONTEXT).toHaveProperty('operational');
+      expect(DEFAULT_STORY_CONTEXT.operational).toHaveProperty('softGuidelines');
     });
 
-    it('should be trimmed (no leading/trailing whitespace)', () => {
-      expect(DEFAULT_STORY_CONTEXT).toBe(DEFAULT_STORY_CONTEXT.trim());
+    it('should have empty default values', () => {
+      expect(DEFAULT_STORY_CONTEXT.constitution.logline).toBe('');
+      expect(DEFAULT_STORY_CONTEXT.constitution.premise).toBe('');
+      expect(DEFAULT_STORY_CONTEXT.constitution.thematicPillars).toEqual([]);
+      expect(DEFAULT_STORY_CONTEXT.constitution.hardRules).toEqual([]);
+      expect(DEFAULT_STORY_CONTEXT.constitution.banned).toEqual([]);
+      expect(DEFAULT_STORY_CONTEXT.operational.softGuidelines).toEqual([]);
     });
 
-    it('should use ## for section headers', () => {
-      const sections = DEFAULT_STORY_CONTEXT.match(/^## .+$/gm);
-      expect(sections).not.toBeNull();
-      expect(sections!.length).toBe(5);
+    it('should have a version string', () => {
+      expect(typeof DEFAULT_STORY_CONTEXT.constitution.version).toBe('string');
+      expect(DEFAULT_STORY_CONTEXT.constitution.version.length).toBeGreaterThan(0);
     });
   });
 });

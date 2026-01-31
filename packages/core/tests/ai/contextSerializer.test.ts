@@ -35,16 +35,15 @@ describe('contextSerializer', () => {
       expect(result).toContain('# Story: Untitled');
     });
 
-    it('should include logline when provided', () => {
+    it('should include story name in header', () => {
       const graph = createEmptyGraph();
       const metadata: StoryMetadata = {
         name: 'Test',
-        logline: 'A detective investigates a murder.',
       };
 
       const result = serializeStoryContext(graph, metadata);
 
-      expect(result).toContain('Logline: "A detective investigates a murder."');
+      expect(result).toContain('# Story: Test');
     });
 
     it('should include Story Context section when provided', () => {
@@ -138,7 +137,7 @@ describe('contextSerializer', () => {
       const result = serializeStoryContext(graph, metadata);
 
       expect(result).toContain('### Characters');
-      expect(result).toContain('### Locations & Settings');
+      expect(result).toContain('### Locations');
       expect(result).toContain('### Structure (Beats)');
     });
 

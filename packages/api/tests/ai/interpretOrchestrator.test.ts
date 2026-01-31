@@ -69,7 +69,10 @@ describe('interpretOrchestrator', () => {
       expect(pkg.changes.nodes[0].node_id).toMatch(/^scene_/);
     });
 
-    it('should create edges for relates_to references', () => {
+    it('should not create edges for relates_to references', () => {
+      // relates_to is informational only - edges are not created
+      // because the correct edge type cannot be determined without
+      // knowing the types of the related nodes
       const proposal: InterpretationProposal = {
         type: 'node',
         operation: 'add',
@@ -81,10 +84,7 @@ describe('interpretOrchestrator', () => {
 
       const pkg = proposalToPackage(proposal);
 
-      expect(pkg.changes.edges).toHaveLength(2);
-      expect(pkg.changes.edges[0].edge_type).toBe('RELATES_TO');
-      expect(pkg.changes.edges[0].to).toBe('character_mike_001');
-      expect(pkg.changes.edges[1].to).toBe('scene_opening_001');
+      expect(pkg.changes.edges).toHaveLength(0);
     });
 
     it('should convert storyContext proposal to package', () => {
@@ -101,12 +101,12 @@ describe('interpretOrchestrator', () => {
       const pkg = proposalToPackage(proposal);
 
       expect(pkg.changes.storyContext).toHaveLength(1);
-      expect(pkg.changes.storyContext![0].operation).toBe('add');
-      expect(pkg.changes.storyContext![0].section).toBe('Themes & Motifs');
-      expect(pkg.changes.storyContext![0].content).toBe('Trust and betrayal');
+      const op = pkg.changes.storyContext![0].operation;
+      expect(op.type).toBe('addThematicPillar');
+      expect((op as { pillar: string }).pillar).toBe('Trust and betrayal');
     });
 
-    it('should default storyContext section to Working Notes', () => {
+    it('should default storyContext section to guideline', () => {
       const proposal: InterpretationProposal = {
         type: 'storyContext',
         operation: 'add',
@@ -118,7 +118,8 @@ describe('interpretOrchestrator', () => {
 
       const pkg = proposalToPackage(proposal);
 
-      expect(pkg.changes.storyContext![0].section).toBe('Working Notes');
+      const op = pkg.changes.storyContext![0].operation;
+      expect(op.type).toBe('addGuideline');
     });
 
     it('should have empty impact object', () => {

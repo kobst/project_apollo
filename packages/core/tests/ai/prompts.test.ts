@@ -26,7 +26,7 @@ describe('prompts', () => {
     it('should include the count in prompt', () => {
       const prompt = buildGenerationPrompt(baseParams);
 
-      expect(prompt).toContain('generate EXACTLY 3 complete narrative packages');
+      expect(prompt).toContain('exactly 3 complete narrative packages');
     });
 
     it('should include entry point description', () => {
@@ -39,7 +39,7 @@ describe('prompts', () => {
     it('should include story context', () => {
       const prompt = buildGenerationPrompt(baseParams);
 
-      expect(prompt).toContain('## Current Story State');
+      expect(prompt).toContain('## Story State');
       expect(prompt).toContain('# Story: Test');
     });
 
@@ -51,7 +51,7 @@ describe('prompts', () => {
 
       const prompt = buildGenerationPrompt(params);
 
-      expect(prompt).toContain('## Open Gaps (Opportunities)');
+      expect(prompt).toContain('## Open Gaps');
       expect(prompt).toContain('Missing midpoint scene');
     });
 
@@ -63,46 +63,46 @@ describe('prompts', () => {
 
       const prompt = buildGenerationPrompt(params);
 
-      expect(prompt).toContain('## User Direction');
+      expect(prompt).toContain('## Direction');
       expect(prompt).toContain('Focus on betrayal themes');
     });
 
     it('should not include direction section when not provided', () => {
       const prompt = buildGenerationPrompt(baseParams);
 
-      expect(prompt).not.toContain('## User Direction');
+      expect(prompt).not.toContain('## Direction');
     });
 
     it('should include budget limits for depth', () => {
       const prompt = buildGenerationPrompt(baseParams);
 
-      expect(prompt).toContain('## Generation Budget');
-      expect(prompt).toContain('**Depth**: medium');
+      expect(prompt).toContain('## Budget');
+      expect(prompt).toContain('Depth: medium');
       // medium depth: maxNodes=5, maxOps=10
-      expect(prompt).toContain('Maximum new nodes per package: 5');
-      expect(prompt).toContain('Maximum total operations per package: 10');
+      expect(prompt).toContain('Max nodes/pkg: 5');
+      expect(prompt).toContain('Max ops/pkg: 10');
     });
 
     it('should include narrow depth budget', () => {
       const params: GenerationParams = { ...baseParams, depth: 'narrow' };
       const prompt = buildGenerationPrompt(params);
 
-      expect(prompt).toContain('**Depth**: narrow');
-      expect(prompt).toContain('Maximum new nodes per package: 2');
+      expect(prompt).toContain('Depth: narrow');
+      expect(prompt).toContain('Max nodes/pkg: 2');
     });
 
     it('should include wide depth budget', () => {
       const params: GenerationParams = { ...baseParams, depth: 'wide' };
       const prompt = buildGenerationPrompt(params);
 
-      expect(prompt).toContain('**Depth**: wide');
-      expect(prompt).toContain('Maximum new nodes per package: 10');
+      expect(prompt).toContain('Depth: wide');
+      expect(prompt).toContain('Max nodes/pkg: 10');
     });
 
     it('should include available node types', () => {
       const prompt = buildGenerationPrompt(baseParams);
 
-      expect(prompt).toContain('## Available Node Types');
+      expect(prompt).toContain('## Node Types');
       expect(prompt).toContain('Character');
       expect(prompt).toContain('Location');
       expect(prompt).toContain('StoryBeat');
@@ -112,7 +112,7 @@ describe('prompts', () => {
     it('should include available edge types', () => {
       const prompt = buildGenerationPrompt(baseParams);
 
-      expect(prompt).toContain('## Available Edge Types');
+      expect(prompt).toContain('## Edge Types');
       expect(prompt).toContain('HAS_CHARACTER');
       expect(prompt).toContain('LOCATED_AT');
       expect(prompt).toContain('ALIGNS_WITH');
@@ -121,7 +121,7 @@ describe('prompts', () => {
     it('should include JSON output schema', () => {
       const prompt = buildGenerationPrompt(baseParams);
 
-      expect(prompt).toContain('## Output Format');
+      expect(prompt).toContain('## Output');
       expect(prompt).toContain('```json');
       expect(prompt).toContain('"packages"');
     });
@@ -146,7 +146,7 @@ describe('prompts', () => {
 
         const prompt = buildGenerationPrompt(params);
 
-        expect(prompt).toContain('scenes and supporting elements for StoryBeat: sb_001');
+        expect(prompt).toContain('scenes for StoryBeat: sb_001');
       });
 
       it('should describe character entry point', () => {
@@ -157,7 +157,7 @@ describe('prompts', () => {
 
         const prompt = buildGenerationPrompt(params);
 
-        expect(prompt).toContain('story developments featuring Character: char_mike');
+        expect(prompt).toContain('story for Character: char_mike');
       });
 
       it('should describe gap entry point', () => {
@@ -168,7 +168,7 @@ describe('prompts', () => {
 
         const prompt = buildGenerationPrompt(params);
 
-        expect(prompt).toContain('resolve gap: gap_midpoint');
+        expect(prompt).toContain('Resolve gap: gap_midpoint');
       });
 
       it('should describe idea entry point', () => {
@@ -179,7 +179,7 @@ describe('prompts', () => {
 
         const prompt = buildGenerationPrompt(params);
 
-        expect(prompt).toContain('Develop Idea into concrete story elements: idea_twist');
+        expect(prompt).toContain('Develop Idea: idea_twist');
       });
 
       it('should describe naked entry point', () => {
@@ -190,7 +190,7 @@ describe('prompts', () => {
 
         const prompt = buildGenerationPrompt(params);
 
-        expect(prompt).toContain('Analyze the story and generate highest-value additions');
+        expect(prompt).toContain('Analyze story and generate highest-value additions');
       });
 
       it('should include targetData in description when provided', () => {
@@ -228,14 +228,14 @@ describe('prompts', () => {
     it('should include story context', () => {
       const prompt = buildInterpretationPrompt(baseParams);
 
-      expect(prompt).toContain('## Current Story State');
+      expect(prompt).toContain('## Story State');
       expect(prompt).toContain('# Story: Test');
     });
 
     it('should include available node types', () => {
       const prompt = buildInterpretationPrompt(baseParams);
 
-      expect(prompt).toContain('## Available Node Types');
+      expect(prompt).toContain('## Node Types');
       expect(prompt).toContain('Character');
       expect(prompt).toContain('Location');
       expect(prompt).toContain('StoryBeat');
@@ -251,7 +251,7 @@ describe('prompts', () => {
 
       const prompt = buildInterpretationPrompt(params);
 
-      expect(prompt).toContain('## Recently Modified Nodes');
+      expect(prompt).toContain('## Recent Nodes');
       expect(prompt).toContain('- Character: Mike');
       expect(prompt).toContain('- Scene: Opening');
     });
@@ -259,13 +259,13 @@ describe('prompts', () => {
     it('should not include recent nodes section when not provided', () => {
       const prompt = buildInterpretationPrompt(baseParams);
 
-      expect(prompt).not.toContain('## Recently Modified Nodes');
+      expect(prompt).not.toContain('## Recent Nodes');
     });
 
     it('should include JSON output schema', () => {
       const prompt = buildInterpretationPrompt(baseParams);
 
-      expect(prompt).toContain('## Output Format');
+      expect(prompt).toContain('## Output');
       expect(prompt).toContain('```json');
       expect(prompt).toContain('"interpretation"');
       expect(prompt).toContain('"proposals"');
@@ -275,9 +275,8 @@ describe('prompts', () => {
     it('should include guidelines', () => {
       const prompt = buildInterpretationPrompt(baseParams);
 
-      expect(prompt).toContain('## Guidelines');
-      expect(prompt).toContain('concrete story element');
-      expect(prompt).toContain('thematic or directional');
+      expect(prompt).toContain('Concrete element');
+      expect(prompt).toContain('Thematic/directional');
       expect(prompt).toContain('Idea node');
     });
   });
@@ -329,7 +328,7 @@ describe('prompts', () => {
     it('should include count in prompt', () => {
       const prompt = buildRefinementPrompt(baseParams);
 
-      expect(prompt).toContain('generate 3 variations');
+      expect(prompt).toContain('Generate 3 variations');
     });
 
     it('should include base package title and rationale', () => {
@@ -344,17 +343,17 @@ describe('prompts', () => {
       const prompt = buildRefinementPrompt(baseParams);
 
       expect(prompt).toContain('### Current Changes');
-      expect(prompt).toContain('**Node Changes:**');
+      expect(prompt).toContain('**Nodes:**');
       expect(prompt).toContain('[add] Character: Agent Torres');
-      expect(prompt).toContain('**Edge Changes:**');
-      expect(prompt).toContain('scene_reveal -[HAS_CHARACTER]-> char_torres');
+      expect(prompt).toContain('**Edges:**');
+      expect(prompt).toContain('scene_reveal → char_torres');
     });
 
     it('should include keep elements', () => {
       const prompt = buildRefinementPrompt(baseParams);
 
-      expect(prompt).toContain('### Elements to Keep Unchanged');
-      expect(prompt).toContain('- char_torres');
+      expect(prompt).toContain('Keep:');
+      expect(prompt).toContain('char_torres');
     });
 
     it('should show "None specified" when no keep elements', () => {
@@ -371,8 +370,8 @@ describe('prompts', () => {
     it('should include regenerate elements', () => {
       const prompt = buildRefinementPrompt(baseParams);
 
-      expect(prompt).toContain('### Elements to Regenerate');
-      expect(prompt).toContain('- scene_reveal');
+      expect(prompt).toContain('Regenerate:');
+      expect(prompt).toContain('scene_reveal');
     });
 
     it('should show default message when no regenerate elements', () => {
@@ -389,14 +388,14 @@ describe('prompts', () => {
     it('should include user guidance', () => {
       const prompt = buildRefinementPrompt(baseParams);
 
-      expect(prompt).toContain('### User Guidance');
+      expect(prompt).toContain('Guidance:');
       expect(prompt).toContain('Make Torres more sympathetic');
     });
 
     it('should include story context', () => {
       const prompt = buildRefinementPrompt(baseParams);
 
-      expect(prompt).toContain('## Current Story State');
+      expect(prompt).toContain('## Story State');
       expect(prompt).toContain('# Story: Test');
     });
 
@@ -404,14 +403,14 @@ describe('prompts', () => {
       const prompt = buildRefinementPrompt(baseParams);
 
       expect(prompt).toContain('## Budget');
-      expect(prompt).toContain('**Depth**: medium');
-      expect(prompt).toContain('Maximum new nodes per variation: 5');
+      expect(prompt).toContain('Depth: medium');
+      expect(prompt).toContain('Max nodes: 5');
     });
 
     it('should include JSON output schema with parent lineage', () => {
       const prompt = buildRefinementPrompt(baseParams);
 
-      expect(prompt).toContain('## Output Format');
+      expect(prompt).toContain('## Output');
       expect(prompt).toContain(`"parent_package_id": "${basePackage.id}"`);
       expect(prompt).toContain('"refinement_prompt"');
     });
@@ -447,7 +446,7 @@ describe('prompts', () => {
         changes: {
           ...basePackage.changes,
           storyContext: [
-            { operation: 'add', section: 'Themes', content: 'New theme' },
+            { operation: { type: 'addThematicPillar', pillar: 'New theme' } },
           ],
         },
       };
@@ -459,8 +458,8 @@ describe('prompts', () => {
 
       const prompt = buildRefinementPrompt(params);
 
-      expect(prompt).toContain('**Story Context Changes:**');
-      expect(prompt).toContain('[add] Themes: "New theme"');
+      expect(prompt).toContain('**Context:**');
+      expect(prompt).toContain('[add pillar]: "New theme"');
     });
   });
 });

@@ -93,15 +93,10 @@ describe('refineOrchestrator', () => {
         changes: {
           storyContext: [
             {
-              operation: 'add',
-              section: 'Themes & Motifs',
-              content: 'Trust and betrayal',
+              operation: { type: 'addThematicPillar', pillar: 'Trust and betrayal' },
             },
             {
-              operation: 'modify',
-              section: 'Constraints',
-              content: 'No flashbacks',
-              previous_content: 'Limited flashbacks',
+              operation: { type: 'updateHardRule', id: 'hr_001', text: 'No flashbacks' },
             },
           ],
           nodes: [],
@@ -113,12 +108,12 @@ describe('refineOrchestrator', () => {
 
       expect(result.storyContextChanges).toHaveLength(2);
       expect(result.storyContextChanges[0]).toEqual({
-        section: 'Themes & Motifs',
-        operation: 'add',
+        operationType: 'addThematicPillar',
+        summary: 'Add pillar: Trust and betrayal...',
       });
       expect(result.storyContextChanges[1]).toEqual({
-        section: 'Constraints',
-        operation: 'modify',
+        operationType: 'updateHardRule',
+        summary: 'Update rule hr_001',
       });
     });
 

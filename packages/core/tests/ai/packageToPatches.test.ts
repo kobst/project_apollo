@@ -292,9 +292,7 @@ describe('packageToPatches', () => {
         changes: {
           storyContext: [
             {
-              operation: 'add',
-              section: 'Themes & Motifs',
-              content: 'Trust and betrayal',
+              operation: { type: 'addThematicPillar', pillar: 'Trust and betrayal' },
             },
           ],
           nodes: [],
@@ -303,16 +301,14 @@ describe('packageToPatches', () => {
         impact: { fulfills_gaps: [], creates_gaps: [], conflicts: [] },
       };
 
-      const currentContext = '## Themes & Motifs\n- Existing theme';
-
-      const result = packageToPatch(pkg, 'sv_base', currentContext);
+      const result = packageToPatch(pkg, 'sv_base');
 
       expect(result.storyContextUpdate).toBeDefined();
-      expect(result.storyContextUpdate!.newContext).toContain('Trust and betrayal');
       expect(result.storyContextUpdate!.changes).toHaveLength(1);
+      expect(result.storyContextUpdate!.changes[0].operation.type).toBe('addThematicPillar');
     });
 
-    it('should add content to existing section', () => {
+    it('should pass through multiple storyContext changes', () => {
       const pkg: NarrativePackage = {
         id: 'pkg_1',
         title: 'Test',
@@ -322,9 +318,10 @@ describe('packageToPatches', () => {
         changes: {
           storyContext: [
             {
-              operation: 'add',
-              section: 'Themes & Motifs',
-              content: 'New theme',
+              operation: { type: 'addThematicPillar', pillar: 'New theme' },
+            },
+            {
+              operation: { type: 'setWorkingNotes', content: 'A note' },
             },
           ],
           nodes: [],
@@ -333,17 +330,14 @@ describe('packageToPatches', () => {
         impact: { fulfills_gaps: [], creates_gaps: [], conflicts: [] },
       };
 
-      const currentContext = '## Themes & Motifs\n- Existing theme\n\n## Working Notes\n- Note';
+      const result = packageToPatch(pkg, 'sv_base');
 
-      const result = packageToPatch(pkg, 'sv_base', currentContext);
-
-      expect(result.storyContextUpdate!.newContext).toContain('- Existing theme');
-      expect(result.storyContextUpdate!.newContext).toContain('- New theme');
-      // Working Notes should still be there
-      expect(result.storyContextUpdate!.newContext).toContain('## Working Notes');
+      expect(result.storyContextUpdate!.changes).toHaveLength(2);
+      expect(result.storyContextUpdate!.changes[0].operation.type).toBe('addThematicPillar');
+      expect(result.storyContextUpdate!.changes[1].operation.type).toBe('setWorkingNotes');
     });
 
-    it('should create new section if it does not exist', () => {
+    it('should handle addGuideline operations', () => {
       const pkg: NarrativePackage = {
         id: 'pkg_1',
         title: 'Test',
@@ -353,9 +347,7 @@ describe('packageToPatches', () => {
         changes: {
           storyContext: [
             {
-              operation: 'add',
-              section: 'New Section',
-              content: 'New content',
+              operation: { type: 'addGuideline', guideline: { id: 'sg_001', tags: ['general'], text: 'New content' } },
             },
           ],
           nodes: [],
@@ -364,15 +356,13 @@ describe('packageToPatches', () => {
         impact: { fulfills_gaps: [], creates_gaps: [], conflicts: [] },
       };
 
-      const currentContext = '## Existing Section\n- Content';
+      const result = packageToPatch(pkg, 'sv_base');
 
-      const result = packageToPatch(pkg, 'sv_base', currentContext);
-
-      expect(result.storyContextUpdate!.newContext).toContain('## New Section');
-      expect(result.storyContextUpdate!.newContext).toContain('- New content');
+      expect(result.storyContextUpdate!.changes).toHaveLength(1);
+      expect(result.storyContextUpdate!.changes[0].operation.type).toBe('addGuideline');
     });
 
-    it('should handle modify operations by replacing content', () => {
+    it('should handle addHardRule operations', () => {
       const pkg: NarrativePackage = {
         id: 'pkg_1',
         title: 'Test',
@@ -382,10 +372,7 @@ describe('packageToPatches', () => {
         changes: {
           storyContext: [
             {
-              operation: 'modify',
-              section: 'Themes',
-              content: 'Updated theme',
-              previous_content: 'Old theme',
+              operation: { type: 'addHardRule', rule: { id: 'hr_001', text: 'No flashbacks' } },
             },
           ],
           nodes: [],
@@ -394,15 +381,13 @@ describe('packageToPatches', () => {
         impact: { fulfills_gaps: [], creates_gaps: [], conflicts: [] },
       };
 
-      const currentContext = '## Themes\n- Old theme';
+      const result = packageToPatch(pkg, 'sv_base');
 
-      const result = packageToPatch(pkg, 'sv_base', currentContext);
-
-      expect(result.storyContextUpdate!.newContext).toContain('Updated theme');
-      expect(result.storyContextUpdate!.newContext).not.toContain('Old theme');
+      expect(result.storyContextUpdate!.changes).toHaveLength(1);
+      expect(result.storyContextUpdate!.changes[0].operation.type).toBe('addHardRule');
     });
 
-    it('should handle delete operations by removing content', () => {
+    it('should handle removeThematicPillar operations', () => {
       const pkg: NarrativePackage = {
         id: 'pkg_1',
         title: 'Test',
@@ -412,9 +397,7 @@ describe('packageToPatches', () => {
         changes: {
           storyContext: [
             {
-              operation: 'delete',
-              section: 'Themes',
-              content: '- Remove this',
+              operation: { type: 'removeThematicPillar', index: 0 },
             },
           ],
           nodes: [],
@@ -423,13 +406,10 @@ describe('packageToPatches', () => {
         impact: { fulfills_gaps: [], creates_gaps: [], conflicts: [] },
       };
 
-      const currentContext = '## Themes\n- Keep this\n- Remove this\n- And this';
+      const result = packageToPatch(pkg, 'sv_base');
 
-      const result = packageToPatch(pkg, 'sv_base', currentContext);
-
-      expect(result.storyContextUpdate!.newContext).toContain('Keep this');
-      expect(result.storyContextUpdate!.newContext).toContain('And this');
-      expect(result.storyContextUpdate!.newContext).not.toContain('Remove this');
+      expect(result.storyContextUpdate!.changes).toHaveLength(1);
+      expect(result.storyContextUpdate!.changes[0].operation.type).toBe('removeThematicPillar');
     });
 
     it('should not return storyContextUpdate when no story context changes', () => {

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { LLMClient, createLLMClient, isLLMConfigured } from '../../src/ai/llmClient.js';
+import { createLLMClient, isLLMConfigured, getMissingKeyError } from '../../src/ai/llmClient.js';
 
 // Mock the Anthropic SDK
 vi.mock('@anthropic-ai/sdk', () => {
@@ -47,22 +47,26 @@ describe('LLMClient', () => {
     process.env = originalEnv;
   });
 
-  describe('constructor', () => {
+  describe('createLLMClient', () => {
     it('should throw if API key is missing', () => {
-      expect(() => new LLMClient({ apiKey: '' })).toThrow('ANTHROPIC_API_KEY is required');
+      delete process.env.ANTHROPIC_API_KEY;
+      expect(() => createLLMClient({ apiKey: '' })).toThrow('ANTHROPIC_API_KEY is required');
     });
 
     it('should create client with valid API key', () => {
-      const client = new LLMClient({ apiKey: 'test-key' });
-      expect(client).toBeInstanceOf(LLMClient);
+      const client = createLLMClient({ apiKey: 'test-key' });
+      expect(client).toBeDefined();
+      expect(typeof client.complete).toBe('function');
+      expect(typeof client.stream).toBe('function');
     });
 
     it('should merge config with defaults', () => {
-      const client = new LLMClient({
+      const client = createLLMClient({
         apiKey: 'test-key',
         maxTokens: 2000,
       });
-      expect(client).toBeInstanceOf(LLMClient);
+      expect(client).toBeDefined();
+      expect(typeof client.complete).toBe('function');
     });
   });
 
@@ -83,7 +87,7 @@ describe('LLMClient', () => {
         },
       }));
 
-      const client = new LLMClient({ apiKey: 'test-key', enableCache: false });
+      const client = createLLMClient({ apiKey: 'test-key', enableCache: false });
       const response = await client.complete('Test prompt');
 
       expect(response.content).toBe('Test response');
@@ -107,7 +111,7 @@ describe('LLMClient', () => {
         },
       }));
 
-      const client = new LLMClient({ apiKey: 'test-key', enableCache: false });
+      const client = createLLMClient({ apiKey: 'test-key', enableCache: false });
       await client.complete('User prompt', 'System prompt');
 
       expect(mockCreate).toHaveBeenCalledWith(
@@ -134,7 +138,7 @@ describe('LLMClient', () => {
         },
       }));
 
-      const client = new LLMClient({ apiKey: 'test-key', enableCache: true });
+      const client = createLLMClient({ apiKey: 'test-key', enableCache: true });
 
       // First call
       const response1 = await client.complete('Test prompt');
@@ -162,7 +166,7 @@ describe('LLMClient', () => {
         },
       }));
 
-      const client = new LLMClient({ apiKey: 'test-key', enableCache: false });
+      const client = createLLMClient({ apiKey: 'test-key', enableCache: false });
 
       await client.complete('Test prompt');
       await client.complete('Test prompt');
@@ -185,7 +189,7 @@ describe('LLMClient', () => {
         },
       }));
 
-      const client = new LLMClient({ apiKey: 'test-key', enableCache: true });
+      const client = createLLMClient({ apiKey: 'test-key', enableCache: true });
 
       await client.complete('Test prompt');
       client.clearCache();
@@ -197,7 +201,7 @@ describe('LLMClient', () => {
 
   describe('getCacheStats', () => {
     it('should return cache statistics', () => {
-      const client = new LLMClient({ apiKey: 'test-key' });
+      const client = createLLMClient({ apiKey: 'test-key' });
       const stats = client.getCacheStats();
 
       expect(stats).toHaveProperty('size');
@@ -230,7 +234,7 @@ describe('LLMClient', () => {
         },
       }));
 
-      const client = new LLMClient({ apiKey: 'test-key' });
+      const client = createLLMClient({ apiKey: 'test-key' });
       const tokens: string[] = [];
 
       await client.stream('Test', undefined, {
@@ -258,7 +262,7 @@ describe('LLMClient', () => {
         },
       }));
 
-      const client = new LLMClient({ apiKey: 'test-key' });
+      const client = createLLMClient({ apiKey: 'test-key' });
       let completedResponse: unknown = null;
 
       await client.stream('Test', undefined, {
@@ -289,7 +293,7 @@ describe('LLMClient', () => {
         },
       }));
 
-      const client = new LLMClient({ apiKey: 'test-key' });
+      const client = createLLMClient({ apiKey: 'test-key' });
       let errorReceived: Error | null = null;
 
       await expect(
@@ -306,7 +310,7 @@ describe('LLMClient', () => {
   });
 });
 
-describe('createLLMClient', () => {
+describe('createLLMClient factory', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
@@ -322,7 +326,8 @@ describe('createLLMClient', () => {
 
     const client = createLLMClient();
 
-    expect(client).toBeInstanceOf(LLMClient);
+    expect(client).toBeDefined();
+    expect(typeof client.complete).toBe('function');
   });
 
   it('should override config with provided values', () => {
@@ -330,7 +335,8 @@ describe('createLLMClient', () => {
 
     const client = createLLMClient({ maxTokens: 2000 });
 
-    expect(client).toBeInstanceOf(LLMClient);
+    expect(client).toBeDefined();
+    expect(typeof client.complete).toBe('function');
   });
 
   it('should throw if API key not in environment', () => {

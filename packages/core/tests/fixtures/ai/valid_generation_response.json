@@ -9,9 +9,7 @@
       "changes": {
         "storyContext": [
           {
-            "operation": "add",
-            "section": "Themes & Motifs",
-            "content": "Institutional betrayal - the system protects its own"
+            "operation": { "type": "addThematicPillar", "pillar": "Institutional betrayal - the system protects its own" }
           }
         ],
         "nodes": [
