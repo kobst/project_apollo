@@ -288,7 +288,7 @@ function getConstrainedCharacterSchema(includeArcs: boolean): string {
     {
       "id": "pkg_12345_abc",
       "title": "Short descriptive title",
-      "summary": "Why this package makes sense for the story",
+      "rationale": "Why this package makes sense for the story",
       "confidence": 0.85,
       "style_tags": ["dramatic", "complex"],
       "primary": {
@@ -346,7 +346,7 @@ function getConstrainedCharacterSchema(includeArcs: boolean): string {
     {
       "id": "pkg_12345_abc",
       "title": "Short descriptive title",
-      "summary": "Why this package makes sense for the story",
+      "rationale": "Why this package makes sense for the story",
       "confidence": 0.85,
       "style_tags": ["dramatic", "complex"],
       "primary": {
@@ -390,7 +390,7 @@ function getFlexibleCharacterSchema(includeArcs: boolean): string {
     {
       "id": "pkg_12345_abc",
       "title": "Short descriptive title",
-      "summary": "Why this package makes sense for the story",
+      "rationale": "Why this package makes sense for the story",
       "confidence": 0.85,
       "style_tags": ["dramatic", "complex"],
       "primary": {

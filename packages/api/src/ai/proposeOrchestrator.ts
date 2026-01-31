@@ -74,8 +74,8 @@ function resolveConstraints(request: ai.ProposeRequest): ResolvedRequest {
   let constraints: ai.ResolvedConstraints = { ...ai.SYSTEM_DEFAULTS.constraints };
   let options: ai.ResolvedOptions = { ...ai.SYSTEM_DEFAULTS.options };
 
-  // 2. Apply mode defaults if mode is specified
-  if (request.mode) {
+  // 2. Apply mode defaults if mode is specified and exists in defaults
+  if (request.mode && ai.MODE_DEFAULTS[request.mode]) {
     const modeConfig = ai.MODE_DEFAULTS[request.mode];
     constraints = { ...modeConfig.constraints };
     options = { ...modeConfig.options };

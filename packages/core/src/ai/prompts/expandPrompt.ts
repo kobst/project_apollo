@@ -370,7 +370,7 @@ function getContextExpansionSchema(isConstrained: boolean): string {
     {
       "id": "pkg_12345_abc",
       "title": "Short descriptive title",
-      "summary": "Why this expansion makes sense",
+      "rationale": "Why this expansion makes sense",
       "confidence": 0.85,
       "style_tags": ["thematic", "tonal"],
       "changes": {
@@ -406,7 +406,7 @@ function getContextExpansionSchema(isConstrained: boolean): string {
     {
       "id": "pkg_12345_abc",
       "title": "Short descriptive title",
-      "summary": "Why this expansion makes sense",
+      "rationale": "Why this expansion makes sense",
       "confidence": 0.85,
       "style_tags": ["thematic", "tonal"],
       "changes": {
@@ -457,7 +457,7 @@ function getNodeExpansionSchema(isConstrained: boolean): string {
     {
       "id": "pkg_12345_abc",
       "title": "Short descriptive title",
-      "summary": "Why this expansion makes sense",
+      "rationale": "Why this expansion makes sense",
       "confidence": 0.85,
       "style_tags": ["character", "development"],
       "primary": {
@@ -499,7 +499,7 @@ function getNodeExpansionSchema(isConstrained: boolean): string {
     {
       "id": "pkg_12345_abc",
       "title": "Short descriptive title",
-      "summary": "Why this expansion makes sense",
+      "rationale": "Why this expansion makes sense",
       "confidence": 0.85,
       "style_tags": ["character", "development"],
       "primary": {

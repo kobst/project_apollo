@@ -2,6 +2,22 @@
  * Prompt template exports.
  */
 
+// Shared utilities
+export {
+  PROMPT_VERSION,
+  JSON_OUTPUT_RULES,
+  PACKAGE_SCHEMA_DOCS,
+  NODE_ID_FORMATS,
+  getPackageSchemaExample,
+  getIdFormatDocs,
+  formatNodesCompact,
+  getCreativityLabel,
+  getValidationRules,
+  getEdgeTypeDocs,
+  getPromptHeader,
+} from './shared.js';
+
+// Prompt builders
 export { buildInterpretationPrompt } from './interpretationPrompt.js';
 export { buildGenerationPrompt } from './generationPrompt.js';
 export { buildRefinementPrompt } from './refinementPrompt.js';

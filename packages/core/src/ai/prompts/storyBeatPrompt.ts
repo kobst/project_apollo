@@ -203,7 +203,7 @@ function getConstrainedSchema(): string {
     {
       "id": "pkg_12345_abc",
       "title": "Short descriptive title",
-      "summary": "Why this package makes sense for the story",
+      "rationale": "Why this package makes sense for the story",
       "confidence": 0.85,
       "style_tags": ["dramatic", "revelation"],
       "primary": {
@@ -253,7 +253,7 @@ function getFlexibleSchema(): string {
     {
       "id": "pkg_12345_abc",
       "title": "Short descriptive title",
-      "summary": "Why this package makes sense for the story",
+      "rationale": "Why this package makes sense for the story",
       "confidence": 0.85,
       "style_tags": ["dramatic", "revelation"],
       "primary": {

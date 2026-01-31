@@ -304,8 +304,9 @@ function validatePackageSchema(pkg: unknown, index: number): void {
   if (typeof p.title !== 'string') {
     throw new ParseError(`Package ${index} missing title`, pkg);
   }
-  if (typeof p.summary !== 'string') {
-    throw new ParseError(`Package ${index} missing summary`, pkg);
+  // Accept either 'summary' or 'rationale' for backwards compatibility
+  if (typeof p.summary !== 'string' && typeof p.rationale !== 'string') {
+    throw new ParseError(`Package ${index} missing summary or rationale`, pkg);
   }
 
   // Either 'primary' or 'changes' structure required
@@ -349,7 +350,8 @@ function normalizePackage(pkg: Record<string, unknown>): NarrativePackage {
   const result: NarrativePackage = {
     id: String(pkg.id),
     title: String(pkg.title),
-    rationale: String(pkg.summary), // Use 'summary' field as rationale
+    // Accept either 'summary' or 'rationale' field, prefer 'rationale' if both present
+    rationale: String(pkg.rationale ?? pkg.summary ?? ''),
     confidence: normalizeConfidence(pkg.confidence),
     style_tags: normalizeStringArray(pkg.style_tags),
     changes,
