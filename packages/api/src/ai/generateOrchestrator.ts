@@ -177,6 +177,14 @@ export async function generatePackages(
     // Could attempt to fix or just warn
   }
 
+  // 12b. Validate packages (temporal consistency via mentions)
+  const validatedPackages = ai.validatePackages(result.packages, graph);
+  const mentionsValidation = ai.getValidationSummary(validatedPackages);
+  if (mentionsValidation !== 'No validation warnings') {
+    console.warn(`Package validation: ${mentionsValidation}`);
+  }
+  result.packages = validatedPackages;
+
   // 13. Create or update session
   let session = await loadGenerationSession(storyId, ctx);
 

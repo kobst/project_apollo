@@ -235,6 +235,14 @@ export async function proposeStoryBeats(
     }
   }
 
+  // 10b. Validate packages (temporal consistency via mentions)
+  const validatedPackages = ai.validatePackages(filteredResult.packages, graph);
+  const validationSummary = ai.getValidationSummary(validatedPackages);
+  if (validationSummary !== 'No validation warnings') {
+    console.warn(`[proposeStoryBeats] Package validation: ${validationSummary}`);
+  }
+  filteredResult.packages = validatedPackages;
+
   // 11. Create or update session
   let session = await loadGenerationSession(storyId, ctx);
   const versionInfo = await getCurrentVersionInfo(storyId, ctx);

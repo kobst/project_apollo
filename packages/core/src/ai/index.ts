@@ -82,6 +82,8 @@ export type {
   ValidationResult,
   ValidationError,
   ValidationWarning,
+  TemporalViolationInfo,
+  MissingDependencyInfo,
   // Unified Propose types
   ProposalMode,
   ProposeIntent,
@@ -309,3 +311,16 @@ export type {
   ConnectionSuggestion,
   ProposalWarning,
 } from './proposalValidator.js';
+
+// =============================================================================
+// Package Validation (Temporal/Mentions)
+// =============================================================================
+
+export {
+  validatePackage,
+  validatePackages,
+  getValidationSummary,
+} from './packageValidator.js';
+export type {
+  PackageValidationResult,
+} from './packageValidator.js';

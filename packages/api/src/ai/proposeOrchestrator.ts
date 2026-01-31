@@ -19,6 +19,7 @@ import {
   type GenerationEntryPoint,
 } from '../session.js';
 import { getCurrentVersionInfo } from '../savedPackages.js';
+import { loadGraphById } from '../storage.js';
 import { LLMClient, type StreamCallbacks } from './llmClient.js';
 import { interpretUserInput, proposalToPackage } from './interpretOrchestrator.js';
 import { generatePackages } from './generateOrchestrator.js';
@@ -156,7 +157,17 @@ class InterpretStrategy implements ProposeStrategy {
     );
 
     // Convert proposals to NarrativePackages
-    const packages = result.proposals.map((proposal) => proposalToPackage(proposal));
+    let packages = result.proposals.map((proposal) => proposalToPackage(proposal));
+
+    // Validate packages (temporal consistency via mentions)
+    const graph = await loadGraphById(storyId, ctx);
+    if (graph) {
+      packages = ai.validatePackages(packages, graph);
+      const validationSummary = ai.getValidationSummary(packages);
+      if (validationSummary !== 'No validation warnings') {
+        console.warn(`[propose/interpret] Package validation: ${validationSummary}`);
+      }
+    }
 
     // Create generation session to hold packages
     const versionInfo = await getCurrentVersionInfo(storyId, ctx);

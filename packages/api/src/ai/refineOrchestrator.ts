@@ -162,6 +162,14 @@ export async function refinePackage(
     result = ai.regenerateInvalidIds(result, existingNodeIds);
   }
 
+  // 10b. Validate packages (temporal consistency via mentions)
+  const validatedPackages = ai.validatePackages(result.packages, graph);
+  const validationSummary = ai.getValidationSummary(validatedPackages);
+  if (validationSummary !== 'No validation warnings') {
+    console.warn(`Package validation: ${validationSummary}`);
+  }
+  result.packages = validatedPackages;
+
   // 11. Set parent_package_id on all variations
   const variations = result.packages.map((pkg) => ({
     ...pkg,

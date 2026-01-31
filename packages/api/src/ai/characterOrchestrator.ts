@@ -232,7 +232,15 @@ export async function proposeCharacters(
     filteredResult.packages = fixedResult.packages;
   }
 
-  // 10. Create or update session
+  // 11b. Validate packages (temporal consistency via mentions)
+  const validatedPackages = ai.validatePackages(filteredResult.packages, graph);
+  const validationSummary = ai.getValidationSummary(validatedPackages);
+  if (validationSummary !== 'No validation warnings') {
+    console.warn(`[proposeCharacters] Package validation: ${validationSummary}`);
+  }
+  filteredResult.packages = validatedPackages;
+
+  // 12. Create or update session
   let session = await loadGenerationSession(storyId, ctx);
   const versionInfo = await getCurrentVersionInfo(storyId, ctx);
 

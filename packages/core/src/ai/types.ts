@@ -120,6 +120,56 @@ export interface NarrativePackage {
     /** Conflicts with existing content */
     conflicts: ConflictInfo[];
   };
+
+  /** Validation results (temporal violations, missing dependencies, etc.) */
+  validation?: {
+    /** Temporal violations from mentions analysis */
+    temporalViolations?: TemporalViolationInfo[];
+    /** Missing entity dependencies */
+    missingDependencies?: MissingDependencyInfo[];
+  };
+}
+
+/**
+ * Information about a temporal violation in a package.
+ */
+export interface TemporalViolationInfo {
+  /** Node ID containing the violation */
+  nodeId: string;
+  /** Type of the node */
+  nodeType: string;
+  /** ID of the entity that was mentioned too early */
+  entityId: string;
+  /** Name of the entity */
+  entityName: string;
+  /** Beat where the violation occurs */
+  atBeat: string;
+  /** Position of that beat */
+  atPosition: number;
+  /** Beat where the entity is actually introduced */
+  introducedAtBeat: string;
+  /** Position of the introduction */
+  introducedAtPosition: number;
+  /** Human-readable message */
+  message: string;
+}
+
+/**
+ * Information about a missing dependency in a package.
+ */
+export interface MissingDependencyInfo {
+  /** Node ID that has the missing dependency */
+  nodeId: string;
+  /** Type of the node */
+  nodeType: string;
+  /** What kind of dependency is missing */
+  dependencyType: 'character_not_introduced' | 'location_not_introduced' | 'missing_edge';
+  /** ID of the missing dependency */
+  dependencyId?: string;
+  /** Name of the missing entity */
+  dependencyName?: string;
+  /** Human-readable message */
+  message: string;
 }
 
 /**

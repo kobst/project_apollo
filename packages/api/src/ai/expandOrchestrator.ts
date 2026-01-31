@@ -226,6 +226,14 @@ export async function proposeExpand(
     result = ai.regenerateInvalidIds(result, existingNodeIds);
   }
 
+  // 7b. Validate packages (temporal consistency via mentions)
+  const validatedPackages = ai.validatePackages(result.packages, graph);
+  const validationSummary = ai.getValidationSummary(validatedPackages);
+  if (validationSummary !== 'No validation warnings') {
+    console.warn(`[proposeExpand] Package validation: ${validationSummary}`);
+  }
+  result.packages = validatedPackages;
+
   // 8. Create or update session
   let session = await loadGenerationSession(storyId, ctx);
   const versionInfo = await getCurrentVersionInfo(storyId, ctx);
