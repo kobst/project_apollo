@@ -293,19 +293,19 @@ console.log(`[${orchestratorName}] Prompt tokens: system=${systemTokens}, user=$
 
 ## Implementation Order
 
-| Order | Task | Files | Est. Effort |
-|-------|------|-------|-------------|
-| 1 | Fix constraints undefined bug | proposeOrchestrator.ts | 10 min |
-| 2 | Fix summary/rationale mismatch | refineOrchestrator.ts | 20 min |
-| 3 | Define canonical package schema | core/ai/types.ts | 30 min |
-| 4 | Update refine prompt to use canonical schema | refineOrchestrator.ts | 30 min |
-| 5 | Update storyBeat prompt (primary/supporting → changes) | storyBeatOrchestrator.ts | 45 min |
-| 6 | Create shared prompt builder | promptBuilder.ts (new) | 1 hr |
-| 7 | Reduce prompt verbosity across all orchestrators | All orchestrators | 2 hr |
-| 8 | Add schema validation | parsers | 1 hr |
-| 9 | Add regression tests | tests/ | 1 hr |
+| Order | Task | Files | Est. Effort | Status |
+|-------|------|-------|-------------|--------|
+| 1 | Fix constraints undefined bug | proposeOrchestrator.ts | 10 min | ✅ Done |
+| 2 | Fix summary/rationale mismatch | outputParser.ts | 20 min | ✅ Done |
+| 3 | Define canonical package schema | core/ai/types.ts | 30 min | ✅ Done (via outputParser) |
+| 4 | Standardize prompts to use 'rationale' | All prompts | 30 min | ✅ Done |
+| 5 | Create shared prompt utilities | shared.ts (new) | 1 hr | ✅ Done |
+| 6 | Reduce prompt verbosity | All prompts | 2 hr | ✅ Done (48% reduction) |
+| 7 | Add schema validation | parsers | 1 hr | TODO |
+| 8 | Add regression tests | tests/ | 1 hr | TODO |
 
-**Total estimated effort**: ~7 hours
+**Completed**: ~4.5 hours of work
+**Remaining**: ~2 hours
 
 ---
 
