@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { useGeneration } from '../../context/GenerationContext';
 import { api } from '../../api/client';
-import type { NarrativePackage, LintData, OverlayDiffData } from '../../api/types';
+import type { NarrativePackage, LintData, OverlayDiffData, DiffData } from '../../api/types';
 import { JobsDrawer } from '../jobs/JobsDrawer';
 
 export function StagingView() {
@@ -126,6 +126,7 @@ export function StagingView() {
     if (!selectedPackage) return;
     setEditingNodeIndex(index);
     const nc = selectedPackage.changes.nodes[index];
+    if (!nc) return;
     setEditingNodeJson(JSON.stringify(nc.data ?? {}, null, 2));
   };
 

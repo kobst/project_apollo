@@ -64,6 +64,7 @@ export function GenerationPanel({
     clearStaging,
     loadSession,
     selectPackage,
+    selectedPackageId,
   } = useGeneration();
   const { savedPackages, loadSavedPackages, savePackage, applySavedPackage, deleteSavedPackage } = useSavedPackages();
 
@@ -73,7 +74,7 @@ export function GenerationPanel({
   // Form state preserved during collapse
   const [formState, setFormState] = useState<ComposeFormState>(createDefaultFormState);
   const [aiAssisted, setAiAssisted] = useState(false);
-  const { runInterpreter: runAgentInterpreter } = useAgentJobs(currentStoryId, {
+  const { runInterpreter: runAgentInterpreter } = useAgentJobs(currentStoryId ?? undefined, {
     onJobDone: () => { if (currentStoryId) void loadSession(currentStoryId); },
   });
   const [critic, setCritic] = useState(null as null | { errorCount: number; warningCount: number; hasBlockingErrors: boolean; violations: Array<{ id: string; ruleId: string; severity: 'hard'|'soft'; message: string }> });
@@ -81,6 +82,10 @@ export function GenerationPanel({
   const [refinePrompt, setRefinePrompt] = useState('Tighten pacing and sharpen conflict');
   const [overlayDiff, setOverlayDiff] = useState<import('../../api/types').OverlayDiffData | null>(null);
   const [acceptInfo, setAcceptInfo] = useState<null | { newVersionId: string; patchOpsApplied?: number }>(null);
+
+  // Collapsible sections
+  const [impactExpanded, setImpactExpanded] = useState(false);
+  const [criticExpanded, setCriticExpanded] = useState(false);
 
   // Local state for viewing saved package (similar to GenerationView)
   const [viewingSavedPackageId, setViewingSavedPackageId] = useState<string | null>(null);
@@ -187,22 +192,17 @@ export function GenerationPanel({
     [currentStoryId, deleteSavedPackage, viewingSavedPackageId, clearStaging]
   );
 
-  // Handle staging a package by index (from carousel)
+  // Handle staging a package by ID (from carousel)
   const handleStagePackage = useCallback(
-    (index: number) => {
-      stagePackage(index);
+    (packageId: string) => {
+      const idx = session?.packages.findIndex(p => p.id === packageId) ?? -1;
+      if (idx >= 0) {
+        selectPackage(packageId);
+        stagePackage(idx);
+      }
     },
-    [stagePackage]
+    [session?.packages, selectPackage, stagePackage]
   );
-
-  // Handle staging by package id (for lineage/breadcrumbs)
-  const handleStageById = useCallback((packageId: string) => {
-    const idx = session?.packages.findIndex(p => p.id === packageId) ?? -1;
-    if (idx >= 0) {
-      selectPackage(packageId);
-      stagePackage(idx);
-    }
-  }, [session?.packages, selectPackage, stagePackage]);
 
   // Handle saving the currently staged package
   const handleSavePackage = useCallback(async () => {
@@ -269,6 +269,15 @@ export function GenerationPanel({
     void fetchDiff();
   }, [currentStoryId, staging.stagedPackage?.id]);
 
+  // Compute impact summary for collapsed header
+  const impactSummary = staging.stagedPackage?.impact ? (() => {
+    const imp = staging.stagedPackage!.impact;
+    const f = imp.fulfills_gaps?.length || 0;
+    const c = imp.creates_gaps?.length || 0;
+    const x = imp.conflicts?.length || 0;
+    return { fulfills: f, creates: c, conflicts: x, hasAny: f + c + x > 0 };
+  })() : null;
+
   return (
     <div className={styles.container}>
       {/* Header */}
@@ -293,7 +302,7 @@ export function GenerationPanel({
             {' '}Smart mode — let AI decide how to generate
           </label>
         </div>
-        
+
           {/* Agent quick UI removed per design; Interpreter runs behind Direction when AI-assisted is enabled */}
         {/* Error display */}
         {error && (
@@ -319,11 +328,11 @@ export function GenerationPanel({
           onNodeSelectionModeChange={onNodeSelectionModeChange}
         />
 
-        {/* Package Carousel */}
+        {/* Package Carousel (ID-based, two-tier) */}
         {hasPackages && !viewingSavedPackage && (
           <PackageCarousel
             packages={session.packages}
-            activeIndex={staging.activePackageIndex}
+            activePackageId={selectedPackageId}
             onSelectPackage={handleStagePackage}
             onAcceptPackage={handleAcceptPackage}
             onRejectPackage={handleRejectPackage}
@@ -335,24 +344,11 @@ export function GenerationPanel({
         {/* Review section for selected package */}
         {staging.stagedPackage && !viewingSavedPackage && (
           <div style={{ marginTop: 12 }}>
-            {/* Accept banner with compact diff */}
+            {/* Compact diff summary (no duplicate action buttons) */}
             {overlayDiff && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#11221a', border: '1px solid #1d3a2a', padding: '8px 10px', borderRadius: 6, marginBottom: 8 }}>
-                <div style={{ fontSize: 12 }}>
-                  Nodes +{overlayDiff.nodes.created.length} ~{overlayDiff.nodes.modified.length} -{overlayDiff.nodes.deleted.length}
-                  {'  '}Edges +{overlayDiff.edges.created.length} -{overlayDiff.edges.deleted.length}
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="button" onClick={handleAcceptPackage} disabled={loading}>
-                    {loading ? 'Accepting...' : 'Accept'}
-                  </button>
-                  <button type="button" onClick={handleRejectPackage} disabled={loading}>
-                    Reject
-                  </button>
-                  <button type="button" onClick={handleSavePackage} disabled={loading}>
-                    Save
-                  </button>
-                </div>
+              <div style={{ fontSize: 12, background: '#11221a', border: '1px solid #1d3a2a', padding: '6px 10px', borderRadius: 6, marginBottom: 8 }}>
+                Nodes +{overlayDiff.nodes.created.length} ~{overlayDiff.nodes.modified.length} -{overlayDiff.nodes.deleted.length}
+                {'  '}Edges +{overlayDiff.edges.created.length} -{overlayDiff.edges.deleted.length}
               </div>
             )}
 
@@ -392,95 +388,71 @@ export function GenerationPanel({
               >Refine</button>
             </div>
 
-            {/* Impact (only if non-empty) */}
-            {staging.stagedPackage.impact && (() => {
-              const imp = staging.stagedPackage!.impact;
-              const hasAny = (imp.fulfills_gaps?.length || 0) + (imp.creates_gaps?.length || 0) + (imp.conflicts?.length || 0) > 0;
-              return hasAny ? (
-                <div style={{ marginBottom: 8 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Impact</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, fontSize: 12 }}>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>Fulfills</div>
-                      <ul>{(imp.fulfills_gaps || []).map((g: string) => (<li key={g}><code>{g}</code></li>))}</ul>
+            {/* Impact (collapsible, collapsed by default) */}
+            {impactSummary && impactSummary.hasAny && (
+              <div style={{ marginBottom: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setImpactExpanded(prev => !prev)}
+                  style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 0, fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <span>{impactExpanded ? '\u25BE' : '\u25B8'}</span>
+                  <span>Impact</span>
+                  <span style={{ fontWeight: 400, opacity: 0.7 }}>
+                    Fulfills: {impactSummary.fulfills} · Creates: {impactSummary.creates} · Conflicts: {impactSummary.conflicts}
+                  </span>
+                </button>
+                {impactExpanded && (() => {
+                  const imp = staging.stagedPackage!.impact;
+                  const cols = [
+                    imp.fulfills_gaps?.length ? { label: 'Fulfills', items: imp.fulfills_gaps } : null,
+                    imp.creates_gaps?.length ? { label: 'Creates', items: imp.creates_gaps } : null,
+                    imp.conflicts?.length ? { label: 'Conflicts', items: imp.conflicts } : null,
+                  ].filter(Boolean) as Array<{ label: string; items: any[] }>;
+                  return (
+                    <div style={{ display: 'grid', gridTemplateColumns: cols.map(() => '1fr').join(' '), gap: 12, fontSize: 12, marginTop: 6 }}>
+                      {cols.map(col => (
+                        <div key={col.label}>
+                          <div style={{ fontWeight: 600 }}>{col.label}</div>
+                          <ul style={{ margin: '4px 0', paddingLeft: 16 }}>
+                            {col.items.map((item: any, i: number) => (
+                              <li key={i}>{typeof item === 'string' ? <code>{item}</code> : `${item.type}: ${item.description}`}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
                     </div>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>Creates</div>
-                      <ul>{(imp.creates_gaps || []).map((g: string) => (<li key={g}><code>{g}</code></li>))}</ul>
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>Conflicts</div>
-                      <ul>{(imp.conflicts || []).map((c: any, i: number) => (<li key={i}>{c.type}: {c.description}</li>))}</ul>
-                    </div>
-                  </div>
-                </div>
-              ) : null;
-            })()}
+                  );
+                })()}
+              </div>
+            )}
 
-            {/* Critic results */}
+            {/* Critic results (collapsible, collapsed by default) */}
             {critic && (
               <div style={{ fontSize: 12, marginBottom: 8 }}>
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>Critic</div>
-                <div>Errors: {critic.errorCount} · Warnings: {critic.warningCount}</div>
-                <ul>
-                  {critic.violations.map(v => (
-                    <li key={v.id} style={{ color: v.severity === 'hard' ? '#b00020' : '#c38700' }}>
-                      [{v.severity}] {v.ruleId}: {v.message}
-                    </li>
-                  ))}
-                </ul>
+                <button
+                  type="button"
+                  onClick={() => setCriticExpanded(prev => !prev)}
+                  style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 0, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <span>{criticExpanded ? '\u25BE' : '\u25B8'}</span>
+                  <span>Critic</span>
+                  <span style={{ fontWeight: 400, opacity: 0.7 }}>
+                    Errors: {critic.errorCount} · Warnings: {critic.warningCount}
+                  </span>
+                </button>
+                {criticExpanded && (
+                  <ul style={{ marginTop: 4 }}>
+                    {critic.violations.map(v => (
+                      <li key={v.id} style={{ color: v.severity === 'hard' ? '#b00020' : '#c38700' }}>
+                        [{v.severity}] {v.ruleId}: {v.message}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
           </div>
-        )}
-
-        {/* Lineage breadcrumbs for current staged package */}
-        {staging.stagedPackage && session && !viewingSavedPackage && (
-          (() => {
-            const current = staging.stagedPackage!;
-            const parent = current.parent_package_id ? session.packages.find(p => p.id === current.parent_package_id) : null;
-            const siblings = parent ? session.packages.filter(p => p.parent_package_id === parent.id) : [];
-            const children = session.packages.filter(p => p.parent_package_id === current.id);
-            if (!parent && children.length === 0) return null;
-            return (
-              <div style={{ marginTop: 8, fontSize: 12, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                {parent && (
-                  <div>
-                    <span style={{ opacity: 0.7 }}>Parent:</span>{' '}
-                    <button type="button" style={{ textDecoration: 'underline' }} onClick={() => handleStageById(parent.id)}>
-                      {parent.title || parent.id.slice(0, 8)}
-                    </button>
-                  </div>
-                )}
-                {siblings.length > 0 && (
-                  <div>
-                    <span style={{ opacity: 0.7 }}>Siblings:</span>{' '}
-                    {siblings.map((s, i) => (
-                      <span key={s.id}>
-                        <button type="button" style={{ textDecoration: 'underline', marginRight: 6 }} onClick={() => handleStageById(s.id)}>
-                          {s.title || s.id.slice(0, 8)}
-                        </button>
-                        {i < siblings.length - 1 ? <span style={{ opacity: 0.5 }}>|</span> : null}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {children.length > 0 && (
-                  <div>
-                    <span style={{ opacity: 0.7 }}>Children:</span>{' '}
-                    {children.map((c, i) => (
-                      <span key={c.id}>
-                        <button type="button" style={{ textDecoration: 'underline', marginRight: 6 }} onClick={() => handleStageById(c.id)}>
-                          {c.title || c.id.slice(0, 8)}
-                        </button>
-                        {i < children.length - 1 ? <span style={{ opacity: 0.5 }}>|</span> : null}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })()
         )}
 
         {/* Staged Saved Package */}

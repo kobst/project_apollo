@@ -1,17 +1,18 @@
 /**
- * PackageCarousel - Horizontal carousel for navigating between packages.
- * Allows selecting a package to stage for review.
+ * PackageCarousel - Two-tier horizontal carousel for navigating packages.
+ * Root packages (no parent) show in the main row.
+ * When a root package with children is active, a variations sub-row appears.
  */
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useMemo } from 'react';
 import type { NarrativePackage } from '../../api/types';
 import { PackageMiniCard } from './PackageMiniCard';
 import styles from './PackageCarousel.module.css';
 
 interface PackageCarouselProps {
   packages: NarrativePackage[];
-  activeIndex: number;
-  onSelectPackage: (index: number) => void;
+  activePackageId: string | null;
+  onSelectPackage: (packageId: string) => void;
   onAcceptPackage?: () => void;
   onRejectPackage?: () => void;
   onSavePackage?: () => void;
@@ -20,7 +21,7 @@ interface PackageCarouselProps {
 
 export function PackageCarousel({
   packages,
-  activeIndex,
+  activePackageId,
   onSelectPackage,
   onAcceptPackage,
   onRejectPackage,
@@ -28,6 +29,7 @@ export function PackageCarousel({
   loading = false,
 }: PackageCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const variationsScrollRef = useRef<HTMLDivElement>(null);
 
   const scrollLeft = useCallback(() => {
     if (scrollRef.current) {
@@ -41,16 +43,43 @@ export function PackageCarousel({
     }
   }, []);
 
+  // Separate root packages from children
+  const rootPackages = useMemo(
+    () => packages.filter(p => !p.parent_package_id),
+    [packages]
+  );
+
+  // Count children per root package
+  const childCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const pkg of packages) {
+      if (pkg.parent_package_id) {
+        map.set(pkg.parent_package_id, (map.get(pkg.parent_package_id) || 0) + 1);
+      }
+    }
+    return map;
+  }, [packages]);
+
+  // Determine active root: if activePackageId is a child, resolve to its parent
+  const activePackage = packages.find(p => p.id === activePackageId);
+  const activeRootId = activePackage?.parent_package_id ?? activePackageId;
+
+  // Get variations for the active root
+  const variations = useMemo(
+    () => activeRootId ? packages.filter(p => p.parent_package_id === activeRootId) : [],
+    [packages, activeRootId]
+  );
+
   if (packages.length === 0) {
     return null;
   }
 
-  const showNavigation = packages.length > 2;
+  const showNavigation = rootPackages.length > 2;
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h4 className={styles.title}>Proposals ({packages.length})</h4>
+        <h4 className={styles.title}>Proposals ({rootPackages.length})</h4>
         {showNavigation && (
           <div className={styles.navigation}>
             <button
@@ -73,21 +102,42 @@ export function PackageCarousel({
         )}
       </div>
 
+      {/* Main row: root packages only */}
       <div className={styles.carouselWrapper}>
         <div ref={scrollRef} className={styles.carousel}>
-          {packages.map((pkg, index) => (
+          {rootPackages.map((pkg, index) => (
             <PackageMiniCard
               key={pkg.id}
               package={pkg}
               index={index}
-              isActive={index === activeIndex}
-              onClick={() => onSelectPackage(index)}
+              isActive={pkg.id === activeRootId}
+              onClick={() => onSelectPackage(pkg.id)}
+              childCount={childCountMap.get(pkg.id) ?? 0}
             />
           ))}
         </div>
       </div>
 
-      {activeIndex >= 0 && activeIndex < packages.length && (
+      {/* Variations sub-row (only when active root has children) */}
+      {variations.length > 0 && (
+        <div className={styles.variationsRow}>
+          <span className={styles.variationsLabel}>Variations ({variations.length})</span>
+          <div ref={variationsScrollRef} className={styles.carousel}>
+            {variations.map((pkg, index) => (
+              <PackageMiniCard
+                key={pkg.id}
+                package={pkg}
+                index={index}
+                isActive={pkg.id === activePackageId}
+                onClick={() => onSelectPackage(pkg.id)}
+                isRefinement
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activePackageId && (
         <div className={styles.actions}>
           {onAcceptPackage && (
             <button

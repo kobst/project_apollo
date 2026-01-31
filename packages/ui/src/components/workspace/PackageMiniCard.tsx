@@ -10,6 +10,10 @@ interface PackageMiniCardProps {
   index: number;
   isActive: boolean;
   onClick: () => void;
+  /** Whether this card represents a refinement (child) package */
+  isRefinement?: boolean;
+  /** Number of child variations (shown on root cards) */
+  childCount?: number;
 }
 
 export function PackageMiniCard({
@@ -17,6 +21,8 @@ export function PackageMiniCard({
   index,
   isActive,
   onClick,
+  isRefinement = false,
+  childCount,
 }: PackageMiniCardProps) {
   const confidence = Math.round(pkg.confidence * 100);
   const first = pkg.changes.nodes[0];
@@ -30,12 +36,12 @@ export function PackageMiniCard({
 
   return (
     <button
-      className={`${styles.card} ${isActive ? styles.active : ''}`}
+      className={`${styles.card} ${isActive ? styles.active : ''} ${isRefinement ? styles.refinement : ''}`}
       onClick={onClick}
       type="button"
     >
       <div className={styles.header}>
-        <span className={styles.index}>{index + 1}</span>
+        <span className={styles.index}>{isRefinement ? `${index + 1}v` : index + 1}</span>
         <span className={styles.confidence}>{confidence}%</span>
       </div>
       <div className={styles.title}>
@@ -45,6 +51,9 @@ export function PackageMiniCard({
         <span className={styles.count}>Nodes +{nodesAdded} ~{nodesModified} -{nodesDeleted}</span>
         <span className={styles.count}>Edges +{edgesAdded} -{edgesDeleted}</span>
       </div>
+      {childCount != null && childCount > 0 && (
+        <span className={styles.refinementBadge}>{childCount} var{childCount !== 1 ? 's' : ''}</span>
+      )}
       {isActive && <div className={styles.activeIndicator} />}
     </button>
   );

@@ -3,6 +3,7 @@ import {
   useContext,
   useState,
   useCallback,
+  useEffect,
   useMemo,
   type ReactNode,
 } from 'react';
@@ -70,7 +71,7 @@ interface GenerationContextValue {
   /** Refine a package via propose */
   refinePackage: (storyId: string, packageId: string, guidance: string, creativity?: number) => Promise<void>;
   /** Accept a package and apply to graph */
-  acceptPackage: (storyId: string, packageId: string) => Promise<void>;
+  acceptPackage: (storyId: string, packageId: string) => Promise<import('../api/types').AcceptPackageResponseData | void>;
   /** Reject a package (remove from session) */
   rejectPackage: (packageId: string) => void;
   /** Abandon the session */
@@ -728,6 +729,25 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
       return { ...prev, excludedStashedIdeaIds: newExcludedIds };
     });
   }, []);
+
+  // Auto-sync staging when selectedPackageId changes (e.g. after refine)
+  useEffect(() => {
+    if (!session || !selectedPackageId) return;
+    // If staging already matches, skip
+    if (staging.stagedPackage?.id === selectedPackageId) return;
+    const idx = session.packages.findIndex(p => p.id === selectedPackageId);
+    if (idx >= 0) {
+      const pkg = session.packages[idx];
+      if (!pkg) return;
+      setStaging({
+        stagedPackage: pkg,
+        activePackageIndex: idx,
+        editedNodes: new Map(),
+        removedNodeIds: new Set(),
+        excludedStashedIdeaIds: new Set(),
+      });
+    }
+  }, [selectedPackageId, session?.packages]);
 
   // Compute section change counts from staged package
   const sectionChangeCounts = useMemo(
