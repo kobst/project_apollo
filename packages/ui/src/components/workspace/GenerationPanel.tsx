@@ -79,7 +79,7 @@ export function GenerationPanel({
   });
   const [critic, setCritic] = useState(null as null | { errorCount: number; warningCount: number; hasBlockingErrors: boolean; violations: Array<{ id: string; ruleId: string; severity: 'hard'|'soft'; message: string }> });
   const [criticLoading, setCriticLoading] = useState(false);
-  const [refinePrompt, setRefinePrompt] = useState('Tighten pacing and sharpen conflict');
+  const [refinePrompt, setRefinePrompt] = useState('');
   const [overlayDiff, setOverlayDiff] = useState<import('../../api/types').OverlayDiffData | null>(null);
   const [acceptInfo, setAcceptInfo] = useState<null | { newVersionId: string; patchOpsApplied?: number }>(null);
 
@@ -338,83 +338,55 @@ export function GenerationPanel({
             onRejectPackage={handleRejectPackage}
             onSavePackage={handleSavePackage}
             loading={loading}
+            hideActions={!!staging.stagedPackage}
           />
         )}
 
         {/* Review section for selected package */}
         {staging.stagedPackage && !viewingSavedPackage && (
-          <div style={{ marginTop: 12 }}>
-            {/* Compact diff summary (no duplicate action buttons) */}
-            {overlayDiff && (
-              <div style={{ fontSize: 12, background: '#11221a', border: '1px solid #1d3a2a', padding: '6px 10px', borderRadius: 6, marginBottom: 8 }}>
-                Nodes +{overlayDiff.nodes.created.length} ~{overlayDiff.nodes.modified.length} -{overlayDiff.nodes.deleted.length}
-                {'  '}Edges +{overlayDiff.edges.created.length} -{overlayDiff.edges.deleted.length}
-              </div>
-            )}
+          <div className={styles.reviewSection}>
 
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!currentStoryId) return;
-                  setCriticLoading(true);
-                  try {
-                    const res = await api.lintStaged(currentStoryId, staging.stagedPackage!.id);
-                    setCritic({
-                      errorCount: res.summary.errorCount,
-                      warningCount: res.summary.warningCount,
-                      hasBlockingErrors: res.summary.hasBlockingErrors,
-                      violations: res.violations.map((v: any) => ({ id: v.id, ruleId: v.ruleId, severity: v.severity, message: v.message })),
-                    });
-                  } catch (e) {
-                    setCritic(null);
-                  } finally {
-                    setCriticLoading(false);
-                  }
-                }}
-              >{criticLoading ? 'Running Critic...' : 'Run Critic'}</button>
-              <input
-                value={refinePrompt}
-                onChange={(e) => setRefinePrompt(e.target.value)}
-                placeholder="Refine prompt"
-                style={{ flex: 1 }}
-              />
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!currentStoryId || !staging.stagedPackage) return;
-                  await refinePackage(currentStoryId, staging.stagedPackage.id, refinePrompt, 0.5);
-                }}
-              >Refine</button>
-            </div>
-
-            {/* Impact (collapsible, collapsed by default) */}
+            {/* 1. Impact — first thing users evaluate */}
             {impactSummary && impactSummary.hasAny && (
-              <div style={{ marginBottom: 8 }}>
+              <div className={styles.impactCard}>
                 <button
                   type="button"
+                  className={styles.impactHeader}
                   onClick={() => setImpactExpanded(prev => !prev)}
-                  style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 0, fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}
                 >
-                  <span>{impactExpanded ? '\u25BE' : '\u25B8'}</span>
-                  <span>Impact</span>
-                  <span style={{ fontWeight: 400, opacity: 0.7 }}>
-                    Fulfills: {impactSummary.fulfills} · Creates: {impactSummary.creates} · Conflicts: {impactSummary.conflicts}
+                  <span className={`${styles.impactChevron} ${impactExpanded ? styles.impactChevronOpen : ''}`}>{'\u25B8'}</span>
+                  <span className={styles.impactLabel}>Impact</span>
+                  <span className={styles.impactBadges}>
+                    {impactSummary.fulfills > 0 && (
+                      <span className={`${styles.impactBadge} ${styles.impactBadgeFulfills}`}>
+                        {impactSummary.fulfills} fulfilled
+                      </span>
+                    )}
+                    {impactSummary.creates > 0 && (
+                      <span className={`${styles.impactBadge} ${styles.impactBadgeCreates}`}>
+                        {impactSummary.creates} created
+                      </span>
+                    )}
+                    {impactSummary.conflicts > 0 && (
+                      <span className={`${styles.impactBadge} ${styles.impactBadgeConflicts}`}>
+                        {impactSummary.conflicts} conflicts
+                      </span>
+                    )}
                   </span>
                 </button>
                 {impactExpanded && (() => {
                   const imp = staging.stagedPackage!.impact;
                   const cols = [
-                    imp.fulfills_gaps?.length ? { label: 'Fulfills', items: imp.fulfills_gaps } : null,
-                    imp.creates_gaps?.length ? { label: 'Creates', items: imp.creates_gaps } : null,
-                    imp.conflicts?.length ? { label: 'Conflicts', items: imp.conflicts } : null,
-                  ].filter(Boolean) as Array<{ label: string; items: any[] }>;
+                    imp.fulfills_gaps?.length ? { label: 'Fulfills', labelClass: styles.impactColumnLabelFulfills, items: imp.fulfills_gaps } : null,
+                    imp.creates_gaps?.length ? { label: 'Creates', labelClass: styles.impactColumnLabelCreates, items: imp.creates_gaps } : null,
+                    imp.conflicts?.length ? { label: 'Conflicts', labelClass: styles.impactColumnLabelConflicts, items: imp.conflicts } : null,
+                  ].filter(Boolean) as Array<{ label: string; labelClass: string; items: any[] }>;
                   return (
-                    <div style={{ display: 'grid', gridTemplateColumns: cols.map(() => '1fr').join(' '), gap: 12, fontSize: 12, marginTop: 6 }}>
+                    <div className={styles.impactDetails} style={{ gridTemplateColumns: cols.map(() => '1fr').join(' ') }}>
                       {cols.map(col => (
-                        <div key={col.label}>
-                          <div style={{ fontWeight: 600 }}>{col.label}</div>
-                          <ul style={{ margin: '4px 0', paddingLeft: 16 }}>
+                        <div key={col.label} className={styles.impactColumn}>
+                          <div className={`${styles.impactColumnLabel} ${col.labelClass}`}>{col.label}</div>
+                          <ul className={styles.impactList}>
                             {col.items.map((item: any, i: number) => (
                               <li key={i}>{typeof item === 'string' ? <code>{item}</code> : `${item.type}: ${item.description}`}</li>
                             ))}
@@ -427,31 +399,128 @@ export function GenerationPanel({
               </div>
             )}
 
-            {/* Critic results (collapsible, collapsed by default) */}
-            {critic && (
-              <div style={{ fontSize: 12, marginBottom: 8 }}>
+            {/* 2. Review & Refine — combined card */}
+            <div className={styles.reviewRefineCard}>
+              <div className={styles.reviewRefineHeader}>Review & Refine</div>
+
+              {/* Critic row: button + inline summary */}
+              <div className={styles.criticRow}>
                 <button
                   type="button"
-                  onClick={() => setCriticExpanded(prev => !prev)}
-                  style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 0, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}
-                >
-                  <span>{criticExpanded ? '\u25BE' : '\u25B8'}</span>
-                  <span>Critic</span>
-                  <span style={{ fontWeight: 400, opacity: 0.7 }}>
-                    Errors: {critic.errorCount} · Warnings: {critic.warningCount}
+                  className={styles.criticButton}
+                  disabled={criticLoading}
+                  onClick={async () => {
+                    if (!currentStoryId) return;
+                    setCriticLoading(true);
+                    try {
+                      const res = await api.lintStaged(currentStoryId, staging.stagedPackage!.id);
+                      setCritic({
+                        errorCount: res.summary.errorCount,
+                        warningCount: res.summary.warningCount,
+                        hasBlockingErrors: res.summary.hasBlockingErrors,
+                        violations: res.violations.map((v: any) => ({ id: v.id, ruleId: v.ruleId, severity: v.severity, message: v.message })),
+                      });
+                    } catch (e) {
+                      setCritic(null);
+                    } finally {
+                      setCriticLoading(false);
+                    }
+                  }}
+                >{criticLoading ? 'Running\u2026' : critic ? 'Re-run Critic' : 'Run Critic'}</button>
+                {critic && (
+                  <span className={styles.criticInlineSummary}>
+                    <span className={critic.errorCount > 0 ? styles.criticCountError : styles.criticCountZero}>
+                      {critic.errorCount} {critic.errorCount === 1 ? 'error' : 'errors'}
+                    </span>
+                    <span className={styles.criticCountSep}>{' · '}</span>
+                    <span className={critic.warningCount > 0 ? styles.criticCountWarning : styles.criticCountZero}>
+                      {critic.warningCount} {critic.warningCount === 1 ? 'warning' : 'warnings'}
+                    </span>
                   </span>
-                </button>
-                {criticExpanded && (
-                  <ul style={{ marginTop: 4 }}>
-                    {critic.violations.map(v => (
-                      <li key={v.id} style={{ color: v.severity === 'hard' ? '#b00020' : '#c38700' }}>
-                        [{v.severity}] {v.ruleId}: {v.message}
-                      </li>
-                    ))}
-                  </ul>
                 )}
               </div>
+
+              {/* Critic violations — scrollable */}
+              {critic && critic.violations.length > 0 && (
+                <div className={styles.criticResultsScrollable}>
+                  <button
+                    type="button"
+                    className={styles.criticSummary}
+                    onClick={() => setCriticExpanded(prev => !prev)}
+                  >
+                    <span className={`${styles.impactChevron} ${criticExpanded ? styles.impactChevronOpen : ''}`}>{'\u25B8'}</span>
+                    <span className={styles.criticSummaryLabel}>
+                      {critic.errorCount > 0 ? 'Errors' : ''}{critic.errorCount > 0 && critic.warningCount > 0 ? ' & ' : ''}{critic.warningCount > 0 ? `Warnings (${critic.warningCount})` : ''}
+                    </span>
+                  </button>
+                  {criticExpanded && (
+                    <ul className={styles.criticViolations}>
+                      {critic.violations.map(v => (
+                        <li key={v.id} className={v.severity === 'hard' ? styles.criticViolationHard : styles.criticViolationSoft}>
+                          {v.ruleId}: {v.message}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+
+              {/* Refine input — same card, below critic */}
+              <div className={styles.refineSeparator} />
+              <div className={styles.refineInputGroup}>
+                <input
+                  className={styles.refineInput}
+                  value={refinePrompt}
+                  onChange={(e) => setRefinePrompt(e.target.value)}
+                  placeholder="e.g. Fix missing locations"
+                />
+                <button
+                  type="button"
+                  className={styles.refineButton}
+                  disabled={loading}
+                  onClick={async () => {
+                    if (!currentStoryId || !staging.stagedPackage) return;
+                    await refinePackage(currentStoryId, staging.stagedPackage.id, refinePrompt, 0.5);
+                  }}
+                >Refine</button>
+              </div>
+            </div>
+
+            {/* 4. Metadata footer — demoted */}
+            {overlayDiff && (
+              <div className={styles.metadataFooter}>
+                Nodes +{overlayDiff.nodes.created.length} ~{overlayDiff.nodes.modified.length} -{overlayDiff.nodes.deleted.length}
+                {' · '}Edges +{overlayDiff.edges.created.length} -{overlayDiff.edges.deleted.length}
+              </div>
             )}
+
+            {/* 5. Decision buttons — last */}
+            <div className={styles.reviewActions}>
+              <button
+                className={styles.reviewAcceptButton}
+                onClick={handleAcceptPackage}
+                disabled={loading}
+                type="button"
+              >
+                {loading ? 'Accepting\u2026' : 'Accept'}
+              </button>
+              <button
+                className={styles.reviewRejectButton}
+                onClick={handleRejectPackage}
+                disabled={loading}
+                type="button"
+              >
+                Reject
+              </button>
+              <button
+                className={styles.reviewSaveButton}
+                onClick={handleSavePackage}
+                disabled={loading}
+                type="button"
+              >
+                Save for Later
+              </button>
+            </div>
           </div>
         )}
 

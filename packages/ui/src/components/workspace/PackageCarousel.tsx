@@ -17,6 +17,8 @@ interface PackageCarouselProps {
   onRejectPackage?: () => void;
   onSavePackage?: () => void;
   loading?: boolean;
+  /** When true, action buttons are not rendered (caller renders them externally) */
+  hideActions?: boolean;
 }
 
 export function PackageCarousel({
@@ -27,6 +29,7 @@ export function PackageCarousel({
   onRejectPackage,
   onSavePackage,
   loading = false,
+  hideActions = false,
 }: PackageCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const variationsScrollRef = useRef<HTMLDivElement>(null);
@@ -137,7 +140,7 @@ export function PackageCarousel({
         </div>
       )}
 
-      {activePackageId && (
+      {activePackageId && !hideActions && (
         <div className={styles.actions}>
           {onAcceptPackage && (
             <button
