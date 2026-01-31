@@ -104,40 +104,9 @@ export function createRenameEntityHandler(ctx: StorageContext) {
       // Perform the rename
       const result = mentions.renameEntity(graph, entityId, newName.trim());
 
-      // Create a patch for the rename operation
-      const patchOps: PatchOp[] = [];
-
-      // Update the entity itself
-      patchOps.push({
-        op: 'MODIFY_NODE',
-        nodeId: entityId,
-        data: { name: newName.trim() }
-      });
-
-      // Update all affected nodes
-      for (const update of result.textUpdates) {
-        patchOps.push({
-          op: 'MODIFY_NODE',
-          nodeId: update.nodeId,
-          data: { [update.field]: JSON.parse(update.newText) }
-        });
-      }
-
-      // Apply patch if there are changes
-      if (patchOps.length > 0) {
-        const patch: Patch = {
-          id: `patch_rename_${Date.now()}`,
-          storyVersionId: state.history.currentVersionId,
-          createdAt: new Date().toISOString(),
-          description: `Renamed ${entityId} from "${result.oldName}" to "${result.newName}"`,
-          ops: patchOps
-        };
-
-        // Save updated graph
-        currentVersion.graph = serializeGraph(graph);
-        currentVersion.updatedAt = new Date().toISOString();
-        await saveVersionedStateById(id, state, ctx);
-      }
+      // Save updated graph (rename modifies in-place)
+      currentVersion.graph = serializeGraph(graph);
+      await saveVersionedStateById(id, state, ctx);
 
       res.json({
         success: true,
@@ -148,7 +117,7 @@ export function createRenameEntityHandler(ctx: StorageContext) {
           textUpdatesCount: result.textUpdates.length,
           mentionsUpdated: result.mentionsUpdated,
           mentionsRebuilt: result.mentionsRebuilt,
-          affectedNodes: result.textUpdates.map(u => u.nodeId)
+          affectedNodes: result.textUpdates.map((u: { nodeId: string }) => u.nodeId)
         }
       });
     } catch (error) {
@@ -191,7 +160,6 @@ export function createRebuildMentionsHandler(ctx: StorageContext) {
 
       // Save updated graph
       currentVersion.graph = serializeGraph(graph);
-      currentVersion.updatedAt = new Date().toISOString();
       await saveVersionedStateById(id, state, ctx);
 
       res.json({
