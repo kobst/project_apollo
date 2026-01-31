@@ -1,43 +1,27 @@
 /**
  * Expand-specific prompt builder.
- *
  * Generic node expansion: expands a node or story context into related content.
- * Output type depends on what is being expanded.
  */
 
 import type { ExpansionScope, ExpandTarget, ContextSection } from '../types.js';
+import { PROMPT_VERSION, JSON_OUTPUT_RULES, getCreativityLabel } from './shared.js';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-/**
- * Parameters for the Expand generation prompt.
- */
 export interface ExpandPromptParams {
-  /** Serialized story context */
   storyContext: string;
-  /** Target to expand */
   target: ExpandTarget;
-  /** Serialized target node data (if expanding a node) */
   targetNodeData?: string;
-  /** Target node type (if expanding a node) */
   targetNodeType?: string;
-  /** Depth of expansion */
   depth: 'surface' | 'deep';
-  /** Number of packages to generate */
   packageCount: number;
-  /** Max nodes per package */
   maxNodesPerPackage: number;
-  /** Optional user guidance */
   direction?: string;
-  /** Creativity level (0-1) */
   creativity: number;
-  /** Expansion scope for supporting content (default: 'flexible') */
   expansionScope?: ExpansionScope;
-  /** Optional serialized ideas relevant to this expansion */
   ideas?: string;
-  /** Optional serialized soft guidelines filtered for this task */
   guidelines?: string;
 }
 
@@ -45,12 +29,6 @@ export interface ExpandPromptParams {
 // Prompt Builder
 // =============================================================================
 
-/**
- * Build the Expand generation prompt for the LLM.
- *
- * @param params - Expand generation parameters
- * @returns Complete prompt string
- */
 export function buildExpandPrompt(params: ExpandPromptParams): string {
   const {
     storyContext,
@@ -67,484 +45,153 @@ export function buildExpandPrompt(params: ExpandPromptParams): string {
     guidelines,
   } = params;
 
-  const creativityLabel = creativity < 0.3 ? 'conservative' : creativity > 0.7 ? 'creative' : 'balanced';
+  const creativityLabel = getCreativityLabel(creativity);
   const isConstrained = expansionScope === 'constrained';
-  const depthLabel = depth === 'surface' ? 'Surface (brief additions)' : 'Deep (thorough exploration)';
-
-  // Determine expansion type and instructions
   const { expandType, targetInstructions, outputType } = getTargetInstructions(target, targetNodeType, targetNodeData);
-
-  const supportingSection = isConstrained ? '' : `
-## Supporting Content (Optional)
-
-When expansionScope is "flexible", you MAY include supporting nodes in the "supporting" section:
-- Additional related nodes that enrich the expansion
-- Edges connecting new content to existing story elements
-`;
-
   const outputSchema = getOutputSchema(expandType, isConstrained);
 
-  return `You are a story expansion specialist generating content to expand and deepen story elements.
+  return `## Expand Generator v${PROMPT_VERSION}
 
-## CRITICAL CONSTRAINTS - MUST FOLLOW
+Expand and deepen story elements.
 
-**STRICT OUTPUT RULES:**
-1. Generate content appropriate to the expansion target type.
-2. Primary output should focus on ${outputType}.
-${isConstrained ? '3. NO supporting content - only expand the primary target.' : '3. SUPPORTING section: MAY include related nodes.'}
-4. You MUST generate exactly ${packageCount} packages. Not fewer, not more.
+## Rules
+- Generate content appropriate to expansion target
+- Primary: ${outputType}
+${isConstrained ? '- No supporting content' : '- SUPPORTING: May include related nodes'}
+- Generate exactly ${packageCount} package(s)
 
-## Story Context
-
-${storyContext}
-
-${targetInstructions}
-
-${direction ? `## User Direction\n\n"${direction}"\n` : ''}
-${ideas ? `${ideas}\n` : ''}
-${guidelines ? `${guidelines}\n` : ''}
-${supportingSection}
-## Available Node Types
-
-- **Character**: name, description, archetype, traits[]
-- **Location**: name, description
-- **Object**: name, description
-- **StoryBeat**: title, summary, intent (plot|character|tone), priority, stakes_change
-- **Scene**: heading, scene_overview, mood, key_actions[]
-
-## Available Edge Types
-
+## Edge Types (use ONLY these)
 - HAS_CHARACTER: Scene → Character
 - LOCATED_AT: Scene → Location
 - FEATURES_OBJECT: Scene → Object
-- ALIGNS_WITH: StoryBeat → Beat (aligns with structural beat)
-- SATISFIED_BY: StoryBeat → Scene (scene realizes story beat)
-- PRECEDES: StoryBeat → StoryBeat (causal/temporal ordering)
+- ALIGNS_WITH: StoryBeat → Beat
+- SATISFIED_BY: StoryBeat → Scene
+- PRECEDES: StoryBeat → StoryBeat
 - ADVANCES: StoryBeat → CharacterArc
+- HAS_ARC: Character → CharacterArc
 
-**IMPORTANT**: ONLY use edge types from this list. Do NOT invent new edge types.
+## Story Context
+${storyContext}
 
-## Generation Settings
+${targetInstructions}
+${direction ? `\n## Direction\n"${direction}"\n` : ''}${ideas ? `\n${ideas}` : ''}${guidelines ? `\n${guidelines}` : ''}
+## Settings
+Type: ${expandType} | Depth: ${depth} | Creativity: ${creativityLabel} (${creativity}) | Scope: ${expansionScope} | Max/pkg: ${maxNodesPerPackage}
 
-- **Expansion Type**: ${expandType}
-- **Depth**: ${depthLabel}
-- **Creativity Level**: ${creativityLabel} (${creativity})
-- **Expansion Scope**: ${expansionScope}
-- **Packages to Generate**: ${packageCount}
-- **Max Nodes per Package**: ${maxNodesPerPackage}
+## Node Types
+- Character: name, description, archetype, traits[]
+- Location: name, description
+- Object: name, description
+- StoryBeat: title, summary, intent, priority, stakes_change
+- Scene: heading, scene_overview, mood, key_actions[]
 
-## Output Format
-
-**CRITICAL: You MUST output valid, parseable JSON. Follow these rules strictly:**
-
-1. **NO newlines inside strings** - Use spaces or \\n escape sequences instead
-2. **Escape special characters** - Use \\" for quotes, \\\\ for backslashes
-3. **NO trailing commas** - Last item in arrays/objects must NOT have a comma after it
-4. **Keep strings concise**
-5. **Test mentally** - Before outputting, verify the JSON would parse correctly
-
-Schema:
+## Output
+${JSON_OUTPUT_RULES}
 
 ${outputSchema}
 
-## Guidelines
-
-1. **Depth Adherence**: ${depth === 'surface' ? 'Keep expansions brief and focused' : 'Explore deeply with rich detail'}
-2. **Variety**: Each package should offer meaningfully different expansion options
-3. **Coherence**: Expansions should fit seamlessly with existing story content
-4. **Relationships**: Consider how expansions connect to existing elements
-5. **IDs**: Use appropriate ID formats (e.g., \`char_{timestamp}_{5chars}\`, \`loc_{timestamp}_{5chars}\`)
-
-**REMINDER: Focus expansion on ${outputType}. ${isConstrained ? 'No supporting content.' : 'May include supporting nodes.'}**
-
-Output ONLY the JSON object, no markdown code blocks, no explanation.`;
+Output JSON only. No markdown blocks or explanation.`;
 }
 
 // =============================================================================
 // Helper Functions
 // =============================================================================
 
-/**
- * Get target-specific instructions and output type.
- */
-function getTargetInstructions(
-  target: ExpandTarget,
-  targetNodeType?: string,
-  targetNodeData?: string
-): { expandType: string; targetInstructions: string; outputType: string } {
+function getTargetInstructions(target: ExpandTarget, nodeType?: string, nodeData?: string): { expandType: string; targetInstructions: string; outputType: string } {
   if (target.type === 'node') {
-    return getNodeExpansionInstructions(target.nodeId, targetNodeType, targetNodeData);
-  } else if (target.type === 'story-context') {
+    const info = `Target: ${target.nodeId} (${nodeType ?? 'Unknown'})\n${nodeData ? `Data: ${nodeData}` : ''}`;
+    
+    const nodeExpansions: Record<string, { output: string; content: string }> = {
+      Character: { output: 'Character-related (arcs, scenes)', content: 'CharacterArcs, relationships, scenes, locations' },
+      StoryBeat: { output: 'Scenes and elements', content: 'Scenes realizing this beat, characters, locations' },
+      Scene: { output: 'Scene elements', content: 'Characters, objects, connected scenes' },
+      Location: { output: 'Location elements', content: 'Sub-locations, scenes, characters, objects' },
+    };
+    
+    const exp = nodeExpansions[nodeType ?? ''] ?? { output: 'Related elements', content: 'Related content' };
+    return {
+      expandType: `${nodeType ?? 'Node'} Expansion`,
+      targetInstructions: `## Target: ${nodeType ?? 'Node'}\n${info}\n\nGenerate: ${exp.content}`,
+      outputType: exp.output,
+    };
+  }
+
+  if (target.type === 'story-context') {
     return {
       expandType: 'Story Context',
-      targetInstructions: `## Expansion Target: Story Context
+      targetInstructions: `## Target: Story Context
 
-You are expanding the story context using STRUCTURED OPERATIONS.
+Generate STRUCTURED OPERATIONS only:
+- addThematicPillar: Core themes/tensions
+- setConstitutionField: premise|genre|setting|toneEssence
+- addHardRule: Rules AI must never violate (id + text)
+- addGuideline: Soft guidelines (id + tags[] + text)
+- addBanned: Elements to avoid
 
-**CRITICAL**: You MUST use ONLY the specific operation types listed below.
-- Do NOT use "addSection" - INVALID
-- Do NOT use "addText" - INVALID
-- Do NOT invent operation types
-
-VALID operation types:
-- **addThematicPillar**: For core themes (e.g., "redemption vs corruption", "loyalty vs self-preservation")
-- **setConstitutionField**: For premise, genre, setting, toneEssence fields (field: "premise"|"genre"|"setting"|"toneEssence", value: "text")
-- **addHardRule**: For rules the AI must never violate (include rule.id and rule.text)
-- **addGuideline**: For soft writing guidelines (include guideline.id, tags[], and text)
-- **addBanned**: For elements to avoid (item: "string")
-
-Generate a mix of:
-- Thematic pillars that capture the story's core tensions
-- A premise that expands on the logline
-- Tone/voice description
-- Hard rules for consistency
-- Soft guidelines for writing style`,
-      outputType: 'Structured Context Operations',
+Do NOT use: addSection, addText (invalid)`,
+      outputType: 'Context Operations',
     };
-  } else if (target.type === 'story-context-section') {
-    return getContextSectionInstructions(target.section);
   }
 
-  return {
-    expandType: 'Generic',
-    targetInstructions: '## Expansion Target: Generic\n\nExpand story content as needed.',
-    outputType: 'Mixed content',
-  };
-}
-
-/**
- * Get instructions for expanding a specific node type.
- */
-function getNodeExpansionInstructions(
-  nodeId: string,
-  nodeType?: string,
-  nodeData?: string
-): { expandType: string; targetInstructions: string; outputType: string } {
-  const commonNodeInfo = `
-**Target Node ID**: ${nodeId}
-**Node Type**: ${nodeType ?? 'Unknown'}
-**Node Data**:
-${nodeData ?? '[Node data not provided]'}
-`;
-
-  switch (nodeType) {
-    case 'Character':
-      return {
-        expandType: 'Character Expansion',
-        targetInstructions: `## Expansion Target: Character
-${commonNodeInfo}
-
-Expand this character by generating:
-- **CharacterArcs**: Growth, fall, transformation arcs
-- **Relationships**: Connections to other characters
-- **Background**: Backstory elements, formative experiences
-- **Scenes**: Scenes featuring this character
-- **Locations**: Places associated with this character`,
-        outputType: 'Character-related nodes (arcs, relationships, scenes)',
-      };
-
-    case 'StoryBeat':
-      return {
-        expandType: 'StoryBeat Expansion',
-        targetInstructions: `## Expansion Target: StoryBeat
-${commonNodeInfo}
-
-Expand this story beat by generating:
-- **Scenes**: Scenes that realize this beat
-- **Characters**: Characters needed for this beat
-- **Locations**: Where this beat takes place
-- **Preceding/Following Beats**: Related story beats`,
-        outputType: 'Scenes and supporting elements',
-      };
-
-    case 'Scene':
-      return {
-        expandType: 'Scene Expansion',
-        targetInstructions: `## Expansion Target: Scene
-${commonNodeInfo}
-
-Expand this scene by generating:
-- **Characters**: Additional characters for the scene
-- **Objects**: Props or items featured in the scene
-- **Connected Scenes**: Following or preceding scenes
-- **Dialogue hints**: Key exchanges or moments`,
-        outputType: 'Scene elements and connected scenes',
-      };
-
-    case 'Location':
-      return {
-        expandType: 'Location Expansion',
-        targetInstructions: `## Expansion Target: Location
-${commonNodeInfo}
-
-Expand this location by generating:
-- **Sub-locations**: Areas within this location
-- **Scenes**: Scenes that take place here
-- **Characters**: Characters associated with this place
-- **Objects**: Items found at this location`,
-        outputType: 'Location-related elements',
-      };
-
-    default:
-      return {
-        expandType: `${nodeType ?? 'Node'} Expansion`,
-        targetInstructions: `## Expansion Target: ${nodeType ?? 'Node'}
-${commonNodeInfo}
-
-Expand this element by generating related content appropriate to its type.`,
-        outputType: 'Related story elements',
-      };
+  if (target.type === 'story-context-section') {
+    const sectionContent: Record<ContextSection, string> = {
+      themes: 'Core themes, sub-themes, thematic tensions',
+      conflicts: 'Central conflicts, internal/external obstacles, escalation points',
+      motifs: 'Recurring symbols, patterns, visual/narrative echoes',
+      tone: 'Tonal shifts, atmosphere, emotional texture',
+      constraints: 'Genre conventions, structural requirements, things to avoid',
+    };
+    return {
+      expandType: `Context - ${target.section}`,
+      targetInstructions: `## Target: Story Context (${target.section})\n\nGenerate: ${sectionContent[target.section]}`,
+      outputType: `${target.section} additions`,
+    };
   }
+
+  return { expandType: 'Generic', targetInstructions: '## Target: Generic\nExpand as needed.', outputType: 'Mixed content' };
 }
 
-/**
- * Get instructions for expanding a specific story context section.
- */
-function getContextSectionInstructions(
-  section: ContextSection
-): { expandType: string; targetInstructions: string; outputType: string } {
-  const sectionLabels: Record<ContextSection, string> = {
-    themes: 'Themes',
-    conflicts: 'Conflicts',
-    motifs: 'Motifs',
-    tone: 'Tone',
-    constraints: 'Constraints',
-  };
-
-  const sectionInstructions: Record<ContextSection, string> = {
-    themes: `Generate thematic additions:
-- Core themes and their variations
-- Sub-themes that complement existing themes
-- Thematic tensions and contrasts`,
-    conflicts: `Generate conflict additions:
-- Central conflicts and their dimensions
-- Internal character conflicts
-- External obstacles and antagonistic forces
-- Conflict escalation points`,
-    motifs: `Generate motif additions:
-- Recurring symbols or images
-- Symbolic patterns
-- Visual or narrative echoes`,
-    tone: `Generate tonal additions:
-- Tonal shifts and variations
-- Atmosphere descriptions
-- Emotional texture`,
-    constraints: `Generate constraint additions:
-- Genre conventions to follow
-- Structural requirements
-- Things to avoid
-- Consistency rules`,
-  };
-
-  return {
-    expandType: `Story Context - ${sectionLabels[section]}`,
-    targetInstructions: `## Expansion Target: Story Context (${sectionLabels[section]} Section)
-
-You are expanding the ${sectionLabels[section].toLowerCase()} section of the story context.
-
-${sectionInstructions[section]}`,
-    outputType: `Context additions for ${sectionLabels[section].toLowerCase()}`,
-  };
-}
-
-/**
- * Get the output schema based on expansion type.
- */
 function getOutputSchema(expandType: string, isConstrained: boolean): string {
-  if (expandType.includes('Story Context')) {
-    return getContextExpansionSchema(isConstrained);
-  }
-
-  return getNodeExpansionSchema(isConstrained);
-}
-
-/**
- * Schema for context expansion.
- * Uses structured storyContext operations format.
- */
-function getContextExpansionSchema(isConstrained: boolean): string {
-  if (isConstrained) {
+  if (expandType.includes('Story Context') || expandType.includes('Context -')) {
     return `\`\`\`json
-{
-  "packages": [
-    {
-      "id": "pkg_12345_abc",
-      "title": "Short descriptive title",
-      "rationale": "Why this expansion makes sense",
-      "confidence": 0.85,
-      "style_tags": ["thematic", "tonal"],
-      "changes": {
-        "storyContext": [
-          { "operation": { "type": "addThematicPillar", "pillar": "The tension between ambition and integrity" } },
-          { "operation": { "type": "addHardRule", "rule": { "id": "hr_timestamp_xxxx", "text": "Character choices must have consequences" } } },
-          { "operation": { "type": "addGuideline", "guideline": { "id": "sg_timestamp_xxxx", "tags": ["character", "general"], "text": "External pressure from society conflicts with internal moral compass" } } }
-        ],
-        "nodes": [],
-        "edges": []
-      },
-      "impact": {
-        "fulfills_gaps": [],
-        "creates_gaps": [],
-        "conflicts": []
-      }
-    }
-  ]
-}
+{"packages": [{
+  "id": "pkg_{ts}_{5char}",
+  "title": "...",
+  "rationale": "Why this fits",
+  "confidence": 0.85,
+  "style_tags": ["..."],
+  "changes": {
+    "storyContext": [
+      {"operation": {"type": "addThematicPillar", "pillar": "..."}},
+      {"operation": {"type": "addHardRule", "rule": {"id": "hr_{ts}_{5char}", "text": "..."}}},
+      {"operation": {"type": "addGuideline", "guideline": {"id": "sg_{ts}_{5char}", "tags": ["character"], "text": "..."}}}
+    ],
+    "nodes": [],
+    "edges": []
+  },
+  "impact": {"fulfills_gaps": [], "creates_gaps": [], "conflicts": []}
+}]}
 \`\`\`
 
-**IMPORTANT**: Use the appropriate operation type for each change:
-- \`addThematicPillar\` for themes
-- \`addHardRule\` for inviolable rules (include generated id like "hr_timestamp_xxxx")
-- \`addGuideline\` for soft guidelines (include id, tags from: character|dialogue|scene|action|pacing|plot|worldbuilding|general)
-- \`setConstitutionField\` for logline, premise, genre, setting, toneEssence, version
-- \`setWorkingNotes\` for freeform notes`;
+Valid operation types: addThematicPillar, addHardRule, addGuideline, setConstitutionField, addBanned, setWorkingNotes`;
   }
 
+  const supporting = isConstrained ? '' : `
+  "supporting": {"nodes": [], "edges": []},`;
+  
   return `\`\`\`json
-{
-  "packages": [
-    {
-      "id": "pkg_12345_abc",
-      "title": "Short descriptive title",
-      "rationale": "Why this expansion makes sense",
-      "confidence": 0.85,
-      "style_tags": ["thematic", "tonal"],
-      "changes": {
-        "storyContext": [
-          { "operation": { "type": "addThematicPillar", "pillar": "The tension between ambition and integrity" } },
-          { "operation": { "type": "addGuideline", "guideline": { "id": "sg_timestamp_xxxx", "tags": ["character"], "text": "Guideline text here" } } }
-        ],
-        "nodes": [],
-        "edges": []
-      },
-      "suggestions": {
-        "stashedIdeas": [
-          {
-            "id": "idea_12345",
-            "content": "Consider a scene where the protagonist must choose between career and conscience",
-            "category": "scene",
-            "relatedNodeIds": []
-          }
-        ]
-      },
-      "impact": {
-        "fulfills_gaps": [],
-        "creates_gaps": [],
-        "conflicts": []
-      }
-    }
-  ]
-}
-\`\`\`
-
-**CRITICAL**: Use ONLY these operation types - do NOT use "addSection":
-- \`addThematicPillar\` for themes
-- \`addHardRule\` for inviolable rules
-- \`addGuideline\` for soft guidelines
-- \`setConstitutionField\` for premise, genre, setting, toneEssence
-- \`addBanned\` for things to avoid
-- \`setWorkingNotes\` for freeform notes`;
-}
-
-/**
- * Schema for node expansion.
- */
-function getNodeExpansionSchema(isConstrained: boolean): string {
-  if (isConstrained) {
-    return `\`\`\`json
-{
-  "packages": [
-    {
-      "id": "pkg_12345_abc",
-      "title": "Short descriptive title",
-      "rationale": "Why this expansion makes sense",
-      "confidence": 0.85,
-      "style_tags": ["character", "development"],
-      "primary": {
-        "type": "Mixed",
-        "nodes": [
-          {
-            "operation": "add",
-            "node_type": "Scene",
-            "node_id": "scene_12345_xyz",
-            "data": {
-              "heading": "INT. LOCATION - TIME",
-              "scene_overview": "Description of what happens"
-            }
-          }
-        ],
-        "edges": [
-          {
-            "operation": "add",
-            "edge_type": "HAS_CHARACTER",
-            "from": "scene_12345_xyz",
-            "to": "char_target_id"
-          }
-        ]
-      },
-      "impact": {
-        "fulfills_gaps": [],
-        "creates_gaps": [],
-        "conflicts": []
-      }
-    }
-  ]
-}
-\`\`\``;
-  }
-
-  return `\`\`\`json
-{
-  "packages": [
-    {
-      "id": "pkg_12345_abc",
-      "title": "Short descriptive title",
-      "rationale": "Why this expansion makes sense",
-      "confidence": 0.85,
-      "style_tags": ["character", "development"],
-      "primary": {
-        "type": "Mixed",
-        "nodes": [
-          {
-            "operation": "add",
-            "node_type": "Scene",
-            "node_id": "scene_12345_xyz",
-            "data": {
-              "heading": "INT. LOCATION - TIME",
-              "scene_overview": "Description of what happens"
-            }
-          }
-        ],
-        "edges": [
-          {
-            "operation": "add",
-            "edge_type": "HAS_CHARACTER",
-            "from": "scene_12345_xyz",
-            "to": "char_target_id"
-          }
-        ]
-      },
-      "supporting": {
-        "nodes": [
-          {
-            "operation": "add",
-            "node_type": "Location",
-            "node_id": "loc_12345_abc",
-            "data": {
-              "name": "New Location",
-              "description": "A place relevant to the expansion"
-            }
-          }
-        ],
-        "edges": []
-      },
-      "impact": {
-        "fulfills_gaps": [],
-        "creates_gaps": [],
-        "conflicts": []
-      }
-    }
-  ]
-}
+{"packages": [{
+  "id": "pkg_{ts}_{5char}",
+  "title": "...",
+  "rationale": "Why this fits",
+  "confidence": 0.85,
+  "style_tags": ["..."],
+  "primary": {
+    "type": "Mixed",
+    "nodes": [{"operation": "add", "node_type": "Scene", "node_id": "scene_{ts}_{5char}", "data": {"heading": "INT. LOCATION - TIME", "scene_overview": "..."}}],
+    "edges": [{"operation": "add", "edge_type": "HAS_CHARACTER", "from": "scene_{ts}_{5char}", "to": "char_xxx"}]
+  },${supporting}
+  "impact": {"fulfills_gaps": [], "creates_gaps": [], "conflicts": []}
+}]}
 \`\`\``;
 }
