@@ -135,7 +135,8 @@ export function createInterpretHandler(ctx: StorageContext) {
         throw new BadRequestError(message, suggestion);
       }
 
-      const llmClient = createLLMClient();
+      // Disable cache for generation-like calls; creativity not provided here
+      const llmClient = createLLMClient({ enableCache: false });
 
       // Check for streaming request
       const wantsStream = req.headers.accept === 'text/event-stream';
@@ -260,7 +261,9 @@ export function createGenerateHandler(ctx: StorageContext) {
         throw new BadRequestError(message, suggestion);
       }
 
-      const llmClient = createLLMClient();
+      // Disable cache for unified/legacy generate; map creativity -> temperature when provided
+      const temperature = typeof creativity === 'number' ? Math.max(0, Math.min(1, creativity)) : undefined;
+      const llmClient = createLLMClient({ enableCache: false, ...(temperature !== undefined ? { temperature } : {}) });
 
       // Check for streaming request
       const wantsStream = req.headers.accept === 'text/event-stream';
@@ -385,7 +388,8 @@ export function createRegenerateHandler(ctx: StorageContext) {
         throw new BadRequestError(message, suggestion);
       }
 
-      const llmClient = createLLMClient();
+      // Disable cache; keep default temperature for legacy regenerate
+      const llmClient = createLLMClient({ enableCache: false });
 
       // Check for streaming request
       const wantsStream = req.headers.accept === 'text/event-stream';
@@ -487,7 +491,8 @@ export function createRefineHandler(ctx: StorageContext) {
         throw new BadRequestError(message, suggestion);
       }
 
-      const llmClient = createLLMClient();
+      // Disable cache for refine; allow default temperature
+      const llmClient = createLLMClient({ enableCache: false });
 
       const request: RefineRequest = {
         basePackageId,
@@ -1332,7 +1337,7 @@ export function createRegenerateElementHandler(ctx: StorageContext) {
         throw new BadRequestError(message, suggestion);
       }
 
-      const llmClient = createLLMClient();
+      const llmClient = createLLMClient({ enableCache: false });
 
       const request: RegenerateElementRequest = {
         packageId,
@@ -1783,7 +1788,7 @@ export function createProposeHandler(ctx: StorageContext) {
         throw new BadRequestError(message, suggestion);
       }
 
-      const llmClient = createLLMClient();
+      const llmClient = createLLMClient({ enableCache: false });
 
       // Build propose request - let orchestrator resolve defaults from mode
       const proposeRequest: ai.ProposeRequest = {
@@ -1987,7 +1992,7 @@ export function createRefineProposalHandler(ctx: StorageContext) {
         throw new BadRequestError(message, suggestion);
       }
 
-      const llmClient = createLLMClient();
+      const llmClient = createLLMClient({ enableCache: false });
 
       // Build propose request for refinement
       const proposeRequest: ai.ProposeRequest = {
@@ -2111,7 +2116,7 @@ export function createProposeStoryBeatsHandler(ctx: StorageContext) {
         throw new BadRequestError(message, suggestion);
       }
 
-      const llmClient = createLLMClient();
+      const llmClient = createLLMClient({ enableCache: false });
 
       const request: ProposeStoryBeatsRequest = {
         priorityBeats,
@@ -2243,7 +2248,7 @@ export function createProposeCharactersHandler(ctx: StorageContext) {
         throw new BadRequestError(message, suggestion);
       }
 
-      const llmClient = createLLMClient();
+      const llmClient = createLLMClient({ enableCache: false });
 
       const request: ProposeCharactersRequest = {
         focus,
@@ -2371,7 +2376,7 @@ export function createProposeScenesHandler(ctx: StorageContext) {
         throw new BadRequestError(message, suggestion);
       }
 
-      const llmClient = createLLMClient();
+      const llmClient = createLLMClient({ enableCache: false });
 
       const request: ProposeScenesRequest = {
         storyBeatIds,
@@ -2508,7 +2513,7 @@ export function createProposeExpandHandler(ctx: StorageContext) {
         throw new BadRequestError(message, suggestion);
       }
 
-      const llmClient = createLLMClient();
+      const llmClient = createLLMClient({ enableCache: false });
 
       const request: ProposeExpandRequest = {
         target,
