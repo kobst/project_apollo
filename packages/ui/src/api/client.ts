@@ -535,6 +535,12 @@ export const api = {
     };
     return POST<ProposeExpandResponse>(`/stories/${storyId}/propose/expand`, apiRequest);
   },
+
+  /**
+   * Unified generate endpoint (intent + direction)
+   */
+  generate: (storyId: string, data: GenerateRequestData) =>
+    POST<GenerateResponseData>(`/stories/${storyId}/generate`, data),
 };
 
 // =============================================================================

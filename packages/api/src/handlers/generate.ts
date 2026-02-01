@@ -227,18 +227,28 @@ interface GenerateRequestBody {
 
 export function createGenerateHandler(ctx: StorageContext) {
   return async (
-    req: Request<{ id: string }, unknown, GenerateRequestBody>,
-    res: Response<APIResponse<GenerateResponseData>>,
+    req: Request<{ id: string }, unknown, GenerateRequestBody & {
+      // Unified orchestration shape (optional)
+      intent?: {
+        mode?: 'storyBeats' | 'characters' | 'scenes' | 'expand';
+        scope?: 'act1' | 'act2' | 'act3' | 'full';
+        focus?: string[];
+      };
+      direction?: string;
+      packageCount?: number;
+      creativity?: number;
+    }>,
+    res: Response<APIResponse<GenerateResponseData & { orchestration?: unknown }>>,
     next: NextFunction
   ): Promise<void> => {
     console.log('[generateHandler] Received generate request');
     try {
       const { id } = req.params;
-      const { entryPoint, depth = 'medium', count = 'few', direction } = req.body;
-      console.log(`[generateHandler] Story: ${id}, entryPoint: ${entryPoint?.type}, depth: ${depth}, count: ${count}`);
+      const { entryPoint, depth = 'medium', count = 'few' } = req.body as GenerateRequestBody;
+      const { intent, direction, packageCount, creativity } = req.body as any;
 
-      if (!entryPoint || !entryPoint.type) {
-        throw new BadRequestError('entryPoint with type is required');
+      if (!intent && !entryPoint) {
+        throw new BadRequestError('Provide either intent (unified) or entryPoint (legacy)');
       }
 
       if (!isLLMConfigured()) {
@@ -251,14 +261,55 @@ export function createGenerateHandler(ctx: StorageContext) {
       // Check for streaming request
       const wantsStream = req.headers.accept === 'text/event-stream';
 
-      const request: GenerateRequest = {
-        entryPoint,
-        depth,
-        count,
-      };
-      if (direction) {
-        request.direction = direction;
+      // Unified orchestration path if intent is provided
+      if (intent) {
+        const wantsStream = req.headers.accept === 'text/event-stream';
+        if (wantsStream) {
+          // For now, unified orchestration returns a single result; no token stream
+          res.setHeader('Content-Type', 'text/event-stream');
+          res.setHeader('Cache-Control', 'no-cache');
+          res.setHeader('Connection', 'keep-alive');
+          res.flushHeaders();
+
+          const { orchestrate } = await import('../ai/unifiedOrchestrator.js');
+          const result = await orchestrate(
+            { storyId: id, intent, direction, packageCount, creativity },
+            ctx,
+            llmClient
+          );
+
+          const graph = await loadGraphById(id, ctx);
+          const enriched = {
+            ...result,
+            packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+          };
+          res.write(`data: ${JSON.stringify({ type: 'result', data: enriched })}\n\n`);
+          res.write('data: [DONE]\n\n');
+          res.end();
+          return;
+        } else {
+          const { orchestrate } = await import('../ai/unifiedOrchestrator.js');
+          const result = await orchestrate(
+            { storyId: id, intent, direction, packageCount, creativity },
+            ctx,
+            llmClient
+          );
+          const graph = await loadGraphById(id, ctx);
+          const enriched = {
+            ...result,
+            packages: result.packages.map((pkg) => resolveEdgeNames(pkg, graph)),
+          };
+          res.json({ success: true, data: enriched });
+          return;
+        }
       }
+
+      // Legacy path: entryPoint-based
+      if (!entryPoint || !entryPoint.type) {
+        throw new BadRequestError('entryPoint with type is required');
+      }
+      const request: GenerateRequest = { entryPoint, depth, count };
+      if (direction) request.direction = direction;
 
       if (wantsStream) {
         // Set up SSE

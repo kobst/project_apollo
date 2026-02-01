@@ -27,6 +27,7 @@ import type {
   ProposeScenesResponse,
   ProposeExpandRequest,
   ProposeExpandResponse,
+  GenerateResponseData,
 } from '../api/types';
 import {
   computeSectionChangeCounts,
@@ -92,6 +93,8 @@ interface GenerationContextValue {
   selectPackage: (packageId: string) => void;
   /** Get refinable elements for current package */
   refinableElements: RefinableElements | null;
+  /** Orchestration metadata for latest unified generate */
+  orchestrationInfo: GenerateResponseData['orchestration'] | null;
 
   // Element editing
   /** Regenerate a single element within a package */
@@ -159,6 +162,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
+  const [orchestrationInfo, setOrchestrationInfo] = useState<GenerateResponseData['orchestration'] | null>(null);
 
   // Staging state for unified workspace
   const [staging, setStaging] = useState<StagingState>({
@@ -245,7 +249,8 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     sessionId: string,
     storyId: string,
     packages: NarrativePackage[],
-    entryPointType: 'beat' | 'storyBeat' | 'character' | 'gap' | 'idea' | 'naked'
+    entryPointType: 'beat' | 'storyBeat' | 'character' | 'gap' | 'idea' | 'naked',
+    orchestration?: GenerateResponseData['orchestration'] | null
   ) => {
     const newSession: GenerationSession = {
       id: sessionId,
@@ -259,6 +264,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     setSession(newSession);
     setSelectedPackageId(packages[0]?.id ?? null);
     setIsOpen(true);
+    setOrchestrationInfo(orchestration ?? null);
   };
 
   // Propose Story Beats
@@ -267,9 +273,19 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
       try {
         setLoading(true);
         setError(null);
-        const data = await api.proposeStoryBeats(storyId, request);
-        createSessionFromResponse(data.sessionId, storyId, data.packages, 'beat');
-        return data;
+        const genRequest = {
+          intent: {
+            mode: 'storyBeats' as const,
+            focus: request.priorityBeatIds ?? request.priorityBeats ?? [],
+          },
+          direction: request.direction,
+          packageCount: request.packageCount,
+          creativity: request.creativity,
+        };
+        const data: GenerateResponseData = await api.generate(storyId, genRequest);
+        createSessionFromResponse(data.sessionId, storyId, data.packages, 'beat', data.orchestration ?? null);
+        // Backfill to original response shape minimally
+        return { sessionId: data.sessionId, packages: data.packages } as unknown as ProposeStoryBeatsResponse;
       } catch (err) {
         setError((err as Error).message);
         throw err;
@@ -286,9 +302,15 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
       try {
         setLoading(true);
         setError(null);
-        const data = await api.proposeCharacters(storyId, request);
-        createSessionFromResponse(data.sessionId, storyId, data.packages, 'character');
-        return data;
+        const genRequest = {
+          intent: { mode: 'characters' as const },
+          direction: request.direction,
+          packageCount: request.packageCount,
+          creativity: request.creativity,
+        };
+        const data: GenerateResponseData = await api.generate(storyId, genRequest);
+        createSessionFromResponse(data.sessionId, storyId, data.packages, 'character', data.orchestration ?? null);
+        return { sessionId: data.sessionId, packages: data.packages } as unknown as ProposeCharactersResponse;
       } catch (err) {
         setError((err as Error).message);
         throw err;
@@ -305,9 +327,15 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
       try {
         setLoading(true);
         setError(null);
-        const data = await api.proposeScenes(storyId, request);
-        createSessionFromResponse(data.sessionId, storyId, data.packages, 'storyBeat');
-        return data;
+        const genRequest = {
+          intent: { mode: 'scenes' as const, focus: request.storyBeatIds },
+          direction: request.direction,
+          packageCount: request.packageCount,
+          creativity: request.creativity,
+        };
+        const data: GenerateResponseData = await api.generate(storyId, genRequest);
+        createSessionFromResponse(data.sessionId, storyId, data.packages, 'storyBeat', data.orchestration ?? null);
+        return { sessionId: data.sessionId, packages: data.packages } as unknown as ProposeScenesResponse;
       } catch (err) {
         setError((err as Error).message);
         throw err;
@@ -324,9 +352,16 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
       try {
         setLoading(true);
         setError(null);
-        const data = await api.proposeExpand(storyId, request);
-        createSessionFromResponse(data.sessionId, storyId, data.packages, 'naked');
-        return data;
+        const targetId = (request as any).nodeId as string | undefined;
+        const genRequest = {
+          intent: { mode: 'expand' as const, focus: targetId ? [targetId] : [] },
+          direction: request.direction,
+          packageCount: request.packageCount,
+          creativity: request.creativity,
+        };
+        const data: GenerateResponseData = await api.generate(storyId, genRequest);
+        createSessionFromResponse(data.sessionId, storyId, data.packages, 'naked', data.orchestration ?? null);
+        return { sessionId: data.sessionId, packages: data.packages } as unknown as ProposeExpandResponse;
       } catch (err) {
         setError((err as Error).message);
         throw err;
@@ -790,6 +825,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     selectedPackageId,
     selectPackage,
     refinableElements,
+    orchestrationInfo,
     regenerateElement,
     applyElementOption,
     updatePackageElement,

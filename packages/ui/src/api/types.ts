@@ -363,6 +363,47 @@ export interface UpdateNodeData {
   fieldsUpdated: string[];
 }
 
+// =============================================================================
+// Unified Orchestration (Generate)
+// =============================================================================
+
+export interface OrchestrationIntent {
+  mode?: 'storyBeats' | 'characters' | 'scenes' | 'expand';
+  scope?: 'act1' | 'act2' | 'act3' | 'full';
+  focus?: string[];
+}
+
+export interface ResolvedIntentData {
+  mode: 'storyBeats' | 'characters' | 'scenes' | 'expand' | 'interpret';
+  targets: string[];
+  direction?: string;
+  confidence: number;
+  reasoning: string;
+}
+
+export interface StateAnalysisData {
+  gaps: any[];
+  coverage: any;
+  suggestions: string[];
+}
+
+export interface GenerateRequestData {
+  intent?: OrchestrationIntent;
+  direction?: string;
+  packageCount?: number;
+  creativity?: number;
+}
+
+export interface GenerateResponseData {
+  sessionId: string;
+  packages: NarrativePackage[];
+  orchestration?: {
+    resolvedIntent: ResolvedIntentData;
+    strategyUsed: string;
+    stateAnalysis: StateAnalysisData;
+  };
+}
+
 export interface DeleteNodeData {
   deletedNode: NodeData;
   deletedEdgeCount: number;

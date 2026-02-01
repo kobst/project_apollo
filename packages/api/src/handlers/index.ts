@@ -52,6 +52,7 @@ export {
 export { createCoverageHandler } from './coverage.js';
 export { createGapsHandler } from './gaps.js';
 export { createRecomputeOrderHandler } from './recomputeOrder.js';
+export { createGenerateHandler } from './generate.js';
 export {
   createSceneHandler,
   listScenesHandler,

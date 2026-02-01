@@ -9,7 +9,6 @@ import { useStory } from '../../context/StoryContext';
 import { useGeneration } from '../../context/GenerationContext';
 import { useSavedPackages } from '../../context/SavedPackagesContext';
 import { useGenerationData } from '../../hooks/useGenerationData';
-import { useAgentJobs } from '../../hooks/useAgentJobs';
 import { ComposeForm, createDefaultFormState, type ComposeFormState } from '../generation/ComposeForm';
 import { SavedPackagesPanel } from '../generation/SavedPackagesPanel';
 import { PackageCarousel } from './PackageCarousel';
@@ -21,6 +20,9 @@ import type {
   ProposeExpandRequest,
 } from '../../api/types';
 import styles from './GenerationPanel.module.css';
+import { useGapsCoverage } from '../../hooks/useGapsCoverage';
+import { GapIndicators } from './GapIndicators';
+import { CoverageSummary } from './CoverageSummary';
 
 interface SelectedNodeInfo {
   id: string;
@@ -73,10 +75,6 @@ export function GenerationPanel({
 
   // Form state preserved during collapse
   const [formState, setFormState] = useState<ComposeFormState>(createDefaultFormState);
-  const [aiAssisted, setAiAssisted] = useState(false);
-  const { runInterpreter: runAgentInterpreter } = useAgentJobs(currentStoryId ?? undefined, {
-    onJobDone: () => { if (currentStoryId) void loadSession(currentStoryId); },
-  });
   const [critic, setCritic] = useState(null as null | { errorCount: number; warningCount: number; hasBlockingErrors: boolean; violations: Array<{ id: string; ruleId: string; severity: 'hard'|'soft'; message: string }> });
   const [criticLoading, setCriticLoading] = useState(false);
   const [refinePrompt, setRefinePrompt] = useState('');
@@ -101,13 +99,9 @@ export function GenerationPanel({
   const handleGenerateStoryBeats = useCallback(
     async (request: ProposeStoryBeatsRequest) => {
       if (!currentStoryId) return;
-      if (aiAssisted && formState.direction.trim()) {
-        await runAgentInterpreter(formState.direction.trim());
-      } else {
-        await proposeStoryBeats(currentStoryId, request);
-        refreshStatus();
-        refreshGenerationData();
-      }
+      await proposeStoryBeats(currentStoryId, request);
+      refreshStatus();
+      refreshGenerationData();
     },
     [currentStoryId, proposeStoryBeats, refreshStatus, refreshGenerationData]
   );
@@ -115,13 +109,9 @@ export function GenerationPanel({
   const handleGenerateCharacters = useCallback(
     async (request: ProposeCharactersRequest) => {
       if (!currentStoryId) return;
-      if (aiAssisted && formState.direction.trim()) {
-        await runAgentInterpreter(formState.direction.trim());
-      } else {
-        await proposeCharacters(currentStoryId, request);
-        refreshStatus();
-        refreshGenerationData();
-      }
+      await proposeCharacters(currentStoryId, request);
+      refreshStatus();
+      refreshGenerationData();
     },
     [currentStoryId, proposeCharacters, refreshStatus, refreshGenerationData]
   );
@@ -129,13 +119,9 @@ export function GenerationPanel({
   const handleGenerateScenes = useCallback(
     async (request: ProposeScenesRequest) => {
       if (!currentStoryId) return;
-      if (aiAssisted && formState.direction.trim()) {
-        await runAgentInterpreter(formState.direction.trim());
-      } else {
-        await proposeScenes(currentStoryId, request);
-        refreshStatus();
-        refreshGenerationData();
-      }
+      await proposeScenes(currentStoryId, request);
+      refreshStatus();
+      refreshGenerationData();
     },
     [currentStoryId, proposeScenes, refreshStatus, refreshGenerationData]
   );
@@ -143,13 +129,9 @@ export function GenerationPanel({
   const handleGenerateExpand = useCallback(
     async (request: ProposeExpandRequest) => {
       if (!currentStoryId) return;
-      if (aiAssisted && formState.direction.trim()) {
-        await runAgentInterpreter(formState.direction.trim());
-      } else {
-        await proposeExpand(currentStoryId, request);
-        refreshStatus();
-        refreshGenerationData();
-      }
+      await proposeExpand(currentStoryId, request);
+      refreshStatus();
+      refreshGenerationData();
     },
     [currentStoryId, proposeExpand, refreshStatus, refreshGenerationData]
   );
@@ -295,13 +277,35 @@ export function GenerationPanel({
 
       {/* Content */}
       <div className={styles.content}>
-        {/* AI-assisted toggle (Interpreter behind Direction) */}
-        <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <label style={{ fontSize: 12 }}>
-            <input type="checkbox" checked={aiAssisted} onChange={(e) => setAiAssisted(e.target.checked)} />
-            {' '}Smart mode — let AI decide how to generate
-          </label>
+        {/* Context Section - Always visible */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Coverage</div>
+            <CoverageSummary coverage={coverage} />
+          </div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Gaps</div>
+            <GapIndicators gaps={gaps} />
+          </div>
         </div>
+
+        {/* Orchestration Info - Minimal */}
+        {orchestrationInfo && (
+          <details style={{ marginBottom: 12 }}>
+            <summary style={{ cursor: 'pointer', fontSize: 12 }}>Why this? (orchestration)</summary>
+            <div style={{ fontSize: 12, marginTop: 6 }}>
+              <div><strong>Mode:</strong> {orchestrationInfo.resolvedIntent.mode}</div>
+              {'direction' in orchestrationInfo.resolvedIntent && orchestrationInfo.resolvedIntent.direction && (
+                <div><strong>Direction:</strong> {orchestrationInfo.resolvedIntent.direction}</div>
+              )}
+              <div><strong>Confidence:</strong> {Math.round((orchestrationInfo.resolvedIntent.confidence ?? 0) * 100)}%</div>
+              {orchestrationInfo.resolvedIntent.reasoning && (
+                <div style={{ opacity: 0.8 }}><strong>Reasoning:</strong> {orchestrationInfo.resolvedIntent.reasoning}</div>
+              )}
+            </div>
+          </details>
+        )}
+        {/* Smart mode toggle removed; unified orchestration always used */}
 
           {/* Agent quick UI removed per design; Interpreter runs behind Direction when AI-assisted is enabled */}
         {/* Error display */}
@@ -562,6 +566,11 @@ export function GenerationPanel({
               </button>
               <button
                 className={styles.backButton}
+  // Context header: gaps/coverage
+  const { coverage, gaps } = useGapsCoverage(currentStoryId);
+
+  // Minimal orchestration info (from unified generate)
+  const { orchestrationInfo } = useGeneration();
                 onClick={handleCloseSavedPackageView}
                 disabled={loading}
                 type="button"

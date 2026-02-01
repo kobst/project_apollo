@@ -8,6 +8,7 @@ import {
   createInitHandler,
   createListStoriesHandler,
   createStatusHandler,
+  createGenerateHandler,
   createOQsHandler,
   createInputHandler,
   createDiffHandler,
@@ -104,6 +105,8 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   // Core endpoints
   router.post('/init', createInitHandler(ctx));
   router.get('/:id/status', createStatusHandler(ctx));
+  // Unified generation endpoint (orchestrated)
+  router.post('/:id/generate', createGenerateHandler(ctx));
   router.get('/:id/open-questions', createOQsHandler(ctx));
   // Legacy cluster/move endpoints removed in favor of propose/session workflow
   router.all('/:id/clusters', (_req, res) => {
