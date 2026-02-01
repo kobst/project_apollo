@@ -1,0 +1,735 @@
+{
+  "_meta": {
+    "storyId": "neon-noir-test",
+    "versionId": "sv_1769973061100_j6lq8t",
+    "label": "Accept package: Keys Code: No Badges, No Oaths",
+    "createdAt": "2026-02-01T19:11:01.100Z",
+    "enrichmentSummary": "This package steers the narrative toward a principled noir about competing systems of loyalty: Cain’s personal code versus the hollow legitimacy of corrupt institutions. By anchoring the Theme Stated before Rigo seeks him out, the story’s direction becomes less about returning to crime and more about whether any code can survive when authority itself is just another crew with masks.",
+    "packageTitle": "Keys Code: No Badges, No Oaths"
+  },
+  "nodes": [
+    {
+      "type": "Beat",
+      "id": "beat_OpeningImage",
+      "beat_type": "OpeningImage",
+      "act": 1,
+      "position_index": 1,
+      "guidance": "The opening snapshot that sets tone and stakes.",
+      "status": "EMPTY"
+    },
+    {
+      "type": "Beat",
+      "id": "beat_ThemeStated",
+      "beat_type": "ThemeStated",
+      "act": 1,
+      "position_index": 2,
+      "guidance": "Someone states the theme, often to the protagonist.",
+      "status": "EMPTY"
+    },
+    {
+      "type": "Beat",
+      "id": "beat_Setup",
+      "beat_type": "Setup",
+      "act": 1,
+      "position_index": 3,
+      "guidance": "Introduce the protagonist and their world.",
+      "status": "EMPTY"
+    },
+    {
+      "type": "Beat",
+      "id": "beat_Catalyst",
+      "beat_type": "Catalyst",
+      "act": 1,
+      "position_index": 4,
+      "guidance": "The event that launches the story problem.",
+      "status": "EMPTY"
+    },
+    {
+      "type": "Beat",
+      "id": "beat_Debate",
+      "beat_type": "Debate",
+      "act": 1,
+      "position_index": 5,
+      "guidance": "The protagonist debates whether to accept the challenge.",
+      "status": "EMPTY"
+    },
+    {
+      "type": "Beat",
+      "id": "beat_BreakIntoTwo",
+      "beat_type": "BreakIntoTwo",
+      "act": 2,
+      "position_index": 6,
+      "guidance": "The protagonist commits to the journey.",
+      "status": "EMPTY"
+    },
+    {
+      "type": "Beat",
+      "id": "beat_BStory",
+      "beat_type": "BStory",
+      "act": 2,
+      "position_index": 7,
+      "guidance": "A subplot, often romantic or mentorship.",
+      "status": "EMPTY"
+    },
+    {
+      "type": "Beat",
+      "id": "beat_FunAndGames",
+      "beat_type": "FunAndGames",
+      "act": 2,
+      "position_index": 8,
+      "guidance": "The promise of the premise delivered.",
+      "status": "EMPTY"
+    },
+    {
+      "type": "Beat",
+      "id": "beat_Midpoint",
+      "beat_type": "Midpoint",
+      "act": 3,
+      "position_index": 9,
+      "guidance": "A false victory or defeat that raises stakes.",
+      "status": "EMPTY"
+    },
+    {
+      "type": "Beat",
+      "id": "beat_BadGuysCloseIn",
+      "beat_type": "BadGuysCloseIn",
+      "act": 3,
+      "position_index": 10,
+      "guidance": "External and internal pressures mount.",
+      "status": "EMPTY"
+    },
+    {
+      "type": "Beat",
+      "id": "beat_AllIsLost",
+      "beat_type": "AllIsLost",
+      "act": 4,
+      "position_index": 11,
+      "guidance": "The lowest point; something or someone is lost.",
+      "status": "EMPTY"
+    },
+    {
+      "type": "Beat",
+      "id": "beat_DarkNightOfSoul",
+      "beat_type": "DarkNightOfSoul",
+      "act": 4,
+      "position_index": 12,
+      "guidance": "Wallowing in hopelessness before breakthrough.",
+      "status": "EMPTY"
+    },
+    {
+      "type": "Beat",
+      "id": "beat_BreakIntoThree",
+      "beat_type": "BreakIntoThree",
+      "act": 5,
+      "position_index": 13,
+      "guidance": "The solution is found; the protagonist commits.",
+      "status": "EMPTY"
+    },
+    {
+      "type": "Beat",
+      "id": "beat_Finale",
+      "beat_type": "Finale",
+      "act": 5,
+      "position_index": 14,
+      "guidance": "The climax and resolution of all storylines.",
+      "status": "EMPTY"
+    },
+    {
+      "type": "Beat",
+      "id": "beat_FinalImage",
+      "beat_type": "FinalImage",
+      "act": 5,
+      "position_index": 15,
+      "guidance": "The closing snapshot, showing transformation.",
+      "status": "EMPTY"
+    },
+    {
+      "type": "Character",
+      "id": "char_protagonist",
+      "name": "Cain",
+      "description": "Retired gangster who now lives in the Florida Keys and runs an ATV/motorcycle repair shop. ",
+      "status": "ACTIVE",
+      "archetype": "PROTAGONIST"
+    },
+    {
+      "type": "Location",
+      "id": "loc_primary",
+      "name": "The Warehouse",
+      "description": "Main setting extracted from logline"
+    },
+    {
+      "type": "Character",
+      "id": "char_rigo_1767488316196_0",
+      "name": "Rigo",
+      "description": "The longtime kingpin of a drug conglomerate. Mid-60s. Almost retired and mostly hands-off. Once a ruthless animal, his success has made softened and domesticated him.",
+      "status": "ACTIVE"
+    },
+    {
+      "type": "Scene",
+      "id": "scene_extracted_1767490321406",
+      "heading": "INT. LOCATION - DAY",
+      "scene_overview": "Cain shows up at Rigo's warehouse, ready to begin work.",
+      "beat_id": "beat_Setup",
+      "status": "DRAFT",
+      "source_provenance": "USER",
+      "mood": "Nervous",
+      "time_of_day": "Afternoon",
+      "title": "Rigo Shows up For Work",
+      "order_index": 3
+    },
+    {
+      "type": "StoryBeat",
+      "id": "pp_extracted_1767576713934",
+      "title": "Cain gets arrested",
+      "summary": "Cain gets arrested",
+      "intent": "plot",
+      "status": "proposed",
+      "createdAt": "2026-01-05T01:31:53.934Z",
+      "updatedAt": "2026-01-05T01:31:53.934Z",
+      "order_index": 5
+    },
+    {
+      "type": "Scene",
+      "id": "scene_extracted_1767583980454",
+      "heading": "INT. LOCATION - DAY",
+      "scene_overview": "Cain is in an interrogation room with Detective Rogers.",
+      "beat_id": "beat_Setup",
+      "order_index": 5,
+      "status": "DRAFT",
+      "source_provenance": "USER",
+      "title": "Cain is in an interrogation room with Detective Rogers."
+    },
+    {
+      "type": "StoryBeat",
+      "id": "pp_extracted_1767585226496",
+      "title": "Rigo seeks help and finds Cain",
+      "summary": "Rigo seeks help and finds Cain",
+      "intent": "plot",
+      "status": "proposed",
+      "createdAt": "2026-01-05T03:53:46.496Z",
+      "updatedAt": "2026-01-05T03:53:46.496Z",
+      "order_index": 1
+    },
+    {
+      "type": "StoryBeat",
+      "id": "pp_extracted_1767663062839",
+      "title": "Rigo decides to return to Cain for this one last job",
+      "summary": "Rigo decides to return to Cain for this one last job",
+      "intent": "plot",
+      "status": "proposed",
+      "createdAt": "2026-01-06T01:31:02.839Z",
+      "updatedAt": "2026-01-06T01:31:02.839Z",
+      "order_index": 2
+    },
+    {
+      "type": "Premise",
+      "id": "premise_1767750765649",
+      "logline": "An ex gangster returns to his criminal roots and turns into the reluctant lead investigator as he tries to help his former drug dealing organization figure out who is robbing them of their drug shipments"
+    },
+    {
+      "type": "Setting",
+      "id": "setting_1767761439921",
+      "name": "Modern day Miami-Vice vibe.",
+      "description": "Modern day Miami-Vice vibe."
+    },
+    {
+      "type": "GenreTone",
+      "id": "genretone_1767846341061",
+      "genre": "thriller",
+      "tone_description": "modern noir thriller"
+    },
+    {
+      "type": "Logline",
+      "id": "logline_1768362249336",
+      "text": "A retired strong man for a drug syndicate gets recruited by his old employers to find out who's robbing their shipments, and must navigate a tangled web of conspiracy and power"
+    },
+    {
+      "type": "Character",
+      "id": "char_1768500003_captain",
+      "name": "Captain Frank Morrison",
+      "description": "Veteran police captain running a crew that steals drug shipments during fake raids. 20-year veteran with expensive tastes and mounting debts.",
+      "archetype": "Corrupt Authority",
+      "traits": [
+        "authoritative",
+        "greedy",
+        "paranoid"
+      ]
+    },
+    {
+      "type": "StoryBeat",
+      "id": "pp_1768500003_badge",
+      "title": "Police involvement revealed",
+      "summary": "Cain realizes the thefts are being carried out by corrupt cops using their authority to seize shipments legally then resell them",
+      "intent": "plot",
+      "priority": "high",
+      "stakes_change": "Legal system becomes the enemy rather than potential ally"
+    },
+    {
+      "type": "Character",
+      "id": "char_1768500123_kane",
+      "name": "Sergeant Marcus Flores",
+      "description": "Autistic ex-marine with severe PTSD who served alongside Morrison, now finds purpose and meaning through violently robbing drug shipments. His military precision combined with mental instability makes him extremely dangerous and unpredictable.",
+      "archetype": "The Loose Cannon",
+      "traits": [
+        "autistic",
+        "violent",
+        "military_trained",
+        "ptsd",
+        "unstable",
+        "loyal_to_morrison"
+      ]
+    },
+    {
+      "type": "Character",
+      "id": "char_1768952140_f1l6z",
+      "name": "Dante \"D\" Alvarado",
+      "description": "A charismatic nightclub promoter and mid-level broker who grew up around Cain and now sells introductions, surveillance and rumors to the highest bidder.",
+      "archetype": "Smooth informant / Judas",
+      "traits": [
+        "charming",
+        "cowardly",
+        "status-obsessed",
+        "opportunistic"
+      ]
+    },
+    {
+      "type": "Location",
+      "id": "loc_1768952140_k9t2c",
+      "name": "Club LUXE (Back Hallway)",
+      "description": "A velvet-rope club corridor behind the DJ booth where deals happen in whispers over thudding bass.",
+      "parent_location_id": ""
+    },
+    {
+      "type": "StoryBeat",
+      "id": "pp_1768952140_u0m4x",
+      "title": "Cain meets Dante for a lead on the theft crew",
+      "summary": "Cain finds Dante in a club back hallway; Dante offers security footage of Morrison's people moving product, but demands protection and a payday.",
+      "intent": "plot",
+      "priority": 1,
+      "stakes_change": "Cain gains actionable proof of police involvement, but it ties his survival to a man who profits from betrayal.",
+      "order_index": 4
+    },
+    {
+      "type": "Scene",
+      "id": "scene_1768952140_2b8qd",
+      "heading": "INT. CLUB LUXE - BACK HALLWAY - NIGHT",
+      "scene_overview": "Cain corners Dante amid neon spill and security monitors; Dante teases him with a thumb drive and names Morrison without saying it too loud.",
+      "order_index": 4,
+      "mood": "seductive, paranoid",
+      "key_actions": [
+        "Dante shows a freeze-frame: a captain's silhouette taking a bag",
+        "Cain clocks hidden cameras and realizes the club is a trap waiting to happen",
+        "Dante insists on meeting again to hand over the decryption key",
+        "Cain leaves with the drive but not the key"
+      ]
+    },
+    {
+      "type": "StoryBeat",
+      "id": "pp_1768952140_n7c1h",
+      "title": "Dante sells Cain out to Morrison",
+      "summary": "Terrified and tempted, Dante tips Morrison to Cain's next move; Morrison's crew ambushes Cain, seizes the drive and uses the chaos to justify Cain's arrest.",
+      "intent": "plot",
+      "priority": 1,
+      "stakes_change": "All Is Lost: Cain loses evidence, freedom and leverage, and his trust in anyone left in Miami collapses.",
+      "order_index": 6
+    },
+    {
+      "type": "Scene",
+      "id": "scene_1768952140_6w9ja",
+      "heading": "EXT. PARKING GARAGE ROOFTOP - NIGHT",
+      "scene_overview": "Cain arrives for the decryption key; instead, unmarked units swarm. Dante watches from a stairwell as Morrison's team takes Cain down.",
+      "order_index": 6,
+      "mood": "cold, inevitable",
+      "key_actions": [
+        "Cain spots the setup too late and tries to bolt",
+        "Kane appears as the violent closer, forcing compliance",
+        "The thumb drive disappears into a badge-holder's pocket",
+        "Dante flinches, then walks away to preserve his lifestyle"
+      ]
+    },
+    {
+      "type": "Scene",
+      "id": "scene_1769033201_ks9q2",
+      "heading": "EXT. MIAMI MARINA SERVICE ROAD - NIGHT",
+      "scene_overview": "Rigo arrives quietly in Miami and meets a jittery dockworker contact who confirms a shipment vanished off-book and mentions \"Cain\" as the only guy who used to read patterns like that. Rigo pays for a forwarding address to the Keys and warns the contact to forget his face."
+    },
+    {
+      "type": "Scene",
+      "id": "scene_1769033201_2n1vd",
+      "heading": "EXT. CAIN'S BODY SHOP - FLORIDA KEYS - LATE AFTERNOON",
+      "scene_overview": "Rigo finds Cain in exile, hands deep in an engine. Their reunion is polite but loaded: Rigo talks about missing product and crews going quiet; Cain clocks the desperation and refuses to get dragged back. Rigo drops a hook: the thefts feel \"professional\" and someone is using police access. Cain stays stone-faced, but his attention sharpens.",
+      "order_index": 2
+    },
+    {
+      "type": "Character",
+      "id": "char_1769033201_dk7p1",
+      "name": "Nico Velez",
+      "description": "Dockworker and small-time fixer at the marina who trades gossip for cash and survival."
+    },
+    {
+      "type": "Location",
+      "id": "loc_1769033201_j4m8c",
+      "name": "Miami Marina Service Road",
+      "description": "Back-lot of the docks with forklifts, tarps, and security lights where information sells as fast as contraband."
+    },
+    {
+      "type": "Idea",
+      "id": "idea_1769903831422",
+      "title": "Character: Elena Marquez",
+      "description": "A sharp Internal Affairs investigator assigned after a cluster of \"botched\" narcotics seizures draws media heat. She presents as reform-minded, but her real loyalty is to whoever keeps her career clean, even if that means burying the right bodies. She sees Cain as both a useful wedge against Morrison and an easy scapegoat.",
+      "source": "ai",
+      "status": "active",
+      "createdAt": "2026-01-31T23:57:11.422Z",
+      "suggestedType": "Character"
+    },
+    {
+      "type": "Idea",
+      "id": "idea_1769904483773",
+      "title": "Character: Tomás \"Tico\" Reyes",
+      "description": "Rigo's longtime enforcer and logistics watchdog, late 50s, meticulous and suspicious of everyone who left and came back. He believes Cain's \"retirement\" made him soft and that the thefts are an inside job enabled by sentiment. Tico enforces the syndicate code with quiet severity: no civilians, no noise, no excuses.",
+      "source": "ai",
+      "status": "active",
+      "createdAt": "2026-02-01T00:08:03.773Z",
+      "suggestedType": "Character"
+    },
+    {
+      "type": "Idea",
+      "id": "idea_1769904638252",
+      "title": "Character: Arthur \"Artie\" Kemp",
+      "description": "A slick Miami defense attorney in his mid-40s who represents low-level dealers, dirty cops, and anyone with cash. Artie can make problems disappear on paper, but every favor comes with an invoice paid in secrets, and he enjoys watching tough men bargain with fear.",
+      "source": "ai",
+      "status": "active",
+      "createdAt": "2026-02-01T00:10:38.252Z",
+      "suggestedType": "Character"
+    },
+    {
+      "type": "StoryBeat",
+      "id": "sb_1769908431067",
+      "title": "Keys at Dawn",
+      "status": "proposed",
+      "createdAt": "2026-02-01T01:13:51.067Z",
+      "updatedAt": "2026-02-01T01:13:51.067Z",
+      "summary": "Before Miami pulls him back in, Cain opens his Florida Keys body shop at first light, wiping salt film off a bike like it’s a ritual. A local deputy swings by for a friendly shakedown, and Cain pays without arguing, signaling he knows how power really works. The quiet compromise frames his retirement as a fragile truce with the world.",
+      "intent": "tone"
+    },
+    {
+      "type": "StoryBeat",
+      "id": "storybeat_1769972152796_dzf9a",
+      "title": "Container Heist: Blue Lights, Black Masks",
+      "summary": "On a rain-slick service road near the Miami marina, a Rigo-linked container is intercepted by men moving like a tactical unit, using a cloned seal, a forklift, and what looks like an official police stop to freeze traffic. In under four minutes the load is transferred and the crew vanishes, leaving behind only staged evidence that will misdirect any honest inquiry. The theft’s brutal efficiency makes it clear this isn’t street crime—it’s a machine.",
+      "intent": "tone",
+      "priority": "high",
+      "stakes_change": "raise",
+      "urgency": "high"
+    },
+    {
+      "type": "StoryBeat",
+      "id": "storybeat_1770332001_k4v9p",
+      "title": "Keys Code: No Badges, No Oaths",
+      "summary": "At his Keys body shop, Cain breaks up a petty shake-down when a uniformed officer leans on a local kid for \"protection\" money. Cain refuses to get pulled in, but his words land: criminals at least keep their bargains; badges rewrite theirs. The moment defines Cain's code and primes him to distrust any official story about the missing shipments.",
+      "intent": "tone",
+      "priority": "high",
+      "stakes_change": "maintain",
+      "urgency": "low"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_85ddd11e-68fb-4ca2-81c7-d47910ccff8b",
+      "type": "ALIGNS_WITH",
+      "from": "pp_extracted_1767576713934",
+      "to": "beat_Midpoint",
+      "provenance": {
+        "source": "human",
+        "createdBy": "user"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-05T02:45:14.199Z"
+    },
+    {
+      "id": "edge_526ea177-ba11-4fe3-8715-77f152392769",
+      "type": "SATISFIED_BY",
+      "from": "pp_extracted_1767576713934",
+      "to": "scene_extracted_1767583980454",
+      "properties": {
+        "order": 1
+      },
+      "provenance": {
+        "source": "human",
+        "createdBy": "user"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-05T03:39:55.025Z"
+    },
+    {
+      "id": "edge_992da5a7-c5c3-470d-b327-97050ca0e761",
+      "type": "ALIGNS_WITH",
+      "from": "pp_extracted_1767585226496",
+      "to": "beat_Setup",
+      "provenance": {
+        "source": "human",
+        "createdBy": "user"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-05T03:54:03.927Z"
+    },
+    {
+      "id": "edge_7f4fe94d-e7aa-49b2-9c09-d9cf9675d4a9",
+      "type": "SATISFIED_BY",
+      "from": "pp_extracted_1767663062839",
+      "to": "scene_extracted_1767490321406",
+      "properties": {
+        "order": 1
+      },
+      "provenance": {
+        "source": "human",
+        "createdBy": "user"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-06T01:31:18.127Z"
+    },
+    {
+      "id": "edge_0b9a768c-8882-4896-bcea-afb34fdeb399",
+      "type": "ALIGNS_WITH",
+      "from": "pp_extracted_1767663062839",
+      "to": "beat_Setup",
+      "provenance": {
+        "source": "human",
+        "createdBy": "user"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-06T01:31:58.892Z"
+    },
+    {
+      "id": "edge_c3550163-db80-4e19-9816-aeed89e695cb",
+      "type": "ALIGNS_WITH",
+      "from": "pp_1768952140_u0m4x",
+      "to": "beat_FunAndGames",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-21T04:52:34.761Z"
+    },
+    {
+      "id": "edge_592c00d4-6ced-4d7d-813d-767bbf684d06",
+      "type": "SATISFIED_BY",
+      "from": "pp_1768952140_u0m4x",
+      "to": "scene_1768952140_2b8qd",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-21T04:52:34.761Z"
+    },
+    {
+      "id": "edge_5fef6ff3-b5a8-4886-be51-c3876b3aa486",
+      "type": "HAS_CHARACTER",
+      "from": "scene_1768952140_2b8qd",
+      "to": "char_protagonist",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-21T04:52:34.761Z"
+    },
+    {
+      "id": "edge_eb85c40b-06ed-4833-ae9e-09f24334287b",
+      "type": "HAS_CHARACTER",
+      "from": "scene_1768952140_2b8qd",
+      "to": "char_1768952140_f1l6z",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-21T04:52:34.761Z"
+    },
+    {
+      "id": "edge_5cfa42bb-b718-466a-9e57-2c63f2f1c97d",
+      "type": "LOCATED_AT",
+      "from": "scene_1768952140_2b8qd",
+      "to": "loc_1768952140_k9t2c",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-21T04:52:34.761Z"
+    },
+    {
+      "id": "edge_d5412c41-ea04-42e0-ab00-f78072dffa6d",
+      "type": "ALIGNS_WITH",
+      "from": "pp_1768952140_n7c1h",
+      "to": "beat_AllIsLost",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-21T04:52:34.761Z"
+    },
+    {
+      "id": "edge_c2a0fb50-8be1-45f8-8fec-f942347c8472",
+      "type": "SATISFIED_BY",
+      "from": "pp_1768952140_n7c1h",
+      "to": "scene_1768952140_6w9ja",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-21T04:52:34.761Z"
+    },
+    {
+      "id": "edge_d8bbb2bc-b1e3-46f4-a7d5-7ec8da8ae57a",
+      "type": "HAS_CHARACTER",
+      "from": "scene_1768952140_6w9ja",
+      "to": "char_protagonist",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-21T04:52:34.761Z"
+    },
+    {
+      "id": "edge_bfa2a58e-6ad8-4c50-a57a-229e8da27aec",
+      "type": "HAS_CHARACTER",
+      "from": "scene_1768952140_6w9ja",
+      "to": "char_1768952140_f1l6z",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-21T04:52:34.761Z"
+    },
+    {
+      "id": "edge_e097dcd1-2da2-4797-8f05-d1034c5d2a8c",
+      "type": "HAS_CHARACTER",
+      "from": "scene_1768952140_6w9ja",
+      "to": "char_1768500123_kane",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-21T04:52:34.761Z"
+    },
+    {
+      "id": "edge_910dfde1-5ba4-42d4-837a-11a3b700869b",
+      "type": "PRECEDES",
+      "from": "pp_1768952140_u0m4x",
+      "to": "pp_1768952140_n7c1h",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-21T04:52:34.761Z"
+    },
+    {
+      "id": "edge_8b24d90c-8fbf-4ad8-9eaa-e9fc6f6914c2",
+      "type": "PRECEDES",
+      "from": "pp_1768952140_n7c1h",
+      "to": "pp_extracted_1767576713934",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-21T04:52:34.761Z"
+    },
+    {
+      "id": "edge_8ccc2a8d-13b2-45e2-847c-6e227ea5c82b",
+      "type": "HAS_CHARACTER",
+      "from": "scene_1769033201_ks9q2",
+      "to": "char_rigo_1767488316196_0",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-25T03:56:26.875Z"
+    },
+    {
+      "id": "edge_0b76caa9-47fc-4d31-b167-0649e299c33f",
+      "type": "HAS_CHARACTER",
+      "from": "scene_1769033201_2n1vd",
+      "to": "char_rigo_1767488316196_0",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-25T03:56:26.875Z"
+    },
+    {
+      "id": "edge_b0e57698-5329-4b38-98c7-deacb8db234c",
+      "type": "HAS_CHARACTER",
+      "from": "scene_1769033201_2n1vd",
+      "to": "char_protagonist",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-25T03:56:26.875Z"
+    },
+    {
+      "id": "edge_84a48d83-8365-4dc1-a7ab-1bbb23d860d8",
+      "type": "PRECEDES",
+      "from": "pp_extracted_1767585226496",
+      "to": "pp_extracted_1767663062839",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-25T03:56:26.875Z"
+    },
+    {
+      "id": "edge_c39a66e4-424f-451a-be1a-4c84beada49e",
+      "type": "HAS_CHARACTER",
+      "from": "scene_1769033201_ks9q2",
+      "to": "char_1769033201_dk7p1",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-25T03:56:26.875Z"
+    },
+    {
+      "id": "edge_f2a1fd25-0de4-4299-945f-d4cfb2829351",
+      "type": "SATISFIED_BY",
+      "from": "pp_extracted_1767585226496",
+      "to": "scene_1769033201_2n1vd",
+      "provenance": {
+        "source": "human"
+      },
+      "status": "approved",
+      "createdAt": "2026-01-25T20:49:42.345Z"
+    },
+    {
+      "id": "edge_9003d5ac-1998-4973-9d19-52157cad9218",
+      "type": "ALIGNS_WITH",
+      "from": "storybeat_1769972152796_dzf9a",
+      "to": "beat_OpeningImage",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-02-01T18:57:39.614Z"
+    },
+    {
+      "id": "edge_9a5ca88e-c188-4a08-8a02-d6d7dab4d883",
+      "type": "ALIGNS_WITH",
+      "from": "storybeat_1770332001_k4v9p",
+      "to": "beat_ThemeStated",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-02-01T19:11:01.082Z"
+    },
+    {
+      "id": "edge_4547085d-63a3-46a7-89f0-3f44e6bc7c31",
+      "type": "PRECEDES",
+      "from": "storybeat_1770332001_k4v9p",
+      "to": "pp_extracted_1767585226496",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-02-01T19:11:01.082Z"
+    }
+  ]
+}
