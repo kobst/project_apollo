@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useStory } from '../../context/StoryContext';
+import { useGeneration } from '../../context/GenerationContext';
+import { useSavedPackages } from '../../context/SavedPackagesContext';
 import { api } from '../../api/client';
-import type { NodeData } from '../../api/types';
+import type { NodeData, ImpactEnrichment } from '../../api/types';
 import { DeleteNodeModal } from './DeleteNodeModal';
 
 interface NodeDetailModalProps {
@@ -12,11 +14,73 @@ interface NodeDetailModalProps {
   onNodeDeleted: () => void;
 }
 
+interface EnrichmentInsight {
+  description: string;
+  narrative: string;
+  kind: 'fulfills' | 'creates';
+  packageTitle: string;
+}
+
+function collectInsightsForNode(
+  nodeLabel: string,
+  nodeId: string,
+  enrichment: ImpactEnrichment | undefined,
+  packageTitle: string,
+): EnrichmentInsight[] {
+  if (!enrichment) return [];
+  const insights: EnrichmentInsight[] = [];
+  const match = (desc: string) =>
+    desc.toLowerCase().includes(nodeLabel.toLowerCase()) ||
+    desc.includes(nodeId);
+
+  for (const f of enrichment.fulfills) {
+    if (match(f.description)) {
+      insights.push({ description: f.description, narrative: f.narrative, kind: 'fulfills', packageTitle });
+    }
+  }
+  for (const c of enrichment.creates) {
+    if (match(c.description)) {
+      insights.push({ description: c.description, narrative: c.narrative, kind: 'creates', packageTitle });
+    }
+  }
+  return insights;
+}
+
 export function NodeDetailModal({ node, onClose, onNodeUpdated, onNodeDeleted }: NodeDetailModalProps) {
   const { currentStoryId } = useStory();
+  const { session, acceptedEnrichments } = useGeneration();
+  const { savedPackages } = useSavedPackages();
   const [freshNode, setFreshNode] = useState<NodeData>(node);
   const [showDelete, setShowDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Collect AI insights from all packages with enrichment
+  const aiInsights = useMemo(() => {
+    const label = freshNode.label || freshNode.id;
+    const id = freshNode.id;
+    const insights: EnrichmentInsight[] = [];
+
+    // Session packages
+    if (session?.packages) {
+      for (const pkg of session.packages) {
+        insights.push(...collectInsightsForNode(label, id, pkg.enrichment, pkg.title));
+      }
+    }
+
+    // Saved packages
+    if (savedPackages) {
+      for (const sp of savedPackages) {
+        insights.push(...collectInsightsForNode(label, id, sp.package.enrichment, sp.package.title));
+      }
+    }
+
+    // Enrichments preserved from accepted packages
+    for (const enrichment of acceptedEnrichments) {
+      insights.push(...collectInsightsForNode(label, id, enrichment, 'Accepted package'));
+    }
+
+    return insights;
+  }, [freshNode.label, freshNode.id, session?.packages, savedPackages, acceptedEnrichments]);
 
   const load = useCallback(async () => {
     if (!currentStoryId) return;
@@ -52,6 +116,23 @@ export function NodeDetailModal({ node, onClose, onNodeUpdated, onNodeDeleted }:
             </div>
           </div>
         )}
+        {/* AI Insights — enrichment matched to this node */}
+        {aiInsights.length > 0 && (
+          <div style={{ marginTop: 12, padding: '8px 10px', background: '#1a1a2e', border: '1px solid #333', borderRadius: 6 }}>
+            <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 6, color: '#a78bfa' }}>AI Insights</div>
+            <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, lineHeight: 1.5 }}>
+              {aiInsights.map((insight, i) => (
+                <li key={i} style={{ marginBottom: 4 }}>
+                  <span style={{ opacity: 0.6, fontSize: 10 }}>[{insight.kind === 'fulfills' ? 'Fulfills' : 'Creates'}]</span>{' '}
+                  <strong>{insight.description}</strong>
+                  {insight.narrative && <span style={{ opacity: 0.8 }}> — {insight.narrative}</span>}
+                  <span style={{ opacity: 0.5, fontSize: 10, marginLeft: 4 }}>({insight.packageTitle})</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
           <button onClick={() => { setShowDelete(true); }}>Delete</button>
           <button onClick={() => { void load(); onNodeUpdated(); }}>Refresh</button>

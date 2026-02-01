@@ -3,10 +3,12 @@
  * Similar pattern to EditPanel for scenes/plot points.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useStory } from '../../context/StoryContext';
+import { useGeneration } from '../../context/GenerationContext';
+import { useSavedPackages } from '../../context/SavedPackagesContext';
 import { api } from '../../api/client';
-import type { NodeData, ConnectedNodeInfo } from '../../api/types';
+import type { NodeData, ConnectedNodeInfo, ImpactEnrichment } from '../../api/types';
 import type { ElementType } from './types';
 import styles from './ElementDetailModal.module.css';
 
@@ -32,6 +34,8 @@ export function ElementDetailModal({
   onDeleted,
 }: ElementDetailModalProps) {
   const { currentStoryId, refreshStatus } = useStory();
+  const { session, acceptedEnrichments } = useGeneration();
+  const { savedPackages } = useSavedPackages();
   const [element, setElement] = useState<NodeData | null>(null);
   const [connections, setConnections] = useState<ConnectedNodeInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,6 +156,37 @@ export function ElementDetailModal({
   const extraAttributes = Object.entries(data).filter(
     ([key]) => !['name', 'label', 'description', 'bio'].includes(key)
   );
+
+  // Collect AI insights from enrichment data across all packages
+  const aiInsights = useMemo(() => {
+    const searchTerms = [name.toLowerCase(), elementId.toLowerCase()];
+    const results: Array<{ description: string; narrative: string; kind: 'fulfills' | 'creates'; packageTitle: string }> = [];
+
+    const scan = (enrichment: ImpactEnrichment | undefined, pkgTitle: string) => {
+      if (!enrichment) return;
+      for (const f of enrichment.fulfills) {
+        if (searchTerms.some(t => f.description.toLowerCase().includes(t))) {
+          results.push({ description: f.description, narrative: f.narrative, kind: 'fulfills', packageTitle: pkgTitle });
+        }
+      }
+      for (const c of enrichment.creates) {
+        if (searchTerms.some(t => c.description.toLowerCase().includes(t))) {
+          results.push({ description: c.description, narrative: c.narrative, kind: 'creates', packageTitle: pkgTitle });
+        }
+      }
+    };
+
+    if (session?.packages) {
+      for (const pkg of session.packages) scan(pkg.enrichment, pkg.title);
+    }
+    if (savedPackages) {
+      for (const sp of savedPackages) scan(sp.package.enrichment, sp.package.title);
+    }
+    for (const enrichment of acceptedEnrichments) {
+      scan(enrichment, 'Accepted package');
+    }
+    return results;
+  }, [name, elementId, session?.packages, savedPackages, acceptedEnrichments]);
 
   const title = isEditing ? `Edit ${elementType}` : name;
 
@@ -288,6 +323,28 @@ export function ElementDetailModal({
                         </li>
                       );
                     })}
+                  </ul>
+                </div>
+              )}
+
+              {/* AI Insights — enrichment matched to this element */}
+              {!isEditing && aiInsights.length > 0 && (
+                <div className={styles.field}>
+                  <label className={styles.label}>AI Insights</label>
+                  <ul className={styles.list}>
+                    {aiInsights.map((insight, i) => (
+                      <li key={i} className={styles.listItem} style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+                        <span>
+                          <strong>{insight.description}</strong>
+                        </span>
+                        {insight.narrative && (
+                          <span style={{ opacity: 0.7, fontSize: 12 }}>{insight.narrative}</span>
+                        )}
+                        <span style={{ opacity: 0.4, fontSize: 10 }}>
+                          {insight.kind === 'fulfills' ? 'Fulfilled' : 'Created'} by {insight.packageTitle}
+                        </span>
+                      </li>
+                    ))}
                   </ul>
                 </div>
               )}

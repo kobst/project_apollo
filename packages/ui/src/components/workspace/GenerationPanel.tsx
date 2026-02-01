@@ -68,6 +68,7 @@ export function GenerationPanel({
     clearStaging,
     selectPackage,
     selectedPackageId,
+    updatePackageEnrichment,
   } = useGeneration();
   const { savedPackages, loadSavedPackages, savePackage, applySavedPackage, deleteSavedPackage } = useSavedPackages();
 
@@ -80,7 +81,10 @@ export function GenerationPanel({
   const [criticLoading, setCriticLoading] = useState(false);
   const [refinePrompt, setRefinePrompt] = useState('');
   const [overlayDiff, setOverlayDiff] = useState<import('../../api/types').OverlayDiffData | null>(null);
-  const [acceptInfo, setAcceptInfo] = useState<null | { newVersionId: string; patchOpsApplied?: number }>(null);
+  const [acceptInfo, setAcceptInfo] = useState<null | { newVersionId: string; patchOpsApplied?: number; thematicAnalysis?: string }>(null);
+
+  // Derived enrichment from the staged package
+  const enrichment = staging.stagedPackage?.enrichment ?? null;
 
   // Collapsible sections
   const [impactExpanded, setImpactExpanded] = useState(false);
@@ -213,9 +217,15 @@ export function GenerationPanel({
   // Handle accepting the currently staged package
   const handleAcceptPackage = useCallback(async () => {
     if (!currentStoryId || !staging.stagedPackage) return;
+    // Capture enrichment before accept clears the staging
+    const thematicAnalysis = staging.stagedPackage.enrichment?.thematic_analysis;
     const resp = await acceptPackage(currentStoryId, staging.stagedPackage.id);
     if (resp && 'newVersionId' in resp) {
-      setAcceptInfo({ newVersionId: resp.newVersionId, patchOpsApplied: (resp as any).patchOpsApplied });
+      setAcceptInfo({
+        newVersionId: resp.newVersionId,
+        patchOpsApplied: (resp as any).patchOpsApplied,
+        ...(thematicAnalysis !== undefined && { thematicAnalysis }),
+      });
     }
     refreshStatus();
   }, [currentStoryId, staging.stagedPackage, acceptPackage, refreshStatus]);
@@ -255,8 +265,11 @@ export function GenerationPanel({
     ? savedPackages.find(p => p.id === viewingSavedPackageId)
     : null;
 
-  // Fetch overlay diff when staged package changes
+  // Reset critic lint results and fetch overlay diff when staged package changes
   useEffect(() => {
+    setCritic(null);
+    setCriticExpanded(false);
+
     const fetchDiff = async () => {
       if (!currentStoryId || !staging.stagedPackage) { setOverlayDiff(null); return; }
       try {
@@ -435,13 +448,21 @@ export function GenerationPanel({
                     if (!currentStoryId) return;
                     setCriticLoading(true);
                     try {
-                      const res = await api.lintStaged(currentStoryId, staging.stagedPackage!.id);
+                      const pkgId = staging.stagedPackage!.id;
+                      // Run lint and enrichment in parallel
+                      const [lintRes, enrichRes] = await Promise.all([
+                        api.lintStaged(currentStoryId, pkgId),
+                        api.enrichImpact(currentStoryId, pkgId).catch(() => null),
+                      ]);
                       setCritic({
-                        errorCount: res.summary.errorCount,
-                        warningCount: res.summary.warningCount,
-                        hasBlockingErrors: res.summary.hasBlockingErrors,
-                        violations: res.violations.map((v: any) => ({ id: v.id, ruleId: v.ruleId, severity: v.severity, message: v.message })),
+                        errorCount: lintRes.summary.errorCount,
+                        warningCount: lintRes.summary.warningCount,
+                        hasBlockingErrors: lintRes.summary.hasBlockingErrors,
+                        violations: lintRes.violations.map((v: any) => ({ id: v.id, ruleId: v.ruleId, severity: v.severity, message: v.message })),
                       });
+                      if (enrichRes?.enrichment) {
+                        updatePackageEnrichment(pkgId, enrichRes.enrichment);
+                      }
                     } catch (e) {
                       setCritic(null);
                     } finally {
@@ -483,6 +504,35 @@ export function GenerationPanel({
                         </li>
                       ))}
                     </ul>
+                  )}
+                </div>
+              )}
+
+              {/* Enrichment — narrative analysis from LLM critic */}
+              {enrichment && (enrichment.fulfills.length > 0 || enrichment.creates.length > 0 || enrichment.thematic_analysis) && (
+                <div className={styles.enrichmentSection}>
+                  {enrichment.thematic_analysis && (
+                    <p className={styles.enrichmentThematic}>{enrichment.thematic_analysis}</p>
+                  )}
+                  {enrichment.fulfills.length > 0 && (
+                    <div className={styles.enrichmentGroup}>
+                      <div className={styles.enrichmentGroupLabel}>Narrative significance</div>
+                      <ul className={styles.enrichmentList}>
+                        {enrichment.fulfills.map((f, i) => (
+                          <li key={i}><strong>{f.description}</strong>{f.narrative ? ` — ${f.narrative}` : ''}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {enrichment.creates.length > 0 && (
+                    <div className={styles.enrichmentGroup}>
+                      <div className={styles.enrichmentGroupLabel}>Open implications</div>
+                      <ul className={styles.enrichmentList}>
+                        {enrichment.creates.map((c, i) => (
+                          <li key={i}><strong>{c.description}</strong>{c.narrative ? ` — ${c.narrative}` : ''}</li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
                 </div>
               )}
@@ -565,6 +615,40 @@ export function GenerationPanel({
                 </span>
               </div>
             </div>
+            {/* Enrichment from saved package */}
+            {viewingSavedPackage.package.enrichment && (
+              (() => {
+                const e = viewingSavedPackage.package.enrichment;
+                return (e.fulfills.length > 0 || e.creates.length > 0 || e.thematic_analysis) ? (
+                  <div className={styles.enrichmentSection}>
+                    {e.thematic_analysis && (
+                      <p className={styles.enrichmentThematic}>{e.thematic_analysis}</p>
+                    )}
+                    {e.fulfills.length > 0 && (
+                      <div className={styles.enrichmentGroup}>
+                        <div className={styles.enrichmentGroupLabel}>Narrative significance</div>
+                        <ul className={styles.enrichmentList}>
+                          {e.fulfills.map((f, i) => (
+                            <li key={i}><strong>{f.description}</strong>{f.narrative ? ` — ${f.narrative}` : ''}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {e.creates.length > 0 && (
+                      <div className={styles.enrichmentGroup}>
+                        <div className={styles.enrichmentGroupLabel}>Open implications</div>
+                        <ul className={styles.enrichmentList}>
+                          {e.creates.map((c, i) => (
+                            <li key={i}><strong>{c.description}</strong>{c.narrative ? ` — ${c.narrative}` : ''}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ) : null;
+              })()
+            )}
+
             <div className={styles.stagedSavedActions}>
               <button
                 className={styles.applyButton}
@@ -606,7 +690,12 @@ export function GenerationPanel({
       {/* Accept info banner */}
       {acceptInfo && (
         <div style={{ margin: '8px 12px', background: '#0f5132', color: '#d1e7dd', border: '1px solid #0f5132', padding: '8px 10px', borderRadius: 6, fontSize: 12 }}>
-          Accepted package. New version: <code>{acceptInfo.newVersionId}</code>
+          <div>Accepted package. New version: <code>{acceptInfo.newVersionId}</code></div>
+          {acceptInfo.thematicAnalysis && (
+            <div style={{ marginTop: 6, fontStyle: 'italic', opacity: 0.85, lineHeight: 1.4 }}>
+              {acceptInfo.thematicAnalysis}
+            </div>
+          )}
         </div>
       )}
     </div>

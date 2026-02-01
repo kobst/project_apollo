@@ -152,6 +152,10 @@ interface GenerationContextValue {
   excludedStashedIdeaIds: Set<string>;
   /** Get the currently staged package */
   stagedPackage: NarrativePackage | null;
+  /** Persist enrichment data on a package (updates session + staging) */
+  updatePackageEnrichment: (packageId: string, enrichment: import('../api/types').ImpactEnrichment) => void;
+  /** Enrichment data from accepted packages (persists after session clear) */
+  acceptedEnrichments: import('../api/types').ImpactEnrichment[];
 }
 
 const GenerationContext = createContext<GenerationContextValue | null>(null);
@@ -163,6 +167,9 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
   const [orchestrationInfo, setOrchestrationInfo] = useState<GenerateResponseData['orchestration'] | null>(null);
+
+  // Enrichment data preserved from accepted packages (survives session clear)
+  const [acceptedEnrichments, setAcceptedEnrichments] = useState<import('../api/types').ImpactEnrichment[]>([]);
 
   // Staging state for unified workspace
   const [staging, setStaging] = useState<StagingState>({
@@ -415,6 +422,21 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
           };
         });
 
+        // Preserve enrichment from the accepted package before clearing staging
+        const acceptedPkg = session?.packages.find(p => p.id === packageId);
+        if (acceptedPkg?.enrichment) {
+          setAcceptedEnrichments(prev => [...prev, acceptedPkg.enrichment!]);
+        }
+
+        // Clear staging immediately so buttons disappear
+        setStaging({
+          stagedPackage: null,
+          activePackageIndex: -1,
+          editedNodes: new Map(),
+          removedNodeIds: new Set(),
+          excludedStashedIdeaIds: new Set(),
+        });
+
         // Close panel after short delay
         setTimeout(() => {
           setIsOpen(false);
@@ -428,7 +450,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     },
-    [staging.excludedStashedIdeaIds]
+    [staging.excludedStashedIdeaIds, session]
   );
 
   // Reject package (local only - removes from session)
@@ -754,6 +776,24 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Persist enrichment data on a package (updates both session and staging)
+  const updatePackageEnrichment = useCallback((packageId: string, enrichment: import('../api/types').ImpactEnrichment) => {
+    // Update the package in the session
+    setSession((prev) => {
+      if (!prev) return prev;
+      const idx = prev.packages.findIndex(p => p.id === packageId);
+      if (idx < 0) return prev;
+      const updatedPackages = [...prev.packages];
+      updatedPackages[idx] = { ...updatedPackages[idx]!, enrichment };
+      return { ...prev, packages: updatedPackages };
+    });
+    // Update the staged package if it matches
+    setStaging((prev) => {
+      if (prev.stagedPackage?.id !== packageId) return prev;
+      return { ...prev, stagedPackage: { ...prev.stagedPackage, enrichment } };
+    });
+  }, []);
+
   // Auto-sync staging when selectedPackageId changes (e.g. after refine)
   useEffect(() => {
     if (!session || !selectedPackageId) return;
@@ -833,6 +873,8 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     toggleStashedIdeaExclusion,
     excludedStashedIdeaIds: staging.excludedStashedIdeaIds,
     stagedPackage,
+    updatePackageEnrichment,
+    acceptedEnrichments,
   };
 
   return (

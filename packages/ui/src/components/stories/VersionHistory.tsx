@@ -18,6 +18,7 @@ export function VersionHistory({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [switching, setSwitching] = useState<string | null>(null);
+  const [expandedEnrichment, setExpandedEnrichment] = useState<Set<string>>(new Set());
 
   const fetchVersions = async () => {
     setLoading(true);
@@ -106,6 +107,25 @@ export function VersionHistory({
                 </span>
                 <span className={styles.time}>{formatDate(version.createdAt)}</span>
               </div>
+              {version.enrichmentSummary && (
+                <div
+                  style={{ fontSize: 11, fontStyle: 'italic', opacity: 0.7, marginTop: 2, lineHeight: 1.3, cursor: version.enrichmentSummary.length > 120 ? 'pointer' : 'default' }}
+                  onClick={() => {
+                    if (version.enrichmentSummary && version.enrichmentSummary.length > 120) {
+                      setExpandedEnrichment(prev => {
+                        const next = new Set(prev);
+                        if (next.has(version.id)) next.delete(version.id);
+                        else next.add(version.id);
+                        return next;
+                      });
+                    }
+                  }}
+                >
+                  {version.enrichmentSummary.length > 120 && !expandedEnrichment.has(version.id)
+                    ? version.enrichmentSummary.slice(0, 120) + '… (click to expand)'
+                    : version.enrichmentSummary}
+                </div>
+              )}
               <div className={styles.versionId} title={version.id}>
                 {version.id.slice(0, 12)}...
               </div>

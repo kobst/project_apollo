@@ -2,10 +2,12 @@
  * EditPanel - Modal for editing StoryBeats and Scenes.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useStory } from '../../context/StoryContext';
+import { useGeneration } from '../../context/GenerationContext';
+import { useSavedPackages } from '../../context/SavedPackagesContext';
 import { api } from '../../api/client';
-import type { OutlineStoryBeat, OutlineScene } from '../../api/types';
+import type { OutlineStoryBeat, OutlineScene, ImpactEnrichment } from '../../api/types';
 import styles from './EditPanel.module.css';
 
 type EditItemType = 'storybeat' | 'scene';
@@ -71,6 +73,8 @@ const TIME_OF_DAY_OPTIONS = [
 
 export function EditPanel({ itemType, item, onClose, onSave }: EditPanelProps) {
   const { currentStoryId, refreshStatus } = useStory();
+  const { session, acceptedEnrichments } = useGeneration();
+  const { savedPackages } = useSavedPackages();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -165,6 +169,42 @@ export function EditPanel({ itemType, item, onClose, onSave }: EditPanelProps) {
     },
     [onClose, saving, handleSave]
   );
+
+  // Collect AI insights from enrichment data across all packages
+  const itemName = itemType === 'storybeat'
+    ? (item as OutlineStoryBeat).title
+    : (item as OutlineScene).heading;
+
+  const aiInsights = useMemo(() => {
+    const searchTerms = [itemName.toLowerCase(), item.id.toLowerCase()];
+    const results: Array<{ description: string; narrative: string; kind: 'fulfills' | 'creates'; packageTitle: string }> = [];
+
+    const scan = (enrichment: ImpactEnrichment | undefined, pkgTitle: string) => {
+      if (!enrichment) return;
+      for (const f of enrichment.fulfills) {
+        if (searchTerms.some(t => f.description.toLowerCase().includes(t))) {
+          results.push({ description: f.description, narrative: f.narrative, kind: 'fulfills', packageTitle: pkgTitle });
+        }
+      }
+      for (const c of enrichment.creates) {
+        if (searchTerms.some(t => c.description.toLowerCase().includes(t))) {
+          results.push({ description: c.description, narrative: c.narrative, kind: 'creates', packageTitle: pkgTitle });
+        }
+      }
+    };
+
+    if (session?.packages) {
+      for (const pkg of session.packages) scan(pkg.enrichment, pkg.title);
+    }
+    if (savedPackages) {
+      for (const sp of savedPackages) scan(sp.package.enrichment, sp.package.title);
+    }
+    // Also check enrichments preserved from accepted packages
+    for (const enrichment of acceptedEnrichments) {
+      scan(enrichment, 'Accepted package');
+    }
+    return results;
+  }, [itemName, item.id, session?.packages, savedPackages, acceptedEnrichments]);
 
   const title = itemType === 'storybeat' ? 'Edit Story Beat' : 'Edit Scene';
 
@@ -412,6 +452,24 @@ export function EditPanel({ itemType, item, onClose, onSave }: EditPanelProps) {
                   disabled={saving}
                 />
               </div>
+            </div>
+          )}
+
+          {/* AI Insights — enrichment matched to this item */}
+          {aiInsights.length > 0 && (
+            <div style={{ marginTop: 16, padding: '10px 12px', background: 'rgba(167, 139, 250, 0.08)', border: '1px solid rgba(167, 139, 250, 0.2)', borderRadius: 6 }}>
+              <div style={{ fontWeight: 600, fontSize: 11, marginBottom: 6, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Insights</div>
+              {aiInsights.map((insight, i) => (
+                <div key={i} style={{ marginBottom: i < aiInsights.length - 1 ? 8 : 0, fontSize: 12, lineHeight: 1.4 }}>
+                  <div><strong>{insight.description}</strong></div>
+                  {insight.narrative && (
+                    <div style={{ opacity: 0.7, marginTop: 2 }}>{insight.narrative}</div>
+                  )}
+                  <div style={{ opacity: 0.4, fontSize: 10, marginTop: 2 }}>
+                    {insight.kind === 'fulfills' ? 'Fulfilled' : 'Created'} by {insight.packageTitle}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

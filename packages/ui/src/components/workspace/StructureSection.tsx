@@ -63,7 +63,7 @@ interface StructureSectionProps {
 }
 
 export function StructureSection({ onElementClick, nodeSelectionMode }: StructureSectionProps) {
-  const { currentStoryId, refreshStatus } = useStory();
+  const { currentStoryId, refreshStatus, status } = useStory();
   const { stagedPackage, staging, updateEditedNode, removeProposedNode, sectionChangeCounts } = useGeneration();
   const [outline, setOutline] = useState<OutlineData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -168,9 +168,10 @@ export function StructureSection({ onElementClick, nodeSelectionMode }: Structur
     }
   }, [currentStoryId]);
 
+  // Re-fetch outline when story changes or when a new version is created (e.g. after accept)
   useEffect(() => {
     void fetchOutline();
-  }, [fetchOutline]);
+  }, [fetchOutline, status?.currentVersionId]);
 
   // Edit handlers - open the slide-out panel (unless in selection mode)
   const handleEditStoryBeat = useCallback((pp: OutlineStoryBeat | MergedOutlineStoryBeat) => {

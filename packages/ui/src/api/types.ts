@@ -128,6 +128,8 @@ export interface VersionData {
   createdAt: string;
   isCurrent: boolean;
   branch?: string;
+  enrichmentSummary?: string;
+  packageTitle?: string;
 }
 
 export interface LogData {
@@ -1063,6 +1065,16 @@ export interface PackageImpact {
   conflicts: ConflictInfo[];
 }
 
+export interface ImpactEnrichment {
+  fulfills: Array<{ description: string; narrative: string }>;
+  creates: Array<{ description: string; narrative: string }>;
+  thematic_analysis: string;
+}
+
+export interface EnrichImpactResponseData {
+  enrichment: ImpactEnrichment;
+}
+
 export interface NarrativePackage {
   id: string;
   title: string;
@@ -1073,6 +1085,7 @@ export interface NarrativePackage {
   style_tags: string[];
   changes: PackageChanges;
   impact: PackageImpact;
+  enrichment?: ImpactEnrichment;
 }
 
 export interface GenerateResponseData {

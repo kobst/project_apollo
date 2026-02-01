@@ -104,6 +104,7 @@ import type {
   ProposeExpandResponse,
   GenerateRequestData,
   GenerateResponseData,
+  EnrichImpactResponseData,
 } from './types';
 
 const API_BASE = '/api';
@@ -543,6 +544,12 @@ export const api = {
    */
   generate: (storyId: string, data: GenerateRequestData) =>
     POST<GenerateResponseData>(`/stories/${storyId}/generate`, data),
+
+  /**
+   * Enrich a package's deterministic impact with LLM narrative analysis.
+   */
+  enrichImpact: (storyId: string, packageId: string) =>
+    POST<EnrichImpactResponseData>(`/stories/${storyId}/packages/${packageId}/enrich-impact`),
 };
 
 // =============================================================================

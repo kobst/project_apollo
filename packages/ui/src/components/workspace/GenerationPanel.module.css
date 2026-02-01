@@ -620,6 +620,56 @@
   color: #facc15;
 }
 
+/* Enrichment section (LLM narrative analysis) */
+.enrichmentSection {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.enrichmentThematic {
+  font-size: 12px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  line-height: 1.5;
+  margin: 0 0 6px 0;
+  font-style: italic;
+}
+
+.enrichmentGroup {
+  margin-top: 6px;
+}
+
+.enrichmentGroupLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary, rgba(255, 255, 255, 0.5));
+  margin-bottom: 3px;
+}
+
+.enrichmentList {
+  margin: 0;
+  padding-left: 14px;
+  list-style: none;
+}
+
+.enrichmentList li {
+  position: relative;
+  padding: 2px 0;
+  font-size: 11px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  line-height: 1.4;
+}
+
+.enrichmentList li::before {
+  content: '\25B8';
+  position: absolute;
+  left: -12px;
+  color: var(--text-tertiary, rgba(255, 255, 255, 0.4));
+}
+
 /* Separator between critic and refine */
 .refineSeparator {
   height: 1px;
