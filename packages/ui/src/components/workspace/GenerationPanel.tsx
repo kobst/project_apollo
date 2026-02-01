@@ -23,6 +23,7 @@ import styles from './GenerationPanel.module.css';
 import { useGapsCoverage } from '../../hooks/useGapsCoverage';
 import { GapIndicators } from './GapIndicators';
 import { CoverageSummary } from './CoverageSummary';
+import type { GapData } from '../../api/types';
 
 interface SelectedNodeInfo {
   id: string;
@@ -97,6 +98,20 @@ export function GenerationPanel({
 
   // Context header data
   const { coverage, gaps } = useGapsCoverage(currentStoryId);
+
+  // CTA: Generate for a selected gap
+  const handleGenerateGap = useCallback(async (gap: GapData) => {
+    if (!currentStoryId) return;
+    // Keep it simple: route to storyBeats with direction hint from gap
+    const direction = `Fill gap: ${gap.title}`;
+    await proposeStoryBeats(currentStoryId, {
+      focus: 'all',
+      direction,
+      packageCount: 3,
+    });
+    refreshStatus();
+    refreshGenerationData();
+  }, [currentStoryId, proposeStoryBeats, refreshStatus, refreshGenerationData]);
 
   // Mode-specific generation handlers
   const handleGenerateStoryBeats = useCallback(
@@ -288,7 +303,7 @@ export function GenerationPanel({
           </div>
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Gaps</div>
-            <GapIndicators gaps={gaps} />
+            <GapIndicators gaps={gaps} onGenerateGap={handleGenerateGap} />
           </div>
         </div>
 
