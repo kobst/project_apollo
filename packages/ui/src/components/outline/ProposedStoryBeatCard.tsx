@@ -8,7 +8,7 @@ import type { MergedOutlineStoryBeat } from '../../utils/outlineMergeUtils';
 import { ProposedSceneCard } from './ProposedSceneCard';
 import styles from './ProposedStoryBeatCard.module.css';
 import { useStory } from '../../context/StoryContext';
-import { api } from '../../api/client';
+import { useStashContext } from '../../context/StashContext';
 
 interface ProposedStoryBeatCardProps {
   storyBeat: MergedOutlineStoryBeat;
@@ -34,6 +34,7 @@ export function ProposedStoryBeatCard({
   onUndoRemove,
 }: ProposedStoryBeatCardProps) {
   const { currentStoryId } = useStory();
+  const { createStoryBeat } = useStashContext();
   const [isExpanded, setIsExpanded] = useState(false);
   const [localData, setLocalData] = useState({
     title: storyBeat.title,
@@ -234,13 +235,15 @@ export function ProposedStoryBeatCard({
               className={styles.doneButton}
               onClick={async () => {
                 if (!currentStoryId) return;
-                const title = `StoryBeat: ${localData.title}`;
-                const description = String(localData.summary ?? '');
-                await api.createIdea(currentStoryId, { title, description, source: 'ai', suggestedType: 'StoryBeat' });
+                await createStoryBeat({
+                  title: localData.title,
+                  intent: localData.intent as 'plot' | 'character' | 'tone',
+                  ...(localData.summary ? { summary: localData.summary } : {}),
+                });
               }}
               type="button"
             >
-              Send to Ideas
+              Send to Stash
             </button>
             {onRemove && storyBeat._operation === 'add' && (
               <button

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StoryProvider } from './context/StoryContext';
 import { GenerationProvider } from './context/GenerationContext';
 import { SavedPackagesProvider } from './context/SavedPackagesContext';
+import { StashProvider } from './context/StashContext';
 import styles from './App.module.css';
 import { Header } from './components/layout/Header';
 import { ViewTabs, type ViewMode } from './components/layout/ViewTabs';
@@ -15,15 +16,17 @@ export default function App() {
     <StoryProvider>
       <GenerationProvider>
         <SavedPackagesProvider>
-          <div className={styles.app}>
-            <Header />
-            <ViewTabs activeView={viewMode} onViewChange={setViewMode} />
+          <StashProvider>
+            <div className={styles.app}>
+              <Header />
+              <ViewTabs activeView={viewMode} onViewChange={setViewMode} />
 
-            {viewMode === 'stories' && <StoriesView />}
+              {viewMode === 'stories' && <StoriesView />}
 
-            {viewMode === 'workspace' && <WorkspaceView />}
-            {/* Staging View removed; integrated into Generation panel */}
-          </div>
+              {viewMode === 'workspace' && <WorkspaceView />}
+              {/* Staging View removed; integrated into Generation panel */}
+            </div>
+          </StashProvider>
         </SavedPackagesProvider>
       </GenerationProvider>
     </StoryProvider>

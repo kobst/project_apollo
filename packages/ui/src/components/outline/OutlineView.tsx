@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useStory } from '../../context/StoryContext';
+import { useStashContext } from '../../context/StashContext';
 import { api } from '../../api/client';
 import type { OutlineData, OutlineStoryBeat, OutlineScene, OutlineIdea, CreateSceneRequest, CreateIdeaRequest } from '../../api/types';
 import { ActRow } from './ActRow';
@@ -11,6 +12,7 @@ import styles from './OutlineView.module.css';
 
 export function OutlineView() {
   const { currentStoryId, status, refreshStatus } = useStory();
+  const { refresh: refreshStash } = useStashContext();
   const [outline, setOutline] = useState<OutlineData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,8 +94,9 @@ export function OutlineView() {
       setShowIdeaModal(false);
       // Refresh outline to show the new idea
       await fetchOutline();
-      // Also refresh status to update counts
+      // Also refresh status and ideas list
       void refreshStatus();
+      void refreshStash();
     } catch (err) {
       console.error('Failed to create idea:', err);
     } finally {

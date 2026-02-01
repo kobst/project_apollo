@@ -284,15 +284,15 @@ export function TableOfContents({
           </button>
         </li>
 
-        {/* Ideas */}
+        {/* Stash */}
         <li>
           <button
-            className={`${styles.navItem} ${activeSectionId === 'ideas' ? styles.active : ''}`}
-            onClick={() => handleClick('ideas')}
+            className={`${styles.navItem} ${activeSectionId === 'stash' ? styles.active : ''}`}
+            onClick={() => handleClick('stash')}
             type="button"
           >
-            <span className={styles.navIcon}>{'\uD83D\uDCA1'}</span>
-            <span className={styles.navLabel}>Ideas</span>
+            <span className={styles.navIcon}>{'\uD83D\uDCE5'}</span>
+            <span className={styles.navLabel}>Stash</span>
             {ideasCount > 0 && (
               <span className={styles.count}>{ideasCount}</span>
             )}

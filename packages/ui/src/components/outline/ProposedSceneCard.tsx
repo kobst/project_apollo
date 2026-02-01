@@ -7,7 +7,7 @@ import { useState, useCallback } from 'react';
 import type { MergedOutlineScene } from '../../utils/outlineMergeUtils';
 import styles from './ProposedSceneCard.module.css';
 import { useStory } from '../../context/StoryContext';
-import { api } from '../../api/client';
+import { useStashContext } from '../../context/StashContext';
 
 interface ProposedSceneCardProps {
   scene: MergedOutlineScene;
@@ -33,6 +33,7 @@ export function ProposedSceneCard({
   onUndoRemove,
 }: ProposedSceneCardProps) {
   const { currentStoryId } = useStory();
+  const { createScene } = useStashContext();
   const [isExpanded, setIsExpanded] = useState(false);
   const [localData, setLocalData] = useState({
     heading: scene.heading,
@@ -207,13 +208,16 @@ export function ProposedSceneCard({
               className={styles.doneButton}
               onClick={async () => {
                 if (!currentStoryId) return;
-                const title = `Scene: ${localData.heading}`;
-                const description = String(localData.overview ?? '');
-                await api.createIdea(currentStoryId, { title, description, source: 'ai', suggestedType: 'Scene' });
+                await createScene({
+                  heading: localData.heading,
+                  ...(localData.overview ? { scene_overview: localData.overview } : {}),
+                  ...(localData.int_ext ? { int_ext: localData.int_ext as 'INT' | 'EXT' | 'OTHER' } : {}),
+                  ...(localData.mood ? { mood: localData.mood } : {}),
+                });
               }}
               type="button"
             >
-              Send to Ideas
+              Send to Stash
             </button>
             {onRemove && scene._operation === 'add' && (
               <button

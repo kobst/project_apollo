@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { useGeneration } from '../../context/GenerationContext';
+import { useStashContext } from '../../context/StashContext';
 import { api } from '../../api/client';
 import type { NarrativePackage, LintData, OverlayDiffData, DiffData } from '../../api/types';
 import { JobsDrawer } from '../jobs/JobsDrawer';
@@ -8,6 +9,7 @@ import { JobsDrawer } from '../jobs/JobsDrawer';
 export function StagingView() {
   const { currentStoryId } = useStory();
   const { session, loadSession, acceptPackage, rejectPackage, refinePackage, updatePackageElement } = useGeneration();
+  const { refresh: refreshStash } = useStashContext();
 
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
   const [lint, setLint] = useState<LintData | null>(null);
@@ -100,7 +102,8 @@ export function StagingView() {
     const payload: any = { packageId: selectedPackageId, elementType: 'node', elementIndex: index };
     if (valid.includes(category)) payload.category = category;
     await api.createIdeaFromPackage(currentStoryId, payload);
-  }, [currentStoryId, selectedPackageId]);
+    void refreshStash();
+  }, [currentStoryId, selectedPackageId, refreshStash]);
 
   const handleSendEdgeToIdeas = useCallback(async (index: number) => {
     if (!currentStoryId || !selectedPackageId) return;
@@ -110,7 +113,8 @@ export function StagingView() {
     const payload: any = { packageId: selectedPackageId, elementType: 'edge', elementIndex: index };
     if (valid.includes(category)) payload.category = category;
     await api.createIdeaFromPackage(currentStoryId, payload);
-  }, [currentStoryId, selectedPackageId]);
+    void refreshStash();
+  }, [currentStoryId, selectedPackageId, refreshStash]);
 
   const handleSendSCToIdeas = useCallback(async (index: number) => {
     if (!currentStoryId || !selectedPackageId) return;
@@ -120,7 +124,8 @@ export function StagingView() {
     const payload: any = { packageId: selectedPackageId, elementType: 'storyContext', elementIndex: index };
     if (valid.includes(category)) payload.category = category;
     await api.createIdeaFromPackage(currentStoryId, payload);
-  }, [currentStoryId, selectedPackageId]);
+    void refreshStash();
+  }, [currentStoryId, selectedPackageId, refreshStash]);
 
   const startEditNode = (index: number) => {
     if (!selectedPackage) return;
@@ -246,7 +251,7 @@ export function StagingView() {
                           <code>{n.operation}</code> {n.node_type} <span style={{ opacity: 0.8 }}>({n.node_id})</span>
                         </div>
                         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                          <button onClick={() => handleSendNodeToIdeas(i)}>Send to Ideas</button>
+                          <button onClick={() => handleSendNodeToIdeas(i)}>Send to Stash</button>
                           <button onClick={() => startEditNode(i)}>Edit</button>
                           {n.data && ((n.data as any).name || (n.data as any).title) && (
                             <button onClick={async () => {
@@ -288,7 +293,7 @@ export function StagingView() {
                       <li key={i} style={{ marginBottom: 8 }}>
                         <div><code>{e.operation}</code> {e.edge_type} <span style={{ opacity: 0.8 }}>({e.from} → {e.to})</span></div>
                         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                          <button onClick={() => handleSendEdgeToIdeas(i)}>Send to Ideas</button>
+                          <button onClick={() => handleSendEdgeToIdeas(i)}>Send to Stash</button>
                         </div>
                       </li>
                     ))}
@@ -349,7 +354,7 @@ export function StagingView() {
                   {selectedPackage.changes.storyContext.map((sc, i) => (
                     <li key={i} style={{ marginBottom: 8 }}>
                       <code>{(sc as any).operation ?? (sc as any).type}</code>
-                      <button style={{ marginLeft: 8 }} onClick={() => handleSendSCToIdeas(i)}>Send to Ideas</button>
+                      <button style={{ marginLeft: 8 }} onClick={() => handleSendSCToIdeas(i)}>Send to Stash</button>
                     </li>
                   ))}
                 </ul>

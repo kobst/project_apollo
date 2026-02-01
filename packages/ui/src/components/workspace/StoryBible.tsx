@@ -14,7 +14,7 @@ import { computeDetailedStructureCounts } from '../../utils/stagingUtils';
 import { ElementsSection } from './ElementsSection';
 import { StructureSection } from './StructureSection';
 import { ContextSection } from './ContextSection';
-import { IdeasSection } from './IdeasSection';
+import { StashSection } from './IdeasSection';
 import { TableOfContents } from './TableOfContents';
 import type { ElementType } from './types';
 import styles from './StoryBible.module.css';
@@ -32,7 +32,7 @@ interface StoryBibleProps {
   nodeSelectionMode?: boolean;
 }
 
-const SECTION_IDS = ['elements', 'structure', 'context', 'ideas'];
+const SECTION_IDS = ['elements', 'structure', 'context', 'stash'];
 
 export function StoryBible({
   onElementClick,
@@ -183,7 +183,7 @@ export function StoryBible({
 
         <ContextSection />
 
-        <IdeasSection />
+        <StashSection />
       </div>
     </div>
   );

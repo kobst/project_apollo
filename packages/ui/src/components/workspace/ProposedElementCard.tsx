@@ -8,7 +8,7 @@ import type { MergedNode } from '../../utils/stagingUtils';
 import type { ElementType } from './types';
 import styles from './ProposedElementCard.module.css';
 import { useStory } from '../../context/StoryContext';
-import { api } from '../../api/client';
+import { useStashContext } from '../../context/StashContext';
 
 interface ProposedElementCardProps {
   element: MergedNode;
@@ -51,6 +51,7 @@ export function ProposedElementCard({
   onUndoRemove,
 }: ProposedElementCardProps) {
   const { currentStoryId } = useStory();
+  const { createIdea } = useStashContext();
   const [isExpanded, setIsExpanded] = useState(false);
   const [localData, setLocalData] = useState<Record<string, unknown>>({ ...element.data });
 
@@ -199,13 +200,13 @@ export function ProposedElementCard({
               onClick={async () => {
                 if (!currentStoryId) return;
                 const title = `${elementType}: ${name}`;
-                const description = String(localData.description ?? localData.summary ?? '');
+                const desc = String(localData.description ?? localData.summary ?? '');
                 const suggestedType = elementType as any;
-                await api.createIdea(currentStoryId, { title, description, source: 'ai', suggestedType });
+                await createIdea(title, desc, suggestedType, 'ai');
               }}
               type="button"
             >
-              Send to Ideas
+              Send to Stash
             </button>
             {onRemove && element._operation === 'add' && (
               <button

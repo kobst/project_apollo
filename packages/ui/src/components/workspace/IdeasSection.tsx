@@ -1,13 +1,26 @@
 /**
- * IdeasSection - Display and manage story ideas in the Story Bible.
- * Ideas can be created, filtered, developed, or deleted.
+ * StashSection - Unified display for unassigned StoryBeats, Scenes, and Ideas.
+ * Replaces the old IdeasSection with type filter tabs and kind-specific cards.
  */
 
 import { useState, useMemo } from 'react';
-import { useIdeas, type IdeaStatus, type IdeaCategory, type IdeaWithMeta } from '../../hooks/useIdeas';
-import { useStory } from '../../context/StoryContext';
+import {
+  useStashContext,
+  type IdeaStatus,
+  type StashIdeaItem,
+  type StashStoryBeatItem,
+  type StashSceneItem,
+  type StashItemKind,
+} from '../../context/StashContext';
 import type { IdeaSuggestedType } from '../../api/types';
 import styles from './IdeasSection.module.css';
+
+const TYPE_FILTER_OPTIONS: { value: StashItemKind | 'all'; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'storybeat', label: 'Story Beats' },
+  { value: 'scene', label: 'Scenes' },
+  { value: 'idea', label: 'Ideas' },
+];
 
 const STATUS_OPTIONS: { value: IdeaStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -16,21 +29,12 @@ const STATUS_OPTIONS: { value: IdeaStatus | 'all'; label: string }[] = [
   { value: 'dismissed', label: 'Dismissed' },
 ];
 
-const CATEGORY_OPTIONS: { value: IdeaCategory | 'all'; label: string }[] = [
-  { value: 'all', label: 'All Categories' },
-  { value: 'character', label: 'Character' },
-  { value: 'plot', label: 'Plot' },
-  { value: 'scene', label: 'Scene' },
-  { value: 'worldbuilding', label: 'Worldbuilding' },
-  { value: 'general', label: 'General' },
-];
-
-const CATEGORY_ICONS: Record<IdeaCategory, string> = {
-  character: '\uD83D\uDC64', // 👤
-  plot: '\uD83D\uDCCB', // 📋
-  scene: '\uD83C\uDFAC', // 🎬
-  worldbuilding: '\uD83C\uDF0D', // 🌍
-  general: '\uD83D\uDCA1', // 💡
+const CATEGORY_ICONS: Record<string, string> = {
+  character: '\uD83D\uDC64',
+  plot: '\uD83D\uDCCB',
+  scene: '\uD83C\uDFAC',
+  worldbuilding: '\uD83C\uDF0D',
+  general: '\uD83D\uDCA1',
 };
 
 const TYPE_OPTIONS: { value: IdeaSuggestedType | ''; label: string }[] = [
@@ -42,18 +46,17 @@ const TYPE_OPTIONS: { value: IdeaSuggestedType | ''; label: string }[] = [
   { value: 'Object', label: 'Object' },
 ];
 
-interface IdeasSectionProps {
+interface StashSectionProps {
   /** Callback when Develop is clicked on an idea */
   onDevelop?: (ideaId: string) => void;
 }
 
-export function IdeasSection({ onDevelop }: IdeasSectionProps) {
-  const { currentStoryId } = useStory();
-  const { ideas, loading, error, createIdea, updateIdea, deleteIdea } = useIdeas(currentStoryId);
+export function StashSection({ onDevelop }: StashSectionProps) {
+  const { items, loading, error, createIdea, updateIdea, deleteIdea } = useStashContext();
 
   // Filters
+  const [typeFilter, setTypeFilter] = useState<StashItemKind | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<IdeaStatus | 'all'>('active');
-  const [categoryFilter, setCategoryFilter] = useState<IdeaCategory | 'all'>('all');
 
   // Add idea form
   const [showAddForm, setShowAddForm] = useState(false);
@@ -61,14 +64,15 @@ export function IdeasSection({ onDevelop }: IdeasSectionProps) {
   const [newDescription, setNewDescription] = useState('');
   const [newSuggestedType, setNewSuggestedType] = useState<IdeaSuggestedType | ''>('');
 
-  // Filtered ideas
-  const filteredIdeas = useMemo(() => {
-    return ideas.filter((idea) => {
-      if (statusFilter !== 'all' && idea.status !== statusFilter) return false;
-      if (categoryFilter !== 'all' && idea.category !== categoryFilter) return false;
+  // Filtered items
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      if (typeFilter !== 'all' && item.kind !== typeFilter) return false;
+      // Status filter applies only to ideas
+      if (item.kind === 'idea' && statusFilter !== 'all' && item.status !== statusFilter) return false;
       return true;
     });
-  }, [ideas, statusFilter, categoryFilter]);
+  }, [items, typeFilter, statusFilter]);
 
   const handleAddIdea = async () => {
     if (!newTitle.trim()) return;
@@ -84,7 +88,7 @@ export function IdeasSection({ onDevelop }: IdeasSectionProps) {
       setNewSuggestedType('');
       setShowAddForm(false);
     } catch {
-      // Error handled by hook
+      // Error handled by context
     }
   };
 
@@ -98,7 +102,7 @@ export function IdeasSection({ onDevelop }: IdeasSectionProps) {
     try {
       await updateIdea(ideaId, { status: 'dismissed' });
     } catch {
-      // Error handled by hook
+      // Error handled by context
     }
   };
 
@@ -106,7 +110,7 @@ export function IdeasSection({ onDevelop }: IdeasSectionProps) {
     try {
       await updateIdea(ideaId, { status: 'active' });
     } catch {
-      // Error handled by hook
+      // Error handled by context
     }
   };
 
@@ -114,17 +118,20 @@ export function IdeasSection({ onDevelop }: IdeasSectionProps) {
     try {
       await deleteIdea(ideaId);
     } catch {
-      // Error handled by hook
+      // Error handled by context
     }
   };
 
+  // Show status filter only when viewing ideas (or all)
+  const showStatusFilter = typeFilter === 'all' || typeFilter === 'idea';
+
   return (
-    <section id="ideas" className={styles.section}>
+    <section id="stash" className={styles.section}>
       <div className={styles.header}>
         <h2 className={styles.title}>
-          <span className={styles.icon}>{'\uD83D\uDCA1'}</span>
-          Ideas
-          <span className={styles.count}>({ideas.length})</span>
+          <span className={styles.icon}>{'\uD83D\uDCE5'}</span>
+          Stash
+          <span className={styles.count}>({items.length})</span>
         </h2>
         <button
           type="button"
@@ -176,69 +183,93 @@ export function IdeasSection({ onDevelop }: IdeasSectionProps) {
         </div>
       )}
 
-      {/* Filters */}
+      {/* Type Filter Tabs */}
       <div className={styles.filters}>
         <div className={styles.statusTabs}>
-          {STATUS_OPTIONS.map((opt) => (
+          {TYPE_FILTER_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               type="button"
-              className={`${styles.statusTab} ${statusFilter === opt.value ? styles.active : ''}`}
-              onClick={() => setStatusFilter(opt.value)}
+              className={`${styles.statusTab} ${typeFilter === opt.value ? styles.active : ''}`}
+              onClick={() => setTypeFilter(opt.value)}
             >
               {opt.label}
             </button>
           ))}
         </div>
-        <select
-          className={styles.categorySelect}
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value as IdeaCategory | 'all')}
-        >
-          {CATEGORY_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+        {showStatusFilter && (
+          <div className={styles.statusTabs}>
+            {STATUS_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                className={`${styles.statusTab} ${statusFilter === opt.value ? styles.active : ''}`}
+                onClick={() => setStatusFilter(opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Error */}
       {error && <div className={styles.error}>{error}</div>}
 
-      {/* Ideas List */}
-      {loading && ideas.length === 0 ? (
-        <div className={styles.loading}>Loading ideas...</div>
-      ) : filteredIdeas.length === 0 ? (
+      {/* Items List */}
+      {loading && items.length === 0 ? (
+        <div className={styles.loading}>Loading stash...</div>
+      ) : filteredItems.length === 0 ? (
         <div className={styles.empty}>
-          <p>No ideas found.</p>
+          <p>No items found.</p>
           <p className={styles.emptyHint}>
-            {statusFilter !== 'all'
-              ? `No ${statusFilter} ideas. Try changing the filter.`
-              : 'Add your first idea to get started!'}
+            {typeFilter !== 'all'
+              ? `No ${typeFilter === 'storybeat' ? 'story beats' : typeFilter === 'scene' ? 'scenes' : 'ideas'} in stash. Try changing the filter.`
+              : 'Unassigned story beats, scenes, and ideas will appear here.'}
           </p>
         </div>
       ) : (
         <div className={styles.ideaList}>
-          {filteredIdeas.map((idea) => (
-            <IdeaCard
-              key={idea.id}
-              idea={idea}
-              onDevelop={() => handleDevelop(idea.id)}
-              onDismiss={() => handleDismiss(idea.id)}
-              onRestore={() => handleRestore(idea.id)}
-              onDelete={() => handleDelete(idea.id)}
-              loading={loading}
-            />
-          ))}
+          {filteredItems.map((item) => {
+            switch (item.kind) {
+              case 'idea':
+                return (
+                  <IdeaCard
+                    key={item.id}
+                    idea={item}
+                    onDevelop={() => handleDevelop(item.id)}
+                    onDismiss={() => handleDismiss(item.id)}
+                    onRestore={() => handleRestore(item.id)}
+                    onDelete={() => handleDelete(item.id)}
+                    loading={loading}
+                  />
+                );
+              case 'storybeat':
+                return (
+                  <StoryBeatCard
+                    key={item.id}
+                    storyBeat={item}
+                  />
+                );
+              case 'scene':
+                return (
+                  <SceneCard
+                    key={item.id}
+                    scene={item}
+                  />
+                );
+            }
+          })}
         </div>
       )}
     </section>
   );
 }
 
+// ---- Idea Card (existing) ----
+
 interface IdeaCardProps {
-  idea: IdeaWithMeta;
+  idea: StashIdeaItem;
   onDevelop: () => void;
   onDismiss: () => void;
   onRestore: () => void;
@@ -260,7 +291,7 @@ function IdeaCard({
   return (
     <div className={`${styles.ideaCard} ${isDismissed ? styles.dismissed : ''}`}>
       <div className={styles.ideaHeader}>
-        <span className={styles.categoryIcon}>{CATEGORY_ICONS[idea.category]}</span>
+        <span className={styles.categoryIcon}>{CATEGORY_ICONS[idea.category] ?? '\uD83D\uDCA1'}</span>
         <span className={styles.ideaTitle}>{idea.title}</span>
         <span className={styles.sourceBadge}>{idea.source}</span>
         {idea.suggestedType && (
@@ -312,6 +343,51 @@ function IdeaCard({
           Delete
         </button>
       </div>
+    </div>
+  );
+}
+
+// ---- StoryBeat Card ----
+
+function StoryBeatCard({ storyBeat }: { storyBeat: StashStoryBeatItem }) {
+  return (
+    <div className={styles.ideaCard}>
+      <div className={styles.ideaHeader}>
+        <span className={styles.categoryIcon}>{'\uD83D\uDCCB'}</span>
+        <span className={styles.ideaTitle}>{storyBeat.title}</span>
+        <span className={styles.typeBadge}>Story Beat</span>
+        {storyBeat.priority && (
+          <span className={styles.sourceBadge}>{storyBeat.priority}</span>
+        )}
+      </div>
+
+      {storyBeat.summary && (
+        <p className={styles.ideaDescription}>{storyBeat.summary}</p>
+      )}
+
+      {storyBeat.scenes.length > 0 && (
+        <p className={styles.ideaDescription}>
+          {storyBeat.scenes.length} scene{storyBeat.scenes.length !== 1 ? 's' : ''} attached
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ---- Scene Card ----
+
+function SceneCard({ scene }: { scene: StashSceneItem }) {
+  return (
+    <div className={styles.ideaCard}>
+      <div className={styles.ideaHeader}>
+        <span className={styles.categoryIcon}>{'\uD83C\uDFAC'}</span>
+        <span className={styles.ideaTitle}>{scene.heading}</span>
+        <span className={styles.typeBadge}>Scene</span>
+      </div>
+
+      {scene.overview && (
+        <p className={styles.ideaDescription}>{scene.overview}</p>
+      )}
     </div>
   );
 }

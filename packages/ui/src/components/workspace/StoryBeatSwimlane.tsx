@@ -5,6 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import type { MergedOutlineStoryBeat, MergedOutlineScene } from '../../utils/outlineMergeUtils';
+import { useStashContext } from '../../context/StashContext';
 import { SwimlaneSceneCard } from './SwimlaneSceneCard';
 import styles from './StoryBeatSwimlane.module.css';
 
@@ -39,6 +40,7 @@ export function StoryBeatSwimlane({
   onDelete,
   isRemoved,
 }: StoryBeatSwimlaneProps) {
+  const { createStoryBeat } = useStashContext();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const isProposed = storyBeat._isProposed;
@@ -113,6 +115,22 @@ export function StoryBeatSwimlane({
           {!isProposed && onDelete && (
             <button type="button" className={styles.deleteBtn} onClick={onDelete}>
               Delete
+            </button>
+          )}
+          {isProposed && operation === 'add' && !isRemoved && (
+            <button
+              type="button"
+              className={styles.actionBtn}
+              onClick={async () => {
+                const summary = (storyBeat as unknown as { summary?: string }).summary;
+                await createStoryBeat({
+                  title: storyBeat.title,
+                  intent: storyBeat.intent as 'plot' | 'character' | 'tone',
+                  ...(summary ? { summary } : {}),
+                });
+              }}
+            >
+              Send to Stash
             </button>
           )}
           {isProposed && operation === 'add' && onRemoveProposed && !isRemoved && (
