@@ -5,7 +5,7 @@
  * with freeform text and story state to select a generation strategy.
  */
 
-import type { ai } from '@apollo/core';
+// Avoid tight coupling to core types for coverage/gaps in this layer
 
 export type ResolvedMode = 'storyBeats' | 'characters' | 'scenes' | 'expand' | 'interpret';
 
@@ -19,8 +19,8 @@ export interface IntentResolverInput {
   structured?: OrchestrationIntent;
   freeform?: string;
   storyState: {
-    gaps: ai.Coverage['gaps'];
-    coverage: ai.Coverage;
+    gaps: any[];
+    coverage: unknown;
     nodeTypes?: Record<string, number>;
   };
 }
@@ -38,13 +38,14 @@ export function resolveIntent(input: IntentResolverInput): ResolvedIntent {
 
   // Priority 1: Structured intent provided
   if (structured?.mode) {
-    return {
+    const base = {
       mode: structured.mode,
       targets: structured.focus || [],
-      direction: freeform,
       confidence: 1.0,
       reasoning: 'User selected mode explicitly',
-    };
+    } as ResolvedIntent;
+    if (freeform && freeform.trim()) (base as any).direction = freeform;
+    return base;
   }
 
   // Priority 2: Interpret from freeform text
@@ -92,19 +93,19 @@ function interpretFreeformIntent(
     };
   }
 
-  return {
-    mode: 'interpret',
+  const base = {
+    mode: 'interpret' as const,
     targets: [],
-    direction: text,
     confidence: 0.5,
     reasoning: 'No clear intent detected, using interpretation',
   };
+  return text ? { ...base, direction: text } : base;
 }
 
 function suggestFromState(
   state: IntentResolverInput['storyState']
 ): ResolvedIntent {
-  const priorityGap = [...state.gaps].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))[0];
+  const priorityGap = [...(state.gaps ?? [])].sort((a: any, b: any) => (b.priority ?? 0) - (a.priority ?? 0))[0];
   if (priorityGap && (priorityGap as any).beatId) {
     return {
       mode: 'storyBeats',
@@ -120,4 +121,3 @@ function suggestFromState(
     reasoning: 'No gaps detected, awaiting user direction',
   };
 }
-

@@ -273,15 +273,10 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
       try {
         setLoading(true);
         setError(null);
-        const genRequest = {
-          intent: {
-            mode: 'storyBeats' as const,
-            focus: request.priorityBeatIds ?? request.priorityBeats ?? [],
-          },
-          direction: request.direction,
-          packageCount: request.packageCount,
-          creativity: request.creativity,
-        };
+        const genRequest: any = { intent: { mode: 'storyBeats' as const, focus: request.priorityBeatIds ?? [] } };
+        if (request.direction) genRequest.direction = request.direction;
+        if (request.packageCount !== undefined) genRequest.packageCount = request.packageCount;
+        if (request.creativity !== undefined) genRequest.creativity = request.creativity;
         const data: GenerateResponseData = await api.generate(storyId, genRequest);
         createSessionFromResponse(data.sessionId, storyId, data.packages, 'beat', data.orchestration ?? null);
         // Backfill to original response shape minimally
@@ -302,12 +297,10 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
       try {
         setLoading(true);
         setError(null);
-        const genRequest = {
-          intent: { mode: 'characters' as const },
-          direction: request.direction,
-          packageCount: request.packageCount,
-          creativity: request.creativity,
-        };
+        const genRequest: any = { intent: { mode: 'characters' as const } };
+        if (request.direction) genRequest.direction = request.direction;
+        if (request.packageCount !== undefined) genRequest.packageCount = request.packageCount;
+        if (request.creativity !== undefined) genRequest.creativity = request.creativity;
         const data: GenerateResponseData = await api.generate(storyId, genRequest);
         createSessionFromResponse(data.sessionId, storyId, data.packages, 'character', data.orchestration ?? null);
         return { sessionId: data.sessionId, packages: data.packages } as unknown as ProposeCharactersResponse;
@@ -327,12 +320,10 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
       try {
         setLoading(true);
         setError(null);
-        const genRequest = {
-          intent: { mode: 'scenes' as const, focus: request.storyBeatIds },
-          direction: request.direction,
-          packageCount: request.packageCount,
-          creativity: request.creativity,
-        };
+        const genRequest: any = { intent: { mode: 'scenes' as const, focus: request.storyBeatIds } };
+        if (request.direction) genRequest.direction = request.direction;
+        if (request.packageCount !== undefined) genRequest.packageCount = request.packageCount;
+        if (request.creativity !== undefined) genRequest.creativity = request.creativity;
         const data: GenerateResponseData = await api.generate(storyId, genRequest);
         createSessionFromResponse(data.sessionId, storyId, data.packages, 'storyBeat', data.orchestration ?? null);
         return { sessionId: data.sessionId, packages: data.packages } as unknown as ProposeScenesResponse;
@@ -353,12 +344,10 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
         setLoading(true);
         setError(null);
         const targetId = (request as any).nodeId as string | undefined;
-        const genRequest = {
-          intent: { mode: 'expand' as const, focus: targetId ? [targetId] : [] },
-          direction: request.direction,
-          packageCount: request.packageCount,
-          creativity: request.creativity,
-        };
+        const genRequest: any = { intent: { mode: 'expand' as const, focus: targetId ? [targetId] : [] } };
+        if (request.direction) genRequest.direction = request.direction;
+        if (request.packageCount !== undefined) genRequest.packageCount = request.packageCount;
+        if (request.creativity !== undefined) genRequest.creativity = request.creativity;
         const data: GenerateResponseData = await api.generate(storyId, genRequest);
         createSessionFromResponse(data.sessionId, storyId, data.packages, 'naked', data.orchestration ?? null);
         return { sessionId: data.sessionId, packages: data.packages } as unknown as ProposeExpandResponse;

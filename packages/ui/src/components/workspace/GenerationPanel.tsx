@@ -58,13 +58,13 @@ export function GenerationPanel({
     session,
     loading,
     error,
+    orchestrationInfo,
     stagePackage,
     stageSavedPackage,
     staging,
     acceptPackage,
     rejectPackage,
     clearStaging,
-    loadSession,
     selectPackage,
     selectedPackageId,
   } = useGeneration();
@@ -94,6 +94,9 @@ export function GenerationPanel({
       loadSavedPackages(currentStoryId);
     }
   }, [currentStoryId, loadSavedPackages]);
+
+  // Context header data
+  const { coverage, gaps } = useGapsCoverage(currentStoryId);
 
   // Mode-specific generation handlers
   const handleGenerateStoryBeats = useCallback(
@@ -566,11 +569,6 @@ export function GenerationPanel({
               </button>
               <button
                 className={styles.backButton}
-  // Context header: gaps/coverage
-  const { coverage, gaps } = useGapsCoverage(currentStoryId);
-
-  // Minimal orchestration info (from unified generate)
-  const { orchestrationInfo } = useGeneration();
                 onClick={handleCloseSavedPackageView}
                 disabled={loading}
                 type="button"

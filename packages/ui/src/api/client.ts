@@ -102,6 +102,8 @@ import type {
   ProposeScenesResponse,
   ProposeExpandRequest,
   ProposeExpandResponse,
+  GenerateRequestData,
+  GenerateResponseData,
 } from './types';
 
 const API_BASE = '/api';

@@ -25,11 +25,7 @@ export interface OrchestrationRequest {
   creativity?: number;
 }
 
-export interface StateAnalysis {
-  gaps: ai.Coverage['gaps'];
-  coverage: ai.Coverage;
-  suggestions: string[];
-}
+export interface StateAnalysis { gaps: any[]; coverage: unknown; suggestions: string[] }
 
 export interface OrchestrationResponse {
   sessionId: string;
@@ -55,11 +51,9 @@ export async function orchestrate(
   const gaps = coverage.gaps;
 
   // 2. Resolve intent
-  const resolvedIntent = resolveIntent({
-    structured: intent,
-    freeform: direction,
-    storyState: { gaps, coverage },
-  });
+  const resolverInput: any = { structured: intent as any, storyState: { gaps: gaps as any, coverage } };
+  if (direction) resolverInput.freeform = direction;
+  const resolvedIntent = resolveIntent(resolverInput);
 
   // 3. Route to appropriate generator
   let sessionId = '';
@@ -69,10 +63,10 @@ export async function orchestrate(
     case 'storyBeats': {
       const req: ProposeStoryBeatsRequest = {
         priorityBeats: resolvedIntent.targets,
-        direction: resolvedIntent.direction,
-        packageCount: packageCount,
-        creativity,
-      };
+      } as ProposeStoryBeatsRequest;
+      if (resolvedIntent.direction) (req as any).direction = resolvedIntent.direction;
+      if (packageCount !== undefined) (req as any).packageCount = packageCount;
+      if (creativity !== undefined) (req as any).creativity = creativity;
       const result = await proposeStoryBeats(storyId, req, ctx, llmClient);
       sessionId = result.sessionId;
       packages = result.packages;
@@ -80,10 +74,11 @@ export async function orchestrate(
     }
     case 'characters': {
       const req: ProposeCharactersRequest = {
-        direction: resolvedIntent.direction,
-        packageCount: packageCount,
-        creativity,
-      };
+        focus: 'fill_gaps',
+      } as ProposeCharactersRequest;
+      if (resolvedIntent.direction) (req as any).direction = resolvedIntent.direction;
+      if (packageCount !== undefined) (req as any).packageCount = packageCount;
+      if (creativity !== undefined) (req as any).creativity = creativity;
       const result = await proposeCharacters(storyId, req, ctx, llmClient);
       sessionId = result.sessionId;
       packages = result.packages;
@@ -92,10 +87,10 @@ export async function orchestrate(
     case 'scenes': {
       const req: ProposeScenesRequest = {
         storyBeatIds: resolvedIntent.targets,
-        direction: resolvedIntent.direction,
-        packageCount: packageCount,
-        creativity,
-      };
+      } as ProposeScenesRequest;
+      if (resolvedIntent.direction) (req as any).direction = resolvedIntent.direction;
+      if (packageCount !== undefined) (req as any).packageCount = packageCount;
+      if (creativity !== undefined) (req as any).creativity = creativity;
       const result = await proposeScenes(storyId, req, ctx, llmClient);
       sessionId = result.sessionId;
       packages = result.packages;
@@ -119,14 +114,15 @@ export async function orchestrate(
     case 'interpret':
     default: {
       // Fall back to generic generation with freeform direction
+      const genReq: any = {
+        entryPoint: { type: 'naked' },
+        depth: 'medium',
+        count: 'few',
+      };
+      if (resolvedIntent.direction || direction) genReq.direction = resolvedIntent.direction || direction;
       const result = await generatePackages(
         storyId,
-        {
-          entryPoint: { type: 'naked' },
-          depth: 'medium',
-          count: 'few',
-          direction: resolvedIntent.direction || direction,
-        },
+        genReq,
         ctx,
         llmClient
       );
@@ -153,4 +149,3 @@ export async function orchestrate(
     },
   };
 }
-
