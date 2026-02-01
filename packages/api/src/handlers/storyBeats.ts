@@ -84,6 +84,7 @@ interface CreateStoryBeatBody {
   title: string;
   intent?: 'plot' | 'character' | 'tone';
   summary?: string;
+  narrative_function?: import('@apollo/core').StoryBeat['narrative_function'];
   priority?: 'low' | 'medium' | 'high';
   urgency?: 'low' | 'medium' | 'high';
   stakes_change?: 'up' | 'down' | 'steady';
@@ -99,7 +100,7 @@ export function createStoryBeatHandler(ctx: StorageContext) {
   ): Promise<void> => {
     try {
       const { id } = req.params;
-      const { title, intent, summary, priority, urgency, stakes_change, act, alignToBeatId } = req.body;
+      const { title, intent, summary, narrative_function, priority, urgency, stakes_change, act, alignToBeatId } = req.body;
 
       if (!title || title.trim() === '') {
         throw new BadRequestError('title is required');
@@ -146,6 +147,7 @@ export function createStoryBeatHandler(ctx: StorageContext) {
       };
 
       if (summary) storyBeat.summary = summary;
+      if (narrative_function) storyBeat.narrative_function = narrative_function;
       if (intent) storyBeat.intent = intent;
       if (priority) storyBeat.priority = priority;
       if (urgency) storyBeat.urgency = urgency;

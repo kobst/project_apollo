@@ -1,11 +1,9 @@
 {
   "_meta": {
     "storyId": "neon-noir-test",
-    "versionId": "sv_1769973061100_j6lq8t",
-    "label": "Accept package: Keys Code: No Badges, No Oaths",
-    "createdAt": "2026-02-01T19:11:01.100Z",
-    "enrichmentSummary": "This package steers the narrative toward a principled noir about competing systems of loyalty: Cain’s personal code versus the hollow legitimacy of corrupt institutions. By anchoring the Theme Stated before Rigo seeks him out, the story’s direction becomes less about returning to crime and more about whether any code can survive when authority itself is just another crew with masks.",
-    "packageTitle": "Keys Code: No Badges, No Oaths"
+    "versionId": "sv_1769978902762_406mrr",
+    "label": "Update",
+    "createdAt": "2026-02-01T20:48:22.762Z"
   },
   "nodes": [
     {
@@ -300,16 +298,6 @@
       "parent_location_id": ""
     },
     {
-      "type": "StoryBeat",
-      "id": "pp_1768952140_u0m4x",
-      "title": "Cain meets Dante for a lead on the theft crew",
-      "summary": "Cain finds Dante in a club back hallway; Dante offers security footage of Morrison's people moving product, but demands protection and a payday.",
-      "intent": "plot",
-      "priority": 1,
-      "stakes_change": "Cain gains actionable proof of police involvement, but it ties his survival to a man who profits from betrayal.",
-      "order_index": 4
-    },
-    {
       "type": "Scene",
       "id": "scene_1768952140_2b8qd",
       "heading": "INT. CLUB LUXE - BACK HALLWAY - NIGHT",
@@ -404,33 +392,90 @@
     },
     {
       "type": "StoryBeat",
-      "id": "sb_1769908431067",
-      "title": "Keys at Dawn",
+      "id": "sb_migrated_pp_1768952140_u0m4x",
+      "title": "Cain meets Dante for a lead on the theft crew",
+      "summary": "Introduce an informant who can provide proof of police involvement but whose loyalty is transactional and unreliable; set expectation that any cooperation will come at a cost.",
+      "intent": "plot",
+      "priority": 1,
+      "stakes_change": "up",
+      "order_index": 4,
       "status": "proposed",
-      "createdAt": "2026-02-01T01:13:51.067Z",
-      "updatedAt": "2026-02-01T01:13:51.067Z",
-      "summary": "Before Miami pulls him back in, Cain opens his Florida Keys body shop at first light, wiping salt film off a bike like it’s a ritual. A local deputy swings by for a friendly shakedown, and Cain pays without arguing, signaling he knows how power really works. The quiet compromise frames his retirement as a fragile truce with the world.",
-      "intent": "tone"
+      "createdAt": "2026-02-01T20:37:03.163Z",
+      "updatedAt": "2026-02-01T20:37:03.163Z",
+      "narrative_function": "character_introduction"
+    },
+    {
+      "type": "Scene",
+      "id": "scene_from_pp_1768952140_u0m4x",
+      "heading": "INT. LOCATION - TIME",
+      "scene_overview": "Cain finds Dante in a club back hallway; Dante offers security footage of Morrison's people moving product, but demands protection and a payday.",
+      "order_index": 4,
+      "status": "DRAFT",
+      "source_provenance": "MIGRATION"
+    },
+    {
+      "type": "Scene",
+      "id": "scene_from_sb_1769908431067",
+      "heading": "INT. LOCATION - TIME",
+      "scene_overview": "Before Miami pulls him back in, Cain opens his Florida Keys body shop at first light, wiping salt film off a bike like it’s a ritual. A local deputy swings by for a friendly shakedown, and Cain pays without arguing, signaling he knows how power really works. The quiet compromise frames his retirement as a fragile truce with the world.",
+      "order_index": 1,
+      "status": "DRAFT",
+      "source_provenance": "MIGRATION"
     },
     {
       "type": "StoryBeat",
-      "id": "storybeat_1769972152796_dzf9a",
+      "id": "sb_migrated_storybeat_1769972152796_dzf9a",
       "title": "Container Heist: Blue Lights, Black Masks",
-      "summary": "On a rain-slick service road near the Miami marina, a Rigo-linked container is intercepted by men moving like a tactical unit, using a cloned seal, a forklift, and what looks like an official police stop to freeze traffic. In under four minutes the load is transferred and the crew vanishes, leaving behind only staged evidence that will misdirect any honest inquiry. The theft’s brutal efficiency makes it clear this isn’t street crime—it’s a machine.",
-      "intent": "tone",
+      "summary": "Reveal the theft ring’s professional modus operandi: a highly coordinated crew uses pseudo-official tactics to seize containers quickly and cleanly, signaling institutional cover or infiltration.",
+      "intent": "plot",
       "priority": "high",
-      "stakes_change": "raise",
-      "urgency": "high"
+      "stakes_change": "up",
+      "urgency": "high",
+      "status": "proposed",
+      "createdAt": "2026-02-01T20:37:03.163Z",
+      "updatedAt": "2026-02-01T20:37:03.163Z",
+      "narrative_function": "plot_revelation"
+    },
+    {
+      "type": "Scene",
+      "id": "scene_from_storybeat_1769972152796_dzf9a",
+      "heading": "INT. LOCATION - TIME",
+      "scene_overview": "On a rain-slick service road near the Miami marina, a Rigo-linked container is intercepted by men moving like a tactical unit, using a cloned seal, a forklift, and what looks like an official police stop to freeze traffic. In under four minutes the load is transferred and the crew vanishes, leaving behind only staged evidence that will misdirect any honest inquiry. The theft’s brutal efficiency makes it clear this isn’t street crime—it’s a machine.",
+      "order_index": 1,
+      "status": "DRAFT",
+      "source_provenance": "MIGRATION"
     },
     {
       "type": "StoryBeat",
-      "id": "storybeat_1770332001_k4v9p",
+      "id": "sb_migrated_storybeat_1770332001_k4v9p",
       "title": "Keys Code: No Badges, No Oaths",
-      "summary": "At his Keys body shop, Cain breaks up a petty shake-down when a uniformed officer leans on a local kid for \"protection\" money. Cain refuses to get pulled in, but his words land: criminals at least keep their bargains; badges rewrite theirs. The moment defines Cain's code and primes him to distrust any official story about the missing shipments.",
+      "summary": "Establish Cain's personal code—he honors kept promises over institutional authority and is skeptical of badges; state the theme without specifying execution.",
       "intent": "tone",
       "priority": "high",
       "stakes_change": "maintain",
-      "urgency": "low"
+      "urgency": "low",
+      "narrative_function": "theme_establishment",
+      "status": "proposed",
+      "createdAt": "2026-02-01T20:37:03.163Z",
+      "updatedAt": "2026-02-01T20:37:03.163Z"
+    },
+    {
+      "type": "Scene",
+      "id": "scene_from_storybeat_1770332001_k4v9p",
+      "heading": "INT. LOCATION - TIME",
+      "scene_overview": "At his Keys body shop, Cain breaks up a petty shake-down when a uniformed officer leans on a local kid for \"protection\" money. Cain refuses to get pulled in, but his words land: criminals at least keep their bargains; badges rewrite theirs. The moment defines Cain's code and primes him to distrust any official story about the missing shipments.",
+      "order_index": 1,
+      "status": "DRAFT",
+      "source_provenance": "MIGRATION"
+    },
+    {
+      "type": "Scene",
+      "id": "scene_from_stash_sb_migrated_sb_1769908431067",
+      "heading": "INT. LOCATION - TIME",
+      "scene_overview": "Before Miami pulls him back in, Cain opens his Florida Keys body shop at first light, wiping salt film off a bike like it’s a ritual. A local deputy swings by for a friendly shakedown, and Cain pays without arguing, signaling he knows how power really works.",
+      "order_index": 1,
+      "status": "DRAFT",
+      "source_provenance": "MIGRATION"
     }
   ],
   "edges": [
@@ -499,28 +544,6 @@
       },
       "status": "approved",
       "createdAt": "2026-01-06T01:31:58.892Z"
-    },
-    {
-      "id": "edge_c3550163-db80-4e19-9816-aeed89e695cb",
-      "type": "ALIGNS_WITH",
-      "from": "pp_1768952140_u0m4x",
-      "to": "beat_FunAndGames",
-      "provenance": {
-        "source": "import"
-      },
-      "status": "approved",
-      "createdAt": "2026-01-21T04:52:34.761Z"
-    },
-    {
-      "id": "edge_592c00d4-6ced-4d7d-813d-767bbf684d06",
-      "type": "SATISFIED_BY",
-      "from": "pp_1768952140_u0m4x",
-      "to": "scene_1768952140_2b8qd",
-      "provenance": {
-        "source": "import"
-      },
-      "status": "approved",
-      "createdAt": "2026-01-21T04:52:34.761Z"
     },
     {
       "id": "edge_5fef6ff3-b5a8-4886-be51-c3876b3aa486",
@@ -611,17 +634,6 @@
       "createdAt": "2026-01-21T04:52:34.761Z"
     },
     {
-      "id": "edge_910dfde1-5ba4-42d4-837a-11a3b700869b",
-      "type": "PRECEDES",
-      "from": "pp_1768952140_u0m4x",
-      "to": "pp_1768952140_n7c1h",
-      "provenance": {
-        "source": "import"
-      },
-      "status": "approved",
-      "createdAt": "2026-01-21T04:52:34.761Z"
-    },
-    {
       "id": "edge_8b24d90c-8fbf-4ad8-9eaa-e9fc6f6914c2",
       "type": "PRECEDES",
       "from": "pp_1768952140_n7c1h",
@@ -699,37 +711,70 @@
       "createdAt": "2026-01-25T20:49:42.345Z"
     },
     {
-      "id": "edge_9003d5ac-1998-4973-9d19-52157cad9218",
+      "id": "edge_ml47c1mk_psm7w8w",
       "type": "ALIGNS_WITH",
-      "from": "storybeat_1769972152796_dzf9a",
+      "from": "sb_migrated_pp_1768952140_u0m4x",
+      "to": "beat_FunAndGames",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-02-01T20:37:03.169Z"
+    },
+    {
+      "id": "edge_ml47c1mk_130gls8",
+      "type": "SATISFIED_BY",
+      "from": "sb_migrated_pp_1768952140_u0m4x",
+      "to": "scene_from_pp_1768952140_u0m4x",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-02-01T20:37:03.169Z"
+    },
+    {
+      "id": "edge_ml47c1mk_pekwvo5",
+      "type": "ALIGNS_WITH",
+      "from": "sb_migrated_storybeat_1769972152796_dzf9a",
       "to": "beat_OpeningImage",
       "provenance": {
         "source": "import"
       },
       "status": "approved",
-      "createdAt": "2026-02-01T18:57:39.614Z"
+      "createdAt": "2026-02-01T20:37:03.169Z"
     },
     {
-      "id": "edge_9a5ca88e-c188-4a08-8a02-d6d7dab4d883",
+      "id": "edge_ml47c1mk_oe0zyvc",
+      "type": "SATISFIED_BY",
+      "from": "sb_migrated_storybeat_1769972152796_dzf9a",
+      "to": "scene_from_storybeat_1769972152796_dzf9a",
+      "provenance": {
+        "source": "import"
+      },
+      "status": "approved",
+      "createdAt": "2026-02-01T20:37:03.169Z"
+    },
+    {
+      "id": "edge_ml47c1ml_d2wu76k",
       "type": "ALIGNS_WITH",
-      "from": "storybeat_1770332001_k4v9p",
+      "from": "sb_migrated_storybeat_1770332001_k4v9p",
       "to": "beat_ThemeStated",
       "provenance": {
         "source": "import"
       },
       "status": "approved",
-      "createdAt": "2026-02-01T19:11:01.082Z"
+      "createdAt": "2026-02-01T20:37:03.169Z"
     },
     {
-      "id": "edge_4547085d-63a3-46a7-89f0-3f44e6bc7c31",
-      "type": "PRECEDES",
-      "from": "storybeat_1770332001_k4v9p",
-      "to": "pp_extracted_1767585226496",
+      "id": "edge_ml47c1ml_9vmlruv",
+      "type": "SATISFIED_BY",
+      "from": "sb_migrated_storybeat_1770332001_k4v9p",
+      "to": "scene_from_storybeat_1770332001_k4v9p",
       "provenance": {
         "source": "import"
       },
       "status": "approved",
-      "createdAt": "2026-02-01T19:11:01.082Z"
+      "createdAt": "2026-02-01T20:37:03.169Z"
     }
   ]
 }

@@ -21,6 +21,9 @@ import { logCommand } from './commands/log.js';
 import { checkoutCommand } from './commands/checkout.js';
 import { branchCommand } from './commands/branch.js';
 import { diffCommand } from './commands/diff.js';
+import { migrateStoryBeatAbstractionCommand } from './commands/migrateStoryBeatAbstraction.js';
+import { cleanupDeprecatedCommand } from './commands/cleanupDeprecated.js';
+import { normalizeAbstractionCommand } from './commands/normalizeAbstraction.js';
 import { handleError } from './utils/errors.js';
 
 const program = new Command();
@@ -47,6 +50,9 @@ logCommand(program);
 checkoutCommand(program);
 branchCommand(program);
 diffCommand(program);
+migrateStoryBeatAbstractionCommand(program);
+cleanupDeprecatedCommand(program);
+normalizeAbstractionCommand(program);
 
 // Global error handling
 program.exitOverride((err) => {

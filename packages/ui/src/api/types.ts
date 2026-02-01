@@ -644,6 +644,15 @@ export type StoryBeatPriority = 'low' | 'medium' | 'high';
 export type StoryBeatUrgency = 'low' | 'medium' | 'high';
 export type StoryBeatStakesChange = 'up' | 'down' | 'steady';
 export type StoryBeatStatus = 'proposed' | 'approved' | 'deprecated';
+export type StoryBeatNarrativeFunction =
+  | 'theme_establishment'
+  | 'character_introduction'
+  | 'character_development'
+  | 'plot_revelation'
+  | 'reversal'
+  | 'escalation'
+  | 'resolution'
+  | 'tone_setter';
 
 export interface StoryBeatData extends NodeData {
   fulfillmentCount: number;
@@ -661,6 +670,7 @@ export interface CreateStoryBeatRequest {
   title: string;
   intent: StoryBeatIntent;
   summary?: string;
+  narrative_function?: StoryBeatNarrativeFunction;
   criteria_of_satisfaction?: string;
   priority?: StoryBeatPriority;
   urgency?: StoryBeatUrgency;

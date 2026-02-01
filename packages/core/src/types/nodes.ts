@@ -130,7 +130,7 @@ export type SceneTag =
 
 export type IntExt = 'INT' | 'EXT' | 'OTHER';
 export type SceneStatus = 'DRAFT' | 'REVISED';
-export type SourceProvenance = 'USER' | 'AI' | 'MIXED';
+export type SourceProvenance = 'USER' | 'AI' | 'MIXED' | 'MIGRATION';
 
 export interface Scene extends BaseNode {
   type: 'Scene';
@@ -147,7 +147,8 @@ export interface Scene extends BaseNode {
   key_actions?: string[];
   notable_dialogue?: string[];
   scene_tags?: SceneTag[];
-  status?: SceneStatus;
+  /** Extended statuses; existing values remain valid */
+  status?: SceneStatus | 'APPROVED' | 'FINAL' | 'CUT';
   source_provenance?: SourceProvenance;
 }
 
@@ -236,6 +237,15 @@ export type StoryBeatPriority = 'low' | 'medium' | 'high';
 export type StoryBeatUrgency = 'low' | 'medium' | 'high';
 export type StoryBeatStakesChange = 'up' | 'down' | 'steady';
 export type StoryBeatStatus = 'proposed' | 'approved' | 'deprecated';
+export type StoryBeatNarrativeFunction =
+  | 'theme_establishment'
+  | 'character_introduction'
+  | 'character_development'
+  | 'plot_revelation'
+  | 'reversal'
+  | 'escalation'
+  | 'resolution'
+  | 'tone_setter';
 
 export interface StoryBeat extends BaseNode {
   type: 'StoryBeat';
@@ -243,6 +253,8 @@ export interface StoryBeat extends BaseNode {
   title: string;
   /** 1-3 sentences describing the intended event */
   summary?: string;
+  /** Narrative function category (abstract intent classifier) */
+  narrative_function?: StoryBeatNarrativeFunction;
   /** Primary purpose of this story beat */
   intent?: StoryBeatIntent;
   /** Auto-computed order based on Beat alignment. Undefined if unaligned. */

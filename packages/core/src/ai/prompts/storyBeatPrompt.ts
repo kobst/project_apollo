@@ -92,6 +92,16 @@ ${existingStoryBeats || '[None]'}
 ## Characters (reference only)
 ${characters || '[None]'}
 ${direction ? `\n## Direction\n"${direction}"\n` : ''}${ideas ? `\n${ideas}` : ''}${guidelines ? `\n${guidelines}` : ''}
+## Abstraction Guidance
+- CRITICAL: StoryBeats are ABSTRACT narrative functions, NOT scene descriptions.
+- Do describe narrative intent (what/why), emotional/stakes shift, and purpose.
+- Do NOT include specific locations (no "INT./EXT."), dialogue, or concrete actions.
+- Think "narrative intent" not "scene synopsis".
+
+Examples:
+- BAD (too specific): "At his Keys body shop, Cain breaks up a shakedown when an officer leans on a kid..."
+- GOOD (abstract intent): "Establish Cain's personal code — he values honor over institutional authority; show skepticism toward badges."
+
 ## Settings
 Creativity: ${creativityLabel} (${creativity}) | Scope: ${expansionScope} | Max per pkg: ${maxStoryBeatsPerPackage}
 
@@ -99,9 +109,10 @@ Creativity: ${creativityLabel} (${creativity}) | Scope: ${expansionScope} | Max 
 Required fields:
 - title: Short evocative title
 - summary: 2-3 sentences (what happens, who, why it matters)
+- narrative_function: "theme_establishment" | "character_introduction" | "character_development" | "plot_revelation" | "reversal" | "escalation" | "resolution" | "tone_setter"
 - intent: "plot" | "character" | "tone"
 - priority: "low" | "medium" | "high"
-- stakes_change: "raise" | "lower" | "maintain"
+- stakes_change: "up" | "down" | "steady"
 - urgency: "low" | "medium" | "high"
 
 ## Output
@@ -116,7 +127,7 @@ ${JSON_OUTPUT_RULES}
   "style_tags": ["..."],
   "primary": {
     "type": "StoryBeat",
-    "nodes": [{"operation": "add", "node_type": "StoryBeat", "node_id": "storybeat_{ts}_{5char}", "data": {"title": "...", "summary": "...", "intent": "plot", "priority": "high", "stakes_change": "raise", "urgency": "high"}}],
+    "nodes": [{"operation": "add", "node_type": "StoryBeat", "node_id": "storybeat_{ts}_{5char}", "data": {"title": "...", "summary": "...", "narrative_function": "theme_establishment", "intent": "plot", "priority": "high", "stakes_change": "up", "urgency": "high"}}],
     "edges": [{"operation": "add", "edge_type": "ALIGNS_WITH", "from": "storybeat_{ts}_{5char}", "to": "beat_Midpoint"}]
   },${isConstrained ? '' : `
   "supporting": {"nodes": [], "edges": []},`}

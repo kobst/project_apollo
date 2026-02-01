@@ -166,6 +166,66 @@ export const SB_EVENT_REALIZATION: Rule = {
 };
 
 // =============================================================================
+// STORYBEAT_TOO_CONCRETE
+// =============================================================================
+
+/**
+ * Warn when a StoryBeat's summary appears to be scene-like rather than abstract intent.
+ * Heuristics:
+ * - Contains INT./EXT. tokens
+ * - Contains quoted dialogue (20+ chars inside quotes)
+ * - Summary length > 300 chars
+ * - Includes common location indicators (shop, warehouse, club, marina, garage)
+ */
+export const STORYBEAT_TOO_CONCRETE: Rule = {
+  id: 'STORYBEAT_TOO_CONCRETE',
+  name: 'StoryBeat Summary Too Concrete',
+  severity: 'soft',
+  category: 'completeness',
+  description: 'StoryBeat summaries should be abstract narrative intent, not scene synopses',
+
+  evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
+    const violations: RuleViolation[] = [];
+    const storyBeats = getNodesByType<StoryBeat>(graph, 'StoryBeat');
+
+    const locationIndicators = ['shop', 'warehouse', 'club', 'marina', 'garage'];
+    const hasSceneHeading = (text: string) => /\bINT\.|\bEXT\./i.test(text);
+    const hasLongDialogue = (text: string) => /"[^"]{20,}"/.test(text);
+
+    for (const sb of storyBeats) {
+      if (!isNodeInScope(scope, sb.id)) continue;
+      const s = (sb.summary ?? '').trim();
+      if (!s) continue;
+
+      const warnings: string[] = [];
+      if (hasSceneHeading(s)) warnings.push('contains scene heading (INT./EXT.)');
+      if (hasLongDialogue(s)) warnings.push('contains quoted dialogue');
+      if (s.length > 300) warnings.push('summary too long (>300 chars)');
+      const lower = s.toLowerCase();
+      if (locationIndicators.some((w) => lower.includes(w))) warnings.push('contains likely location details');
+
+      if (warnings.length > 0) {
+        violations.push(
+          createViolation(
+            'STORYBEAT_TOO_CONCRETE',
+            'soft',
+            'completeness',
+            `StoryBeat "${sb.title}" summary may be too concrete (${warnings.join(', ')})`,
+            {
+              nodeId: sb.id,
+              nodeType: 'StoryBeat',
+              context: { warnings },
+            }
+          )
+        );
+      }
+    }
+
+    return violations;
+  },
+};
+
+// =============================================================================
 // SCENE_HAS_STORYBEAT
 // =============================================================================
 
@@ -236,6 +296,7 @@ export const SOFT_RULES: Rule[] = [
   SCENE_HAS_LOCATION,
   SCENE_HAS_STORYBEAT,
   SB_EVENT_REALIZATION,
+  STORYBEAT_TOO_CONCRETE,
 ];
 
 /**
