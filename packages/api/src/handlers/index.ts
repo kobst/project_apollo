@@ -96,6 +96,8 @@ export {
   createProposeScenesHandler,
   // Expand-focused generation
   createProposeExpandHandler,
+  // Impact enrichment (LLM critic)
+  createEnrichImpactHandler,
 } from './generate.js';
 export {
   createListSavedPackagesHandler,

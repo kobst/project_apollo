@@ -29,3 +29,5 @@ export { buildScenePrompt } from './scenePrompt.js';
 export type { ScenePromptParams } from './scenePrompt.js';
 export { buildExpandPrompt } from './expandPrompt.js';
 export type { ExpandPromptParams } from './expandPrompt.js';
+export { buildCriticPrompt } from './criticPrompt.js';
+export type { CriticPromptParams } from './criticPrompt.js';

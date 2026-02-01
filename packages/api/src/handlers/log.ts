@@ -50,6 +50,8 @@ export function createLogHandler(ctx: StorageContext) {
         createdAt: v.created_at,
         isCurrent: v.isCurrent,
         ...(v.branch && { branch: v.branch }),
+        ...(v.enrichmentSummary !== undefined && { enrichmentSummary: v.enrichmentSummary }),
+        ...(v.packageTitle !== undefined && { packageTitle: v.packageTitle }),
       }));
 
       res.json({

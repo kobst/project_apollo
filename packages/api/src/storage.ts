@@ -53,6 +53,8 @@ export interface StoredVersion {
   label: string;
   created_at: string;
   graph: SerializedGraph;
+  enrichmentSummary?: string;
+  packageTitle?: string;
 }
 
 export interface Branch {
@@ -103,6 +105,8 @@ export interface VersionInfo {
   created_at: string;
   isCurrent: boolean;
   branch?: string;
+  enrichmentSummary?: string;
+  packageTitle?: string;
 }
 
 export interface BranchInfo {
@@ -669,6 +673,8 @@ export async function getVersionHistoryById(
       created_at: v.created_at,
       isCurrent: v.id === state.history.currentVersionId,
       ...(branchName !== undefined && { branch: branchName }),
+      ...(v.enrichmentSummary !== undefined && { enrichmentSummary: v.enrichmentSummary }),
+      ...(v.packageTitle !== undefined && { packageTitle: v.packageTitle }),
     };
   });
 
@@ -687,6 +693,47 @@ export async function getVersionById(
   const state = await loadVersionedStateById(storyId, ctx);
   if (!state) return null;
   return state.history.versions[versionId] ?? null;
+}
+
+/**
+ * Update metadata on an existing version (enrichment summary, package title).
+ */
+export async function updateVersionMeta(
+  storyId: string,
+  versionId: string,
+  meta: { enrichmentSummary?: string; packageTitle?: string },
+  ctx: StorageContext
+): Promise<void> {
+  const state = await loadVersionedStateById(storyId, ctx);
+  if (!state) {
+    throw new Error(`Story "${storyId}" not found`);
+  }
+
+  const version = state.history.versions[versionId];
+  if (!version) {
+    throw new Error(`Version "${versionId}" not found`);
+  }
+
+  const updatedVersion: StoredVersion = { ...version };
+  if (meta.enrichmentSummary !== undefined) {
+    updatedVersion.enrichmentSummary = meta.enrichmentSummary;
+  }
+  if (meta.packageTitle !== undefined) {
+    updatedVersion.packageTitle = meta.packageTitle;
+  }
+
+  const updatedState: VersionedState = {
+    ...state,
+    history: {
+      ...state.history,
+      versions: {
+        ...state.history.versions,
+        [versionId]: updatedVersion,
+      },
+    },
+  };
+
+  await saveVersionedStateById(storyId, updatedState, ctx);
 }
 
 /**

@@ -58,8 +58,7 @@ ${JSON_OUTPUT_RULES}
     "storyContext": [{"operation": {"type": "addThematicPillar", "pillar": "..."}}],
     "nodes": [{"operation": "add", "node_type": "Character", "node_id": "char_{ts}_{5char}", "data": {"name": "...", "description": "..."}}],
     "edges": [{"operation": "add", "edge_type": "HAS_CHARACTER", "from": "scene_xxx", "to": "char_{ts}_{5char}"}]
-  },
-  "impact": {"fulfills_gaps": [], "creates_gaps": [], "conflicts": []}
+  }
 }]}
 \`\`\`
 

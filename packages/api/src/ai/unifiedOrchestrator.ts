@@ -132,8 +132,14 @@ export async function orchestrate(
     }
   }
 
-  // 4. Validate/attach impact (ensure across all paths)
-  const packagesWithImpact = ai.validatePackages(packages, graph);
+  // 4. Validate packages (temporal consistency via mentions)
+  const validatedPackages = ai.validatePackages(packages, graph);
+
+  // 5. Compute deterministic impact
+  const packagesWithImpact = validatedPackages.map(pkg => ({
+    ...pkg,
+    impact: ai.computeImpact(pkg, { graph }),
+  }));
 
   return {
     sessionId,

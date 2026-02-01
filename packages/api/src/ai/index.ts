@@ -56,3 +56,9 @@ export {
   getActiveProposal,
   discardActiveProposal,
 } from './proposeOrchestrator.js';
+
+// Impact Enrichment (Critic)
+export {
+  enrichPackageImpact,
+  type EnrichImpactResponse,
+} from './criticOrchestrator.js';

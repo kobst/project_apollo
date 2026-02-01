@@ -121,6 +121,9 @@ export interface NarrativePackage {
     conflicts: ConflictInfo[];
   };
 
+  /** LLM-enriched narrative analysis (populated on-demand via critic) */
+  enrichment?: ImpactEnrichment;
+
   /** Validation results (temporal violations, missing dependencies, etc.) */
   validation?: {
     /** Temporal violations from mentions analysis */
@@ -260,6 +263,23 @@ export interface ConflictInfo {
   source: 'llm' | 'lint';
   /** Whether a resolution is included in the package */
   resolution_included: boolean;
+}
+
+// =============================================================================
+// Impact Enrichment (LLM Critic)
+// =============================================================================
+
+/**
+ * LLM-enriched narrative analysis of a package's impact.
+ * Provides human-readable narrative significance beyond deterministic gap matching.
+ */
+export interface ImpactEnrichment {
+  /** Narrative significance for each fulfilled gap */
+  fulfills: Array<{ description: string; narrative: string }>;
+  /** Narrative implications for each created gap */
+  creates: Array<{ description: string; narrative: string }>;
+  /** Overall thematic analysis of the package's impact */
+  thematic_analysis: string;
 }
 
 // =============================================================================

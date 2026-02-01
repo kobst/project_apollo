@@ -112,7 +112,6 @@ ${JSON_OUTPUT_RULES}
     "edges": [${includeArcs ? '{"operation": "add", "edge_type": "HAS_ARC", "from": "char_{ts}_{5char}", "to": "arc_{ts}_{5char}"}' : ''}]
   },${isConstrained ? '' : `
   "supporting": {"nodes": [], "edges": []},`}
-  "impact": {"fulfills_gaps": [], "creates_gaps": [], "conflicts": []}
 }]}
 \`\`\`
 

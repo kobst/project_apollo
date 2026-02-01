@@ -169,7 +169,6 @@ function getOutputSchema(expandType: string, isConstrained: boolean): string {
     "nodes": [],
     "edges": []
   },
-  "impact": {"fulfills_gaps": [], "creates_gaps": [], "conflicts": []}
 }]}
 \`\`\`
 
@@ -191,7 +190,6 @@ Valid operation types: addThematicPillar, addHardRule, addGuideline, setConstitu
     "nodes": [{"operation": "add", "node_type": "Scene", "node_id": "scene_{ts}_{5char}", "data": {"heading": "INT. LOCATION - TIME", "scene_overview": "..."}}],
     "edges": [{"operation": "add", "edge_type": "HAS_CHARACTER", "from": "scene_{ts}_{5char}", "to": "char_xxx"}]
   },${supporting}
-  "impact": {"fulfills_gaps": [], "creates_gaps": [], "conflicts": []}
 }]}
 \`\`\``;
 }

@@ -87,6 +87,7 @@ import {
   createAgentEventsHandler,
   createCancelAgentJobHandler,
   createOverlayDiffHandler,
+  createEnrichImpactHandler,
   // Mentions handlers
   createRenameEntityHandler,
   createRebuildMentionsHandler,
@@ -229,6 +230,9 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.post('/:id/proposal-to-package', createConvertProposalHandler(ctx));
   router.post('/:id/apply-package', createApplyPackageHandler(ctx));
   // Deprecated accept-package removed; use /propose/commit
+
+  // Impact enrichment (LLM critic)
+  router.post('/:id/packages/:packageId/enrich-impact', createEnrichImpactHandler(ctx));
 
   // Package Editing endpoints
   router.post('/:id/regenerate-element', createRegenerateElementHandler(ctx));

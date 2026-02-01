@@ -33,6 +33,7 @@ import {
   loadGraphById,
   deserializeGraph,
   updateGraphById,
+  updateVersionMeta,
 } from '../storage.js';
 import {
   loadGenerationSession,
@@ -84,6 +85,9 @@ import {
   proposeExpand,
   type ProposeExpandRequest,
 } from '../ai/expandOrchestrator.js';
+import {
+  enrichPackageImpact,
+} from '../ai/criticOrchestrator.js';
 import type { MissingBeatInfo } from '@apollo/core';
 import {
   createLLMClient,
@@ -973,6 +977,14 @@ export function createApplyPackageHandler(ctx: StorageContext) {
         ctx
       );
 
+      // Attach enrichment metadata to the new version
+      if (pkg.enrichment?.thematic_analysis) {
+        await updateVersionMeta(id, newVersionId, {
+          enrichmentSummary: pkg.enrichment.thematic_analysis,
+          packageTitle: pkg.title,
+        }, ctx);
+      }
+
       // Compute stats
       const stats = {
         nodesAdded: pkg.changes.nodes.filter((n) => n.operation === 'add').length,
@@ -1119,10 +1131,18 @@ export function createAcceptPackageHandler(ctx: StorageContext) {
         ctx
       );
 
-      // 9. Mark session as accepted
+      // 9. Attach enrichment metadata to the new version
+      if (pkg.enrichment?.thematic_analysis) {
+        await updateVersionMeta(id, newVersionId, {
+          enrichmentSummary: pkg.enrichment.thematic_analysis,
+          packageTitle: pkg.title,
+        }, ctx);
+      }
+
+      // 10. Mark session as accepted
       await markSessionAccepted(id, packageId, ctx);
 
-      // 10. Compute stats
+      // 11. Compute stats
       const stats = {
         nodesAdded: pkg.changes.nodes.filter((n) => n.operation === 'add').length + ideasCreated,
         nodesModified: pkg.changes.nodes.filter((n) => n.operation === 'modify').length,
@@ -2551,6 +2571,51 @@ export function createProposeExpandHandler(ctx: StorageContext) {
           data: enrichedResult,
         });
       }
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+// =============================================================================
+// Enrich Impact Handler (LLM Critic)
+// =============================================================================
+
+interface EnrichImpactResponseData {
+  enrichment: ai.ImpactEnrichment;
+}
+
+/**
+ * POST /stories/:id/packages/:packageId/enrich-impact
+ *
+ * Enrich a package's deterministic impact with LLM narrative analysis.
+ */
+export function createEnrichImpactHandler(ctx: StorageContext) {
+  return async (
+    req: Request<{ id: string; packageId: string }>,
+    res: Response<APIResponse<EnrichImpactResponseData>>,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { id, packageId } = req.params;
+
+      if (!packageId) {
+        throw new BadRequestError('packageId is required');
+      }
+
+      if (!isLLMConfigured()) {
+        const { message, suggestion } = getMissingKeyError();
+        throw new BadRequestError(message, suggestion);
+      }
+
+      const llmClient = createLLMClient();
+
+      const result = await enrichPackageImpact(id, packageId, ctx, llmClient);
+
+      res.json({
+        success: true,
+        data: result,
+      });
     } catch (error) {
       next(error);
     }

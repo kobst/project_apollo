@@ -40,8 +40,7 @@ Each package MUST have:
 - **rationale**: Why this package makes sense for the story
 - **confidence**: Score 0.0-1.0
 - **style_tags**: Array of style/thematic tags
-- **changes**: Object containing nodes, edges, and optionally storyContext
-- **impact**: Object with fulfills_gaps, creates_gaps, conflicts arrays`;
+- **changes**: Object containing nodes, edges, and optionally storyContext`;
 
 /**
  * Compact package schema example.
@@ -83,11 +82,6 @@ export function getPackageSchemaExample(options: {
     "changes": {${storyContextSection}
       "nodes": [...],
       "edges": [...]
-    },
-    "impact": {
-      "fulfills_gaps": [],
-      "creates_gaps": [],
-      "conflicts": []
     }
   }]
 }`;

@@ -238,7 +238,11 @@ export async function proposeCharacters(
   if (validationSummary !== 'No validation warnings') {
     console.warn(`[proposeCharacters] Package validation: ${validationSummary}`);
   }
-  filteredResult.packages = validatedPackages;
+  // 11c. Compute deterministic impact
+  filteredResult.packages = validatedPackages.map(pkg => ({
+    ...pkg,
+    impact: ai.computeImpact(pkg, { graph }),
+  }));
 
   // 12. Create or update session
   let session = await loadGenerationSession(storyId, ctx);

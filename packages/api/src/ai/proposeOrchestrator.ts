@@ -167,6 +167,11 @@ class InterpretStrategy implements ProposeStrategy {
       if (validationSummary !== 'No validation warnings') {
         console.warn(`[propose/interpret] Package validation: ${validationSummary}`);
       }
+      // Compute deterministic impact
+      packages = packages.map(pkg => ({
+        ...pkg,
+        impact: ai.computeImpact(pkg, { graph }),
+      }));
     }
 
     // Create generation session to hold packages

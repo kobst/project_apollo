@@ -183,7 +183,11 @@ export async function generatePackages(
   if (mentionsValidation !== 'No validation warnings') {
     console.warn(`Package validation: ${mentionsValidation}`);
   }
-  result.packages = validatedPackages;
+  // 12c. Compute deterministic impact
+  result.packages = validatedPackages.map(pkg => ({
+    ...pkg,
+    impact: ai.computeImpact(pkg, { graph }),
+  }));
 
   // 13. Create or update session
   let session = await loadGenerationSession(storyId, ctx);

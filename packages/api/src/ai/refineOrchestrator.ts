@@ -168,7 +168,11 @@ export async function refinePackage(
   if (validationSummary !== 'No validation warnings') {
     console.warn(`Package validation: ${validationSummary}`);
   }
-  result.packages = validatedPackages;
+  // 10c. Compute deterministic impact
+  result.packages = validatedPackages.map(pkg => ({
+    ...pkg,
+    impact: ai.computeImpact(pkg, { graph }),
+  }));
 
   // 11. Set parent_package_id on all variations
   const variations = result.packages.map((pkg) => ({

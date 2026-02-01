@@ -21,6 +21,7 @@ import {
   updateGraphById,
   loadVersionedStateById,
   deserializeGraph,
+  updateVersionMeta,
 } from '../storage.js';
 import {
   savePackageToLibrary,
@@ -346,6 +347,14 @@ export function createApplySavedPackageHandler(ctx: StorageContext) {
         undefined,
         ctx
       );
+
+      // Attach enrichment metadata to the new version
+      if (pkg.enrichment?.thematic_analysis) {
+        await updateVersionMeta(id, newVersionId, {
+          enrichmentSummary: pkg.enrichment.thematic_analysis,
+          packageTitle: pkg.title,
+        }, ctx);
+      }
 
       res.json({
         success: true,

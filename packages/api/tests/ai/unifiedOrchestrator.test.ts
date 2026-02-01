@@ -7,6 +7,7 @@ vi.mock('../../src/storage.js', () => ({
 vi.mock('@apollo/core', () => ({
   ai: {
     validatePackages: (pkgs: any) => pkgs,
+    computeImpact: () => ({ fulfills_gaps: [], creates_gaps: [], conflicts: [] }),
   },
   computeCoverage: () => ({ gaps: [], summary: [] }),
 }));

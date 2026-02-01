@@ -151,6 +151,8 @@ export interface VersionData {
   createdAt: string;
   isCurrent: boolean;
   branch?: string;
+  enrichmentSummary?: string;
+  packageTitle?: string;
 }
 
 export interface LogData {

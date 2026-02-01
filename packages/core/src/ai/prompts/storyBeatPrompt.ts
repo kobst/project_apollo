@@ -120,7 +120,6 @@ ${JSON_OUTPUT_RULES}
     "edges": [{"operation": "add", "edge_type": "ALIGNS_WITH", "from": "storybeat_{ts}_{5char}", "to": "beat_Midpoint"}]
   },${isConstrained ? '' : `
   "supporting": {"nodes": [], "edges": []},`}
-  "impact": {"fulfills_gaps": [], "creates_gaps": [], "conflicts": []}
 }]}
 \`\`\`
 

@@ -118,6 +118,8 @@ export type {
   ProposeScenesResponse,
   ProposeExpandRequest,
   ProposeExpandResponse,
+  // Impact Enrichment
+  ImpactEnrichment,
 } from './types.js';
 
 // =============================================================================
@@ -276,8 +278,9 @@ export {
   buildCharacterPrompt,
   buildScenePrompt,
   buildExpandPrompt,
+  buildCriticPrompt,
 } from './prompts/index.js';
-export type { StoryBeatPromptParams, CharacterPromptParams, ScenePromptParams, ExpandPromptParams } from './prompts/index.js';
+export type { StoryBeatPromptParams, CharacterPromptParams, ScenePromptParams, ExpandPromptParams, CriticPromptParams } from './prompts/index.js';
 
 // =============================================================================
 // Text Similarity
@@ -324,3 +327,15 @@ export {
 export type {
   PackageValidationResult,
 } from './packageValidator.js';
+
+// =============================================================================
+// Impact Analysis
+// =============================================================================
+
+export {
+  computeImpact,
+} from './impactAnalyzer.js';
+export type {
+  ComputeImpactOptions,
+  ComputedImpact,
+} from './impactAnalyzer.js';

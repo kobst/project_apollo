@@ -112,7 +112,6 @@ ${JSON_OUTPUT_RULES}
     ]
   },${isConstrained ? '' : `
   "supporting": {"nodes": [], "edges": []},`}
-  "impact": {"fulfills_gaps": [], "creates_gaps": [], "conflicts": []}
 }]}
 \`\`\`
 

@@ -232,7 +232,11 @@ export async function proposeExpand(
   if (validationSummary !== 'No validation warnings') {
     console.warn(`[proposeExpand] Package validation: ${validationSummary}`);
   }
-  result.packages = validatedPackages;
+  // 7c. Compute deterministic impact
+  result.packages = validatedPackages.map(pkg => ({
+    ...pkg,
+    impact: ai.computeImpact(pkg, { graph }),
+  }));
 
   // 8. Create or update session
   let session = await loadGenerationSession(storyId, ctx);
