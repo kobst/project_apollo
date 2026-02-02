@@ -15,7 +15,7 @@
 
 import type { Patch, PatchOp, KGNode } from '../types/patch.js';
 import type { Edge } from '../types/edges.js';
-import type { Idea } from '../types/nodes.js';
+import type { Idea, IdeaKind } from '../types/nodes.js';
 import type {
   NarrativePackage,
   StoryContextChange,
@@ -230,7 +230,11 @@ export function packageToPatch(
 /**
  * Convert stashed ideas to Idea nodes.
  */
-function convertStashedIdeasToNodes(ideas: StashedIdea[], sourcePackageId: string): Idea[] {
+function convertStashedIdeasToNodes(
+  ideas: StashedIdea[],
+  sourcePackageId: string,
+  generationContext?: { task: string; targetBeat?: string; targetAct?: number; themes?: string[]; promptSnippet?: string }
+): Idea[] {
   const timestamp = new Date().toISOString();
 
   return ideas.map((idea) => {
@@ -244,7 +248,22 @@ function convertStashedIdeasToNodes(ideas: StashedIdea[], sourcePackageId: strin
       category: idea.category,
       sourcePackageId,
       createdAt: timestamp,
-    };
+      // Enhanced planning defaults
+      kind: inferKindFromContent(idea.content),
+    } as Idea;
+
+    // Conditional fields
+    if (generationContext?.targetBeat) (ideaNode as any).targetBeat = generationContext.targetBeat;
+    if (typeof generationContext?.targetAct === 'number') (ideaNode as any).targetAct = generationContext!.targetAct;
+    if (generationContext?.themes) (ideaNode as any).themes = generationContext.themes;
+    if (generationContext) {
+      const gen: { task: string; timestamp: string; promptSnippet?: string } = {
+        task: generationContext.task,
+        timestamp,
+      };
+      if (generationContext.promptSnippet) gen.promptSnippet = generationContext.promptSnippet.slice(0, 200);
+      (ideaNode as any).generationContext = gen;
+    }
 
     // Only add relatedNodeIds if defined
     if (idea.relatedNodeIds) {
@@ -253,6 +272,14 @@ function convertStashedIdeasToNodes(ideas: StashedIdea[], sourcePackageId: strin
 
     return ideaNode;
   });
+}
+
+function inferKindFromContent(content: string): IdeaKind {
+  const lower = content.toLowerCase();
+  if (/^(who|what|when|where|why|how|should|could|is|are|does)\b/.test(content)) return 'question';
+  if (/(must|should not|cannot|avoid|never|^no\s|don't)/.test(lower)) return 'constraint';
+  if (/(act\s*\d|scene|beat|should|needs to|has to|make sure)/.test(lower)) return 'direction';
+  return 'proposal';
 }
 
 /**

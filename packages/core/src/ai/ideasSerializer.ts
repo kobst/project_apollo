@@ -14,7 +14,7 @@
 
 import type { GraphState } from '../core/graph.js';
 import { getNodesByType } from '../core/graph.js';
-import type { Idea, IdeaCategory } from '../types/nodes.js';
+import type { Idea, IdeaCategory, IdeaKind, IdeaResolutionStatus } from '../types/nodes.js';
 
 // =============================================================================
 // Types
@@ -44,6 +44,22 @@ export interface IdeasFilterOptions {
   activeOnly?: boolean;
   /** Maximum number of ideas to return (default: 5) */
   maxIdeas?: number;
+
+  // --- Enhanced planning filters (optional) ---
+  /** Filter by planning kind(s) */
+  kind?: IdeaKind | IdeaKind[];
+  /** Filter by planning resolution status */
+  resolutionStatus?: IdeaResolutionStatus | IdeaResolutionStatus[];
+  /** Only include ideas targeting this beat */
+  targetBeat?: string;
+  /** Only include ideas targeting this act */
+  targetAct?: number;
+  /** Filter by overlapping themes */
+  themes?: string[];
+  /** Always include constraints at the top */
+  includeConstraints?: boolean;
+  /** Filter out stale items (0..1 freshness) */
+  minFreshnessScore?: number;
 }
 
 /**
@@ -123,48 +139,92 @@ export function filterIdeas(
     relatedNodeIds,
     activeOnly = true,
     maxIdeas = 5,
+    kind,
+    resolutionStatus,
+    targetBeat,
+    targetAct,
+    themes,
+    includeConstraints,
+    minFreshnessScore,
   } = options;
 
   // Get all ideas from graph
   let ideas = getNodesByType<Idea>(graph, 'Idea');
 
-  // Filter by status
+  // 1) Filter by active and not archived (planning resolution)
   if (activeOnly) {
-    ideas = ideas.filter((idea) => idea.status === 'active' || idea.status === undefined);
+    ideas = ideas.filter((idea) =>
+      (idea.status === 'active' || idea.status === undefined) &&
+      (idea.resolutionStatus || 'open') !== 'archived'
+    );
   }
 
-  // Filter by category
+  // 2) Filter by kind(s)
+  if (kind) {
+    const kinds = Array.isArray(kind) ? kind : [kind];
+    ideas = ideas.filter((i) => kinds.includes(i.kind || 'proposal'));
+  }
+
+  // 3) Filter by planning resolution status
+  if (resolutionStatus) {
+    const statuses = Array.isArray(resolutionStatus) ? resolutionStatus : [resolutionStatus];
+    ideas = ideas.filter((i) => statuses.includes(i.resolutionStatus || 'open'));
+  }
+
+  // 4) Auto-fulfilled proposals (basic heuristic)
+  ideas = ideas.filter((i) => !isIdeaFulfilled(i, graph));
+
+  // 5) Category
   if (category) {
     const categories = Array.isArray(category) ? category : [category];
     ideas = ideas.filter((idea) => {
-      // Include ideas without a category (they match any category filter)
-      if (!idea.category) return true;
+      if (!idea.category) return true; // uncategorized matches any
       return categories.includes(idea.category);
     });
   }
 
-  // Filter by related nodes
+  // 6) Targeting filters
+  if (targetBeat) {
+    ideas = ideas.filter((i) => !i.targetBeat || i.targetBeat === targetBeat);
+  }
+  if (targetAct) {
+    ideas = ideas.filter((i) => !i.targetAct || i.targetAct === targetAct);
+  }
+
+  // 7) Theme overlap (if provided)
+  if (themes && themes.length > 0) {
+    ideas = ideas.filter((i) => !i.themes || i.themes.some((t) => themes.includes(t)));
+  }
+
+  // 8) Related nodes
   if (relatedNodeIds && relatedNodeIds.length > 0) {
     const relatedSet = new Set(relatedNodeIds);
     ideas = ideas.filter((idea) => {
-      if (!idea.relatedNodeIds || idea.relatedNodeIds.length === 0) {
-        // Ideas without related nodes are included (they're general)
-        return true;
-      }
-      // Include if any of the idea's related nodes match
+      if (!idea.relatedNodeIds || idea.relatedNodeIds.length === 0) return true;
       return idea.relatedNodeIds.some((id) => relatedSet.has(id));
     });
   }
 
-  // Sort by creation date (newest first)
-  ideas.sort((a, b) => {
-    const dateA = new Date(a.createdAt).getTime();
-    const dateB = new Date(b.createdAt).getTime();
-    return dateB - dateA;
-  });
+  // 9) Separate constraints for guaranteed inclusion
+  let constraints: Idea[] = [];
+  if (includeConstraints) {
+    constraints = ideas.filter((i) => (i.kind || 'proposal') === 'constraint');
+    ideas = ideas.filter((i) => (i.kind || 'proposal') !== 'constraint');
+  }
 
-  // Limit results
-  return ideas.slice(0, maxIdeas);
+  // 10) Freshness score and filtering
+  const ideasWithFreshness = ideas.map((i) => ({ i, s: computeFreshnessScore(i) }));
+  let filtered = ideasWithFreshness;
+  if (minFreshnessScore !== undefined) {
+    filtered = ideasWithFreshness.filter(({ s }) => s >= minFreshnessScore);
+  }
+
+  // 11) Sort by freshness desc
+  filtered.sort((a, b) => b.s - a.s);
+
+  // 12) Limit and reassemble
+  const limited = filtered.slice(0, maxIdeas).map(({ i }) => i);
+  return [...constraints, ...limited];
 }
 
 // =============================================================================
@@ -184,28 +244,85 @@ export function filterIdeas(
  */
 export function serializeIdeas(ideas: Idea[]): IdeasSerializationResult {
   if (ideas.length === 0) {
-    return {
-      serialized: '',
-      includedCount: 0,
-      includedIds: [],
-    };
+    return { serialized: '', includedCount: 0, includedIds: [] };
   }
 
+  // Group by kind (default to proposal)
+  const byKind = ideas.reduce((acc, i) => {
+    const k = (i.kind || 'proposal') as IdeaKind;
+    if (!acc[k]) acc[k] = [] as Idea[];
+    acc[k].push(i);
+    return acc;
+  }, {} as Record<IdeaKind, Idea[]>);
+
   const lines: string[] = [];
-  lines.push('## Relevant Ideas');
-  lines.push('');
-  lines.push('Consider incorporating or building upon these ideas when relevant:');
+  lines.push('## Planning Context');
   lines.push('');
 
-  for (const idea of ideas) {
-    const categoryTag = idea.category ? ` [${idea.category}]` : '';
-    const sourceTag = idea.source === 'ai' ? ' (AI suggested)' : '';
+  // Constraints first
+  if (byKind.constraint?.length) {
+    lines.push('### Constraints (must follow)');
+    for (const i of byKind.constraint) {
+      lines.push(`- ${i.title}`);
+      if (i.description) lines.push(`  ${truncateDescription(i.description, 100)}`);
+    }
+    lines.push('');
+  }
 
-    lines.push(`- **${idea.title}**${categoryTag}${sourceTag}`);
-    lines.push(`  ${truncateDescription(idea.description, 150)}`);
+  // Resolved questions
+  const resolvedQs = (byKind.question || []).filter((q) => (q.resolutionStatus || 'open') === 'resolved');
+  if (resolvedQs.length) {
+    lines.push('### Established Context');
+    for (const i of resolvedQs) {
+      lines.push(`- **${i.title}**`);
+      if (i.resolution) lines.push(`  Resolution: ${truncateDescription(i.resolution, 150)}`);
+    }
+    lines.push('');
+  }
 
-    if (idea.relatedNodeIds && idea.relatedNodeIds.length > 0) {
-      lines.push(`  Related: ${idea.relatedNodeIds.slice(0, 3).join(', ')}${idea.relatedNodeIds.length > 3 ? '...' : ''}`);
+  // Open questions
+  const openQs = (byKind.question || []).filter((q) => (q.resolutionStatus || 'open') === 'open');
+  if (openQs.length) {
+    lines.push('### Open Questions');
+    for (const i of openQs) {
+      lines.push(`- ${i.title}`);
+      if (i.description) lines.push(`  ${truncateDescription(i.description, 100)}`);
+    }
+    lines.push('');
+  }
+
+  // Directions
+  if (byKind.direction?.length) {
+    lines.push('### Story Direction');
+    for (const i of byKind.direction) {
+      lines.push(`- ${i.title}`);
+      if (i.description) lines.push(`  ${truncateDescription(i.description, 150)}`);
+    }
+    lines.push('');
+  }
+
+  // Notes
+  if (byKind.note?.length) {
+    lines.push('### Creative Notes');
+    for (const i of byKind.note) {
+      lines.push(`- ${i.title}: ${truncateDescription(i.description, 100)}`);
+    }
+    lines.push('');
+  }
+
+  // Proposals
+  if (byKind.proposal?.length) {
+    lines.push('### Story Ideas');
+    for (const idea of byKind.proposal) {
+      const categoryTag = idea.category ? ` [${idea.category}]` : '';
+      const sourceTag = idea.source === 'ai' ? ' (AI suggested)' : '';
+      lines.push(`- **${idea.title}**${categoryTag}${sourceTag}`);
+      lines.push(`  ${truncateDescription(idea.description, 150)}`);
+      if (idea.relatedNodeIds && idea.relatedNodeIds.length > 0) {
+        lines.push(
+          `  Related: ${idea.relatedNodeIds.slice(0, 3).join(', ')}${idea.relatedNodeIds.length > 3 ? '...' : ''}`
+        );
+      }
     }
   }
 
@@ -228,24 +345,50 @@ export function serializeIdeas(ideas: Idea[]): IdeasSerializationResult {
  * @param maxIdeas - Maximum ideas to include (default: 5)
  * @returns Serialization result ready for prompt inclusion
  */
+// Overloads: support legacy (entryPointNodeId?: string) and enhanced context
 export function getIdeasForTask(
   graph: GraphState,
   taskType: IdeaTaskType,
   entryPointNodeId?: string,
+  maxIdeas?: number
+): IdeasSerializationResult;
+export function getIdeasForTask(
+  graph: GraphState,
+  taskType: IdeaTaskType,
+  context?: { entryPointNodeId?: string; targetBeat?: string; targetAct?: number; themes?: string[] },
+  maxIdeas?: number
+): IdeasSerializationResult;
+export function getIdeasForTask(
+  graph: GraphState,
+  taskType: IdeaTaskType,
+  third?: string | { entryPointNodeId?: string; targetBeat?: string; targetAct?: number; themes?: string[] },
   maxIdeas: number = 5
 ): IdeasSerializationResult {
   const categories = getCategoryForTaskType(taskType);
+
+  const context = typeof third === 'string' || third === undefined
+    ? { entryPointNodeId: third }
+    : (third || {});
+
+  // Kinds always include proposals; add questions/directions/notes for generative tasks
+  const relevantKinds: IdeaKind[] = ['proposal'];
+  if (['storyBeat', 'scene', 'generate', 'expand'].includes(taskType)) {
+    relevantKinds.push('question', 'direction', 'note');
+  }
 
   const filterOptions: IdeasFilterOptions = {
     category: categories,
     activeOnly: true,
     maxIdeas,
+    includeConstraints: true,
+    minFreshnessScore: 0.2,
+    kind: relevantKinds,
   };
 
-  // If we have an entry point node, prioritize ideas related to it
-  if (entryPointNodeId) {
-    filterOptions.relatedNodeIds = [entryPointNodeId];
-  }
+  if ('entryPointNodeId' in context && context.entryPointNodeId) filterOptions.relatedNodeIds = [context.entryPointNodeId];
+  if ('targetBeat' in context && context.targetBeat) filterOptions.targetBeat = context.targetBeat;
+  if ('targetAct' in context && context.targetAct) filterOptions.targetAct = context.targetAct;
+  if ('themes' in context && context.themes) filterOptions.themes = context.themes;
 
   const filteredIdeas = filterIdeas(graph, filterOptions);
   return serializeIdeas(filteredIdeas);
@@ -267,4 +410,58 @@ function truncateDescription(text: string, maxLen: number): string {
     return truncated.slice(0, lastSpace) + '...';
   }
   return truncated + '...';
+}
+
+// === Helper Functions for enhanced filtering ===
+function isIdeaFulfilled(idea: Idea, graph: GraphState): boolean {
+  if (!idea.suggestedType || !idea.title) return false;
+  const title = idea.title.toLowerCase();
+
+  switch (idea.suggestedType) {
+    case 'Character': {
+      const chars = getNodesByType<any>(graph, 'Character');
+      return chars.some((c) =>
+        (c.name || '').toLowerCase().includes(title) || title.includes((c.name || '').toLowerCase())
+      );
+    }
+    case 'Location': {
+      const locs = getNodesByType<any>(graph, 'Location');
+      return locs.some((l) => (l.name || '').toLowerCase().includes(title));
+    }
+    case 'StoryBeat': {
+      const beats = getNodesByType<any>(graph, 'StoryBeat');
+      return beats.some((b) =>
+        (b.title || '').toLowerCase().includes(title) || title.includes((b.title || '').toLowerCase())
+      );
+    }
+    default:
+      return false;
+  }
+}
+
+function computeFreshnessScore(idea: Idea): number {
+  const now = Date.now();
+  const created = new Date(idea.createdAt).getTime();
+  const ageDays = (now - created) / (1000 * 60 * 60 * 24);
+
+  // Base: newer is fresher (0 after 90 days)
+  let score = Math.max(0, 1 - ageDays / 90);
+
+  if (idea.lastReviewedAt) {
+    const reviewAge = (now - new Date(idea.lastReviewedAt).getTime()) / (1000 * 60 * 60 * 24);
+    if (reviewAge < 7) score += 0.3;
+    else if (reviewAge < 30) score += 0.1;
+  }
+
+  if (idea.lastUsedInPrompt) {
+    const usageAge = (now - new Date(idea.lastUsedInPrompt).getTime()) / (1000 * 60 * 60 * 24);
+    if (usageAge < 7) score += 0.2;
+  }
+
+  if (!idea.usageCount && ageDays > 30) score *= 0.5;
+  if ((idea.kind || 'proposal') === 'constraint') score += 0.5;
+  if ((idea.kind || 'proposal') === 'question' && (idea.resolutionStatus || 'open') === 'resolved') score += 0.3;
+  if (idea.source === 'ai') score += 0.1;
+
+  return Math.min(1, score);
 }

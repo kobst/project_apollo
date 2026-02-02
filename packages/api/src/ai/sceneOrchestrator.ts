@@ -241,6 +241,36 @@ export async function proposeScenes(
     impact: ai.computeImpact(pkg, { graph }),
   }));
 
+  // 10d. Simple constraint linting for scenes (no supernatural)
+  try {
+    const allIdeas = getNodesByType<any>(graph, 'Idea');
+    const constraintIdeas = allIdeas.filter((i: any) => (i.kind || 'proposal') === 'constraint');
+    const hasNoSupernatural = constraintIdeas.some((c: any) =>
+      /no\s+supernatural|stay[s]? grounded|no magic/i.test(`${c.title}\n${c.description}`)
+    );
+    if (hasNoSupernatural) {
+      const banned = ['magic', 'wizard', 'ghost', 'spirit', 'vampire', 'witch', 'supernatural'];
+      for (const pkg of filteredResult.packages) {
+        const texts: string[] = [];
+        for (const nc of pkg.changes.nodes) {
+          if (nc.node_type === 'Scene' && nc.data) {
+            const t = `${nc.data.heading ?? ''}\n${nc.data.overview ?? ''}`;
+            texts.push(String(t).toLowerCase());
+          }
+        }
+        const violations = banned.filter((w) => texts.some((t) => t.includes(w)));
+        if (violations.length > 0) {
+          (pkg as any).validation = {
+            ...((pkg as any).validation || {}),
+            constraintWarnings: [`Potentially violates 'No supernatural' constraint: ${violations.join(', ')}`],
+          };
+        }
+      }
+    }
+  } catch {
+    // best-effort lint; ignore errors
+  }
+
   // 11. Create or update session
   let session = await loadGenerationSession(storyId, ctx);
   const versionInfo = await getCurrentVersionInfo(storyId, ctx);
@@ -269,7 +299,11 @@ export async function proposeScenes(
     versionInfo ?? undefined
   );
 
-  session = await addPackagesToSession(storyId, filteredResult.packages, ctx);
+  // Attach included idea IDs context per package for provenance
+  const packageContext = Object.fromEntries(
+    filteredResult.packages.map((p) => [p.id, { includedIdeaIds: ideasResult.includedIds }])
+  );
+  session = await addPackagesToSession(storyId, filteredResult.packages, ctx, packageContext);
 
   return {
     sessionId: session.id,

@@ -350,6 +350,22 @@ export const api = {
   createIdeaFromPackage: (storyId: string, data: import('./types').IdeaFromPackageRequest) =>
     POST<CreateIdeaData>(`/stories/${storyId}/ideas/from-package`, data),
 
+  // Idea Refinement (session-based)
+  startIdeaRefineSession: (storyId: string, ideaId: string, guidance: string) =>
+    POST<{ sessionId: string; variants: import('./types').IdeaRefinementVariant[] }>(
+      `/stories/${storyId}/ideas/${ideaId}/refine-session`,
+      { guidance }
+    ),
+  getIdeaRefineSession: (storyId: string, ideaId: string) =>
+    GET<import('./types').IdeaRefinementSessionData | null>(`/stories/${storyId}/ideas/${ideaId}/refine-session`),
+  commitIdeaRefineSession: (storyId: string, ideaId: string, variantIndex: number, mode: 'update' | 'create') =>
+    POST<{ newVersionId: string; ideaId: string }>(
+      `/stories/${storyId}/ideas/${ideaId}/refine-session/commit`,
+      { variantIndex, mode }
+    ),
+  discardIdeaRefineSession: (storyId: string, ideaId: string) =>
+    DELETE<{ discarded: boolean }>(`/stories/${storyId}/ideas/${ideaId}/refine-session`),
+
   // ==========================================================================
   // Session Management
   // ==========================================================================

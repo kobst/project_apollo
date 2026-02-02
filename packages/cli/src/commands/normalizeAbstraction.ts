@@ -10,7 +10,6 @@ import pc from 'picocolors';
 import {
   applyPatch,
   validatePatch,
-  generateEdgeId,
   type Patch,
   type StoryBeat,
   type Scene,
@@ -170,4 +169,3 @@ export function normalizeAbstractionCommand(program: Command): void {
       success(summary);
     });
 }
-

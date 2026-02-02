@@ -770,6 +770,17 @@ export interface CreateIdeaRequest {
   description: string;
   source?: IdeaSource;
   suggestedType?: IdeaSuggestedType;
+  // Planning fields (optional)
+  kind?: 'proposal' | 'question' | 'direction' | 'constraint' | 'note';
+  resolutionStatus?: 'open' | 'discussed' | 'resolved' | 'archived';
+  resolution?: string;
+  parent_idea_id?: string;
+  refinement_guidance?: string;
+  targetBeat?: string;
+  targetAct?: number;
+  targetScene?: string;
+  themes?: string[];
+  moods?: string[];
 }
 
 export interface CreateIdeaData {
@@ -818,6 +829,37 @@ export interface IdeaFromPackageRequest {
   title?: string;
   description?: string;
   category?: 'character'|'plot'|'scene'|'worldbuilding'|'general';
+}
+
+// =============================================================================
+// Idea Refinement Session Types
+// =============================================================================
+
+export interface IdeaRefinementVariant {
+  id: string;
+  kind?: 'proposal' | 'question' | 'direction' | 'constraint' | 'note';
+  title: string;
+  description: string;
+  resolution?: string;
+  confidence?: number;
+  suggestedArtifacts?: Array<{
+    type: 'StoryBeat' | 'Scene';
+    title: string;
+    summary?: string;
+    rationale?: string;
+  }>;
+}
+
+export interface IdeaRefinementSessionData {
+  id: string;
+  storyId: string;
+  ideaId: string;
+  guidance: string;
+  createdAt: string;
+  updatedAt: string;
+  status: 'active' | 'committed' | 'abandoned';
+  variants: IdeaRefinementVariant[];
+  committedVariantIndex?: number;
 }
 
 // =============================================================================

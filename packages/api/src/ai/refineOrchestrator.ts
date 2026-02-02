@@ -181,8 +181,11 @@ export async function refinePackage(
     refinement_prompt: guidance.slice(0, 200), // Store truncated guidance
   }));
 
-  // 10. Add to session
-  await addPackagesToSession(storyId, variations, ctx);
+  // 10. Add to session with included idea IDs context for provenance
+  const packageContext = Object.fromEntries(
+    variations.map((p) => [p.id, { includedIdeaIds: ideasResult.includedIds }])
+  );
+  await addPackagesToSession(storyId, variations, ctx, packageContext);
 
   return { variations };
 }

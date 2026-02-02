@@ -267,7 +267,10 @@ export async function proposeExpand(
     versionInfo ?? undefined
   );
 
-  session = await addPackagesToSession(storyId, result.packages, ctx);
+  const packageContext = Object.fromEntries(
+    result.packages.map((p) => [p.id, { includedIdeaIds: ideasResult.includedIds }])
+  );
+  session = await addPackagesToSession(storyId, result.packages, ctx, packageContext);
 
   // Build expanded target info for response
   const expandedTarget: ProposeExpandResponse['expandedTarget'] = {

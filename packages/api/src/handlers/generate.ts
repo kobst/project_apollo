@@ -1147,6 +1147,62 @@ export function createAcceptPackageHandler(ctx: StorageContext) {
       // 10. Mark session as accepted
       await markSessionAccepted(id, packageId, ctx);
 
+      // 10b. Record idea provenance and usage if session captured context
+      try {
+        const sessionCtx = await loadGenerationSession(id, ctx);
+        const includedIdeaIds: string[] | undefined = sessionCtx?.packageContext?.[packageId]?.includedIdeaIds;
+        if (includedIdeaIds && includedIdeaIds.length > 0) {
+          const now = new Date().toISOString();
+          const provOps: PatchOp[] = [];
+          const artifactAdds = pkg.changes.nodes.filter((n) => n.operation === 'add');
+
+          for (const ideaId of includedIdeaIds) {
+            const existing = getNode(graph, ideaId) as any;
+            if (!existing || existing.type !== 'Idea') continue;
+            const informed = Array.isArray(existing.informedArtifacts) ? [...existing.informedArtifacts] : [];
+            for (const nc of artifactAdds) {
+              informed.push({
+                artifactId: nc.node_id,
+                artifactType: nc.node_type,
+                packageId: pkg.id,
+                timestamp: now,
+              });
+            }
+            const usage = typeof existing.usageCount === 'number' ? existing.usageCount + 1 : 1;
+            provOps.push({
+              op: 'UPDATE_NODE',
+              id: ideaId,
+              set: {
+                informedArtifacts: informed,
+                lastUsedInPrompt: now,
+                usageCount: usage,
+              },
+            });
+          }
+
+          if (provOps.length > 0) {
+            const provPatch: Patch = {
+              type: 'Patch',
+              id: `patch_idea_prov_${Date.now()}`,
+              base_story_version_id: newVersionId,
+              created_at: now,
+              ops: provOps,
+              metadata: { source: 'acceptPackage', action: 'ideaProvenance' },
+            };
+            graph = applyPatch(graph, provPatch);
+            await updateGraphById(
+              id,
+              graph,
+              `Record idea provenance for package ${pkg.id}`,
+              undefined,
+              ctx
+            );
+          }
+        }
+      } catch (e) {
+        console.warn('[accept-package] Failed to record idea provenance:', e);
+      }
+
       // 11. Compute stats
       const stats = {
         nodesAdded: pkg.changes.nodes.filter((n) => n.operation === 'add').length + ideasCreated,

@@ -282,6 +282,9 @@ export {
 } from './prompts/index.js';
 export type { StoryBeatPromptParams, CharacterPromptParams, ScenePromptParams, ExpandPromptParams, CriticPromptParams } from './prompts/index.js';
 
+// Idea refinement prompt
+export { buildIdeaRefinementPrompt } from './prompts/ideaRefinementPrompt.js';
+
 // =============================================================================
 // Text Similarity
 // =============================================================================

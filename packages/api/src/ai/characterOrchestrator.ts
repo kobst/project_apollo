@@ -272,7 +272,11 @@ export async function proposeCharacters(
     versionInfo ?? undefined
   );
 
-  session = await addPackagesToSession(storyId, filteredResult.packages, ctx);
+  // Attach included idea IDs context per package for provenance
+  const packageContext = Object.fromEntries(
+    filteredResult.packages.map((p) => [p.id, { includedIdeaIds: ideasResult.includedIds }])
+  );
+  session = await addPackagesToSession(storyId, filteredResult.packages, ctx, packageContext);
 
   return {
     sessionId: session.id,

@@ -71,6 +71,12 @@ export {
   updateIdeaHandler,
   deleteIdeaHandler,
   createIdeaFromPackageHandler,
+  createRefineIdeaHandler,
+  createGetIdeaRefinementHistoryHandler,
+  createStartIdeaRefineSessionHandler,
+  createGetIdeaRefineSessionHandler,
+  createCommitIdeaRefineSessionHandler,
+  createDiscardIdeaRefineSessionHandler,
 } from './ideas.js';
 export { createOverlayDiffHandler } from './overlay.js';
 export {

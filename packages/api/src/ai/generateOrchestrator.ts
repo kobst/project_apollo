@@ -222,8 +222,11 @@ export async function generatePackages(
     );
   }
 
-  // Add packages to session
-  session = await addPackagesToSession(storyId, result.packages, ctx);
+  // Add packages to session with included idea IDs for provenance
+  const packageContext = Object.fromEntries(
+    result.packages.map((p) => [p.id, { includedIdeaIds: ideasResult.includedIds }])
+  );
+  session = await addPackagesToSession(storyId, result.packages, ctx, packageContext);
 
   return {
     sessionId: session.id,

@@ -40,6 +40,16 @@ export interface StashIdeaItem {
   status: IdeaStatus;
   suggestedType?: IdeaSuggestedType | undefined;
   createdAt: string;
+  // Planning metadata (optional)
+  planningKind?: 'proposal' | 'question' | 'direction' | 'constraint' | 'note';
+  resolutionStatus?: 'open' | 'discussed' | 'resolved' | 'archived';
+  resolution?: string;
+  targetBeat?: string;
+  targetAct?: number;
+  themes?: string[];
+  lastUsedInPrompt?: string;
+  usageCount?: number;
+  informedCount?: number;
 }
 
 export interface StashStoryBeatItem {
@@ -92,17 +102,29 @@ function getStatus(idea: IdeaData): IdeaStatus {
 }
 
 function transformIdea(idea: IdeaData): StashIdeaItem {
-  return {
+  const d = (idea.data ?? {}) as Record<string, unknown>;
+  const informedArtifacts = Array.isArray(d.informedArtifacts) ? (d.informedArtifacts as unknown[]) : [];
+  const base: StashIdeaItem = {
     kind: 'idea',
     id: idea.id,
-    title: (idea.data?.title as string) ?? idea.label ?? 'Untitled Idea',
-    description: (idea.data?.description as string) ?? '',
+    title: (d.title as string) ?? idea.label ?? 'Untitled Idea',
+    description: (d.description as string) ?? '',
     source: idea.source ?? 'user',
     category: getCategory(idea.suggestedType),
     status: getStatus(idea),
     suggestedType: idea.suggestedType,
-    createdAt: (idea.data?.createdAt as string) ?? new Date().toISOString(),
+    createdAt: (d.createdAt as string) ?? new Date().toISOString(),
+    planningKind: (d.kind as StashIdeaItem['planningKind']) ?? 'proposal',
+    resolutionStatus: (d.resolutionStatus as StashIdeaItem['resolutionStatus']) ?? 'open',
+    informedCount: informedArtifacts.length,
   };
+  if (typeof d.resolution === 'string') (base as any).resolution = d.resolution;
+  if (typeof d.targetBeat === 'string') (base as any).targetBeat = d.targetBeat;
+  if (typeof d.targetAct === 'number') (base as any).targetAct = d.targetAct;
+  if (Array.isArray(d.themes)) (base as any).themes = d.themes as string[];
+  if (typeof d.lastUsedInPrompt === 'string') (base as any).lastUsedInPrompt = d.lastUsedInPrompt;
+  if (typeof d.usageCount === 'number') (base as any).usageCount = d.usageCount as number;
+  return base;
 }
 
 function transformStoryBeat(sb: OutlineStoryBeat): StashStoryBeatItem {
@@ -138,7 +160,20 @@ interface StashContextValue {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
-  createIdea: (title: string, description: string, suggestedType?: IdeaSuggestedType, source?: 'user' | 'ai') => Promise<void>;
+  createIdea: (
+    title: string,
+    description: string,
+    suggestedType?: IdeaSuggestedType,
+    source?: 'user' | 'ai',
+    planningExtras?: Partial<{
+      kind: 'proposal' | 'question' | 'direction' | 'constraint' | 'note';
+      resolutionStatus: 'open' | 'discussed' | 'resolved' | 'archived';
+      resolution: string;
+      targetBeat: string;
+      targetAct: number;
+      themes: string[];
+    }>
+  ) => Promise<void>;
   updateIdea: (ideaId: string, changes: { title?: string; description?: string; status?: IdeaStatus }) => Promise<void>;
   deleteIdea: (ideaId: string) => Promise<void>;
   /** Create a real StoryBeat node (unassigned) and refresh the stash */
@@ -194,6 +229,14 @@ export function StashProvider({ children }: { children: ReactNode }) {
     description: string,
     suggestedType?: IdeaSuggestedType,
     source: 'user' | 'ai' = 'user',
+    planningExtras?: Partial<{
+      kind: 'proposal' | 'question' | 'direction' | 'constraint' | 'note';
+      resolutionStatus: 'open' | 'discussed' | 'resolved' | 'archived';
+      resolution: string;
+      targetBeat: string;
+      targetAct: number;
+      themes: string[];
+    }>,
   ) => {
     if (!currentStoryId) return;
     try {
@@ -204,6 +247,12 @@ export function StashProvider({ children }: { children: ReactNode }) {
         description,
         source,
         ...(suggestedType ? { suggestedType } : {}),
+        ...(planningExtras?.kind ? { kind: planningExtras.kind } : {}),
+        ...(planningExtras?.resolutionStatus ? { resolutionStatus: planningExtras.resolutionStatus } : {}),
+        ...(planningExtras?.resolution ? { resolution: planningExtras.resolution } : {}),
+        ...(planningExtras?.targetBeat ? { targetBeat: planningExtras.targetBeat } : {}),
+        ...(typeof planningExtras?.targetAct === 'number' ? { targetAct: planningExtras.targetAct } : {}),
+        ...(planningExtras?.themes ? { themes: planningExtras.themes } : {}),
       };
       const data = await api.createIdea(currentStoryId, request);
       setIdeaItems((prev) => [...prev, transformIdea(data.idea)]);

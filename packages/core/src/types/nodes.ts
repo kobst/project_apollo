@@ -304,6 +304,20 @@ export type IdeaSuggestedType = 'StoryBeat' | 'Scene' | 'Character' | 'Location'
 export type IdeaStatus = 'active' | 'promoted' | 'dismissed';
 export type IdeaCategory = 'character' | 'plot' | 'scene' | 'worldbuilding' | 'general';
 
+// Enhanced Ideas - Planning Layer additions
+export type IdeaKind =
+  | 'proposal'    // Default / legacy behavior
+  | 'question'
+  | 'direction'
+  | 'constraint'
+  | 'note';
+
+export type IdeaResolutionStatus =
+  | 'open'
+  | 'discussed'
+  | 'resolved'
+  | 'archived';
+
 export interface Idea extends BaseNode {
   type: 'Idea';
   /** Short label, e.g., "Max's betrayal reveal" */
@@ -324,6 +338,41 @@ export interface Idea extends BaseNode {
   relatedNodeIds?: string[];
   /** ISO timestamp of creation */
   createdAt: string;
+
+  // === New optional planning fields (backward compatible) ===
+  /** Planning mode for the idea */
+  kind?: IdeaKind; // default interpret as 'proposal' if undefined
+  /** Lifecycle status for questions/directions */
+  resolutionStatus?: IdeaResolutionStatus; // default interpret as 'open' if undefined
+  /** Resolution text (answer/decision) */
+  resolution?: string;
+  /** Refinement lineage */
+  parent_idea_id?: string;
+  refinement_guidance?: string;
+  /** Targeting for deterministic filtering */
+  targetBeat?: string;
+  targetAct?: 1 | 2 | 3 | 4 | 5;
+  targetScene?: string;
+  /** Thematic tags */
+  themes?: string[];
+  moods?: string[];
+  /** Generation-time tagging for traceability */
+  generationContext?: {
+    task: string;
+    timestamp: string;
+    promptSnippet?: string;
+  };
+  /** Provenance: artifacts this idea informed */
+  informedArtifacts?: Array<{
+    artifactId: string;
+    artifactType: 'StoryBeat' | 'Scene' | 'Character';
+    packageId: string;
+    timestamp: string;
+  }>;
+  /** Usage metrics */
+  lastReviewedAt?: string;
+  lastUsedInPrompt?: string;
+  usageCount?: number;
 }
 
 // =============================================================================

@@ -59,6 +59,12 @@ import {
   updateIdeaHandler,
   deleteIdeaHandler,
   createIdeaFromPackageHandler,
+  createRefineIdeaHandler,
+  createGetIdeaRefinementHistoryHandler,
+  createStartIdeaRefineSessionHandler,
+  createGetIdeaRefineSessionHandler,
+  createCommitIdeaRefineSessionHandler,
+  createDiscardIdeaRefineSessionHandler,
   createGetSessionHandler,
   createDeleteSessionHandler,
   createConvertProposalHandler,
@@ -206,6 +212,13 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.post('/:id/ideas', createIdeaHandler(ctx));
   router.get('/:id/ideas', listIdeasHandler(ctx));
   router.get('/:id/ideas/:ideaId', getIdeaHandler(ctx));
+  // Idea refinement sessions
+  router.post('/:id/ideas/:ideaId/refine-session', createStartIdeaRefineSessionHandler(ctx));
+  router.get('/:id/ideas/:ideaId/refine-session', createGetIdeaRefineSessionHandler(ctx));
+  router.post('/:id/ideas/:ideaId/refine-session/commit', createCommitIdeaRefineSessionHandler(ctx));
+  router.delete('/:id/ideas/:ideaId/refine-session', createDiscardIdeaRefineSessionHandler(ctx));
+  router.post('/:id/ideas/:ideaId/refine', createRefineIdeaHandler(ctx));
+  router.get('/:id/ideas/:ideaId/refinement-history', createGetIdeaRefinementHistoryHandler(ctx));
   router.patch('/:id/ideas/:ideaId', updateIdeaHandler(ctx));
   router.delete('/:id/ideas/:ideaId', deleteIdeaHandler(ctx));
   router.post('/:id/ideas/from-package', createIdeaFromPackageHandler(ctx));

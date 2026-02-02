@@ -211,6 +211,9 @@ export interface GenerationSession {
   // Package tree
   packages: ai.NarrativePackage[];
 
+  // Context per package (e.g., included idea IDs used in prompting)
+  packageContext?: Record<string, { includedIdeaIds?: string[] }>;
+
   // Navigation state
   currentPackageId?: string;
 
@@ -220,6 +223,81 @@ export interface GenerationSession {
 
   // Archive tracking - set when session is auto-archived by new generation
   archivedAt?: string;
+}
+
+// =============================================================================
+// Idea Refinement Sessions
+// =============================================================================
+
+export interface IdeaRefinementVariant {
+  id: string;
+  kind?: 'proposal' | 'question' | 'direction' | 'constraint' | 'note';
+  title: string;
+  description: string;
+  resolution?: string;
+  confidence?: number;
+  suggestedArtifacts?: Array<{
+    type: 'StoryBeat' | 'Scene';
+    title: string;
+    summary?: string;
+    rationale?: string;
+  }>;
+}
+
+export interface IdeaRefinementSession {
+  id: string;
+  storyId: string;
+  ideaId: string;
+  guidance: string;
+  createdAt: string;
+  updatedAt: string;
+  status: 'active' | 'committed' | 'abandoned';
+  variants: IdeaRefinementVariant[];
+  committedVariantIndex?: number;
+}
+
+const IDEA_REFINEMENT_DIR = 'idea-refine';
+
+function getIdeaRefineDir(storyId: string, ctx: StorageContext): string {
+  return join(ctx.dataDir, 'stories', storyId, IDEA_REFINEMENT_DIR);
+}
+
+function getIdeaRefineSessionPath(storyId: string, ideaId: string, ctx: StorageContext): string {
+  return join(getIdeaRefineDir(storyId, ctx), `${ideaId}.json`);
+}
+
+export async function saveIdeaRefinementSession(
+  storyId: string,
+  session: IdeaRefinementSession,
+  ctx: StorageContext
+): Promise<void> {
+  await mkdir(getIdeaRefineDir(storyId, ctx), { recursive: true });
+  await writeFile(getIdeaRefineSessionPath(storyId, session.ideaId, ctx), JSON.stringify(session, null, 2), 'utf-8');
+}
+
+export async function loadIdeaRefinementSession(
+  storyId: string,
+  ideaId: string,
+  ctx: StorageContext
+): Promise<IdeaRefinementSession | null> {
+  try {
+    const content = await readFile(getIdeaRefineSessionPath(storyId, ideaId, ctx), 'utf-8');
+    return JSON.parse(content) as IdeaRefinementSession;
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteIdeaRefinementSession(
+  storyId: string,
+  ideaId: string,
+  ctx: StorageContext
+): Promise<void> {
+  try {
+    await unlink(getIdeaRefineSessionPath(storyId, ideaId, ctx));
+  } catch {
+    // ignore
+  }
 }
 
 // =============================================================================
@@ -253,6 +331,7 @@ export async function createGenerationSession(
     entryPoint,
     initialParams: params,
     packages: [],
+    packageContext: {},
     status: 'active',
   };
 
@@ -339,7 +418,8 @@ export async function saveGenerationSession(
 export async function addPackagesToSession(
   storyId: string,
   packages: ai.NarrativePackage[],
-  ctx: StorageContext
+  ctx: StorageContext,
+  contextByPackageId?: Record<string, { includedIdeaIds?: string[] }>
 ): Promise<GenerationSession> {
   const session = await loadGenerationSession(storyId, ctx);
   if (!session) {
@@ -348,6 +428,17 @@ export async function addPackagesToSession(
 
   session.packages.push(...packages);
   session.updatedAt = new Date().toISOString();
+
+  // Merge package context (if provided)
+  if (contextByPackageId) {
+    session.packageContext = session.packageContext ?? {};
+    for (const [pkgId, ctxObj] of Object.entries(contextByPackageId)) {
+      session.packageContext[pkgId] = {
+        ...(session.packageContext[pkgId] || {}),
+        ...ctxObj,
+      };
+    }
+  }
 
   // Set current to first package if not set
   if (!session.currentPackageId && packages.length > 0 && packages[0]) {
