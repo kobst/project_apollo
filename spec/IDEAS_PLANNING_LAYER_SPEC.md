@@ -144,12 +144,9 @@ export interface Idea extends BaseNode {
   /** Answer to question or final decision */
   resolution?: string;
   
-  /** Discussion thread (optional) */
-  discussion?: Array<{
-    from: 'user' | 'agent';
-    text: string;
-    timestamp: string;
-  }>;
+  /** Refinement lineage (tracks iteration) */
+  parent_idea_id?: string;           // If refined from another idea
+  refinement_guidance?: string;      // User guidance that created this
   
   /** Targeted context (generation filtering) */
   targetBeat?: string;           // "beat_Catalyst"
@@ -647,51 +644,271 @@ POST /stories/:id/ideas
 
 ---
 
-## 7. Discussion Feature (Optional)
+## 7. Idea Refinement (Conversational Iteration)
 
-### 7.1 Discussion Flow
+### 7.1 The Refine Pattern for Ideas
 
-For `kind: 'question'` or `kind: 'direction'` ideas, users can discuss with AI:
+Instead of a separate discussion thread, we **reuse the existing refine pattern** already built for StoryBeats and Scenes. This provides structured iteration without building new infrastructure.
+
+**Core concept:** User provides guidance → System generates 2-3 refined variants → User picks one or refines further
+
+### 7.2 Refinement Flow
 
 ```typescript
-POST /stories/:id/ideas/:ideaId/discuss
+POST /stories/:id/ideas/:ideaId/refine
 {
-  message: "Why would Flores betray Morrison?"
+  guidance: "Consider Morrison's military background and Flores' loyalty",
+  generateArtifacts?: boolean  // Also suggest concrete StoryBeats/Scenes?
 }
 
 Response:
 {
-  reply: "Flores might betray Morrison if he discovers Morrison is...",
-  suggestedResolution: "Flores discovers Morrison plans to eliminate him",
-  suggestedArtifacts: [
+  sessionId: "session_xyz",
+  variants: [
     {
-      type: "StoryBeat",
-      title: "Flores discovers betrayal",
-      summary: "..."
+      id: "idea_refined_1",
+      parent_idea_id: "idea_original",
+      kind: "question",
+      title: "Why would Flores follow Morrison's orders?",
+      description: "Given Morrison's military background as Flores' former CO...",
+      resolution: "Loyalty from military service + guilt over past mission",
+      resolutionStatus: "resolved",
+      confidence: 0.85
+    },
+    {
+      id: "idea_refined_2",
+      kind: "direction",
+      title: "Establish Morrison-Flores military connection early",
+      description: "Show flashback or reference in Act 1...",
+      suggestedArtifacts: [
+        {
+          type: "StoryBeat",
+          title: "Flores follows orders without question",
+          summary: "Scene showing Flores' automatic deference to Morrison",
+          rationale: "Establishes their dynamic before the heist"
+        }
+      ]
     }
   ]
 }
 ```
 
-The discussion is appended to `idea.discussion` array and can optionally update `idea.resolution` and `idea.resolutionStatus`.
+### 7.3 Refinement Modes by Idea Kind
 
-### 7.2 Implementation Strategy
+**For QUESTION ideas:**
+- Generate more specific sub-questions, OR
+- Suggest resolution with reasoning, OR
+- Clarify what the question is really asking
 
-**Low-latency approach:**
-- Discussion is **async** (doesn't block generation)
-- User can continue working while AI thinks
-- AI response appears as notification/update
+**For DIRECTION ideas:**
+- Make more specific and actionable, OR
+- Suggest concrete StoryBeats that realize it, OR
+- Identify prerequisites to achieve it
 
-**Workflow:**
-1. User creates Question idea: "Who did the crime?"
-2. User clicks "Discuss with AI"
-3. AI considers story context + existing ideas
-4. AI responds with thoughts + suggests resolution
-5. User can accept, edit, or continue discussion
-6. Once satisfied, mark as `resolved`
-7. Resolved ideas automatically included in next generation
+**For CONSTRAINT ideas:**
+- Clarify the boundaries, OR
+- Add concrete examples of violations/compliance
 
-**No latency impact on generation** - discussion is separate workflow
+### 7.4 Implementation
+
+**Reuse existing `refineOrchestrator` pattern:**
+
+```typescript
+// New: ideasRefineOrchestrator.ts
+export async function refineIdea(
+  storyId: string,
+  ideaId: string,
+  guidance: string,
+  ctx: StorageContext,
+  llmClient: LLMClient,
+  options?: { generateArtifacts?: boolean }
+): Promise<{
+  sessionId: string;
+  variants: Idea[];
+  suggestedArtifacts?: NarrativePackage[];
+}> {
+  // 1. Load idea and context
+  const graph = await loadGraphById(storyId, ctx);
+  const idea = getNode(graph, ideaId) as Idea;
+  const storyContext = serializeStoryState(graph, metadata);
+  
+  // 2. Get constraints and related ideas
+  const constraints = filterIdeas(graph, { kind: 'constraint' });
+  const relatedIdeas = filterIdeas(graph, { 
+    relatedNodeIds: idea.relatedNodeIds,
+    maxIdeas: 5 
+  });
+  
+  // 3. Build refinement prompt
+  const prompt = buildIdeaRefinementPrompt({
+    idea,
+    guidance,
+    storyContext,
+    relatedIdeas,
+    constraints
+  });
+  
+  // 4. Call LLM (same as StoryBeat refine)
+  const response = await llmClient.complete(prompt);
+  const parsed = parseIdeaRefinementResponse(response.content);
+  
+  // 5. Create variant Idea nodes
+  const variants: Idea[] = parsed.variants.map(v => ({
+    type: 'Idea',
+    id: v.id,
+    title: v.title,
+    description: v.description,
+    kind: v.kind,
+    source: 'ai',
+    parent_idea_id: ideaId,           // NEW: track lineage
+    refinement_guidance: guidance,     // NEW: what prompted this
+    resolution: v.resolution,
+    resolutionStatus: v.resolution ? 'resolved' : 'discussed',
+    confidence: v.confidence,
+    createdAt: new Date().toISOString(),
+    // Inherit context from parent
+    targetBeat: idea.targetBeat,
+    targetAct: idea.targetAct,
+    themes: idea.themes,
+    category: idea.category,
+  }));
+  
+  // 6. Create session to hold variants
+  const session = await createGenerationSession(
+    storyId,
+    { type: 'idea_refinement', ideaId },
+    { depth: 'narrow', count: variants.length },
+    ctx
+  );
+  
+  // 7. Optionally generate artifacts from suggestions
+  let suggestedArtifacts: NarrativePackage[] | undefined;
+  if (options?.generateArtifacts && parsed.variants.some(v => v.suggestedArtifacts?.length)) {
+    suggestedArtifacts = await generatePackagesFromIdeaSuggestions(
+      parsed.variants,
+      graph,
+      llmClient
+    );
+  }
+  
+  return { sessionId: session.id, variants, suggestedArtifacts };
+}
+```
+
+### 7.5 Refinement Prompt
+
+```typescript
+// New: prompts/ideaRefinementPrompt.ts
+export function buildIdeaRefinementPrompt(params: {
+  idea: Idea;
+  guidance: string;
+  storyContext: string;
+  relatedIdeas: Idea[];
+  constraints: Idea[];
+}): string {
+  const { idea, guidance, storyContext, relatedIdeas, constraints } = params;
+  
+  return `## Idea Refinement v1.0.0
+
+Refine this planning idea based on user guidance.
+
+## Original Idea
+**Kind:** ${idea.kind || 'proposal'}
+**Title:** ${idea.title}
+**Description:** ${idea.description}
+${idea.resolution ? `**Current Resolution:** ${idea.resolution}` : ''}
+
+## User Guidance
+"${guidance}"
+
+## Story Context
+${storyContext}
+
+${constraints.length > 0 ? `
+## Constraints (must respect)
+${constraints.map(c => `- ${c.title}: ${c.description}`).join('\n')}
+` : ''}
+
+${relatedIdeas.length > 0 ? `
+## Related Ideas
+${relatedIdeas.map(i => `- ${i.title}: ${i.description.slice(0, 100)}`).join('\n')}
+` : ''}
+
+## Your Task
+
+Based on the guidance, generate 2-3 refined variants of this idea:
+
+1. **If QUESTION:** Provide more specific sub-questions OR suggest resolution OR clarify intent
+2. **If DIRECTION:** Make more specific and actionable OR suggest concrete StoryBeats
+3. **If CONSTRAINT:** Clarify boundaries OR add concrete examples
+
+## Output Format
+
+\`\`\`json
+{
+  "variants": [
+    {
+      "id": "idea_refined_{timestamp}_{chars}",
+      "kind": "question" | "direction" | "constraint" | "note",
+      "title": "Refined title",
+      "description": "More specific description incorporating guidance",
+      "resolution": "If question, suggested answer",
+      "confidence": 0.0-1.0,
+      "suggestedArtifacts": [
+        {
+          "type": "StoryBeat" | "Scene",
+          "title": "...",
+          "summary": "...",
+          "rationale": "Why this realizes the idea"
+        }
+      ]
+    }
+  ]
+}
+\`\`\`
+
+Each variant should incorporate the user's guidance and move toward either:
+- A clearer question with possible resolution
+- A more specific, actionable direction
+- Concrete artifacts that realize the idea
+
+Output JSON only.`;
+}
+```
+
+### 7.6 Why This Is Better Than Chat
+
+| Aspect | Chat/Discussion | Refine Pattern |
+|--------|-----------------|----------------|
+| **Infrastructure** | New endpoints, storage for threads | Reuses existing refine system |
+| **UX** | Open-ended conversation | Structured convergence |
+| **Output** | Text thread | Concrete Idea variants |
+| **Progress** | Can circle endlessly | Each step moves forward |
+| **Artifacts** | Manual bridge | Natural transition to StoryBeats |
+| **Complexity** | Medium | Low (existing code) |
+
+### 7.7 Workflow Example
+
+```
+1. User creates Question Idea:
+   "Who committed the crime?"
+
+2. User provides guidance:
+   "Consider Morrison's military background"
+
+3. System generates variants:
+   - Variant A: "Why would Morrison risk his career for this?"
+   - Variant B: Resolved: "Morrison organized it using police authority"
+   - Variant C: Direction: "Reveal Morrison gradually in Act 2"
+
+4. User picks Variant B (resolved question)
+   → Marks as resolved
+   → Next generation includes: "Established: Morrison organized crime"
+
+5. User picks Variant C (direction)
+   → Clicks "Generate StoryBeat from this"
+   → System creates beat with this direction
+```
 
 ---
 
@@ -785,20 +1002,45 @@ for (const ideaId of ideasResult.includedIds) {
 
 ### 9.2 New Endpoints
 
-**POST /stories/:id/ideas/:ideaId/discuss**
+**POST /stories/:id/ideas/:ideaId/refine**
 ```typescript
 Request:
 {
-  message: "Why would this character betray?"
+  guidance: "Consider Morrison's military background",
+  generateArtifacts?: boolean  // Also suggest StoryBeats/Scenes?
 }
 
 Response:
 {
-  reply: "Given the story context...",
-  confidence: 0.8,
-  suggestedResolution?: "Concrete answer",
-  suggestedArtifacts?: [...], // Optional follow-up generation
-  updatedIdea: {...} // Idea with discussion appended
+  sessionId: "session_xyz",
+  variants: [
+    {
+      id: "idea_refined_1",
+      parent_idea_id: "idea_original",
+      kind: "question",
+      title: "...",
+      description: "...",
+      resolution: "...",
+      confidence: 0.85
+    }
+  ],
+  suggestedArtifacts?: [...] // If generateArtifacts: true
+}
+```
+
+**GET /stories/:id/ideas/:ideaId/refinement-history**
+```typescript
+Response:
+{
+  idea: {...},
+  refinements: [
+    {
+      id: "idea_refined_1",
+      guidance: "Consider Morrison...",
+      createdAt: "...",
+      confidence: 0.85
+    }
+  ]
 }
 ```
 
@@ -905,11 +1147,11 @@ Ideas (Planning)
 │ Status: [Open ▼]                   │
 │ Target: Act 1 • Catalyst           │
 │                                     │
-│ [Discuss with AI] [Mark Resolved]  │
+│ [Refine with AI] [Mark Resolved]   │
 │                                     │
-│ Discussion (2):                     │
-│  User: "What about Morrison?"      │
-│  AI: "Morrison makes sense because"│
+│ Refinements (2):                    │
+│  ↳ More specific question           │
+│  ↳ Proposed resolution              │
 │                                     │
 │ Resolution: [Save answer...]       │
 └────────────────────────────────────┘
@@ -934,7 +1176,45 @@ Ideas (Planning)
 └────────────────────────────────────┘
 ```
 
-### 10.3 Generation Flow Integration
+### 10.3 Refinement Flow UI
+
+**When user clicks "Refine with AI" on an Idea:**
+```
+┌─ Refine This Idea ────────────────┐
+│ Original: "Who committed the     │
+│ crime?"                           │
+│                                    │
+│ [Add guidance to clarify this...] │
+│ "Consider Morrison's military     │
+│  background"                       │
+│                                    │
+│ [Refine] [Cancel]                 │
+└────────────────────────────────────┘
+
+After refinement:
+
+┌─ Refined Variants (3) ────────────┐
+│                                    │
+│ ✓ Option 1: RESOLVED QUESTION     │
+│ "Morrison organized crime using   │
+│  his police authority"            │
+│  Confidence: 85%                  │
+│  [Accept & Mark Resolved]         │
+│                                    │
+│ ⟳ Option 2: SUB-QUESTIONS         │
+│ "Why would Morrison risk this?"   │
+│ "Who else is involved?"           │
+│  [Refine This Further]            │
+│                                    │
+│ 📍 Option 3: DIRECTION             │
+│ "Reveal Morrison gradually in     │
+│  Act 2 via Dante"                 │
+│  → Suggests StoryBeat              │
+│  [Accept & Generate StoryBeat]    │
+└────────────────────────────────────┘
+```
+
+### 10.4 Generation Flow Integration
 
 **When user clicks "Generate StoryBeats":**
 ```
@@ -960,10 +1240,10 @@ These ideas were used:
 • Proposal: "Dante as informant" ✓
 
 These questions need answers:
-• "Who committed the crime?" [Discuss now]
+• "Who committed the crime?" [Refine to clarify]
 ```
 
-### 10.4 Bulk Actions
+### 10.5 Bulk Actions
 
 ```
 [Select: All Open Questions]
@@ -980,7 +1260,7 @@ These questions need answers:
 
 ## 11. Workflow Examples
 
-### 11.1 Question → Resolution → Generation
+### 11.1 Question → Refinement → Resolution → Generation
 
 ```
 1. User creates Question Idea:
@@ -989,22 +1269,27 @@ These questions need answers:
    Kind: question
    Status: open
 
-2. User clicks "Discuss with AI"
-   AI: "Given Morrison's setup, the corrupt cops make sense as perpetrators..."
+2. User clicks "Refine with AI", provides guidance:
+   "Consider Morrison's military background"
    
-3. User adds follow-up:
-   "Why would Flores help Morrison specifically?"
+3. System generates 3 variants:
+   - Variant A: "Why would Morrison risk his career?"
+   - Variant B: Resolved: "Morrison organized it using police authority"
+   - Variant C: "Why would Flores specifically help Morrison?"
    
-4. AI responds with analysis
+4. User refines Variant C further:
+   "Focus on their military connection"
    
-5. User marks resolved:
-   Resolution: "Flores is ex-military, Morrison is his former CO. Loyalty + guilt."
+5. System generates refined variants:
+   - Resolved: "Flores is ex-military, Morrison was his CO. Loyalty + guilt."
+   
+6. User accepts resolution
    Status: resolved
 
-6. Next generation automatically includes:
+7. Next generation automatically includes:
    "Established Context: Flores helps Morrison due to military loyalty and guilt"
    
-7. Generated StoryBeat references this context in rationale
+8. Generated StoryBeat references this context in rationale
 ```
 
 ### 11.2 Direction → Targeted Generation
@@ -1087,10 +1372,11 @@ All new fields are optional:
 - Add targetBeat/targetAct pickers
 - Show provenance ("Used in 3 StoryBeats")
 
-**Phase 4: Discussion Feature** (1 week)
-- Add /discuss endpoint
-- Add "Discuss with AI" button
-- Show discussion thread in card
+**Phase 4: Refinement Feature** (1 week)
+- Add ideasRefineOrchestrator (reuse refine pattern)
+- Add /refine endpoint
+- Add "Refine with AI" button
+- Show refinement variants in session
 - Resolution workflow
 
 **Phase 5: Polish** (ongoing)
@@ -1256,10 +1542,11 @@ Kanban board view:
 - [ ] Provenance links work
 
 **Phase 4 Complete When:**
-- [ ] /discuss endpoint functional
-- [ ] Discussion thread displays
+- [ ] ideasRefineOrchestrator functional
+- [ ] /refine endpoint returns variants
+- [ ] Refinement variants display in UI
 - [ ] Resolution workflow complete
-- [ ] Async processing works
+- [ ] Lineage tracking works (parent_idea_id)
 
 ---
 
@@ -1271,7 +1558,7 @@ This spec proposes enhancing the existing `Idea` node type to serve as a flexibl
 2. **Smart deterministic filtering** (no LLM pre-filter needed)
 3. **Generation-time tagging** (automatic context capture)
 4. **Provenance tracking** (which ideas informed which artifacts)
-5. **Optional discussion feature** (async AI conversation)
+5. **Refinement iteration** (reuses existing refine pattern for clarity)
 
 We create a space for users to **explore, clarify, and document intent** before jumping to generation, without adding new node types, complex UIs, or latency overhead.
 
