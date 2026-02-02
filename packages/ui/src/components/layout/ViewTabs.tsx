@@ -1,7 +1,7 @@
 import { useStory } from '../../context/StoryContext';
 import styles from './ViewTabs.module.css';
 
-export type ViewMode = 'stories' | 'workspace';
+export type ViewMode = 'stories' | 'workspace' | 'planning';
 
 interface ViewTabsProps {
   activeView: ViewMode;
@@ -28,7 +28,14 @@ export function ViewTabs({ activeView, onViewChange }: ViewTabsProps) {
       >
         Workspace
       </button>
-      {/* Staging tab removed: staging is integrated into Workspace via GenerationPanel */}
+      <button
+        className={`${styles.tab} ${activeView === 'planning' ? styles.active : ''}`}
+        onClick={() => onViewChange('planning')}
+        type="button"
+        disabled={!currentStoryId}
+      >
+        Planning
+      </button>
     </div>
   );
 }

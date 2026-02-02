@@ -8,6 +8,7 @@ import { Header } from './components/layout/Header';
 import { ViewTabs, type ViewMode } from './components/layout/ViewTabs';
 import { StoriesView } from './components/stories/StoriesView';
 import { WorkspaceView } from './components/workspace';
+import { PlanningView } from './components/planning';
 
 export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('stories');
@@ -23,8 +24,11 @@ export default function App() {
 
               {viewMode === 'stories' && <StoriesView />}
 
-              {viewMode === 'workspace' && <WorkspaceView />}
-              {/* Staging View removed; integrated into Generation panel */}
+              {viewMode === 'workspace' && (
+                <WorkspaceView onSwitchTab={(tab: string) => setViewMode(tab as ViewMode)} />
+              )}
+
+              {viewMode === 'planning' && <PlanningView />}
             </div>
           </StashProvider>
         </SavedPackagesProvider>

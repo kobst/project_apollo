@@ -234,9 +234,6 @@ export function StashSection({ onDevelop }: StashSectionProps) {
     }
   };
 
-  // Show status filter only when viewing ideas (or all)
-  const showStatusFilter = typeFilter === 'all' || typeFilter === 'idea';
-
   return (
     <section id="stash" className={styles.section}>
       {toast && <div className={styles.toast}>{toast}</div>}

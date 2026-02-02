@@ -14,7 +14,8 @@ import { computeDetailedStructureCounts } from '../../utils/stagingUtils';
 import { ElementsSection } from './ElementsSection';
 import { StructureSection } from './StructureSection';
 import { ContextSection } from './ContextSection';
-import { StashSection } from './IdeasSection';
+import { useStashContext, type StashItem } from '../../context/StashContext';
+import { ArtifactStashSection } from './ArtifactStashSection';
 import { TableOfContents } from './TableOfContents';
 import type { ElementType } from './types';
 import styles from './StoryBible.module.css';
@@ -30,6 +31,8 @@ interface StoryBibleProps {
   onToggleTocCollapse: () => void;
   /** Whether we're in node selection mode (for Expand) */
   nodeSelectionMode?: boolean;
+  /** Callback to switch to a different tab */
+  onSwitchTab?: ((tab: string) => void) | undefined;
 }
 
 const SECTION_IDS = ['elements', 'structure', 'context', 'stash'];
@@ -40,10 +43,25 @@ export function StoryBible({
   isTocCollapsed,
   onToggleTocCollapse,
   nodeSelectionMode,
+  onSwitchTab,
 }: StoryBibleProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { stagedPackage, sectionChangeCounts, detailedElementCounts } = useGeneration();
   const { currentStoryId, status } = useStory();
+  const { items, ideas } = useStashContext();
+
+  // Split: concrete artifacts (storybeats, scenes, typed ideas) vs abstract planning ideas
+  const artifactItems = useMemo(() => {
+    return items.filter((item): item is StashItem => {
+      if (item.kind === 'storybeat' || item.kind === 'scene') return true;
+      if (item.kind === 'idea' && item.suggestedType) return true;
+      return false;
+    });
+  }, [items]);
+
+  const planningIdeas = useMemo(() => {
+    return ideas.filter((idea) => !idea.suggestedType);
+  }, [ideas]);
 
   // Fetch outline data for TOC navigation
   const [outline, setOutline] = useState<OutlineData | null>(null);
@@ -183,7 +201,40 @@ export function StoryBible({
 
         <ContextSection />
 
-        <StashSection />
+        <ArtifactStashSection items={artifactItems} />
+
+        <section id="stash" className={styles.planningLink}>
+          <div className={styles.planningLinkHeader}>
+            <span className={styles.planningLinkIcon}>{'\uD83D\uDCE5'}</span>
+            <span className={styles.planningLinkTitle}>Planning</span>
+            <span className={styles.planningLinkCount}>
+              {planningIdeas.length} {planningIdeas.length === 1 ? 'idea' : 'ideas'}
+            </span>
+          </div>
+          <div className={styles.planningLinkCounts}>
+            {(() => {
+              const counts: Record<string, number> = {};
+              for (const idea of planningIdeas) {
+                const k = idea.planningKind ?? 'proposal';
+                counts[k] = (counts[k] ?? 0) + 1;
+              }
+              return Object.entries(counts).map(([k, c]) => (
+                <span key={k} className={styles.planningLinkBadge}>
+                  {c} {k}{c !== 1 ? 's' : ''}
+                </span>
+              ));
+            })()}
+          </div>
+          {onSwitchTab && (
+            <button
+              type="button"
+              className={styles.planningLinkButton}
+              onClick={() => onSwitchTab('planning')}
+            >
+              Open Planning Tab →
+            </button>
+          )}
+        </section>
       </div>
     </div>
   );

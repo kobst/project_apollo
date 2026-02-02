@@ -284,7 +284,7 @@ export function TableOfContents({
           </button>
         </li>
 
-        {/* Stash */}
+        {/* Planning */}
         <li>
           <button
             className={`${styles.navItem} ${activeSectionId === 'stash' ? styles.active : ''}`}
@@ -292,7 +292,7 @@ export function TableOfContents({
             type="button"
           >
             <span className={styles.navIcon}>{'\uD83D\uDCE5'}</span>
-            <span className={styles.navLabel}>Stash</span>
+            <span className={styles.navLabel}>Planning</span>
             {ideasCount > 0 && (
               <span className={styles.count}>{ideasCount}</span>
             )}

@@ -68,3 +68,62 @@
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(147, 51, 234, 0.25) 100%);
   }
 }
+
+/* Planning Link (compact widget replacing StashSection) */
+.planningLink {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color, #333);
+}
+
+.planningLinkHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.planningLinkIcon {
+  font-size: 16px;
+}
+
+.planningLinkTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+}
+
+.planningLinkCount {
+  font-size: 12px;
+  color: var(--text-muted, #666);
+}
+
+.planningLinkCounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.planningLinkBadge {
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  font-size: 11px;
+  color: var(--text-secondary, #888);
+}
+
+.planningLinkButton {
+  padding: 6px 14px;
+  background: rgba(90, 124, 165, 0.12);
+  border: 1px solid rgba(90, 124, 165, 0.25);
+  border-radius: 6px;
+  color: var(--color-primary, #5a7ca5);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.planningLinkButton:hover {
+  background: rgba(90, 124, 165, 0.22);
+}

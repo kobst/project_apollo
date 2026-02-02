@@ -1,0 +1,169 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-secondary, #1a1a2e);
+  border-right: 1px solid var(--border-color, #333);
+  overflow: hidden;
+}
+
+.header {
+  padding: 12px 12px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #666);
+}
+
+.groups {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.groups::-webkit-scrollbar {
+  width: 4px;
+}
+
+.groups::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.groups::-webkit-scrollbar-thumb {
+  background: var(--border-color, #333);
+  border-radius: 2px;
+}
+
+/* Group */
+.group {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #888);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s ease;
+}
+
+.groupHeader:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.chevron {
+  font-size: 8px;
+  transition: transform 0.15s ease;
+  color: var(--text-muted, #666);
+}
+
+.chevronExpanded {
+  transform: rotate(90deg);
+}
+
+.groupLabel {
+  flex: 1;
+}
+
+.groupCount {
+  font-size: 10px;
+  color: var(--text-muted, #555);
+  padding: 1px 5px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+}
+
+/* Items */
+.itemList {
+  padding: 0 0 4px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 12px 5px 24px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #888);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.1s ease;
+  overflow: hidden;
+}
+
+.item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary, #fff);
+}
+
+.itemSelected {
+  background: rgba(90, 124, 165, 0.15);
+  color: var(--text-primary, #fff);
+}
+
+.itemTitle {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resolutionDot {
+  flex-shrink: 0;
+  font-size: 8px;
+}
+
+.dotOpen {
+  color: var(--text-muted, #555);
+}
+
+.dotDiscussed {
+  color: #f59e0b;
+}
+
+.dotResolved {
+  color: #22c55e;
+}
+
+/* Act sub-group */
+.actSubGroup {
+  padding-left: 12px;
+}
+
+.actLabel {
+  padding: 4px 12px 2px 24px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted, #555);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Footer filter */
+.footer {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border-color, #333);
+}
+
+.statusSelect {
+  width: 100%;
+  padding: 5px 8px;
+  background: var(--bg-tertiary, #16162a);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 4px;
+  color: var(--text-primary, #fff);
+  font-size: 11px;
+  cursor: pointer;
+}

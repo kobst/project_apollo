@@ -174,7 +174,17 @@ interface StashContextValue {
       themes: string[];
     }>
   ) => Promise<void>;
-  updateIdea: (ideaId: string, changes: { title?: string; description?: string; status?: IdeaStatus }) => Promise<void>;
+  updateIdea: (ideaId: string, changes: {
+    title?: string;
+    description?: string;
+    status?: IdeaStatus;
+    kind?: StashIdeaItem['planningKind'];
+    resolutionStatus?: StashIdeaItem['resolutionStatus'];
+    resolution?: string;
+    targetBeat?: string;
+    targetAct?: number;
+    themes?: string[];
+  }) => Promise<void>;
   deleteIdea: (ideaId: string) => Promise<void>;
   /** Create a real StoryBeat node (unassigned) and refresh the stash */
   createStoryBeat: (data: CreateStoryBeatRequest) => Promise<void>;
@@ -266,7 +276,17 @@ export function StashProvider({ children }: { children: ReactNode }) {
 
   const updateIdea = useCallback(async (
     ideaId: string,
-    changes: { title?: string; description?: string; status?: IdeaStatus },
+    changes: {
+      title?: string;
+      description?: string;
+      status?: IdeaStatus;
+      kind?: StashIdeaItem['planningKind'];
+      resolutionStatus?: StashIdeaItem['resolutionStatus'];
+      resolution?: string;
+      targetBeat?: string;
+      targetAct?: number;
+      themes?: string[];
+    },
   ) => {
     if (!currentStoryId) return;
     try {
@@ -285,6 +305,12 @@ export function StashProvider({ children }: { children: ReactNode }) {
         updates.promoted = false;
         updates.dismissed = false;
       }
+      if (changes.kind !== undefined) updates.kind = changes.kind;
+      if (changes.resolutionStatus !== undefined) updates.resolutionStatus = changes.resolutionStatus;
+      if (changes.resolution !== undefined) updates.resolution = changes.resolution;
+      if (changes.targetBeat !== undefined) updates.targetBeat = changes.targetBeat;
+      if (changes.targetAct !== undefined) updates.targetAct = changes.targetAct;
+      if (changes.themes !== undefined) updates.themes = changes.themes;
       const data = await api.updateIdea(currentStoryId, ideaId, updates);
       setIdeaItems((prev) =>
         prev.map((idea) => (idea.id === ideaId ? transformIdea(data.idea) : idea))

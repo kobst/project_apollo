@@ -22,7 +22,11 @@ export interface SelectedNodeInfo {
   name: string;
 }
 
-export function WorkspaceView() {
+interface WorkspaceViewProps {
+  onSwitchTab?: (tab: string) => void;
+}
+
+export function WorkspaceView({ onSwitchTab }: WorkspaceViewProps) {
   const { currentStoryId } = useStory();
 
   // TOC collapse state (replaces sidebar collapse)
@@ -98,6 +102,7 @@ export function WorkspaceView() {
           isTocCollapsed={isTocCollapsed}
           onToggleTocCollapse={() => setIsTocCollapsed(!isTocCollapsed)}
           nodeSelectionMode={nodeSelectionMode}
+          onSwitchTab={onSwitchTab}
         />
 
         <GenerationPanel
