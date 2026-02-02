@@ -11,7 +11,7 @@
 
 **Problem:** There's a gap between loose user thoughts ("I want Act 1 to end with comic relief before violence") and concrete artifacts (StoryBeats, Scenes). The current workflow forces users to jump directly from vague direction to concrete proposals, without a space to explore, discuss, and clarify intent first.
 
-**Solution:** Enhance the existing `Idea` node type to serve as a flexible planning and discussion layer. Ideas become a scratchpad where users can:
+**Solution:** Enhance the existing `Idea` node type to serve as a flexible planning and discussion layer (UI: **"Planning"** section). Ideas become a scratchpad where users can:
 - Ask questions ("Who committed the crime and why?")
 - State directions ("Act 1 should end with humanizing moment")
 - Capture constraints ("No supernatural elements")
@@ -964,9 +964,27 @@ for (const ideaId of ideasResult.includedIds) {
 
 ## 9. API Endpoints
 
-### 9.1 Enhanced Existing Endpoints
+### 9.1 API Path Naming
 
-**POST /stories/:id/ideas** (already exists, enhance body):
+**Options:**
+
+1. **Keep `/ideas` paths** (node type name):
+   - `POST /stories/:id/ideas`
+   - `GET /stories/:id/ideas`
+   - Backend consistency (node type = Idea)
+
+2. **Change to `/planning` paths** (UI label):
+   - `POST /stories/:id/planning`
+   - `GET /stories/:id/planning`
+   - Frontend clarity (matches UI)
+
+**Recommendation:** Keep `/ideas` for API paths (node type), use "Planning" for UI labels only. This keeps backend/frontend concerns separated.
+
+**Note:** If you prefer full alignment, changing API paths is fine since backward compatibility is not a constraint.
+
+### 9.2 Core Endpoints
+
+**POST /stories/:id/ideas** (enhanced, breaking changes):
 ```typescript
 {
   title, description,
@@ -1000,7 +1018,7 @@ for (const ideaId of ideasResult.includedIds) {
 }
 ```
 
-### 9.2 New Endpoints
+### 9.3 New Endpoints
 
 **POST /stories/:id/ideas/:ideaId/refine**
 ```typescript
@@ -1089,19 +1107,33 @@ Response:
 
 ## 10. UI Changes
 
-### 10.1 Ideas Section Enhancements
+### 10.1 Naming: "Ideas" → "Planning"
 
-**Existing Ideas UI:**
+**UI Label Change:**
+- Section name: "Ideas" → **"Planning"**
+- Dropdown: "Ideas" → **"Planning"**
+- Empty state: "No ideas yet" → **"No planning notes yet"**
+- Create button: "+ New Idea" → **"+ Add to Planning"**
+
+**Why "Planning":**
+- Clear distinction from "Elements" section (planning vs concrete)
+- Matches spec purpose: "Ideas as Planning Layer"
+- Broad enough to cover questions, directions, constraints, proposals
+- Professional and actionable
+
+**Stash Dropdown (updated):**
 ```
-Ideas (Stash)
-├─ [Card] Character: Flores backstory
-├─ [Card] Scene: Body shop confrontation  
-└─ [Card] Plot: Dante's betrayal
+Stash:
+├─ Story Beats (3)
+├─ Scenes (5)
+└─ Planning (12)    ← renamed from "Ideas"
 ```
 
-**Enhanced Ideas UI:**
+### 10.2 Planning Section Layout
+
+**Enhanced Planning UI:**
 ```
-Ideas (Planning)
+Planning
 
 [Tabs: All | Questions | Directions | Constraints | Proposals]
 
@@ -1134,7 +1166,7 @@ Ideas (Planning)
 [+ New Idea]
 ```
 
-### 10.2 Idea Card Details
+### 10.3 Planning Card Details
 
 **Question Card:**
 ```
@@ -1214,7 +1246,7 @@ After refinement:
 └────────────────────────────────────┘
 ```
 
-### 10.4 Generation Flow Integration
+### 10.6 Generation Flow Integration
 
 **When user clicks "Generate StoryBeats":**
 ```
@@ -1243,7 +1275,7 @@ These questions need answers:
 • "Who committed the crime?" [Refine to clarify]
 ```
 
-### 10.5 Bulk Actions
+### 10.7 Bulk Actions
 
 ```
 [Select: All Open Questions]
@@ -1345,45 +1377,232 @@ These questions need answers:
 
 ## 12. Migration Strategy
 
-### 12.1 Backward Compatibility
+### 12.1 Clean Slate Approach
 
-All new fields are optional:
-- Existing Ideas continue to work
-- Default `kind: 'proposal'` maintains current behavior
-- UI gracefully handles Ideas without new fields
+**Philosophy:** No backward compatibility constraints. Clean migration with data cleanup.
 
-### 12.2 Gradual Rollout
+**Migration Steps:**
 
-**Phase 1: Core Type + API** (1 week)
-- Add new fields to Idea type
-- Update API endpoints to accept/return new fields
-- Update filtering logic
-- No UI changes yet
+1. **Audit existing Idea nodes:**
+   ```bash
+   # CLI tool to inspect
+   project-apollo ideas:audit --story <id>
+   
+   Output:
+   - 25 Idea nodes found
+   - 10 have suggestedType (proposals)
+   - 15 have no suggestedType (unclear)
+   - 3 have sourcePackageId (from rejected packages)
+   ```
 
-**Phase 2: Filtering + Generation** (1 week)
-- Implement enhanced filterIdeas()
-- Update getIdeasForTask() with new logic
-- Auto-tag AI-generated ideas
+2. **Classify or delete:**
+   ```bash
+   # Auto-classify where possible
+   project-apollo ideas:migrate --story <id> --classify
+   
+   # Infers kind from content:
+   - "Who..." → question
+   - "Must not..." → constraint
+   - "Act 1 should..." → direction
+   - Has suggestedType → proposal
+   
+   # Delete unclassifiable/old
+   project-apollo ideas:clean --older-than 90d --unused
+   ```
+
+3. **Fresh schema:**
+   ```typescript
+   // All new Ideas MUST have:
+   {
+     kind: IdeaKind,  // Required, no default
+     resolutionStatus: 'open',  // Required
+     createdAt: string,  // Required
+     // Old optional fields now ignored/stripped
+   }
+   ```
+
+4. **UI migration:**
+   - Update all "Ideas" labels → "Planning"
+   - Add kind selector (required on create)
+   - Remove support for schemaless Ideas
+
+**Data Loss Acceptable:**
+- Old unclear Ideas can be deleted
+- User can recreate important ones with proper structure
+- Better to start clean than maintain legacy ambiguity
+
+### 12.2 Migration CLI Commands
+
+**Audit:**
+```bash
+project-apollo ideas:audit --story neon-noir-test
+
+Output:
+┌─────────────────────────────────────────┐
+│ Idea Audit Report                       │
+├─────────────────────────────────────────┤
+│ Total Ideas: 25                         │
+│                                          │
+│ Classifiable (auto-migrate):      15    │
+│  - As proposals: 10                     │
+│  - As questions: 3                      │
+│  - As directions: 2                     │
+│                                          │
+│ Ambiguous (review needed):       7      │
+│  - Empty descriptions                   │
+│  - No suggestedType or clear pattern   │
+│                                          │
+│ Old (90+ days, unused):          3      │
+│  - Candidates for deletion              │
+└─────────────────────────────────────────┘
+
+[Review ambiguous] [Auto-migrate classifiable] [Clean old]
+```
+
+**Auto-Migrate:**
+```bash
+project-apollo ideas:migrate --story neon-noir-test --auto
+
+Actions:
+✓ Migrated 10 proposals (added kind: 'proposal')
+✓ Migrated 3 questions (added kind: 'question')
+✓ Migrated 2 directions (added kind: 'direction')
+⚠ 7 ambiguous ideas require manual review
+⚠ 3 old ideas flagged for deletion
+
+Review ambiguous at: /stories/neon-noir-test/ideas?status=needs_review
+```
+
+**Clean:**
+```bash
+project-apollo ideas:clean --story neon-noir-test --older-than 90d --unused --dry-run
+
+Will delete 3 ideas:
+- idea_abc123 (Created: 2025-10-15, Last used: never)
+- idea_def456 (Created: 2025-09-20, Last used: never)
+- idea_ghi789 (Created: 2025-08-10, Last used: 2025-08-12)
+
+Run without --dry-run to delete.
+```
+
+### 12.3 API Breaking Changes (Acceptable)
+
+**Old API (deprecated):**
+```typescript
+POST /stories/:id/ideas
+{
+  title: "...",
+  description: "...",
+  // kind optional, defaults to proposal
+}
+```
+
+**New API (required fields):**
+```typescript
+POST /stories/:id/ideas
+{
+  title: "...",
+  description: "...",
+  kind: "question" | "direction" | "constraint" | "note" | "proposal",  // REQUIRED
+  resolutionStatus?: "open",  // Default
+  // Other fields...
+}
+
+// Returns 400 if kind missing
+```
+
+**Frontend must update** - no backward compatibility in API.
+
+### 12.4 Schema Enforcement
+
+**Old Idea (loose, optional):**
+```typescript
+{
+  type: 'Idea',
+  id: string,
+  title: string,
+  description: string,
+  source: 'user' | 'ai',
+  suggestedType?: string,  // Optional
+  status?: string,          // Optional
+  category?: string,        // Optional
+  // Everything else optional
+}
+```
+
+**New Idea (strict, required fields):**
+```typescript
+{
+  type: 'Idea',
+  id: string,
+  title: string,
+  description: string,
+  source: 'user' | 'ai',
+  kind: IdeaKind,                    // REQUIRED
+  resolutionStatus: IdeaResolutionStatus,  // REQUIRED, default 'open'
+  createdAt: string,                 // REQUIRED
+  // Optional but structured:
+  resolution?: string,
+  parent_idea_id?: string,
+  refinement_guidance?: string,
+  targetBeat?: string,
+  targetAct?: number,
+  themes?: string[],
+  // ... other optional metadata
+}
+```
+
+**Validation on create/update:**
+- `kind` is required, no default
+- `resolutionStatus` defaults to 'open'
+- Old Ideas without `kind` are flagged for migration/deletion
+
+**Database-level:** No migration of old rows required; they can be deleted. Fresh start.
+
+### 12.5 Rollout Strategy (Clean Migration)
+
+**Phase 0: Audit & Clean** (2-3 days)
+- Run migration audit on all stories
+- Auto-classify where possible
+- Delete ambiguous/old Ideas
+- User communication: "Planning section getting an upgrade, old notes will be cleaned"
+
+**Phase 1: Schema + API Breaking Change** (1 week)
+- Deploy new strict schema (kind required)
+- Update API to reject requests without kind
+- Migration CLI tools available
+- Remove old schemaless Ideas from database
+
+**Phase 2: UI Overhaul** (1 week)
+- Rename "Ideas" → "Planning" everywhere
+- Add kind selector (required on create)
+- Kind badges on cards
+- Filtering by kind/status
+- Remove support for schemaless display
+
+**Phase 3: Filtering + Generation** (1 week)
+- Implement enhanced filterIdeas() with all new fields
+- Update getIdeasForTask() 
+- Auto-tag AI-generated ideas with context
 - Track provenance in orchestrators
 
-**Phase 3: UI Basics** (1 week)
-- Add kind selector to Create Idea form
-- Display kind badges on Idea cards
-- Add targetBeat/targetAct pickers
-- Show provenance ("Used in 3 StoryBeats")
-
 **Phase 4: Refinement Feature** (1 week)
-- Add ideasRefineOrchestrator (reuse refine pattern)
+- Add ideasRefineOrchestrator
 - Add /refine endpoint
-- Add "Refine with AI" button
-- Show refinement variants in session
+- "Refine with AI" UI
+- Variant selection
 - Resolution workflow
 
 **Phase 5: Polish** (ongoing)
-- Bulk actions UI
+- Bulk actions
 - Advanced filters
 - Provenance visualization
-- Analytics (which ideas are most useful)
+- Analytics
+
+**User Impact:**
+- ⚠️ Old Ideas may be deleted (acceptable)
+- ✅ Fresh start with clear structure
+- ✅ No legacy ambiguity
 
 ---
 
@@ -1552,7 +1771,7 @@ Kanban board view:
 
 ## 19. Conclusion
 
-This spec proposes enhancing the existing `Idea` node type to serve as a flexible planning layer between loose user thoughts and concrete story artifacts. By adding:
+This spec proposes enhancing the existing `Idea` node type to serve as a flexible planning layer (UI label: **"Planning"**) between loose user thoughts and concrete story artifacts. By adding:
 
 1. **Kind taxonomy** (question, direction, constraint, note, proposal)
 2. **Smart deterministic filtering** (no LLM pre-filter needed)
