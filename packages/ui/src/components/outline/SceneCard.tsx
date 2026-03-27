@@ -5,11 +5,11 @@ import styles from './SceneCard.module.css';
 interface SceneCardProps {
   scene: OutlineScene;
   beatId: string;
-  parentStoryBeatId?: string;
+  parentPlotPointId?: string;
   onUpdate?: () => void;
 }
 
-export function SceneCard({ scene, beatId: _beatId, parentStoryBeatId: _parentStoryBeatId }: SceneCardProps) {
+export function SceneCard({ scene, beatId: _beatId, parentPlotPointId: _parentPlotPointId }: SceneCardProps) {
   const { onEditScene } = useStructureEdit();
 
   const displayHeading = scene.heading || 'Untitled Scene';

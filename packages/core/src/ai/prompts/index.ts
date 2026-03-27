@@ -21,8 +21,8 @@ export {
 export { buildInterpretationPrompt } from './interpretationPrompt.js';
 export { buildGenerationPrompt } from './generationPrompt.js';
 export { buildRefinementPrompt } from './refinementPrompt.js';
-export { buildStoryBeatPrompt } from './storyBeatPrompt.js';
-export type { StoryBeatPromptParams } from './storyBeatPrompt.js';
+export { buildPlotPointPrompt } from './storyBeatPrompt.js';
+export type { PlotPointPromptParams } from './storyBeatPrompt.js';
 export { buildCharacterPrompt } from './characterPrompt.js';
 export type { CharacterPromptParams } from './characterPrompt.js';
 export { buildScenePrompt } from './scenePrompt.js';

@@ -19,7 +19,7 @@ export interface SectionChangeCounts {
 
 // Node types that belong to each section
 const PREMISE_NODE_TYPES: string[] = []; // Logline, Setting, GenreTone moved to StoryContext constitution
-const STRUCTURE_NODE_TYPES = ['Beat', 'StoryBeat', 'Scene'];
+const STRUCTURE_NODE_TYPES = ['Beat', 'PlotPoint', 'Scene'];
 const ELEMENT_NODE_TYPES = ['Character', 'Location', 'Object'];
 const IDEAS_NODE_TYPES = ['Idea'];
 
@@ -444,23 +444,14 @@ export function computeDetailedStructureCounts(
 
   if (!pkg) return counts;
 
-  // Build map of StoryBeat ID -> Beat ID from ALIGNS_WITH edges
-  const storyBeatToBeat = new Map<string, string>();
-  for (const edge of pkg.changes.edges) {
-    if (edge.operation === 'add' && edge.edge_type === 'ALIGNS_WITH') {
-      // ALIGNS_WITH: from=StoryBeat, to=Beat
-      storyBeatToBeat.set(edge.from, edge.to);
-    }
-  }
-
   for (const node of pkg.changes.nodes) {
     if (!STRUCTURE_NODE_TYPES.includes(node.node_type)) continue;
 
     let act: number | undefined;
 
-    // For StoryBeats, look up the beat alignment to determine the act
-    if (node.node_type === 'StoryBeat') {
-      const beatId = storyBeatToBeat.get(node.node_id);
+    // For PlotPoints, look up the alignedBeatId property to determine the act
+    if (node.node_type === 'PlotPoint') {
+      const beatId = node.data?.alignedBeatId as string | undefined;
       if (beatId && beatToActMap) {
         act = beatToActMap.get(beatId);
       }

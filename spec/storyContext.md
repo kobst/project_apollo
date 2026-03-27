@@ -88,7 +88,7 @@ Tags control which guidelines are included in prompts for specific task types. K
 | `scene` | Scene generation/editing |
 | `action` | Action sequence tasks |
 | `pacing` | Pacing-related decisions |
-| `plot` | Plot/story beat tasks |
+| `plot` | Plot/plot point tasks |
 | `worldbuilding` | World-building tasks |
 | `structure` | Structural/outline tasks |
 | `tone` | Tone-sensitive tasks |

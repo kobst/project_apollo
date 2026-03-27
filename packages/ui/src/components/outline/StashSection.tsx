@@ -2,8 +2,8 @@
  * StashSection - Collapsible section showing stashed (unassigned) content.
  *
  * Contains:
- * - StoryBeats without ALIGNS_WITH edges (not assigned to structural beats)
- * - Scenes without SATISFIED_BY edges (not linked to story beats)
+ * - PlotPoints without alignedBeatId (not assigned to structural beats)
+ * - Scenes without REALIZED_BY edges (not linked to plot points)
  * - Ideas (including proposed ideas from AI packages)
  *
  * Use the Assign button on items to assign them to structure.
@@ -11,7 +11,7 @@
 
 import { useState, useCallback } from 'react';
 import type { OutlineIdea } from '../../api/types';
-import type { MergedOutlineStoryBeat, MergedOutlineScene, MergedOutlineIdea } from '../../utils/outlineMergeUtils';
+import type { MergedOutlinePlotPoint, MergedOutlineScene, MergedOutlineIdea } from '../../utils/outlineMergeUtils';
 import { UnassignedStoryBeatCard } from './UnassignedStoryBeatCard';
 import { UnassignedSceneCard } from './UnassignedSceneCard';
 import { UnassignedIdeaCard } from './UnassignedIdeaCard';
@@ -21,16 +21,16 @@ import { ProposedIdeaCard } from './ProposedIdeaCard';
 import styles from './StashSection.module.css';
 
 interface StashSectionProps {
-  storyBeats: MergedOutlineStoryBeat[];
+  plotPoints: MergedOutlinePlotPoint[];
   scenes: MergedOutlineScene[];
   ideas: OutlineIdea[];
-  proposedStoryBeats?: MergedOutlineStoryBeat[] | undefined;
+  proposedPlotPoints?: MergedOutlinePlotPoint[] | undefined;
   proposedScenes?: MergedOutlineScene[] | undefined;
   proposedIdeas?: MergedOutlineIdea[] | undefined;
-  onAddStoryBeat: () => void;
+  onAddPlotPoint: () => void;
   onAddScene: () => void;
   onAddIdea: () => void;
-  onStoryBeatClick?: ((pp: MergedOutlineStoryBeat) => void) | undefined;
+  onPlotPointClick?: ((pp: MergedOutlinePlotPoint) => void) | undefined;
   onSceneClick?: ((scene: MergedOutlineScene) => void) | undefined;
   onIdeaClick?: ((idea: OutlineIdea) => void) | undefined;
   onEditProposed?: ((nodeId: string, updates: Partial<Record<string, unknown>>) => void) | undefined;
@@ -40,25 +40,25 @@ interface StashSectionProps {
   excludedIdeaIds?: Set<string> | undefined;
   onToggleIdeaExclusion?: ((id: string) => void) | undefined;
   // Deletion
-  onDeleteStoryBeat?: ((storyBeat: MergedOutlineStoryBeat) => void) | undefined;
+  onDeletePlotPoint?: ((plotPoint: MergedOutlinePlotPoint) => void) | undefined;
   onDeleteScene?: ((scene: MergedOutlineScene) => void) | undefined;
   onDeleteIdea?: ((idea: OutlineIdea) => void) | undefined;
   // Assignment
-  onAssignStoryBeat?: ((storyBeat: MergedOutlineStoryBeat) => void) | undefined;
+  onAssignPlotPoint?: ((plotPoint: MergedOutlinePlotPoint) => void) | undefined;
   onAssignScene?: ((scene: MergedOutlineScene) => void) | undefined;
 }
 
 export function StashSection({
-  storyBeats,
+  plotPoints,
   scenes,
   ideas,
-  proposedStoryBeats = [],
+  proposedPlotPoints = [],
   proposedScenes = [],
   proposedIdeas = [],
-  onAddStoryBeat,
+  onAddPlotPoint,
   onAddScene,
   onAddIdea,
-  onStoryBeatClick,
+  onPlotPointClick,
   onSceneClick,
   onIdeaClick,
   onEditProposed,
@@ -66,20 +66,20 @@ export function StashSection({
   removedNodeIds,
   excludedIdeaIds,
   onToggleIdeaExclusion,
-  onDeleteStoryBeat,
+  onDeletePlotPoint,
   onDeleteScene,
   onDeleteIdea,
-  onAssignStoryBeat,
+  onAssignPlotPoint,
   onAssignScene,
 }: StashSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [activeTab, setActiveTab] = useState<'storyBeats' | 'scenes' | 'ideas'>('storyBeats');
+  const [activeTab, setActiveTab] = useState<'plotPoints' | 'scenes' | 'ideas'>('plotPoints');
 
   // Include proposed items in counts
-  const totalStoryBeats = storyBeats.length + proposedStoryBeats.length;
+  const totalPlotPoints = plotPoints.length + proposedPlotPoints.length;
   const totalScenes = scenes.length + proposedScenes.length;
   const totalIdeas = ideas.length + proposedIdeas.length;
-  const totalCount = totalStoryBeats + totalScenes + totalIdeas;
+  const totalCount = totalPlotPoints + totalScenes + totalIdeas;
 
   const toggleExpanded = useCallback(() => {
     setIsExpanded((prev) => !prev);
@@ -107,11 +107,11 @@ export function StashSection({
           {totalCount > 0 && <span className={styles.count}>({totalCount})</span>}
         </div>
         <div className={styles.headerRight}>
-          {totalStoryBeats > 0 && (
-            <span className={`${styles.badge} ${proposedStoryBeats.length > 0 ? styles.badgeHasProposed : ''}`}>
-              {totalStoryBeats} Story Beat{totalStoryBeats !== 1 ? 's' : ''}
-              {proposedStoryBeats.length > 0 && (
-                <span className={styles.proposedIndicator}> (+{proposedStoryBeats.length})</span>
+          {totalPlotPoints > 0 && (
+            <span className={`${styles.badge} ${proposedPlotPoints.length > 0 ? styles.badgeHasProposed : ''}`}>
+              {totalPlotPoints} Plot Point{totalPlotPoints !== 1 ? 's' : ''}
+              {proposedPlotPoints.length > 0 && (
+                <span className={styles.proposedIndicator}> (+{proposedPlotPoints.length})</span>
               )}
             </span>
           )}
@@ -139,20 +139,20 @@ export function StashSection({
           <p className={styles.description}>
             {totalCount > 0
               ? 'Floating content not yet assigned to structure. Use Assign to link items.'
-              : 'Create story beats, scenes, or ideas here before assigning them.'}
+              : 'Create plot points, scenes, or ideas here before assigning them.'}
           </p>
 
           {/* Tabs */}
           <div className={styles.tabs}>
             <button
-              className={`${styles.tab} ${activeTab === 'storyBeats' ? styles.tabActive : ''}`}
-              onClick={() => setActiveTab('storyBeats')}
+              className={`${styles.tab} ${activeTab === 'plotPoints' ? styles.tabActive : ''}`}
+              onClick={() => setActiveTab('plotPoints')}
               type="button"
             >
-              Story Beats
-              {totalStoryBeats > 0 && (
-                <span className={`${styles.tabCount} ${proposedStoryBeats.length > 0 ? styles.tabCountHasProposed : ''}`}>
-                  {totalStoryBeats}
+              Plot Points
+              {totalPlotPoints > 0 && (
+                <span className={`${styles.tabCount} ${proposedPlotPoints.length > 0 ? styles.tabCountHasProposed : ''}`}>
+                  {totalPlotPoints}
                 </span>
               )}
             </button>
@@ -184,17 +184,17 @@ export function StashSection({
 
           {/* Content */}
           <div className={styles.itemsContainer}>
-            {activeTab === 'storyBeats' && (
+            {activeTab === 'plotPoints' && (
               <>
                 <div className={styles.itemsList}>
-                  {/* Proposed unassigned story beats */}
-                  {proposedStoryBeats.length > 0 && (
+                  {/* Proposed unassigned plot points */}
+                  {proposedPlotPoints.length > 0 && (
                     <div className={styles.proposedSubsection}>
                       <h4 className={styles.proposedSubsectionTitle}>Proposed</h4>
-                      {proposedStoryBeats.map((pp) => (
+                      {proposedPlotPoints.map((pp) => (
                         <ProposedStoryBeatCard
                           key={pp.id}
-                          storyBeat={pp}
+                          plotPoint={pp}
                           beatId=""
                           onEdit={onEditProposed!}
                           onRemove={pp._operation === 'add' ? onRemoveProposed : undefined}
@@ -203,28 +203,28 @@ export function StashSection({
                       ))}
                     </div>
                   )}
-                  {/* Existing unassigned story beats */}
-                  {storyBeats.map((pp) => (
+                  {/* Existing unassigned plot points */}
+                  {plotPoints.map((pp) => (
                     <UnassignedStoryBeatCard
                       key={pp.id}
-                      storyBeat={pp}
-                      onClick={() => onStoryBeatClick?.(pp)}
-                      onDelete={onDeleteStoryBeat ? () => onDeleteStoryBeat(pp) : undefined}
-                      onAssign={onAssignStoryBeat ? () => onAssignStoryBeat(pp) : undefined}
+                      plotPoint={pp}
+                      onClick={() => onPlotPointClick?.(pp)}
+                      onDelete={onDeletePlotPoint ? () => onDeletePlotPoint(pp) : undefined}
+                      onAssign={onAssignPlotPoint ? () => onAssignPlotPoint(pp) : undefined}
                     />
                   ))}
-                  {totalStoryBeats === 0 && (
+                  {totalPlotPoints === 0 && (
                     <div className={styles.emptyMessage}>
-                      No story beats in stash
+                      No plot points in stash
                     </div>
                   )}
                 </div>
                 <button
                   className={styles.addButton}
-                  onClick={onAddStoryBeat}
+                  onClick={onAddPlotPoint}
                   type="button"
                 >
-                  + Add Story Beat
+                  + Add Plot Point
                 </button>
               </>
             )}
@@ -240,7 +240,7 @@ export function StashSection({
                         <ProposedSceneCard
                           key={scene.id}
                           scene={scene}
-                          parentStoryBeatId=""
+                          parentPlotPointId=""
                           onEdit={onEditProposed!}
                           onRemove={scene._operation === 'add' ? onRemoveProposed : undefined}
                           isRemoved={removedNodeIds?.has(scene.id)}

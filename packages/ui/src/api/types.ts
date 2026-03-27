@@ -20,7 +20,7 @@ export interface StoryStats {
   characters: number;
   locations: number;
   objects: number;
-  storyBeats: number;
+  plotPoints: number;
   ideas: number;
   edges: number;
 }
@@ -240,7 +240,7 @@ export interface OutlineScene {
 }
 
 export type IdeaSource = 'user' | 'ai';
-export type IdeaSuggestedType = 'StoryBeat' | 'Scene' | 'Character' | 'Location' | 'Object';
+export type IdeaSuggestedType = 'PlotPoint' | 'Scene' | 'Character' | 'Location' | 'Object';
 
 export interface OutlineIdea {
   id: string;
@@ -251,7 +251,7 @@ export interface OutlineIdea {
   createdAt: string;
 }
 
-export interface OutlineStoryBeat {
+export interface OutlinePlotPoint {
   id: string;
   title: string;
   intent: string;
@@ -271,7 +271,7 @@ export interface OutlineBeat {
   guidance?: string;
   status?: string;
   notes?: string;
-  storyBeats: OutlineStoryBeat[];
+  plotPoints: OutlinePlotPoint[];
 }
 
 export interface OutlineAct {
@@ -282,18 +282,18 @@ export interface OutlineAct {
 export interface OutlineData {
   storyId: string;
   acts: OutlineAct[];
-  /** StoryBeats not aligned to any Beat (no ALIGNS_WITH edge) */
-  unassignedStoryBeats: OutlineStoryBeat[];
-  /** Scenes not connected to any StoryBeat */
+  /** PlotPoints not aligned to any Beat (no alignedBeatId) */
+  unassignedPlotPoints: OutlinePlotPoint[];
+  /** Scenes not connected to any PlotPoint */
   unassignedScenes: OutlineScene[];
   /** Ideas - informal story ideas not yet promoted to formal nodes */
   unassignedIdeas: OutlineIdea[];
   summary: {
     totalBeats: number;
     totalScenes: number;
-    totalStoryBeats: number;
+    totalPlotPoints: number;
     totalIdeas: number;
-    unassignedStoryBeatCount: number;
+    unassignedPlotPointCount: number;
     unassignedSceneCount: number;
     unassignedIdeaCount: number;
   };
@@ -370,13 +370,13 @@ export interface UpdateNodeData {
 // =============================================================================
 
 export interface OrchestrationIntent {
-  mode?: 'storyBeats' | 'characters' | 'scenes' | 'expand';
+  mode?: 'plotPoints' | 'characters' | 'scenes' | 'expand';
   scope?: 'act1' | 'act2' | 'act3' | 'full';
   focus?: string[];
 }
 
 export interface ResolvedIntentData {
-  mode: 'storyBeats' | 'characters' | 'scenes' | 'expand' | 'interpret';
+  mode: 'plotPoints' | 'characters' | 'scenes' | 'expand' | 'interpret';
   targets: string[];
   direction?: string;
   confidence: number;
@@ -439,8 +439,7 @@ export type EdgeType =
   | 'LOCATED_AT'
   | 'FEATURES_OBJECT'
   | 'HAS_ARC'
-  | 'ALIGNS_WITH'
-  | 'SATISFIED_BY'
+  | 'REALIZED_BY'
   | 'PRECEDES'
   | 'ADVANCES';
 
@@ -636,15 +635,15 @@ export interface BulkAttachData {
 }
 
 // =============================================================================
-// StoryBeat Types
+// PlotPoint Types
 // =============================================================================
 
-export type StoryBeatIntent = 'plot' | 'character' | 'tone';
-export type StoryBeatPriority = 'low' | 'medium' | 'high';
-export type StoryBeatUrgency = 'low' | 'medium' | 'high';
-export type StoryBeatStakesChange = 'up' | 'down' | 'steady';
-export type StoryBeatStatus = 'proposed' | 'approved' | 'deprecated';
-export type StoryBeatNarrativeFunction =
+export type PlotPointIntent = 'plot' | 'character' | 'tone';
+export type PlotPointPriority = 'low' | 'medium' | 'high';
+export type PlotPointUrgency = 'low' | 'medium' | 'high';
+export type PlotPointStakesChange = 'up' | 'down' | 'steady';
+export type PlotPointStatus = 'proposed' | 'approved' | 'deprecated';
+export type PlotPointNarrativeFunction =
   | 'theme_establishment'
   | 'character_introduction'
   | 'character_development'
@@ -654,51 +653,51 @@ export type StoryBeatNarrativeFunction =
   | 'resolution'
   | 'tone_setter';
 
-export interface StoryBeatData extends NodeData {
+export interface PlotPointData extends NodeData {
   fulfillmentCount: number;
   alignedBeatId?: string;
 }
 
-export interface StoryBeatsListData {
-  storyBeats: StoryBeatData[];
+export interface PlotPointsListData {
+  plotPoints: PlotPointData[];
   totalCount: number;
   limit: number;
   offset: number;
 }
 
-export interface CreateStoryBeatRequest {
+export interface CreatePlotPointRequest {
   title: string;
-  intent: StoryBeatIntent;
+  intent: PlotPointIntent;
   summary?: string;
-  narrative_function?: StoryBeatNarrativeFunction;
+  narrative_function?: PlotPointNarrativeFunction;
   criteria_of_satisfaction?: string;
-  priority?: StoryBeatPriority;
-  urgency?: StoryBeatUrgency;
-  stakes_change?: StoryBeatStakesChange;
+  priority?: PlotPointPriority;
+  urgency?: PlotPointUrgency;
+  stakes_change?: PlotPointStakesChange;
   act?: 1 | 2 | 3 | 4 | 5;
   alignToBeatId?: string;
 }
 
-export interface CreateStoryBeatData {
-  storyBeat: StoryBeatData;
+export interface CreatePlotPointData {
+  plotPoint: PlotPointData;
   newVersionId: string;
 }
 
-export interface UpdateStoryBeatData {
-  storyBeat: StoryBeatData;
+export interface UpdatePlotPointData {
+  plotPoint: PlotPointData;
   newVersionId: string;
   fieldsUpdated: string[];
 }
 
-export interface DeleteStoryBeatData {
+export interface DeletePlotPointData {
   deleted: true;
   newVersionId: string;
 }
 
-export interface StoryBeatFilters {
-  status?: StoryBeatStatus;
+export interface PlotPointFilters {
+  status?: PlotPointStatus;
   act?: 1 | 2 | 3 | 4 | 5;
-  intent?: StoryBeatIntent;
+  intent?: PlotPointIntent;
   unfulfilled?: boolean;
 }
 
@@ -709,7 +708,7 @@ export interface StoryBeatFilters {
 export type IntExt = 'INT' | 'EXT' | 'OTHER';
 
 export interface SceneData extends NodeData {
-  connectedStoryBeatId?: string | undefined;
+  connectedPlotPointId?: string | undefined;
 }
 
 export interface ScenesListData {
@@ -725,8 +724,8 @@ export interface CreateSceneRequest {
   int_ext?: IntExt;
   time_of_day?: string;
   mood?: string;
-  /** Optional: immediately attach to a StoryBeat */
-  attachToStoryBeatId?: string;
+  /** Optional: immediately attach to a PlotPoint */
+  attachToPlotPointId?: string;
 }
 
 export interface CreateSceneData {
@@ -843,7 +842,7 @@ export interface IdeaRefinementVariant {
   resolution?: string;
   confidence?: number;
   suggestedArtifacts?: Array<{
-    type: 'StoryBeat' | 'Scene';
+    type: 'PlotPoint' | 'Scene';
     title: string;
     summary?: string;
     rationale?: string;
@@ -867,7 +866,7 @@ export interface IdeaRefinementSessionData {
 // =============================================================================
 
 export type GapType = 'structural' | 'narrative';
-export type GapTier = 'premise' | 'foundations' | 'structure' | 'storyBeats' | 'scenes';
+export type GapTier = 'premise' | 'foundations' | 'structure' | 'plotPoints' | 'scenes';
 export type GapSource = 'rule-engine' | 'derived' | 'user' | 'extractor' | 'import';
 export type GapStatus = 'open' | 'in_progress' | 'resolved';
 export type GapDomain = 'STRUCTURE' | 'SCENE' | 'CHARACTER';
@@ -993,7 +992,7 @@ export interface UpdateContextData {
 // Entry point types for generation
 export type GenerationEntryPointType =
   | 'beat'
-  | 'storyBeat'
+  | 'plotPoint'
   | 'character'
   | 'gap'
   | 'idea'
@@ -1508,15 +1507,15 @@ export interface ProposeRefineRequest {
 // =============================================================================
 
 /**
- * Focus type for Story Beats generation.
+ * Focus type for Plot Points generation.
  */
-export type StoryBeatsFocusType = 'all' | 'act' | 'beats';
+export type PlotPointsFocusType = 'all' | 'act' | 'beats';
 
 /**
- * Request for Story Beats generation.
+ * Request for Plot Points generation.
  */
-export interface ProposeStoryBeatsRequest {
-  focus: StoryBeatsFocusType;
+export interface ProposePlotPointsRequest {
+  focus: PlotPointsFocusType;
   targetAct?: 1 | 2 | 3 | 4 | 5 | undefined;
   priorityBeatIds?: string[] | undefined;
   direction?: string | undefined;
@@ -1526,18 +1525,18 @@ export interface ProposeStoryBeatsRequest {
 }
 
 /**
- * Validated beat info in Story Beats response.
+ * Validated beat info in Plot Points response.
  */
 export interface ValidatedBeatInfo {
   beatId: string;
   beatType: string;
   act: number;
-  storyBeatCount: number;
+  plotPointCount: number;
   isNew: boolean;
 }
 
 /**
- * Rejected beat info in Story Beats response.
+ * Rejected beat info in Plot Points response.
  */
 export interface RejectedBeatInfo {
   beatId: string;
@@ -1546,9 +1545,9 @@ export interface RejectedBeatInfo {
 }
 
 /**
- * Response from Story Beats generation.
+ * Response from Plot Points generation.
  */
-export interface ProposeStoryBeatsResponse {
+export interface ProposePlotPointsResponse {
   sessionId: string;
   packages: NarrativePackage[];
   validatedBeats: ValidatedBeatInfo[];
@@ -1603,7 +1602,7 @@ export interface ProposeCharactersResponse {
  * Request for Scenes generation.
  */
 export interface ProposeScenesRequest {
-  storyBeatIds: string[];
+  plotPointIds: string[];
   scenesPerBeat?: number | undefined;
   direction?: string | undefined;
   creativity?: number | undefined;
@@ -1617,7 +1616,7 @@ export interface ProposeScenesRequest {
 export interface SceneSummary {
   id: string;
   heading: string;
-  storyBeatId: string;
+  plotPointId: string;
   isNew: boolean;
 }
 

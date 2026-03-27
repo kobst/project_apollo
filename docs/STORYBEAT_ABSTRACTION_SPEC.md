@@ -1,4 +1,4 @@
-# StoryBeat Abstraction Layer Specification
+# PlotPoint Abstraction Layer Specification
 
 **Date:** 2026-02-01  
 **Status:** Proposal  
@@ -13,19 +13,19 @@
 The current three-tier structure is:
 
 ```
-Beat (structural) → StoryBeat → Scene
+Beat (structural) → PlotPoint → Scene
 ```
 
 Where:
 - **Beat**: Pure structural abstraction (Save the Cat beats: OpeningImage, ThemeStated, etc.)
-- **StoryBeat**: Supposed to be a plot/character/tone beat that realizes a Beat
+- **PlotPoint**: Supposed to be a plot/character/tone beat that realizes a Beat
 - **Scene**: Concrete execution with heading, setting, action, dialogue
 
 ### 1.2 The Problem
 
-**StoryBeats are inconsistently abstract.** Many are written as scene synopses rather than narrative functions:
+**PlotPoints are inconsistently abstract.** Many are written as scene synopses rather than narrative functions:
 
-| StoryBeat Title | Current Summary | Abstraction Level |
+| PlotPoint Title | Current Summary | Abstraction Level |
 |-----------------|-----------------|-------------------|
 | "Keys Code: No Badges, No Oaths" | "At his Keys body shop, Cain breaks up a petty shake-down when a uniformed officer leans on a local kid for 'protection' money. Cain refuses to get pulled in, but his words land: criminals at least keep their bargains; badges rewrite theirs." | **Scene-like** ❌ |
 | "Dante sells Cain out to Morrison" | "Terrified and tempted, Dante tips Morrison to Cain's next move; Morrison's crew ambushes Cain..." | **Scene-like** ❌ |
@@ -33,10 +33,10 @@ Where:
 
 **Consequences:**
 
-1. **No room for Scene layer**: If the StoryBeat already describes the scene in detail, what's left for the Scene node?
+1. **No room for Scene layer**: If the PlotPoint already describes the scene in detail, what's left for the Scene node?
 2. **Hard to generate alternatives**: Can't generate multiple scene options for one narrative beat because the beat IS a specific scene
 3. **LLM jumps too far**: Asking the LLM to go from "ThemeStated" (pure structure) to a detailed scene description (concrete execution) is a big leap
-4. **Messy gap analysis**: "StoryBeat has no scenes" is meaningless when the StoryBeat description already contains the scene
+4. **Messy gap analysis**: "PlotPoint has no scenes" is meaningless when the PlotPoint description already contains the scene
 
 ### 1.3 User Workflow Impact
 
@@ -53,18 +53,18 @@ The current system forces them to jump from step 1 to step 3 immediately, skippi
 
 ### 2.1 Core Principle
 
-**StoryBeat = Narrative Intent (what/why)**  
+**PlotPoint = Narrative Intent (what/why)**  
 **Scene = Concrete Execution (how)**
 
 ### 2.2 New Architecture
 
 ```
 Beat (structural requirement)
-  ↓ ALIGNS_WITH
-StoryBeat (narrative function/intent)
-  ↓ SATISFIED_BY
+  ↓ alignedBeatId
+PlotPoint (narrative function/intent)
+  ↓ REALIZED_BY
 Scene (concrete execution)
-  ↓ SATISFIED_BY (optional)
+  ↓ REALIZED_BY (optional)
 Scene (alternate execution)
 ```
 
@@ -79,9 +79,9 @@ Name: "ThemeStated"
 Guidance: "Someone states the theme, often to the protagonist"
 ```
 
-**StoryBeat (NEW - properly abstract):**
+**PlotPoint (NEW - properly abstract):**
 ```
-Type: StoryBeat
+Type: PlotPoint
 Title: "Establish Cain's Personal Code"
 Summary: "Show that Cain lives by a personal honor system that values 
           keeping promises over institutional authority. He's skeptical 
@@ -114,9 +114,9 @@ Name: "AllIsLost"
 Guidance: "The lowest point; something or someone is lost"
 ```
 
-**StoryBeat (NEW - properly abstract):**
+**PlotPoint (NEW - properly abstract):**
 ```
-Type: StoryBeat
+Type: PlotPoint
 Title: "Cain Loses Evidence and Freedom"
 Summary: "Cain's investigation collapses when his evidence is seized 
           and he's arrested by the very people he was investigating. 
@@ -143,14 +143,14 @@ Scene:
 
 ### 2.4 Abstraction Guidelines
 
-**StoryBeat should:**
+**PlotPoint should:**
 - ✅ Describe the narrative function or thematic purpose
 - ✅ Identify what emotions, information, or stakes need to shift
 - ✅ Allow for multiple concrete implementations
 - ✅ Be setting-agnostic (no "INT. BODY SHOP" details)
 - ✅ Focus on "what needs to happen narratively"
 
-**StoryBeat should NOT:**
+**PlotPoint should NOT:**
 - ❌ Include specific locations (those go in Scene heading)
 - ❌ Include dialogue or specific actions (those go in Scene key_actions)
 - ❌ Be so specific that only one scene could satisfy it
@@ -167,11 +167,11 @@ Scene:
 
 ## 3. Type & Schema Changes
 
-### 3.1 StoryBeat Type (Updated)
+### 3.1 PlotPoint Type (Updated)
 
 ```typescript
-export interface StoryBeat extends Node {
-  type: 'StoryBeat';
+export interface PlotPoint extends Node {
+  type: 'PlotPoint';
   id: string;
   
   /** Human-readable title (now more abstract) */
@@ -226,7 +226,7 @@ export interface StoryBeat extends Node {
 }
 ```
 
-### 3.2 Scene Type (Updated to absorb current StoryBeat detail)
+### 3.2 Scene Type (Updated to absorb current PlotPoint detail)
 
 ```typescript
 export interface Scene extends Node {
@@ -238,7 +238,7 @@ export interface Scene extends Node {
   
   /** 
    * Scene overview / logline.
-   * NOW includes the level of detail currently in StoryBeats.
+   * NOW includes the level of detail currently in PlotPoints.
    * This is the "mini-story" of what happens in this scene.
    * 
    * Example:
@@ -282,9 +282,9 @@ export interface Scene extends Node {
 
 The edge semantics remain the same:
 
-- `ALIGNS_WITH`: StoryBeat → Beat (structural alignment)
-- `SATISFIED_BY`: StoryBeat → Scene (narrative beat realized by scene)
-- `PRECEDES`: StoryBeat → StoryBeat (narrative sequence)
+- `alignedBeatId`: PlotPoint → Beat (structural alignment)
+- `REALIZED_BY`: PlotPoint → Scene (narrative beat realized by scene)
+- `PRECEDES`: PlotPoint → PlotPoint (narrative sequence)
 - `HAS_CHARACTER`: Scene → Character (cast)
 - `LOCATED_AT`: Scene → Location (setting)
 
@@ -297,19 +297,19 @@ The edge semantics remain the same:
 ```
 User: "Generate content for ThemeStated"
   ↓
-System: Generates StoryBeat with scene-like detail
+System: Generates PlotPoint with scene-like detail
   ↓
-User: Accepts StoryBeat
+User: Accepts PlotPoint
   ↓
 User: "Now generate scenes"
   ↓
-System: ??? (scene content already described in StoryBeat)
+System: ??? (scene content already described in PlotPoint)
 ```
 
 ### 4.2 New Clean Flow
 
 ```
-User: "Generate StoryBeats for ThemeStated"
+User: "Generate PlotPoints for ThemeStated"
   ↓
 System: Generates abstract narrative functions
   - "Establish protagonist's code"
@@ -318,7 +318,7 @@ System: Generates abstract narrative functions
   ↓
 User: Selects "Establish protagonist's code"
   ↓
-User: "Generate scenes for this StoryBeat"
+User: "Generate scenes for this PlotPoint"
   ↓
 System: Generates multiple concrete scene options
   - Body shop confrontation
@@ -330,11 +330,11 @@ User: Selects body shop scene, refines, accepts
 
 ### 4.3 Generation Modes
 
-**StoryBeat Generation** (focuses on narrative needs):
+**PlotPoint Generation** (focuses on narrative needs):
 ```
 Input: Beat (e.g., "ThemeStated")
 Context: Story themes, character arcs, gaps
-Output: 3-5 abstract StoryBeat proposals
+Output: 3-5 abstract PlotPoint proposals
 
 Prompt emphasis:
 - "What narrative functions need to happen?"
@@ -344,7 +344,7 @@ Prompt emphasis:
 
 **Scene Generation** (focuses on concrete execution):
 ```
-Input: StoryBeat (e.g., "Establish protagonist's code")
+Input: PlotPoint (e.g., "Establish protagonist's code")
 Context: Characters, locations, story state
 Output: 3-5 concrete scene options
 
@@ -358,11 +358,11 @@ Prompt emphasis:
 
 ## 5. Prompt Changes
 
-### 5.1 StoryBeat Generation Prompt (NEW)
+### 5.1 PlotPoint Generation Prompt (NEW)
 
 ```typescript
-export function buildStoryBeatPrompt(params: StoryBeatPromptParams): string {
-  return `## StoryBeat Generator v2.0.0
+export function buildPlotPointPrompt(params: PlotPointPromptParams): string {
+  return `## PlotPoint Generator v2.0.0
 
 Generate narrative beats that realize structural beat "${params.beatName}".
 
@@ -377,16 +377,16 @@ ${params.gaps}
 
 ## Your Task
 
-Generate ${params.count} StoryBeat proposals that fulfill this structural beat.
+Generate ${params.count} PlotPoint proposals that fulfill this structural beat.
 
-**CRITICAL: StoryBeats are ABSTRACT narrative functions, NOT scene descriptions.**
+**CRITICAL: PlotPoints are ABSTRACT narrative functions, NOT scene descriptions.**
 
-Each StoryBeat should describe:
+Each PlotPoint should describe:
 - WHAT needs to happen narratively (theme, character arc, plot shift)
 - WHY this beat matters for the story
 - WHAT emotions or stakes need to shift
 
-Each StoryBeat should NOT include:
+Each PlotPoint should NOT include:
 - Specific locations (no "INT. BODY SHOP")
 - Specific dialogue or actions
 - Scene-level details
@@ -394,7 +394,7 @@ Each StoryBeat should NOT include:
 
 Think: "narrative intent" not "scene synopsis"
 
-## Examples of Good vs Bad StoryBeats
+## Examples of Good vs Bad PlotPoints
 
 ❌ BAD (too specific, scene-like):
 "At his Keys body shop, Cain breaks up a shakedown when an officer 
@@ -416,7 +416,7 @@ Think: "narrative intent" not "scene synopsis"
 
 \`\`\`json
 {
-  "storyBeats": [{
+  "plotPoints": [{
     "id": "sb_{timestamp}_{5chars}",
     "title": "Narrative function title",
     "summary": "Abstract description of what needs to happen narratively",
@@ -438,11 +438,11 @@ Generate ABSTRACT narrative functions, not concrete scenes.`;
 export function buildScenePrompt(params: ScenePromptParams): string {
   return `## Scene Generator v2.0.0
 
-Generate concrete scenes that satisfy StoryBeat: "${params.storyBeatTitle}"
+Generate concrete scenes that satisfy PlotPoint: "${params.plotPointTitle}"
 
-## StoryBeat Being Realized
-**Title:** ${params.storyBeatTitle}
-**Summary:** ${params.storyBeatSummary}
+## PlotPoint Being Realized
+**Title:** ${params.plotPointTitle}
+**Summary:** ${params.plotPointSummary}
 **Narrative Function:** ${params.narrativeFunction}
 
 ## Story Context
@@ -465,7 +465,7 @@ Each scene should:
 - Define mood and pacing
 - List key beats/actions within the scene
 
-Multiple scenes can satisfy the same StoryBeat in different ways.
+Multiple scenes can satisfy the same PlotPoint in different ways.
 
 ## Output Format
 
@@ -488,15 +488,15 @@ Multiple scenes can satisfy the same StoryBeat in different ways.
 }
 \`\`\`
 
-Each scene should be a SPECIFIC, filmable execution of the abstract StoryBeat.`;
+Each scene should be a SPECIFIC, filmable execution of the abstract PlotPoint.`;
 }
 ```
 
 ### 5.3 Validation Rules
 
-**StoryBeat validation (new checks):**
+**PlotPoint validation (new checks):**
 ```typescript
-function validateStoryBeatAbstraction(sb: StoryBeat): ValidationResult {
+function validatePlotPointAbstraction(sb: PlotPoint): ValidationResult {
   const warnings: string[] = [];
   
   // Check for scene-like indicators
@@ -526,9 +526,9 @@ function validateStoryBeatAbstraction(sb: StoryBeat): ValidationResult {
 
 ## 6. Migration Strategy
 
-### 6.1 Identifying Scene-Like StoryBeats
+### 6.1 Identifying Scene-Like PlotPoints
 
-Heuristics for detecting StoryBeats that should become Scenes:
+Heuristics for detecting PlotPoints that should become Scenes:
 
 1. **Contains location details**: Mentions specific settings (shop, club, garage)
 2. **Contains dialogue**: Has quoted speech
@@ -540,22 +540,22 @@ Heuristics for detecting StoryBeats that should become Scenes:
 
 ```typescript
 interface MigrationResult {
-  newStoryBeat: StoryBeat;
+  newPlotPoint: PlotPoint;
   newScene: Scene;
   preservedEdges: Edge[];
 }
 
-function migrateSceneLikeStoryBeat(
-  oldStoryBeat: StoryBeat,
+function migrateSceneLikePlotPoint(
+  oldPlotPoint: PlotPoint,
   graph: GraphState
 ): MigrationResult {
   // 1. Extract narrative function from detailed summary
-  const narrativeFunction = extractNarrativeFunction(oldStoryBeat.summary);
+  const narrativeFunction = extractNarrativeFunction(oldPlotPoint.summary);
   
-  // 2. Create new abstract StoryBeat
-  const newStoryBeat: StoryBeat = {
-    ...oldStoryBeat,
-    id: `sb_migrated_${oldStoryBeat.id}`,
+  // 2. Create new abstract PlotPoint
+  const newPlotPoint: PlotPoint = {
+    ...oldPlotPoint,
+    id: `sb_migrated_${oldPlotPoint.id}`,
     summary: narrativeFunction, // Abstracted version
     narrative_function: classifyFunction(narrativeFunction),
   };
@@ -563,32 +563,32 @@ function migrateSceneLikeStoryBeat(
   // 3. Create Scene from old detailed summary
   const newScene: Scene = {
     type: 'Scene',
-    id: `scene_from_${oldStoryBeat.id}`,
-    heading: extractHeading(oldStoryBeat.summary) || "INT. LOCATION - TIME",
-    scene_overview: oldStoryBeat.summary, // Original detail becomes scene
-    order_index: oldStoryBeat.order_index || 0,
+    id: `scene_from_${oldPlotPoint.id}`,
+    heading: extractHeading(oldPlotPoint.summary) || "INT. LOCATION - TIME",
+    scene_overview: oldPlotPoint.summary, // Original detail becomes scene
+    order_index: oldPlotPoint.order_index || 0,
     status: 'DRAFT',
     source_provenance: 'MIGRATION',
   };
   
   // 4. Preserve edges
   const alignsWithEdge = graph.edges.find(
-    e => e.type === 'ALIGNS_WITH' && e.from === oldStoryBeat.id
+    e => e.type === 'alignedBeatId' && e.from === oldPlotPoint.id
   );
   
   const preservedEdges: Edge[] = [
-    // Keep ALIGNS_WITH on new StoryBeat
-    { ...alignsWithEdge, from: newStoryBeat.id },
-    // Add new SATISFIED_BY from StoryBeat to Scene
+    // Keep alignedBeatId on new PlotPoint
+    { ...alignsWithEdge, from: newPlotPoint.id },
+    // Add new REALIZED_BY from PlotPoint to Scene
     {
-      type: 'SATISFIED_BY',
-      from: newStoryBeat.id,
+      type: 'REALIZED_BY',
+      from: newPlotPoint.id,
       to: newScene.id,
       provenance: { source: 'migration' },
     }
   ];
   
-  return { newStoryBeat, newScene, preservedEdges };
+  return { newPlotPoint, newScene, preservedEdges };
 }
 
 // Helper: Extract narrative function from detailed description
@@ -619,12 +619,12 @@ function extractNarrativeFunction(detailed: string): string {
    ```
 
 2. **For each candidate:**
-   - Extract narrative function → becomes new abstract StoryBeat
+   - Extract narrative function → becomes new abstract PlotPoint
    - Move detailed summary → becomes Scene scene_overview
-   - Create SATISFIED_BY edge: StoryBeat → Scene
-   - Preserve ALIGNS_WITH edge: StoryBeat → Beat
+   - Create REALIZED_BY edge: PlotPoint → Scene
+   - Preserve alignedBeatId edge: PlotPoint → Beat
 
-3. **Already-abstract StoryBeats (keep as-is):**
+3. **Already-abstract PlotPoints (keep as-is):**
    ```
    - "Police involvement revealed" (good abstraction)
    - "Rigo seeks help and finds Cain" (borderline, keep for now)
@@ -632,25 +632,25 @@ function extractNarrativeFunction(detailed: string): string {
 
 4. **Update generation prompts** to enforce new abstraction level
 
-5. **Add validation** to warn when StoryBeats are too detailed
+5. **Add validation** to warn when PlotPoints are too detailed
 
 ---
 
 ## 7. UI/UX Changes
 
-### 7.1 StoryBeat Display
+### 7.1 PlotPoint Display
 
 **Before (confusing):**
 ```
-📍 StoryBeat: "Keys Code: No Badges, No Oaths"
+📍 PlotPoint: "Keys Code: No Badges, No Oaths"
    "At his Keys body shop, Cain breaks up a shakedown..."
    
-   [No scenes listed below - content is already in StoryBeat]
+   [No scenes listed below - content is already in PlotPoint]
 ```
 
 **After (clear hierarchy):**
 ```
-📋 StoryBeat: "Establish Cain's Personal Code"
+📋 PlotPoint: "Establish Cain's Personal Code"
    "Show that Cain lives by a personal honor system..."
    
    🎬 Scenes:
@@ -661,11 +661,11 @@ function extractNarrativeFunction(detailed: string): string {
 ### 7.2 Generation Panel Updates
 
 **Current:**
-- "Generate Story Beats" → produces scene-like content
+- "Generate Plot Points" → produces scene-like content
 - "Generate Scenes" → unclear what this should do
 
 **New:**
-- **"Generate Story Beats"** → "What narrative functions are needed?"
+- **"Generate Plot Points"** → "What narrative functions are needed?"
   - Shows: abstract intent-based options
   - User selects conceptual beats
   
@@ -696,9 +696,9 @@ ThemeStated
 | Benefit | Description |
 |---------|-------------|
 | **Clearer abstraction** | Each layer has a distinct purpose: structure → narrative intent → concrete execution |
-| **Multiple scene options** | One StoryBeat can have several Scene implementations |
+| **Multiple scene options** | One PlotPoint can have several Scene implementations |
 | **Easier generation** | LLM can focus on one abstraction level at a time |
-| **Better gap analysis** | "No scenes for StoryBeat" now means something actionable |
+| **Better gap analysis** | "No scenes for PlotPoint" now means something actionable |
 | **More flexibility** | Writers can swap scene implementations without changing narrative structure |
 | **Reusable narrative beats** | Same abstract beat can be satisfied differently in different stories |
 | **Natural workflow** | Matches how writers think: premise → beats → sequences → scenes |
@@ -708,38 +708,38 @@ ThemeStated
 ## 9. Implementation Phases
 
 ### Phase 1: Schema & Types
-- [ ] Update `StoryBeat` type with `narrative_function` field
+- [ ] Update `PlotPoint` type with `narrative_function` field
 - [ ] Add abstraction guidelines to type comments
 - [ ] Update `Scene` type to accommodate richer `scene_overview`
-- [ ] Add validation function for StoryBeat abstraction level
+- [ ] Add validation function for PlotPoint abstraction level
 
 ### Phase 2: Generation Prompts
-- [ ] Create new `buildStoryBeatPrompt` with abstraction emphasis
-- [ ] Update `buildScenePrompt` to reference parent StoryBeat
+- [ ] Create new `buildPlotPointPrompt` with abstraction emphasis
+- [ ] Update `buildScenePrompt` to reference parent PlotPoint
 - [ ] Add examples to prompts showing good vs bad abstraction
 - [ ] Update prompt tests
 
 ### Phase 3: Orchestrators
-- [ ] Update `storyBeatOrchestrator` to enforce abstraction
-- [ ] Update `sceneOrchestrator` to reference StoryBeat context
+- [ ] Update `plotPointOrchestrator` to enforce abstraction
+- [ ] Update `sceneOrchestrator` to reference PlotPoint context
 - [ ] Add post-generation validation warnings
 - [ ] Update response types
 
 ### Phase 4: Migration Tools
-- [ ] Write `migrateSceneLikeStoryBeat()` function
+- [ ] Write `migrateSceneLikePlotPoint()` function
 - [ ] Add LLM-assisted narrative function extraction
 - [ ] Create migration script for existing graphs
 - [ ] Test on neon-noir-graph.json
 
 ### Phase 5: UI Updates
-- [ ] Update StoryBeat display to show abstraction level
-- [ ] Add "Generate Scenes" action to StoryBeat cards
-- [ ] Show Scene options grouped under their StoryBeat
+- [ ] Update PlotPoint display to show abstraction level
+- [ ] Add "Generate Scenes" action to PlotPoint cards
+- [ ] Show Scene options grouped under their PlotPoint
 - [ ] Update gap indicators to show "Needs scenes"
 
 ### Phase 6: Documentation
 - [ ] Update API docs with new abstraction guidelines
-- [ ] Create user guide for StoryBeat vs Scene
+- [ ] Create user guide for PlotPoint vs Scene
 - [ ] Add examples to prompt library
 - [ ] Update tests and test fixtures
 
@@ -747,27 +747,27 @@ ThemeStated
 
 ## 10. Open Questions
 
-1. **Naming**: Should we rename "StoryBeat" to something clearer?
+1. **Naming**: Should we rename "PlotPoint" to something clearer?
    - Options: "NarrativeBeat", "PlotPoint", "StoryFunction", "Sequence"
-   - Lean: Keep "StoryBeat" but enforce the abstraction
+   - Lean: Keep "PlotPoint" but enforce the abstraction
 
 2. **Automatic vs Manual Scene Generation**: 
-   - Should accepting a StoryBeat automatically trigger scene generation?
+   - Should accepting a PlotPoint automatically trigger scene generation?
    - Or should scene generation be a separate explicit step?
    - Lean: Separate step gives users control
 
-3. **Multiple Scenes per StoryBeat**:
+3. **Multiple Scenes per PlotPoint**:
    - Should there be a "primary" scene and "alternates"?
    - Or are all scenes equal options?
    - Lean: Equal options, user picks which to develop
 
 4. **Validation Strictness**:
-   - Should the system reject scene-like StoryBeats?
+   - Should the system reject scene-like PlotPoints?
    - Or just warn and let user override?
    - Lean: Warn but don't block (soft guidance)
 
 5. **Scene Variants**:
-   - If a user generates multiple scenes for one StoryBeat, should they all stay in the graph?
+   - If a user generates multiple scenes for one PlotPoint, should they all stay in the graph?
    - Or mark rejected ones as "ALTERNATE"?
    - Lean: Keep all with status marking (DRAFT/APPROVED/ALTERNATE/CUT)
 
@@ -775,11 +775,11 @@ ThemeStated
 
 ## 11. Success Metrics
 
-- **Abstraction compliance**: >80% of new StoryBeats pass validation
-- **Scene diversity**: Average 2+ scene options per StoryBeat
+- **Abstraction compliance**: >80% of new PlotPoints pass validation
+- **Scene diversity**: Average 2+ scene options per PlotPoint
 - **User clarity**: Survey feedback shows clearer understanding of hierarchy
 - **Generation quality**: Fewer rejected proposals due to wrong abstraction level
-- **Workflow efficiency**: Users complete Beat → StoryBeat → Scene in fewer iterations
+- **Workflow efficiency**: Users complete Beat → PlotPoint → Scene in fewer iterations
 
 ---
 
@@ -788,13 +788,13 @@ ThemeStated
 This change creates a **cleaner separation of concerns** in the story structure:
 
 - **Beat**: Structural requirement (Save the Cat framework)
-- **StoryBeat**: Narrative intent (what needs to happen thematically/plot-wise)
+- **PlotPoint**: Narrative intent (what needs to happen thematically/plot-wise)
 - **Scene**: Concrete execution (how it's shown on screen/page)
 
-By keeping StoryBeats properly abstract, we enable:
+By keeping PlotPoints properly abstract, we enable:
 - Multiple scene options per narrative beat
 - Clearer generation targets
 - Better gap analysis
 - More natural user workflow
 
-The migration path is clear, and existing scene-like StoryBeats can be automatically split into abstract StoryBeat + concrete Scene pairs.
+The migration path is clear, and existing scene-like PlotPoints can be automatically split into abstract PlotPoint + concrete Scene pairs.

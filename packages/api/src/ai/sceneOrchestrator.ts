@@ -2,10 +2,10 @@
  * Scene Generation Orchestrator
  *
  * Handles Scene-focused generation: generates Scene nodes linked to
- * committed StoryBeats via SATISFIED_BY edges.
+ * committed PlotPoints via REALIZED_BY edges.
  *
  * Key features:
- * - Validates StoryBeats are committed before generation
+ * - Validates PlotPoints are committed before generation
  * - Links scenes to characters and locations
  * - Session management for reviewing/accepting packages
  */
@@ -18,7 +18,7 @@ import {
   type Character,
   type Location,
   type Scene,
-  type StoryBeat,
+  type PlotPoint,
   type GraphState,
 } from '@apollo/core';
 import type { StorageContext } from '../config.js';
@@ -43,9 +43,9 @@ type ScenePromptParams = ai.ScenePromptParams;
 // =============================================================================
 
 export interface ProposeScenesRequest {
-  /** StoryBeat IDs to generate scenes for (must be committed) */
+  /** PlotPoint IDs to generate scenes for (must be committed) */
   storyBeatIds: string[];
-  /** Number of scenes per StoryBeat (default: 1) */
+  /** Number of scenes per PlotPoint (default: 1) */
   scenesPerBeat?: number;
   /** Max scenes per package (default: 5) */
   maxScenesPerPackage?: number;
@@ -57,6 +57,8 @@ export interface ProposeScenesRequest {
   packageCount?: number;
   /** Creativity level 0-1 (default: 0.5) */
   creativity?: number;
+  /** Optional problem statement describing what narrative problem to solve */
+  problemStatement?: string;
 }
 
 export interface ProposeScenesResponse {
@@ -71,11 +73,11 @@ export interface ProposeScenesResponse {
 // =============================================================================
 
 /**
- * Generate Scene packages for committed StoryBeats.
+ * Generate Scene packages for committed PlotPoints.
  *
  * Flow:
  * 1. Load graph state
- * 2. Validate StoryBeats (must exist and be committed)
+ * 2. Validate PlotPoints (must exist and be committed)
  * 3. Serialize context
  * 4. Build Scene-specific prompt
  * 5. Call LLM
@@ -93,17 +95,18 @@ export async function proposeScenes(
   console.log(`[proposeScenes] Starting generation for story: ${storyId}`);
 
   const {
-    storyBeatIds,
+    storyBeatIds: plotPointIds,
     scenesPerBeat = 1,
     maxScenesPerPackage = 5,
     expansionScope = 'flexible',
     direction,
     packageCount = 3,
     creativity = 0.5,
+    problemStatement,
   } = request;
 
-  if (!storyBeatIds || storyBeatIds.length === 0) {
-    throw new Error('storyBeatIds is required and must contain at least one ID');
+  if (!plotPointIds || plotPointIds.length === 0) {
+    throw new Error('plotPointIds is required and must contain at least one ID');
   }
 
   // 1. Load graph state
@@ -117,11 +120,11 @@ export async function proposeScenes(
     throw new Error(`Story "${storyId}" state not found`);
   }
 
-  // 2. Validate StoryBeats
-  const { validatedBeats, rejectedBeats } = validateStoryBeats(storyBeatIds, graph);
+  // 2. Validate PlotPoints
+  const { validatedBeats, rejectedBeats } = validatePlotPoints(plotPointIds, graph);
 
   if (validatedBeats.length === 0) {
-    console.log('[proposeScenes] No valid StoryBeats to generate scenes for');
+    console.log('[proposeScenes] No valid PlotPoints to generate scenes for');
     return {
       sessionId: '',
       packages: [],
@@ -130,7 +133,7 @@ export async function proposeScenes(
     };
   }
 
-  console.log(`[proposeScenes] Validated ${validatedBeats.length} StoryBeats, rejected ${rejectedBeats.length}`);
+  console.log(`[proposeScenes] Validated ${validatedBeats.length} PlotPoints, rejected ${rejectedBeats.length}`);
 
   // 3. Build system prompt from metadata (stable, cacheable - constitution only)
   const systemPromptParams: ai.SystemPromptParams = {
@@ -152,7 +155,7 @@ export async function proposeScenes(
   const existingScenes = serializeExistingScenes(graph);
 
   // 5. Get filtered ideas for scene task
-  const entryPointNodeId = storyBeatIds.length > 0 ? storyBeatIds[0] : undefined;
+  const entryPointNodeId = plotPointIds.length > 0 ? plotPointIds[0] : undefined;
   const ideasResult = ai.getIdeasForTask(graph, 'scene', entryPointNodeId, 5);
 
   // 5b. Get filtered guidelines for scene task
@@ -182,6 +185,9 @@ export async function proposeScenes(
   }
   if (guidelinesResult.serialized) {
     promptParams.guidelines = guidelinesResult.serialized;
+  }
+  if (problemStatement) {
+    promptParams.problemStatement = problemStatement;
   }
 
   const prompt = ai.buildScenePrompt(promptParams);
@@ -287,8 +293,8 @@ export async function proposeScenes(
     (sessionParams as { depth: ai.GenerationDepth; count: ai.GenerationCount; direction?: string }).direction = direction;
   }
 
-  const entryPoint: ai.GenerationEntryPoint = storyBeatIds.length > 0 && storyBeatIds[0]
-    ? { type: 'storyBeat', targetId: storyBeatIds[0] }
+  const entryPoint: ai.GenerationEntryPoint = plotPointIds.length > 0 && plotPointIds[0]
+    ? { type: 'plotPoint', targetId: plotPointIds[0] }
     : { type: 'naked' };
 
   session = await createGenerationSession(
@@ -318,10 +324,10 @@ export async function proposeScenes(
 // =============================================================================
 
 /**
- * Validate that StoryBeats exist and are committed.
+ * Validate that PlotPoints exist and are committed.
  */
-function validateStoryBeats(
-  storyBeatIds: string[],
+function validatePlotPoints(
+  plotPointIds: string[],
   graph: GraphState
 ): {
   validatedBeats: ai.ValidatedBeatInfo[];
@@ -330,50 +336,47 @@ function validateStoryBeats(
   const validatedBeats: ai.ValidatedBeatInfo[] = [];
   const rejectedBeats: ai.RejectedBeatInfo[] = [];
 
-  // Get ALIGNS_WITH edges to find beat alignments
-  const alignsWithEdges = getEdgesByType(graph, 'ALIGNS_WITH');
+  // Get REALIZED_BY edges to check for existing scenes
+  const realizedByEdges = getEdgesByType(graph, 'REALIZED_BY');
+  const plotPointsWithScenes = new Set(realizedByEdges.map((e) => e.to));
 
-  // Get SATISFIED_BY edges to check for existing scenes
-  const satisfiedByEdges = getEdgesByType(graph, 'SATISFIED_BY');
-  const storyBeatsWithScenes = new Set(satisfiedByEdges.map((e) => e.to));
-
-  for (const sbId of storyBeatIds) {
+  for (const sbId of plotPointIds) {
     const node = getNode(graph, sbId);
 
     // Check if node exists
     if (!node) {
-      rejectedBeats.push({ storyBeatId: sbId, reason: 'not_found' });
+      rejectedBeats.push({ plotPointId: sbId, reason: 'not_found' });
       continue;
     }
 
-    // Check if node is a StoryBeat
-    if (node.type !== 'StoryBeat') {
-      rejectedBeats.push({ storyBeatId: sbId, reason: 'not_found' });
+    // Check if node is a PlotPoint
+    if (node.type !== 'PlotPoint') {
+      rejectedBeats.push({ plotPointId: sbId, reason: 'not_found' });
       continue;
     }
 
-    const storyBeat = node as StoryBeat;
+    const plotPoint = node as PlotPoint;
 
-    // Check if StoryBeat is approved (committed)
-    // Note: 'approved' status means the story beat is committed and ready for scene generation
-    if (storyBeat.status !== 'approved') {
-      rejectedBeats.push({ storyBeatId: sbId, reason: 'not_committed' });
+    // Check if PlotPoint is approved (committed)
+    // Note: 'approved' status means the plot point is committed and ready for scene generation
+    if (plotPoint.status !== 'approved') {
+      rejectedBeats.push({ plotPointId: sbId, reason: 'not_committed' });
       continue;
     }
 
-    // Check if StoryBeat already has scenes (optional - could be a warning instead)
-    if (storyBeatsWithScenes.has(sbId)) {
-      rejectedBeats.push({ storyBeatId: sbId, reason: 'already_has_scenes' });
+    // Check if PlotPoint already has scenes (optional - could be a warning instead)
+    if (plotPointsWithScenes.has(sbId)) {
+      rejectedBeats.push({ plotPointId: sbId, reason: 'already_has_scenes' });
       continue;
     }
 
-    // Find the beat alignment
-    const alignsWithEdge = alignsWithEdges.find((e) => e.from === sbId);
-    const alignedTo = alignsWithEdge?.to ?? 'Unknown';
+    // Find the beat alignment via alignedBeatId property
+    const alignedBeatId = (plotPoint as any).alignedBeatId as string | undefined;
+    const alignedTo = alignedBeatId ?? 'Unknown';
 
     validatedBeats.push({
-      storyBeatId: sbId,
-      title: storyBeat.title,
+      plotPointId: sbId,
+      title: plotPoint.title,
       alignedTo,
     });
   }
@@ -456,8 +459,8 @@ function filterScenePackages(
 ): ai.NarrativePackage[] {
   const validPrimaryNodeTypes = new Set(['Scene']);
   const validSupportingNodeTypes = new Set(['Character', 'Location', 'Object']);
-  const validPrimaryEdgeTypes = new Set(['SATISFIED_BY', 'HAS_CHARACTER', 'LOCATED_AT', 'FEATURES_OBJECT']);
-  const validBeatIds = new Set(validatedBeats.map((b) => b.storyBeatId));
+  const validPrimaryEdgeTypes = new Set(['REALIZED_BY', 'HAS_CHARACTER', 'LOCATED_AT', 'FEATURES_OBJECT']);
+  const validBeatIds = new Set(validatedBeats.map((b) => b.plotPointId));
 
   return packages.map((pkg) => {
     // Handle both old (changes) and new (primary/supporting) structure
@@ -471,14 +474,14 @@ function filterScenePackages(
         return true;
       });
 
-      // Validate SATISFIED_BY edges point to valid StoryBeats
+      // Validate REALIZED_BY edges point to valid PlotPoints
       const primaryEdges = (pkg.primary as ai.PrimaryOutput).edges.filter((edge) => {
         if (!validPrimaryEdgeTypes.has(edge.edge_type)) {
           console.warn(`[filterScenePackages] Filtering out invalid edge type: ${edge.edge_type}`);
           return false;
         }
-        if (edge.edge_type === 'SATISFIED_BY' && !validBeatIds.has(edge.to)) {
-          console.warn(`[filterScenePackages] SATISFIED_BY edge targets invalid StoryBeat: ${edge.to}`);
+        if (edge.edge_type === 'REALIZED_BY' && !validBeatIds.has(edge.to)) {
+          console.warn(`[filterScenePackages] REALIZED_BY edge targets invalid PlotPoint: ${edge.to}`);
           return false;
         }
         return true;

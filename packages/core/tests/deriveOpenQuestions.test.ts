@@ -9,26 +9,25 @@ import {
   createScene,
   createCharacter,
   createCharacterArc,
-  createStoryBeat,
+  createPlotPoint,
   resetIdCounter,
 } from './helpers/index.js';
 import { edges } from './helpers/index.js';
 
 /**
- * Helper to connect a scene to a beat through the StoryBeat hierarchy.
- * Creates StoryBeat → ALIGNS_WITH → Beat and StoryBeat → SATISFIED_BY → Scene
+ * Helper to connect a scene to a beat through the PlotPoint hierarchy.
+ * Creates PlotPoint with alignedBeatId FK and PlotPoint → REALIZED_BY → Scene
  */
 function attachSceneToBeat(
   graph: GraphState,
   sceneId: string,
   beatId: string,
-  storyBeatId?: string
+  plotPointId?: string
 ): void {
-  const sbId = storyBeatId ?? `sb_for_${sceneId}`;
-  const sb = createStoryBeat({ id: sbId, title: `SB for ${sceneId}` });
-  graph.nodes.set(sb.id, sb);
-  graph.edges.push(edges.alignsWith(sbId, beatId));
-  graph.edges.push(edges.satisfiedBy(sbId, sceneId, 1));
+  const ppId = plotPointId ?? `pp_for_${sceneId}`;
+  const pp = createPlotPoint({ id: ppId, title: `PP for ${sceneId}`, alignedBeatId: beatId });
+  graph.nodes.set(pp.id, pp);
+  graph.edges.push(edges.realizedBy(ppId, sceneId, 1));
 }
 import { fixtures } from './fixtures/index.js';
 
@@ -68,11 +67,11 @@ describe('deriveOpenQuestions', () => {
     });
   });
 
-  describe('After adding Catalyst scene (via StoryBeat)', () => {
-    it('should remove BeatUnrealized for Catalyst after scene added via StoryBeat', () => {
-      const scene = createScene('beat_Catalyst', { id: 'scene_catalyst' });
+  describe('After adding Catalyst scene (via PlotPoint)', () => {
+    it('should remove BeatUnrealized for Catalyst after scene added via PlotPoint', () => {
+      const scene = createScene({ id: 'scene_catalyst' });
       graph.nodes.set(scene.id, scene);
-      // Connect scene to beat through StoryBeat hierarchy
+      // Connect scene to beat through PlotPoint hierarchy
       attachSceneToBeat(graph, 'scene_catalyst', 'beat_Catalyst');
 
       const questions = deriveOpenQuestions(graph);
@@ -84,7 +83,7 @@ describe('deriveOpenQuestions', () => {
     });
 
     it('should still have BeatUnrealized for Debate and BreakIntoTwo', () => {
-      const scene = createScene('beat_Catalyst', { id: 'scene_catalyst' });
+      const scene = createScene({ id: 'scene_catalyst' });
       graph.nodes.set(scene.id, scene);
       attachSceneToBeat(graph, 'scene_catalyst', 'beat_Catalyst');
 
@@ -101,8 +100,8 @@ describe('deriveOpenQuestions', () => {
       expect(breakIntoTwoOQ).toBeDefined();
     });
 
-    it('should have 14 BeatUnrealized after adding one scene via StoryBeat', () => {
-      const scene = createScene('beat_Catalyst', { id: 'scene_catalyst' });
+    it('should have 14 BeatUnrealized after adding one scene via PlotPoint', () => {
+      const scene = createScene({ id: 'scene_catalyst' });
       graph.nodes.set(scene.id, scene);
       attachSceneToBeat(graph, 'scene_catalyst', 'beat_Catalyst');
 
@@ -115,20 +114,20 @@ describe('deriveOpenQuestions', () => {
 
   describe('ActImbalance', () => {
     it('should detect act imbalance when one act is empty while neighbors have content', () => {
-      // Add scenes to Act 1 beats (positions 1-5) via StoryBeats
-      const scene1 = createScene('beat_OpeningImage', { id: 'scene_1' });
-      const scene2 = createScene('beat_Setup', { id: 'scene_2' });
+      // Add scenes to Act 1 beats (positions 1-5) via PlotPoints
+      const scene1 = createScene({ id: 'scene_1' });
+      const scene2 = createScene({ id: 'scene_2' });
       // Skip Act 2 entirely (positions 6-8)
-      // Add scenes to Act 3 (positions 9-10) via StoryBeats
-      const scene3 = createScene('beat_Midpoint', { id: 'scene_3' });
-      const scene4 = createScene('beat_BadGuysCloseIn', { id: 'scene_4' });
+      // Add scenes to Act 3 (positions 9-10) via PlotPoints
+      const scene3 = createScene({ id: 'scene_3' });
+      const scene4 = createScene({ id: 'scene_4' });
 
       graph.nodes.set(scene1.id, scene1);
       graph.nodes.set(scene2.id, scene2);
       graph.nodes.set(scene3.id, scene3);
       graph.nodes.set(scene4.id, scene4);
 
-      // Connect scenes to beats through StoryBeats
+      // Connect scenes to beats through PlotPoints
       attachSceneToBeat(graph, 'scene_1', 'beat_OpeningImage');
       attachSceneToBeat(graph, 'scene_2', 'beat_Setup');
       attachSceneToBeat(graph, 'scene_3', 'beat_Midpoint');
@@ -143,7 +142,7 @@ describe('deriveOpenQuestions', () => {
 
   describe('SceneHasNoCast', () => {
     it('should derive SceneHasNoCast when scene has no HAS_CHARACTER edges', () => {
-      const scene = createScene('beat_Catalyst', { id: 'scene_nocast' });
+      const scene = createScene({ id: 'scene_nocast' });
       graph.nodes.set(scene.id, scene);
 
       const questions = deriveOpenQuestions(graph);
@@ -155,7 +154,7 @@ describe('deriveOpenQuestions', () => {
     });
 
     it('should NOT derive SceneHasNoCast when scene has characters', () => {
-      const scene = createScene('beat_Catalyst', { id: 'scene_withcast' });
+      const scene = createScene({ id: 'scene_withcast' });
       const char = createCharacter({ id: 'char_1' });
       graph.nodes.set(scene.id, scene);
       graph.nodes.set(char.id, char);
@@ -173,7 +172,7 @@ describe('deriveOpenQuestions', () => {
 
   describe('SceneNeedsLocation', () => {
     it('should derive SceneNeedsLocation when scene has no LOCATED_AT edge', () => {
-      const scene = createScene('beat_Catalyst', { id: 'scene_noloc' });
+      const scene = createScene({ id: 'scene_noloc' });
       graph.nodes.set(scene.id, scene);
 
       const questions = deriveOpenQuestions(graph);
@@ -193,7 +192,7 @@ describe('deriveOpenQuestions', () => {
 
       // Add to 3 scenes
       for (let i = 1; i <= 3; i++) {
-        const scene = createScene('beat_Catalyst', {
+        const scene = createScene({
           id: `scene_${i}`,
           order_index: i,
         });
@@ -217,7 +216,7 @@ describe('deriveOpenQuestions', () => {
 
       // Only 2 scenes
       for (let i = 1; i <= 2; i++) {
-        const scene = createScene('beat_Catalyst', {
+        const scene = createScene({
           id: `scene_${i}`,
           order_index: i,
         });

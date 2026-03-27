@@ -104,13 +104,13 @@ function generateSavedPackageId(): string {
 
 /**
  * Migrate a saved package to current schema.
- * Handles renames like PlotPoint → StoryBeat.
+ * Handles renames like StoryBeat → PlotPoint.
  */
 function migratePackage(pkg: SavedPackage): SavedPackage {
-  // Migrate node_type: PlotPoint → StoryBeat
+  // Migrate node_type: StoryBeat → PlotPoint
   for (const nodeChange of pkg.package.changes.nodes) {
-    if (nodeChange.node_type === 'PlotPoint') {
-      nodeChange.node_type = 'StoryBeat';
+    if (nodeChange.node_type === 'StoryBeat') {
+      nodeChange.node_type = 'PlotPoint';
     }
   }
   return pkg;

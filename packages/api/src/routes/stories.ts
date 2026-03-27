@@ -38,11 +38,11 @@ import {
   createPreCommitLintHandler,
   createStagedLintHandler,
   createBulkAttachHandler,
-  createStoryBeatHandler,
-  listStoryBeatsHandler,
-  getStoryBeatHandler,
-  updateStoryBeatHandler,
-  deleteStoryBeatHandler,
+  createPlotPointHandler,
+  listPlotPointsHandler,
+  getPlotPointHandler,
+  updatePlotPointHandler,
+  deletePlotPointHandler,
   createCoverageHandler,
   createGapsHandler,
   createRecomputeOrderHandler,
@@ -79,7 +79,7 @@ import {
   createDiscardProposalHandler,
   createCommitProposalHandler,
   createRefineProposalHandler,
-  createProposeStoryBeatsHandler,
+  createProposePlotPointsHandler,
   createProposeCharactersHandler,
   createProposeScenesHandler,
   createProposeExpandHandler,
@@ -102,6 +102,7 @@ import {
   createGetIntroductionPointsHandler,
   createGetMentionsStatsHandler,
 } from '../handlers/index.js';
+import { createWorkflowHandler } from '../handlers/workflow.js';
 
 export function createStoriesRouter(ctx: StorageContext): Router {
   const router = Router();
@@ -190,12 +191,12 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   // Recompute order endpoint (migration/sync)
   router.post('/:id/recompute-order', createRecomputeOrderHandler(ctx));
 
-  // StoryBeat endpoints
-  router.post('/:id/story-beats', createStoryBeatHandler(ctx));
-  router.get('/:id/story-beats', listStoryBeatsHandler(ctx));
-  router.get('/:id/story-beats/:sbId', getStoryBeatHandler(ctx));
-  router.patch('/:id/story-beats/:sbId', updateStoryBeatHandler(ctx));
-  router.delete('/:id/story-beats/:sbId', deleteStoryBeatHandler(ctx));
+  // PlotPoint endpoints
+  router.post('/:id/plot-points', createPlotPointHandler(ctx));
+  router.get('/:id/plot-points', listPlotPointsHandler(ctx));
+  router.get('/:id/plot-points/:sbId', getPlotPointHandler(ctx));
+  router.patch('/:id/plot-points/:sbId', updatePlotPointHandler(ctx));
+  router.delete('/:id/plot-points/:sbId', deletePlotPointHandler(ctx));
 
   // Scene endpoints
   router.post('/:id/scenes', createSceneHandler(ctx));
@@ -229,7 +230,10 @@ export function createStoriesRouter(ctx: StorageContext): Router {
   router.delete('/:id/propose/active', createDiscardProposalHandler(ctx));
   router.post('/:id/propose/commit', createCommitProposalHandler(ctx));
   router.post('/:id/propose/refine', createRefineProposalHandler(ctx));
-  router.post('/:id/propose/story-beats', createProposeStoryBeatsHandler(ctx));
+  router.post('/:id/propose/plot-points', createProposePlotPointsHandler(ctx));
+
+  // Workflow endpoint (composes interpret → clarify → generate → critique)
+  router.post('/:id/workflows/run', createWorkflowHandler(ctx));
   router.post('/:id/propose/characters', createProposeCharactersHandler(ctx));
   router.post('/:id/propose/scenes', createProposeScenesHandler(ctx));
   router.post('/:id/propose/expand', createProposeExpandHandler(ctx));

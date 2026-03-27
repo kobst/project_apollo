@@ -6,7 +6,7 @@ import { useState } from 'react';
 import styles from './AssignModal.module.css';
 
 interface AssignStoryBeatModalProps {
-  storyBeatTitle: string;
+  plotPointTitle: string;
   beats: Array<{ id: string; beatType: string; act: number }>;
   onAssign: (beatId: string) => void;
   onCancel: () => void;
@@ -23,7 +23,7 @@ function formatBeatType(beatType: string): string {
 }
 
 export function AssignStoryBeatModal({
-  storyBeatTitle,
+  plotPointTitle,
   beats,
   onAssign,
   onCancel,
@@ -63,7 +63,7 @@ export function AssignStoryBeatModal({
 
         <div className={styles.content}>
           <p className={styles.description}>
-            Assign &quot;{storyBeatTitle}&quot; to a structural beat:
+            Assign &quot;{plotPointTitle}&quot; to a structural beat:
           </p>
 
           <div className={styles.optionsList}>

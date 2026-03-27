@@ -14,7 +14,7 @@ export function PlanningView() {
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
 
   // Planning tab only shows abstract planning ideas (no suggestedType).
-  // Concrete artifacts (Character, StoryBeat, Scene, etc.) live in the workspace stash.
+  // Concrete artifacts (Character, PlotPoint, Scene, etc.) live in the workspace stash.
   const planningIdeas = useMemo(() => {
     return ideas.filter((idea) => !idea.suggestedType);
   }, [ideas]);

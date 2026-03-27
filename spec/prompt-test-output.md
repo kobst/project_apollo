@@ -36,18 +36,18 @@ RESPONSE BODY:
 }
 
 ================================================================================
-  TEST 2: POST /stories/:id/propose/story-beats
+  TEST 2: POST /stories/:id/propose/plot-points
 ================================================================================
 
 
---- Propose story beats ---
+--- Propose plot points ---
 
-REQUEST: POST http://localhost:3099/stories/neon-noir-test/propose/story-beats
+REQUEST: POST http://localhost:3099/stories/neon-noir-test/propose/plot-points
 
 REQUEST BODY:
 {
     "packageCount": 1,
-    "maxStoryBeatsPerPackage": 2,
+    "maxPlotPointsPerPackage": 2,
     "direction": "Focus on rising tension in Act 2",
     "creativity": 0.5,
     "expansionScope": "flexible"
@@ -75,8 +75,8 @@ RESPONSE BODY:
                     "nodes": [
                         {
                             "operation": "add",
-                            "node_type": "StoryBeat",
-                            "node_id": "storybeat_1769559032_k4m9q",
+                            "node_type": "PlotPoint",
+                            "node_id": "plotpoint_1769559032_k4m9q",
                             "data": {
                                 "title": "Cain signs back onto Rigo's code",
                                 "summary": "Cain agrees to take the job but demands autonomy and a hard rule: no civilians and no panic violence, forcing Rigo to accept Cain's terms to stop the bleeding. Cain pockets a burner and a partial shipment manifest, knowing that once he moves, the syndicate will treat him as responsible for results.",
@@ -88,8 +88,8 @@ RESPONSE BODY:
                         },
                         {
                             "operation": "add",
-                            "node_type": "StoryBeat",
-                            "node_id": "storybeat_1769559032_t7v2n",
+                            "node_type": "PlotPoint",
+                            "node_id": "plotpoint_1769559032_t7v2n",
                             "data": {
                                 "title": "A dockside test run reveals a patterned theft",
                                 "summary": "Cain tails the next scheduled handoff route and discovers the thefts follow a precise timing window tied to police-style staging, suggesting inside coordination rather than rival crews. He realizes the only way forward is to infiltrate the supply chain and flush the thieves, even if it paints a target on his back.",
@@ -103,23 +103,23 @@ RESPONSE BODY:
                     "edges": [
                         {
                             "operation": "add",
-                            "edge_type": "ALIGNS_WITH",
-                            "from": "storybeat_1769559032_k4m9q",
+                            "edge_type": "alignedBeatId",
+                            "from": "plotpoint_1769559032_k4m9q",
                             "to": "beat_BreakIntoTwo",
                             "from_name": "Cain signs back onto Rigo's code"
                         },
                         {
                             "operation": "add",
-                            "edge_type": "ALIGNS_WITH",
-                            "from": "storybeat_1769559032_t7v2n",
+                            "edge_type": "alignedBeatId",
+                            "from": "plotpoint_1769559032_t7v2n",
                             "to": "beat_BadGuysCloseIn",
                             "from_name": "A dockside test run reveals a patterned theft"
                         },
                         {
                             "operation": "add",
                             "edge_type": "PRECEDES",
-                            "from": "storybeat_1769559032_k4m9q",
-                            "to": "storybeat_1769559032_t7v2n",
+                            "from": "plotpoint_1769559032_k4m9q",
+                            "to": "plotpoint_1769559032_t7v2n",
                             "from_name": "Cain signs back onto Rigo's code",
                             "to_name": "A dockside test run reveals a patterned theft"
                         }
@@ -141,77 +141,77 @@ RESPONSE BODY:
                 "beatType": "OpeningImage",
                 "act": 1,
                 "position": 1,
-                "hasStoryBeat": false
+                "hasPlotPoint": false
             },
             {
                 "beatId": "beat_ThemeStated",
                 "beatType": "ThemeStated",
                 "act": 1,
                 "position": 2,
-                "hasStoryBeat": false
+                "hasPlotPoint": false
             },
             {
                 "beatId": "beat_Catalyst",
                 "beatType": "Catalyst",
                 "act": 1,
                 "position": 4,
-                "hasStoryBeat": false
+                "hasPlotPoint": false
             },
             {
                 "beatId": "beat_Debate",
                 "beatType": "Debate",
                 "act": 1,
                 "position": 5,
-                "hasStoryBeat": false
+                "hasPlotPoint": false
             },
             {
                 "beatId": "beat_BreakIntoTwo",
                 "beatType": "BreakIntoTwo",
                 "act": 2,
                 "position": 6,
-                "hasStoryBeat": false
+                "hasPlotPoint": false
             },
             {
                 "beatId": "beat_BStory",
                 "beatType": "BStory",
                 "act": 2,
                 "position": 7,
-                "hasStoryBeat": false
+                "hasPlotPoint": false
             },
             {
                 "beatId": "beat_BadGuysCloseIn",
                 "beatType": "BadGuysCloseIn",
                 "act": 3,
                 "position": 10,
-                "hasStoryBeat": false
+                "hasPlotPoint": false
             },
             {
                 "beatId": "beat_DarkNightOfSoul",
                 "beatType": "DarkNightOfSoul",
                 "act": 4,
                 "position": 12,
-                "hasStoryBeat": false
+                "hasPlotPoint": false
             },
             {
                 "beatId": "beat_BreakIntoThree",
                 "beatType": "BreakIntoThree",
                 "act": 5,
                 "position": 13,
-                "hasStoryBeat": false
+                "hasPlotPoint": false
             },
             {
                 "beatId": "beat_Finale",
                 "beatType": "Finale",
                 "act": 5,
                 "position": 14,
-                "hasStoryBeat": false
+                "hasPlotPoint": false
             },
             {
                 "beatId": "beat_FinalImage",
                 "beatType": "FinalImage",
                 "act": 5,
                 "position": 15,
-                "hasStoryBeat": false
+                "hasPlotPoint": false
             }
         ]
     }
@@ -372,13 +372,13 @@ RESPONSE BODY:
 ================================================================================
 
 
---- Propose scenes for story beats ---
+--- Propose scenes for plot points ---
 
 REQUEST: POST http://localhost:3099/stories/neon-noir-test/propose/scenes
 
 REQUEST BODY:
 {
-    "storyBeatIds": [
+    "plotPointIds": [
         "pp_extracted_1767576713934",
         "pp_extracted_1767585226496"
     ],
@@ -401,11 +401,11 @@ RESPONSE BODY:
         "validatedBeats": [],
         "rejectedBeats": [
             {
-                "storyBeatId": "pp_extracted_1767576713934",
+                "plotPointId": "pp_extracted_1767576713934",
                 "reason": "not_committed"
             },
             {
-                "storyBeatId": "pp_extracted_1767585226496",
+                "plotPointId": "pp_extracted_1767585226496",
                 "reason": "not_committed"
             }
         ]
@@ -908,11 +908,11 @@ Full error object: TypeError: Cannot read properties of undefined (reading 'cons
     at /Users/edwardhan/Apollo/node_modules/express/lib/router/index.js:284:15
     at param (/Users/edwardhan/Apollo/node_modules/express/lib/router/index.js:365:14)
     at param (/Users/edwardhan/Apollo/node_modules/express/lib/router/index.js:376:14)
-[proposeStoryBeatsHandler] Received propose story-beats request
-[proposeStoryBeatsHandler] Story: neon-noir-test, priorityBeats: 0, packageCount: 1
-[proposeStoryBeats] Starting generation for story: neon-noir-test
-[proposeStoryBeats] Found 11 unaligned beats
-[proposeStoryBeats] Calling LLM (streaming: false, systemPrompt: true)...
+[proposePlotPointsHandler] Received propose plot-points request
+[proposePlotPointsHandler] Story: neon-noir-test, priorityBeats: 0, packageCount: 1
+[proposePlotPoints] Starting generation for story: neon-noir-test
+[proposePlotPoints] Found 11 unaligned beats
+[proposePlotPoints] Calling LLM (streaming: false, systemPrompt: true)...
 
 [OpenAI] === REQUEST (non-streaming) ===
 [OpenAI] Model: gpt-5.2
@@ -945,20 +945,20 @@ When generating content:
 - Consider how new elements connect to and support existing content
 - Prioritize narrative coherence over novelty
 - NEVER violate hard rules or include banned elements
-[OpenAI] User prompt: You are a story structure specialist generating StoryBeat nodes to fill structural gaps.
+[OpenAI] User prompt: You are a story structure specialist generating PlotPoint nodes to fill structural gaps.
 
 ## CRITICAL CONSTRAINTS - MUST FOLLOW
 
 **STRICT OUTPUT RULES:**
-1. PRIMARY section: ONLY StoryBeat nodes. NO Scene, Character, Location, or Object nodes in primary.
-2. Each StoryBeat MUST have exactly one ALIGNS_WITH edge to a Beat node.
-3. StoryBeats MAY have PRECEDES edges to other StoryBeats for causal ordering.
+1. PRIMARY section: ONLY PlotPoint nodes. NO Scene, Character, Location, or Object nodes in primary.
+2. Each PlotPoint MUST have exactly one alignedBeatId edge to a Beat node.
+3. PlotPoints MAY have PRECEDES edges to other PlotPoints for causal ordering.
 4. SUPPORTING section: MAY include Character or Location nodes if needed.
 5. You MUST generate exactly 1 packages. Not fewer, not more.
 
 **VALID EDGE TYPES:**
-- PRIMARY: ALIGNS_WITH (StoryBeat -> Beat, REQUIRED), PRECEDES (StoryBeat -> StoryBeat, optional)
-- SUPPORTING: FEATURES_CHARACTER (StoryBeat -> Character), LOCATED_AT (Scene -> Location)
+- PRIMARY: alignedBeatId (PlotPoint -> Beat, REQUIRED), PRECEDES (PlotPoint -> PlotPoint, optional)
+- SUPPORTING: FEATURES_CHARACTER (PlotPoint -> Character), LOCATED_AT (Scene -> Location)
 
 ## Story Context
 
@@ -969,7 +969,7 @@ When generating content:
 - Characters: 6
 - Locations: 3
 - Beats: 15
-- StoryBeats: 7
+- PlotPoints: 7
 - Scenes: 6
 - Total Edges: 24
 
@@ -1008,15 +1008,15 @@ When generating content:
 - **beat_Finale** (Beat): beat_Finale
 - **beat_FinalImage** (Beat): beat_FinalImage
 
-### Story Beats
+### Plot Points
 
-- **pp_extracted_1767576713934** (StoryBeat): Cain gets arrested: "Cain gets arrested"
-- **pp_extracted_1767585226496** (StoryBeat): Rigo seeks help and finds Cain: "Rigo seeks help and finds Cain"
-- **pp_extracted_1767663062839** (StoryBeat): Rigo decides to return to Cain for this one last job: "Rigo decides to return to Cain for this one last job"
-- **pp_1768500003_badge** (StoryBeat): Police involvement revealed: "Cain realizes the thefts are being carried out by corrupt..."
-- **pp_1768500123_introduction** (StoryBeat): Kane's violent introduction: "Cain witnesses Kane's brutal efficiency during a drug shi..."
-- **pp_1768952140_u0m4x** (StoryBeat): Cain meets Dante for a lead on the theft crew: "Cain finds Dante in a club back hallway; Dante offers sec..."
-- **pp_1768952140_n7c1h** (StoryBeat): Dante sells Cain out to Morrison: "Terrified and tempted, Dante tips Morrison to Cain's next..."
+- **pp_extracted_1767576713934** (PlotPoint): Cain gets arrested: "Cain gets arrested"
+- **pp_extracted_1767585226496** (PlotPoint): Rigo seeks help and finds Cain: "Rigo seeks help and finds Cain"
+- **pp_extracted_1767663062839** (PlotPoint): Rigo decides to return to Cain for this one last job: "Rigo decides to return to Cain for this one last job"
+- **pp_1768500003_badge** (PlotPoint): Police involvement revealed: "Cain realizes the thefts are being carried out by corrupt..."
+- **pp_1768500123_introduction** (PlotPoint): Kane's violent introduction: "Cain witnesses Kane's brutal efficiency during a drug shi..."
+- **pp_1768952140_u0m4x** (PlotPoint): Cain meets Dante for a lead on the theft crew: "Cain finds Dante in a club back hallway; Dante offers sec..."
+- **pp_1768952140_n7c1h** (PlotPoint): Dante sells Cain out to Morrison: "Terrified and tempted, Dante tips Morrison to Cain's next..."
 
 ### Scenes
 
@@ -1030,7 +1030,7 @@ When generating content:
 
 ## Missing Beats (Opportunities)
 
-These are structural beats that currently have no StoryBeat aligned to them.
+These are structural beats that currently have no PlotPoint aligned to them.
 They are sorted by position in the story structure.
 
 - **beat_OpeningImage** (Opening Image, Act 1, position 1)
@@ -1047,15 +1047,15 @@ They are sorted by position in the story structure.
 
 
 
-## Existing Story Beats
+## Existing Plot Points
 
-- **pp_extracted_1767576713934**: "Cain gets arrested" - Cain gets arrested [ALIGNS_WITH: beat_Midpoint]
-- **pp_extracted_1767585226496**: "Rigo seeks help and finds Cain" - Rigo seeks help and finds Cain [ALIGNS_WITH: beat_Setup] [PRECEDES: pp_extracted_1767663062839]
-- **pp_extracted_1767663062839**: "Rigo decides to return to Cain for this one last job" - Rigo decides to return to Cain for this one last job [ALIGNS_WITH: beat_Setup]
+- **pp_extracted_1767576713934**: "Cain gets arrested" - Cain gets arrested [alignedBeatId: beat_Midpoint]
+- **pp_extracted_1767585226496**: "Rigo seeks help and finds Cain" - Rigo seeks help and finds Cain [alignedBeatId: beat_Setup] [PRECEDES: pp_extracted_1767663062839]
+- **pp_extracted_1767663062839**: "Rigo decides to return to Cain for this one last job" - Rigo decides to return to Cain for this one last job [alignedBeatId: beat_Setup]
 - **pp_1768500003_badge**: "Police involvement revealed" - Cain realizes the thefts are being carried out by corrupt...
-- **pp_1768500123_introduction**: "Kane's violent introduction" - Cain witnesses Kane's brutal efficiency during a drug shi... [ALIGNS_WITH: beat_FunAndGames]
-- **pp_1768952140_u0m4x**: "Cain meets Dante for a lead on the theft crew" - Cain finds Dante in a club back hallway; Dante offers sec... [ALIGNS_WITH: beat_FunAndGames] [PRECEDES: pp_1768952140_n7c1h]
-- **pp_1768952140_n7c1h**: "Dante sells Cain out to Morrison" - Terrified and tempted, Dante tips Morrison to Cain's next... [ALIGNS_WITH: beat_AllIsLost] [PRECEDES: pp_extracted_1767576713934]
+- **pp_1768500123_introduction**: "Kane's violent introduction" - Cain witnesses Kane's brutal efficiency during a drug shi... [alignedBeatId: beat_FunAndGames]
+- **pp_1768952140_u0m4x**: "Cain meets Dante for a lead on the theft crew" - Cain finds Dante in a club back hallway; Dante offers sec... [alignedBeatId: beat_FunAndGames] [PRECEDES: pp_1768952140_n7c1h]
+- **pp_1768952140_n7c1h**: "Dante sells Cain out to Morrison" - Terrified and tempted, Dante tips Morrison to Cain's next... [alignedBeatId: beat_AllIsLost] [PRECEDES: pp_extracted_1767576713934]
 
 ## Key Characters (for reference only)
 
@@ -1076,24 +1076,24 @@ They are sorted by position in the story structure.
 ## Supporting Content (Optional)
 
 When expansionScope is "flexible", you MAY include supporting nodes in the "supporting" section:
-- **Character nodes**: New characters referenced in StoryBeats
-- **Location nodes**: New locations mentioned in StoryBeats
+- **Character nodes**: New characters referenced in PlotPoints
+- **Location nodes**: New locations mentioned in PlotPoints
 
-Supporting nodes should only be created if they are essential to understanding the StoryBeats.
+Supporting nodes should only be created if they are essential to understanding the PlotPoints.
 
 ## Generation Settings
 
 - **Creativity Level**: balanced (0.5)
 - **Expansion Scope**: flexible
 - **Packages to Generate**: 1
-- **Max StoryBeats per Package**: 2
+- **Max PlotPoints per Package**: 2
 
 
-## StoryBeat Node Schema
+## PlotPoint Node Schema
 
 **IMPORTANT: ALL fields below are REQUIRED. Do not leave any field empty.**
 
-Each StoryBeat node MUST have these fields with meaningful content:
+Each PlotPoint node MUST have these fields with meaningful content:
 - **title**: Short, evocative title capturing the beat's essence (e.g., "Marcus discovers the truth about his partner")
 - **summary**: 2-3 sentences describing what happens, who is involved, and why it matters. This should give enough context to understand the beat without reading scenes. Include emotional stakes and character motivations.
 - **intent**: One of "plot" | "character" | "tone" - the primary story function
@@ -1127,12 +1127,12 @@ Schema:
       "confidence": 0.85,
       "style_tags": ["dramatic", "revelation"],
       "primary": {
-        "type": "StoryBeat",
+        "type": "PlotPoint",
         "nodes": [
           {
             "operation": "add",
-            "node_type": "StoryBeat",
-            "node_id": "storybeat_12345_xyz",
+            "node_type": "PlotPoint",
+            "node_id": "plotpoint_12345_xyz",
             "data": {
               "title": "Marcus discovers the truth about his partner",
               "summary": "Marcus finds hidden financial records in his partner's desk that prove a connection to the crime syndicate. This discovery shatters his trust and forces him to question every case they've worked together. The revelation transforms Marcus from investigator to target.",
@@ -1146,8 +1146,8 @@ Schema:
         "edges": [
           {
             "operation": "add",
-            "edge_type": "ALIGNS_WITH",
-            "from": "storybeat_12345_xyz",
+            "edge_type": "alignedBeatId",
+            "from": "plotpoint_12345_xyz",
             "to": "beat_Midpoint"
           }
         ]
@@ -1186,12 +1186,12 @@ Schema:
 
 1. **Priority Beats**: At least one package SHOULD address each priority beat if possible
 2. **Variety**: Each package should take a meaningfully different approach
-3. **Coherence**: StoryBeats should fit the story's themes and existing content
-4. **Causal Flow**: Use PRECEDES edges when one story beat naturally leads to another
-5. **Supporting Nodes**: Only include Characters/Locations if essential to the StoryBeats
-6. **IDs**: Use format `storybeat_{timestamp}_{5chars}` for new StoryBeat IDs
+3. **Coherence**: PlotPoints should fit the story's themes and existing content
+4. **Causal Flow**: Use PRECEDES edges when one plot point naturally leads to another
+5. **Supporting Nodes**: Only include Characters/Locations if essential to the PlotPoints
+6. **IDs**: Use format `plotpoint_{timestamp}_{5chars}` for new PlotPoint IDs
 
-**REMINDER: Primary section = StoryBeat nodes only. Supporting section for Character/Location if needed.**
+**REMINDER: Primary section = PlotPoint nodes only. Supporting section for Character/Location if needed.**
 
 Output ONLY the JSON object, no markdown code blocks, no explanation.
 [OpenAI] Making API call, attempt 1
@@ -1220,12 +1220,12 @@ Output ONLY the JSON object, no markdown code blocks, no explanation.
       "confidence": 0.83,
       "style_tags": ["crime-thriller", "rising-tension", "noir"],
       "primary": {
-        "type": "StoryBeat",
+        "type": "PlotPoint",
         "nodes": [
           {
             "operation": "add",
-            "node_type": "StoryBeat",
-            "node_id": "storybeat_1769559032_k4m9q",
+            "node_type": "PlotPoint",
+            "node_id": "plotpoint_1769559032_k4m9q",
             "data": {
               "title": "Cain signs back onto Rigo's code",
               "summary": "Cain agrees to take the job but demands autonomy and a hard rule: no civilians and no panic violence, forcing Rigo to accept Cain's terms to stop the bleeding. Cain pockets a burner and a partial shipment manifest, knowing that once he moves, the syndicate will treat him as responsible for results.",
@@ -1237,8 +1237,8 @@ Output ONLY the JSON object, no markdown code blocks, no explanation.
           },
           {
             "operation": "add",
-            "node_type": "StoryBeat",
-            "node_id": "storybeat_1769559032_t7v2n",
+            "node_type": "PlotPoint",
+            "node_id": "plotpoint_1769559032_t7v2n",
             "data": {
               "title": "A dockside test run reveals a patterned theft",
               "summary": "Cain tails the next scheduled handoff route and discovers the thefts follow a precise timing window tied to police-style staging, suggesting inside coordination rather than rival crews. He realizes the only way forward is to infiltrate the supply chain and flush the thieves, even if it paints a target on his back.",
@@ -1252,21 +1252,21 @@ Output ONLY the JSON object, no markdown code blocks, no explanation.
         "edges": [
           {
             "operation": "add",
-            "edge_type": "ALIGNS_WITH",
-            "from": "storybeat_1769559032_k4m9q",
+            "edge_type": "alignedBeatId",
+            "from": "plotpoint_1769559032_k4m9q",
             "to": "beat_BreakIntoTwo"
           },
           {
             "operation": "add",
-            "edge_type": "ALIGNS_WITH",
-            "from": "storybeat_1769559032_t7v2n",
+            "edge_type": "alignedBeatId",
+            "from": "plotpoint_1769559032_t7v2n",
             "to": "beat_BadGuysCloseIn"
           },
           {
             "operation": "add",
             "edge_type": "PRECEDES",
-            "from": "storybeat_1769559032_k4m9q",
-            "to": "storybeat_1769559032_t7v2n"
+            "from": "plotpoint_1769559032_k4m9q",
+            "to": "plotpoint_1769559032_t7v2n"
           }
         ]
       },
@@ -1296,8 +1296,8 @@ Output ONLY the JSON object, no markdown code blocks, no explanation.
     }
   ]
 }
-[proposeStoryBeats] LLM response received, length: 3385
-[proposeStoryBeats] Parsing LLM response...
+[proposePlotPoints] LLM response received, length: 3385
+[proposePlotPoints] Parsing LLM response...
 [proposeCharactersHandler] Received propose characters request
 [proposeCharactersHandler] Story: neon-noir-test, focus: cast_ensemble, includeArcs: true
 [proposeCharacters] Starting generation for story: neon-noir-test
@@ -1342,7 +1342,7 @@ When generating content:
 1. PRIMARY section: Character nodes and CharacterArc nodes.
 2. Each Character MUST have: name, archetype, description.
 3. CharacterArcs are linked via HAS_ARC edge (Character -> CharacterArc).
-4. SUPPORTING section: MAY include Location nodes or StoryBeatHints.
+4. SUPPORTING section: MAY include Location nodes or PlotPointHints.
 5. You MUST generate exactly 1 packages. Not fewer, not more.
 
 **VALID EDGE TYPES:**
@@ -1358,7 +1358,7 @@ When generating content:
 - Characters: 6
 - Locations: 3
 - Beats: 15
-- StoryBeats: 7
+- PlotPoints: 7
 - Scenes: 6
 - Total Edges: 24
 
@@ -1397,15 +1397,15 @@ When generating content:
 - **beat_Finale** (Beat): beat_Finale
 - **beat_FinalImage** (Beat): beat_FinalImage
 
-### Story Beats
+### Plot Points
 
-- **pp_extracted_1767576713934** (StoryBeat): Cain gets arrested: "Cain gets arrested"
-- **pp_extracted_1767585226496** (StoryBeat): Rigo seeks help and finds Cain: "Rigo seeks help and finds Cain"
-- **pp_extracted_1767663062839** (StoryBeat): Rigo decides to return to Cain for this one last job: "Rigo decides to return to Cain for this one last job"
-- **pp_1768500003_badge** (StoryBeat): Police involvement revealed: "Cain realizes the thefts are being carried out by corrupt..."
-- **pp_1768500123_introduction** (StoryBeat): Kane's violent introduction: "Cain witnesses Kane's brutal efficiency during a drug shi..."
-- **pp_1768952140_u0m4x** (StoryBeat): Cain meets Dante for a lead on the theft crew: "Cain finds Dante in a club back hallway; Dante offers sec..."
-- **pp_1768952140_n7c1h** (StoryBeat): Dante sells Cain out to Morrison: "Terrified and tempted, Dante tips Morrison to Cain's next..."
+- **pp_extracted_1767576713934** (PlotPoint): Cain gets arrested: "Cain gets arrested"
+- **pp_extracted_1767585226496** (PlotPoint): Rigo seeks help and finds Cain: "Rigo seeks help and finds Cain"
+- **pp_extracted_1767663062839** (PlotPoint): Rigo decides to return to Cain for this one last job: "Rigo decides to return to Cain for this one last job"
+- **pp_1768500003_badge** (PlotPoint): Police involvement revealed: "Cain realizes the thefts are being carried out by corrupt..."
+- **pp_1768500123_introduction** (PlotPoint): Kane's violent introduction: "Cain witnesses Kane's brutal efficiency during a drug shi..."
+- **pp_1768952140_u0m4x** (PlotPoint): Cain meets Dante for a lead on the theft crew: "Cain finds Dante in a club back hallway; Dante offers sec..."
+- **pp_1768952140_n7c1h** (PlotPoint): Dante sells Cain out to Morrison: "Terrified and tempted, Dante tips Morrison to Cain's next..."
 
 ### Scenes
 
@@ -1430,7 +1430,7 @@ Generate diverse, story-appropriate characters.
 - **Dante "D" Alvarado** (Smooth informant / Judas): A charismatic nightclub promoter and mid-level broker who grew up around Cain...
 - **Nico Velez** (Unknown archetype): Dockworker and small-time fixer at the marina who trades gossip for cash and ...
 
-## Existing Story Beats (for context)
+## Existing Plot Points (for context)
 
 - Cain gets arrested: Cain gets arrested
 - Rigo seeks help and finds Cain: Rigo seeks help and finds Cain
@@ -1456,7 +1456,7 @@ These guidelines should be followed when contextually appropriate:
 
 When expansionScope is "flexible", you MAY include supporting nodes in the "supporting" section:
 - **Location nodes**: Locations associated with characters (homes, workplaces)
-- **StoryBeatHints**: Suggestions for story beats featuring these characters
+- **PlotPointHints**: Suggestions for plot points featuring these characters
 
 Supporting nodes should only be created if they enrich the character's world.
 
@@ -1562,7 +1562,7 @@ Schema:
         "edges": []
       },
       "suggestions": {
-        "storyBeatHints": [
+        "plotPointHints": [
           {
             "title": "Elena's First Big Story",
             "summary": "Elena stumbles onto evidence of corruption while investigating a routine story",
@@ -1683,7 +1683,7 @@ Output ONLY the JSON object, no markdown code blocks, no explanation.
         ]
       },
       "suggestions": {
-        "storyBeatHints": [
+        "plotPointHints": [
           {
             "title": "The Badge That Collects",
             "summary": "Korda approaches Morrison after a \"routine\" review, implying she can bury his crew or redirect heat onto Rigo, but only if Morrison pays in information and bodies.",
@@ -1715,9 +1715,9 @@ Output ONLY the JSON object, no markdown code blocks, no explanation.
 [proposeCharacters] LLM response received, length: 5030
 [proposeCharacters] Parsing LLM response...
 [proposeScenesHandler] Received propose scenes request
-[proposeScenesHandler] Story: neon-noir-test, storyBeatIds: 2
+[proposeScenesHandler] Story: neon-noir-test, plotPointIds: 2
 [proposeScenes] Starting generation for story: neon-noir-test
-[proposeScenes] No valid StoryBeats to generate scenes for
+[proposeScenes] No valid PlotPoints to generate scenes for
 [proposeExpandHandler] Received propose expand request
 [proposeExpandHandler] Story: neon-noir-test, target type: story-context
 [proposeExpand] Starting generation for story: neon-noir-test
@@ -1773,7 +1773,7 @@ When generating content:
 - Characters: 6
 - Locations: 3
 - Beats: 15
-- StoryBeats: 7
+- PlotPoints: 7
 - Scenes: 6
 - Total Edges: 24
 
@@ -1812,15 +1812,15 @@ When generating content:
 - **beat_Finale** (Beat): beat_Finale
 - **beat_FinalImage** (Beat): beat_FinalImage
 
-### Story Beats
+### Plot Points
 
-- **pp_extracted_1767576713934** (StoryBeat): Cain gets arrested: "Cain gets arrested"
-- **pp_extracted_1767585226496** (StoryBeat): Rigo seeks help and finds Cain: "Rigo seeks help and finds Cain"
-- **pp_extracted_1767663062839** (StoryBeat): Rigo decides to return to Cain for this one last job: "Rigo decides to return to Cain for this one last job"
-- **pp_1768500003_badge** (StoryBeat): Police involvement revealed: "Cain realizes the thefts are being carried out by corrupt..."
-- **pp_1768500123_introduction** (StoryBeat): Kane's violent introduction: "Cain witnesses Kane's brutal efficiency during a drug shi..."
-- **pp_1768952140_u0m4x** (StoryBeat): Cain meets Dante for a lead on the theft crew: "Cain finds Dante in a club back hallway; Dante offers sec..."
-- **pp_1768952140_n7c1h** (StoryBeat): Dante sells Cain out to Morrison: "Terrified and tempted, Dante tips Morrison to Cain's next..."
+- **pp_extracted_1767576713934** (PlotPoint): Cain gets arrested: "Cain gets arrested"
+- **pp_extracted_1767585226496** (PlotPoint): Rigo seeks help and finds Cain: "Rigo seeks help and finds Cain"
+- **pp_extracted_1767663062839** (PlotPoint): Rigo decides to return to Cain for this one last job: "Rigo decides to return to Cain for this one last job"
+- **pp_1768500003_badge** (PlotPoint): Police involvement revealed: "Cain realizes the thefts are being carried out by corrupt..."
+- **pp_1768500123_introduction** (PlotPoint): Kane's violent introduction: "Cain witnesses Kane's brutal efficiency during a drug shi..."
+- **pp_1768952140_u0m4x** (PlotPoint): Cain meets Dante for a lead on the theft crew: "Cain finds Dante in a club back hallway; Dante offers sec..."
+- **pp_1768952140_n7c1h** (PlotPoint): Dante sells Cain out to Morrison: "Terrified and tempted, Dante tips Morrison to Cain's next..."
 
 ### Scenes
 
@@ -1873,7 +1873,7 @@ When expansionScope is "flexible", you MAY include supporting nodes in the "supp
 - **Character**: name, description, archetype, traits[]
 - **Location**: name, description
 - **Object**: name, description
-- **StoryBeat**: title, summary, intent (plot|character|tone), priority, stakes_change
+- **PlotPoint**: title, summary, intent (plot|character|tone), priority, stakes_change
 - **Scene**: heading, scene_overview, mood, key_actions[]
 
 ## Available Edge Types
@@ -1881,10 +1881,10 @@ When expansionScope is "flexible", you MAY include supporting nodes in the "supp
 - HAS_CHARACTER: Scene → Character
 - LOCATED_AT: Scene → Location
 - FEATURES_OBJECT: Scene → Object
-- ALIGNS_WITH: StoryBeat → Beat (aligns with structural beat)
-- SATISFIED_BY: StoryBeat → Scene (scene realizes story beat)
-- PRECEDES: StoryBeat → StoryBeat (causal/temporal ordering)
-- ADVANCES: StoryBeat → CharacterArc
+- alignedBeatId: PlotPoint → Beat (aligns with structural beat)
+- REALIZED_BY: PlotPoint → Scene (scene realizes plot point)
+- PRECEDES: PlotPoint → PlotPoint (causal/temporal ordering)
+- ADVANCES: PlotPoint → CharacterArc
 
 **IMPORTANT**: ONLY use edge types from this list. Do NOT invent new edge types.
 
@@ -2336,7 +2336,7 @@ When generating content:
 - Characters: 6
 - Locations: 3
 - Beats: 15
-- StoryBeats: 7
+- PlotPoints: 7
 - Scenes: 6
 - Total Edges: 24
 
@@ -2375,15 +2375,15 @@ When generating content:
 - **beat_Finale** (Beat): beat_Finale
 - **beat_FinalImage** (Beat): beat_FinalImage
 
-### Story Beats
+### Plot Points
 
-- **pp_extracted_1767576713934** (StoryBeat): Cain gets arrested: "Cain gets arrested"
-- **pp_extracted_1767585226496** (StoryBeat): Rigo seeks help and finds Cain: "Rigo seeks help and finds Cain"
-- **pp_extracted_1767663062839** (StoryBeat): Rigo decides to return to Cain for this one last job: "Rigo decides to return to Cain for this one last job"
-- **pp_1768500003_badge** (StoryBeat): Police involvement revealed: "Cain realizes the thefts are being carried out by corrupt..."
-- **pp_1768500123_introduction** (StoryBeat): Kane's violent introduction: "Cain witnesses Kane's brutal efficiency during a drug shi..."
-- **pp_1768952140_u0m4x** (StoryBeat): Cain meets Dante for a lead on the theft crew: "Cain finds Dante in a club back hallway; Dante offers sec..."
-- **pp_1768952140_n7c1h** (StoryBeat): Dante sells Cain out to Morrison: "Terrified and tempted, Dante tips Morrison to Cain's next..."
+- **pp_extracted_1767576713934** (PlotPoint): Cain gets arrested: "Cain gets arrested"
+- **pp_extracted_1767585226496** (PlotPoint): Rigo seeks help and finds Cain: "Rigo seeks help and finds Cain"
+- **pp_extracted_1767663062839** (PlotPoint): Rigo decides to return to Cain for this one last job: "Rigo decides to return to Cain for this one last job"
+- **pp_1768500003_badge** (PlotPoint): Police involvement revealed: "Cain realizes the thefts are being carried out by corrupt..."
+- **pp_1768500123_introduction** (PlotPoint): Kane's violent introduction: "Cain witnesses Kane's brutal efficiency during a drug shi..."
+- **pp_1768952140_u0m4x** (PlotPoint): Cain meets Dante for a lead on the theft crew: "Cain finds Dante in a club back hallway; Dante offers sec..."
+- **pp_1768952140_n7c1h** (PlotPoint): Dante sells Cain out to Morrison: "Terrified and tempted, Dante tips Morrison to Cain's next..."
 
 ### Scenes
 
@@ -2432,7 +2432,7 @@ When expansionScope is "flexible", you MAY include supporting nodes in the "supp
 - **Character**: name, description, archetype, traits[]
 - **Location**: name, description
 - **Object**: name, description
-- **StoryBeat**: title, summary, intent (plot|character|tone), priority, stakes_change
+- **PlotPoint**: title, summary, intent (plot|character|tone), priority, stakes_change
 - **Scene**: heading, scene_overview, mood, key_actions[]
 
 ## Available Edge Types
@@ -2440,10 +2440,10 @@ When expansionScope is "flexible", you MAY include supporting nodes in the "supp
 - HAS_CHARACTER: Scene → Character
 - LOCATED_AT: Scene → Location
 - FEATURES_OBJECT: Scene → Object
-- ALIGNS_WITH: StoryBeat → Beat (aligns with structural beat)
-- SATISFIED_BY: StoryBeat → Scene (scene realizes story beat)
-- PRECEDES: StoryBeat → StoryBeat (causal/temporal ordering)
-- ADVANCES: StoryBeat → CharacterArc
+- alignedBeatId: PlotPoint → Beat (aligns with structural beat)
+- REALIZED_BY: PlotPoint → Scene (scene realizes plot point)
+- PRECEDES: PlotPoint → PlotPoint (causal/temporal ordering)
+- ADVANCES: PlotPoint → CharacterArc
 
 **IMPORTANT**: ONLY use edge types from this list. Do NOT invent new edge types.
 
@@ -2792,7 +2792,7 @@ All non-kept elements
 - Characters: 6
 - Locations: 3
 - Beats: 15
-- StoryBeats: 7
+- PlotPoints: 7
 - Scenes: 6
 - Total Edges: 24
 
@@ -2831,15 +2831,15 @@ All non-kept elements
 - **beat_Finale** (Beat): beat_Finale
 - **beat_FinalImage** (Beat): beat_FinalImage
 
-### Story Beats
+### Plot Points
 
-- **pp_extracted_1767576713934** (StoryBeat): Cain gets arrested: "Cain gets arrested"
-- **pp_extracted_1767585226496** (StoryBeat): Rigo seeks help and finds Cain: "Rigo seeks help and finds Cain"
-- **pp_extracted_1767663062839** (StoryBeat): Rigo decides to return to Cain for this one last job: "Rigo decides to return to Cain for this one last job"
-- **pp_1768500003_badge** (StoryBeat): Police involvement revealed: "Cain realizes the thefts are being carried out by corrupt..."
-- **pp_1768500123_introduction** (StoryBeat): Kane's violent introduction: "Cain witnesses Kane's brutal efficiency during a drug shi..."
-- **pp_1768952140_u0m4x** (StoryBeat): Cain meets Dante for a lead on the theft crew: "Cain finds Dante in a club back hallway; Dante offers sec..."
-- **pp_1768952140_n7c1h** (StoryBeat): Dante sells Cain out to Morrison: "Terrified and tempted, Dante tips Morrison to Cain's next..."
+- **pp_extracted_1767576713934** (PlotPoint): Cain gets arrested: "Cain gets arrested"
+- **pp_extracted_1767585226496** (PlotPoint): Rigo seeks help and finds Cain: "Rigo seeks help and finds Cain"
+- **pp_extracted_1767663062839** (PlotPoint): Rigo decides to return to Cain for this one last job: "Rigo decides to return to Cain for this one last job"
+- **pp_1768500003_badge** (PlotPoint): Police involvement revealed: "Cain realizes the thefts are being carried out by corrupt..."
+- **pp_1768500123_introduction** (PlotPoint): Kane's violent introduction: "Cain witnesses Kane's brutal efficiency during a drug shi..."
+- **pp_1768952140_u0m4x** (PlotPoint): Cain meets Dante for a lead on the theft crew: "Cain finds Dante in a club back hallway; Dante offers sec..."
+- **pp_1768952140_n7c1h** (PlotPoint): Dante sells Cain out to Morrison: "Terrified and tempted, Dante tips Morrison to Cain's next..."
 
 ### Scenes
 

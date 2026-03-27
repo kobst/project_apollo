@@ -117,15 +117,18 @@ export function validatePatch(
 function checkFKIntegrity(graph: GraphState): ValidationError[] {
   const errors: ValidationError[] = [];
 
-  // Scene.beat_id must exist if defined (optional field)
-  for (const scene of getNodesByType<Scene>(graph, 'Scene')) {
-    if (scene.beat_id && !getNode(graph, scene.beat_id)) {
-      errors.push({
-        code: 'FK_INTEGRITY',
-        message: `Scene "${scene.id}" references non-existent Beat "${scene.beat_id}"`,
-        node_id: scene.id,
-        field: 'beat_id',
-      });
+  // PlotPoint.alignedBeatId must reference an existing Beat if set
+  for (const node of graph.nodes.values()) {
+    if (node.type === 'PlotPoint' && (node as any).alignedBeatId) {
+      const beatId = (node as any).alignedBeatId as string;
+      if (!getNode(graph, beatId)) {
+        errors.push({
+          code: 'FK_INTEGRITY',
+          message: `PlotPoint "${node.id}" references non-existent Beat "${beatId}"`,
+          node_id: node.id,
+          field: 'alignedBeatId',
+        });
+      }
     }
   }
 

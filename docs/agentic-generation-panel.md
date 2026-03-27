@@ -41,7 +41,7 @@ Scope: Documents the integrated agentic workflow inside the existing GenerationP
     - Accept banner: Shows compact overlay diff counts and actions (Accept/Reject/Save) in-panel.
   - Saved Packages: View, Apply, Discard, with overlay preview when viewing a saved package.
 - Structure overlays
-  - “Send to Ideas” buttons on proposed StoryBeats and Scenes cards (mirrors Elements behavior).
+  - “Send to Ideas” buttons on proposed PlotPoints and Scenes cards (mirrors Elements behavior).
 
 ## How To Use
 
@@ -52,7 +52,7 @@ Scope: Documents the integrated agentic workflow inside the existing GenerationP
    - Check Impact if present.
    - Use Refine to add guided variations; navigate via lineage breadcrumbs.
    - Accept/Reject/Save from the Accept banner; compact diff counts provide a quick overview.
-4. Use “Send to Ideas” on proposed Structure (StoryBeats/Scenes) and Elements to stash content as Ideas.
+4. Use “Send to Ideas” on proposed Structure (PlotPoints/Scenes) and Elements to stash content as Ideas.
 
 ## Crash Fixes
 
@@ -82,7 +82,7 @@ Scope: Documents the integrated agentic workflow inside the existing GenerationP
   - `packages/ui/src/components/workspace/GenerationPanel.tsx`
   - `packages/ui/src/components/workspace/PackageCarousel.tsx`
   - `packages/ui/src/components/workspace/ProposedElementCard.tsx`
-  - `packages/ui/src/components/outline/ProposedStoryBeatCard.tsx`
+  - `packages/ui/src/components/outline/ProposedPlotPointCard.tsx`
   - `packages/ui/src/components/outline/ProposedSceneCard.tsx`
   - `packages/ui/src/hooks/useAgentJobs.ts`
   - `packages/ui/src/utils/stagingUtils.ts`

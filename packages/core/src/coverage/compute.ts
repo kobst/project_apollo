@@ -13,7 +13,7 @@ import {
 } from '../core/graph.js';
 import { lint, registerHardRules, registerSoftRules } from '../rules/index.js';
 import type { LintScope } from '../rules/types.js';
-import type { Beat, StoryBeat, Scene } from '../types/nodes.js';
+import type { Beat, PlotPoint, Scene } from '../types/nodes.js';
 import { BEAT_POSITION_MAP } from '../types/nodes.js';
 import type {
   TierSummary,
@@ -99,7 +99,7 @@ function computeTierSummaries(graph: GraphState, gaps: Gap[]): TierSummary[] {
       case 'structure':
         return computeStructureTier(graph);
       case 'storyBeats':
-        return computeStoryBeatsTier(graph);
+        return computePlotPointsTier(graph);
       case 'scenes':
         return computeScenesTier(graph);
     }
@@ -166,28 +166,28 @@ function computeStructureTier(graph: GraphState): TierSummary {
 }
 
 /**
- * Compute StoryBeats tier summary.
- * Coverage: StoryBeats with SATISFIED_BY edges / expected minimum.
- * Expected minimum = number of beats (at least one story beat per beat).
+ * Compute PlotPoints tier summary.
+ * Coverage: PlotPoints with REALIZED_BY edges / expected minimum.
+ * Expected minimum = number of beats (at least one plot point per beat).
  * Active = proposed or approved (excludes deprecated).
  */
-function computeStoryBeatsTier(graph: GraphState): TierSummary {
-  const storyBeats = getNodesByType<StoryBeat>(graph, 'StoryBeat');
-  // Active story beats = not deprecated (proposed or approved)
-  const activeSBs = storyBeats.filter((sb) => sb.status !== 'deprecated');
+function computePlotPointsTier(graph: GraphState): TierSummary {
+  const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
+  // Active plot points = not deprecated (proposed or approved)
+  const activePPs = plotPoints.filter((pp) => pp.status !== 'deprecated');
 
-  // Get the number of beats to determine minimum expected story beats
+  // Get the number of beats to determine minimum expected plot points
   const beats = getNodesByType<Beat>(graph, 'Beat');
   const numBeats = beats.length;
 
-  // Expected minimum: at least one story beat per beat, or EXPECTED_BEATS if no beats yet
+  // Expected minimum: at least one plot point per beat, or EXPECTED_BEATS if no beats yet
   const expectedMin = numBeats > 0 ? numBeats : EXPECTED_BEATS;
 
-  // Total is the greater of existing active SBs or expected minimum
-  const total = Math.max(activeSBs.length, expectedMin);
+  // Total is the greater of existing active PPs or expected minimum
+  const total = Math.max(activePPs.length, expectedMin);
 
-  // If no active story beats, show 0/expectedMin
-  if (activeSBs.length === 0) {
+  // If no active plot points, show 0/expectedMin
+  if (activePPs.length === 0) {
     return {
       tier: 'storyBeats',
       label: 'Story Beats',
@@ -197,11 +197,11 @@ function computeStoryBeatsTier(graph: GraphState): TierSummary {
     };
   }
 
-  // Count story beats that have at least one SATISFIED_BY edge (linked to a scene)
-  const satisfiedByEdges = getEdgesByType(graph, 'SATISFIED_BY');
-  const satisfiedSBIds = new Set(satisfiedByEdges.map((e) => e.to));
+  // Count plot points that have at least one REALIZED_BY edge (linked to a scene)
+  const realizedByEdges = getEdgesByType(graph, 'REALIZED_BY');
+  const realizedPPIds = new Set(realizedByEdges.map((e) => e.to));
 
-  const covered = activeSBs.filter((sb) => satisfiedSBIds.has(sb.id)).length;
+  const covered = activePPs.filter((pp) => realizedPPIds.has(pp.id)).length;
 
   return {
     tier: 'storyBeats',
@@ -224,13 +224,13 @@ function computeScenesTier(graph: GraphState): TierSummary {
   const beats = getNodesByType<Beat>(graph, 'Beat');
   const numBeats = beats.length > 0 ? beats.length : EXPECTED_BEATS;
 
-  // Get the number of active story beats
-  const storyBeats = getNodesByType<StoryBeat>(graph, 'StoryBeat');
-  const numActiveSBs = storyBeats.filter((sb) => sb.status !== 'deprecated').length;
+  // Get the number of active plot points
+  const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
+  const numActivePPs = plotPoints.filter((pp) => pp.status !== 'deprecated').length;
 
-  // Expected minimum: the greater of beats or story beats
-  // (need at least one scene per beat, and at least one scene per story beat)
-  const expectedMin = Math.max(numBeats, numActiveSBs);
+  // Expected minimum: the greater of beats or plot points
+  // (need at least one scene per beat, and at least one scene per plot point)
+  const expectedMin = Math.max(numBeats, numActivePPs);
 
   // Total is the greater of existing scenes or expected minimum
   const total = Math.max(scenes.length, expectedMin);
@@ -348,27 +348,26 @@ function formatBeatType(beatType: string): string {
 }
 
 // =============================================================================
-// Unaligned Beats (for StoryBeat generation)
+// Unaligned Beats (for PlotPoint generation)
 // =============================================================================
 
 /**
- * Compute beats that have no ALIGNS_WITH edges from StoryBeats.
- * These represent structural gaps that need StoryBeat coverage.
+ * Compute beats that have no PlotPoints aligned via alignedBeatId.
+ * These represent structural gaps that need PlotPoint coverage.
  *
  * @param graph - The story graph to analyze
- * @returns Array of MissingBeatInfo for beats without StoryBeat alignment
+ * @returns Array of MissingBeatInfo for beats without PlotPoint alignment
  */
 export function computeUnalignedBeats(graph: GraphState): MissingBeatInfo[] {
   const beats = getNodesByType<Beat>(graph, 'Beat');
+  const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
 
-  // Get all ALIGNS_WITH edges (StoryBeat → Beat)
-  const alignsWithEdges = getEdgesByType(graph, 'ALIGNS_WITH');
-
-  // Create set of beat IDs that have at least one StoryBeat aligned
+  // Create set of beat IDs that have at least one PlotPoint aligned via alignedBeatId
   const alignedBeatIds = new Set<string>();
-  for (const edge of alignsWithEdges) {
-    // ALIGNS_WITH goes from StoryBeat to Beat, so edge.to is the Beat ID
-    alignedBeatIds.add(edge.to);
+  for (const pp of plotPoints) {
+    if (pp.alignedBeatId) {
+      alignedBeatIds.add(pp.alignedBeatId);
+    }
   }
 
   // Find beats that are not in the aligned set
@@ -380,7 +379,7 @@ export function computeUnalignedBeats(graph: GraphState): MissingBeatInfo[] {
         beatType: beat.beat_type,
         act: beat.act,
         position: beat.position_index,
-        hasStoryBeat: false, // These are unaligned beats - no StoryBeat aligned
+        hasPlotPoint: false, // These are unaligned beats - no PlotPoint aligned
       });
     }
   }

@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { GraphState } from '../../src/core/graph.js';
-import type { Beat, Character, StoryBeat } from '../../src/types/nodes.js';
+import type { Beat, Character, PlotPoint } from '../../src/types/nodes.js';
 import type { Edge } from '../../src/types/edges.js';
 import { renameEntity } from '../../src/mentions/rename.js';
 import { rebuildAllMentions } from '../../src/mentions/rebuild.js';
@@ -47,14 +47,14 @@ function addCharacter(graph: GraphState, id: string, name: string): void {
 }
 
 // Helper to add story beat to graph
-function addStoryBeat(
+function addPlotPoint(
   graph: GraphState, 
   id: string, 
   title: string, 
   summary: string
 ): void {
-  const sb: StoryBeat = {
-    type: 'StoryBeat',
+  const sb: PlotPoint = {
+    type: 'PlotPoint',
     id,
     title,
     summary,
@@ -84,7 +84,7 @@ describe('renameEntity', () => {
 
   it('should propagate name change to text fields', () => {
     addCharacter(graph, 'char_1', 'John');
-    addStoryBeat(graph, 'sb_1', 'John decides', 'John makes a big decision');
+    addPlotPoint(graph, 'sb_1', 'John decides', 'John makes a big decision');
     
     // Build mentions first
     rebuildAllMentions(graph);
@@ -99,7 +99,7 @@ describe('renameEntity', () => {
 
   it('should handle possessive forms correctly', () => {
     addCharacter(graph, 'char_1', 'John');
-    addStoryBeat(graph, 'sb_1', "John's plan", "John's strategy unfolds");
+    addPlotPoint(graph, 'sb_1', "John's plan", "John's strategy unfolds");
     
     rebuildAllMentions(graph);
     
@@ -113,7 +113,7 @@ describe('renameEntity', () => {
   it('should not change text for unrelated entities', () => {
     addCharacter(graph, 'char_1', 'John');
     addCharacter(graph, 'char_2', 'Sarah');
-    addStoryBeat(graph, 'sb_1', 'Sarah waits', 'Sarah waits for news');
+    addPlotPoint(graph, 'sb_1', 'Sarah waits', 'Sarah waits for news');
     
     rebuildAllMentions(graph);
     
@@ -126,7 +126,7 @@ describe('renameEntity', () => {
 
   it('should handle no-op rename (same name)', () => {
     addCharacter(graph, 'char_1', 'John');
-    addStoryBeat(graph, 'sb_1', 'John decides', 'John acts');
+    addPlotPoint(graph, 'sb_1', 'John decides', 'John acts');
     
     const result = renameEntity(graph, 'char_1', 'John');
     
@@ -149,7 +149,7 @@ describe('renameEntity', () => {
 
   it('should update MENTIONS edge matchedText', () => {
     addCharacter(graph, 'char_1', 'John');
-    addStoryBeat(graph, 'sb_1', 'John acts', 'John decides');
+    addPlotPoint(graph, 'sb_1', 'John acts', 'John decides');
     
     rebuildAllMentions(graph);
     
@@ -165,7 +165,7 @@ describe('renameEntity', () => {
 
   it('should handle multiple occurrences in same field', () => {
     addCharacter(graph, 'char_1', 'John');
-    addStoryBeat(graph, 'sb_1', 'John meets John', 'John talks to John about John');
+    addPlotPoint(graph, 'sb_1', 'John meets John', 'John talks to John about John');
     
     rebuildAllMentions(graph);
     

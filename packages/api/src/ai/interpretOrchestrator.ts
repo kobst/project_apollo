@@ -32,6 +32,8 @@ export interface InterpretResponse {
     summary: string;
     confidence: number;
   }>;
+  /** Clarification request — set when the input is too ambiguous to proceed */
+  clarification?: ai.ClarificationRequest;
 }
 
 // =============================================================================
@@ -131,6 +133,9 @@ export async function interpretUserInput(
   };
   if (result.alternatives) {
     response_.alternatives = result.alternatives;
+  }
+  if (result.clarification) {
+    response_.clarification = result.clarification;
   }
   return response_;
 }

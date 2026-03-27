@@ -31,7 +31,7 @@ describe('applyPatch', () => {
 
   describe('ADD_NODE operations', () => {
     it('should add a new Scene node', () => {
-      const scene = createScene('beat_Catalyst');
+      const scene = createScene();
       const patch = createMinimalPatch('sv0', [{ op: 'ADD_NODE', node: scene }]);
 
       const result = applyPatch(graph, patch);
@@ -55,7 +55,7 @@ describe('applyPatch', () => {
     });
 
     it('should fail on duplicate node ID', () => {
-      const scene = createScene('beat_Catalyst', { id: 'beat_Catalyst' });
+      const scene = createScene({ id: 'beat_Catalyst' });
       const patch = createMinimalPatch('sv0', [{ op: 'ADD_NODE', node: scene }]);
 
       expect(() => applyPatch(graph, patch)).toThrow(PatchApplicationError);
@@ -141,7 +141,7 @@ describe('applyPatch', () => {
 
     it('should remove incident edges when deleting node', () => {
       const char = createCharacter({ id: 'char_test' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      const scene = createScene({ id: 'scene_test' });
       graph.nodes.set(char.id, char);
       graph.nodes.set(scene.id, scene);
       graph.edges.push(edges.hasCharacter('scene_test', 'char_test'));
@@ -167,7 +167,7 @@ describe('applyPatch', () => {
   describe('ADD_EDGE operations', () => {
     it('should add a new edge', () => {
       const char = createCharacter({ id: 'char_test' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      const scene = createScene({ id: 'scene_test' });
       graph.nodes.set(char.id, char);
       graph.nodes.set(scene.id, scene);
 
@@ -185,7 +185,7 @@ describe('applyPatch', () => {
 
     it('should fail on duplicate edge', () => {
       const char = createCharacter({ id: 'char_test' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      const scene = createScene({ id: 'scene_test' });
       graph.nodes.set(char.id, char);
       graph.nodes.set(scene.id, scene);
       graph.edges.push(edges.hasCharacter('scene_test', 'char_test'));
@@ -201,7 +201,7 @@ describe('applyPatch', () => {
   describe('DELETE_EDGE operations', () => {
     it('should delete existing edge by type/from/to', () => {
       const char = createCharacter({ id: 'char_test' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      const scene = createScene({ id: 'scene_test' });
       graph.nodes.set(char.id, char);
       graph.nodes.set(scene.id, scene);
       const edge = edges.hasCharacter('scene_test', 'char_test');
@@ -221,7 +221,7 @@ describe('applyPatch', () => {
 
     it('should delete existing edge by ID', () => {
       const char = createCharacter({ id: 'char_test' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      const scene = createScene({ id: 'scene_test' });
       graph.nodes.set(char.id, char);
       graph.nodes.set(scene.id, scene);
       const edge = edges.hasCharacter('scene_test', 'char_test', 'edge_to_delete');
@@ -259,7 +259,7 @@ describe('applyPatch', () => {
   describe('UPDATE_EDGE operations', () => {
     it('should update edge properties', () => {
       const char = createCharacter({ id: 'char_test' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      const scene = createScene({ id: 'scene_test' });
       graph.nodes.set(char.id, char);
       graph.nodes.set(scene.id, scene);
       const edge = edges.hasCharacter('scene_test', 'char_test', 'edge_update_test');
@@ -281,7 +281,7 @@ describe('applyPatch', () => {
 
     it('should update edge status', () => {
       const char = createCharacter({ id: 'char_test' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      const scene = createScene({ id: 'scene_test' });
       graph.nodes.set(char.id, char);
       graph.nodes.set(scene.id, scene);
       const edge = edges.hasCharacter('scene_test', 'char_test', 'edge_status_test');
@@ -298,7 +298,7 @@ describe('applyPatch', () => {
 
     it('should unset edge properties', () => {
       const char = createCharacter({ id: 'char_test' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      const scene = createScene({ id: 'scene_test' });
       graph.nodes.set(char.id, char);
       graph.nodes.set(scene.id, scene);
       const edge = edges.hasCharacter('scene_test', 'char_test', 'edge_unset_test');
@@ -327,7 +327,7 @@ describe('applyPatch', () => {
   describe('UPSERT_EDGE operations', () => {
     it('should insert new edge when not exists', () => {
       const char = createCharacter({ id: 'char_test' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      const scene = createScene({ id: 'scene_test' });
       graph.nodes.set(char.id, char);
       graph.nodes.set(scene.id, scene);
 
@@ -342,7 +342,7 @@ describe('applyPatch', () => {
 
     it('should update existing edge when exists', () => {
       const char = createCharacter({ id: 'char_test' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      const scene = createScene({ id: 'scene_test' });
       graph.nodes.set(char.id, char);
       graph.nodes.set(scene.id, scene);
       const existingEdge = edges.hasCharacter('scene_test', 'char_test', 'edge_existing');
@@ -371,7 +371,7 @@ describe('applyPatch', () => {
     it('should add multiple edges atomically', () => {
       const char = createCharacter({ id: 'char_test' });
       const loc = createLocation({ id: 'loc_test' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      const scene = createScene({ id: 'scene_test' });
       graph.nodes.set(char.id, char);
       graph.nodes.set(loc.id, loc);
       graph.nodes.set(scene.id, scene);
@@ -394,7 +394,7 @@ describe('applyPatch', () => {
     it('should update multiple edges atomically', () => {
       const char = createCharacter({ id: 'char_test' });
       const loc = createLocation({ id: 'loc_test' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      const scene = createScene({ id: 'scene_test' });
       graph.nodes.set(char.id, char);
       graph.nodes.set(loc.id, loc);
       graph.nodes.set(scene.id, scene);
@@ -420,7 +420,7 @@ describe('applyPatch', () => {
     it('should delete multiple edges atomically', () => {
       const char = createCharacter({ id: 'char_test' });
       const loc = createLocation({ id: 'loc_test' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      const scene = createScene({ id: 'scene_test' });
       graph.nodes.set(char.id, char);
       graph.nodes.set(loc.id, loc);
       graph.nodes.set(scene.id, scene);
@@ -439,7 +439,7 @@ describe('applyPatch', () => {
     it('should combine adds, updates, and deletes', () => {
       const char = createCharacter({ id: 'char_test' });
       const loc = createLocation({ id: 'loc_test' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      const scene = createScene({ id: 'scene_test' });
       graph.nodes.set(char.id, char);
       graph.nodes.set(loc.id, loc);
       graph.nodes.set(scene.id, scene);
@@ -479,7 +479,7 @@ describe('applyPatch', () => {
       const originalNodeCount = graph.nodes.size;
       const originalEdgeCount = graph.edges.length;
 
-      const scene = createScene('beat_Catalyst');
+      const scene = createScene();
       const patch = createMinimalPatch('sv0', [{ op: 'ADD_NODE', node: scene }]);
 
       const result = applyPatch(graph, patch);
@@ -494,7 +494,7 @@ describe('applyPatch', () => {
 
     it('should not modify frozen graph', () => {
       const frozenGraph = deepFreeze(createGraphWith15Beats());
-      const scene = createScene('beat_Catalyst');
+      const scene = createScene();
       const patch = createMinimalPatch('sv0', [{ op: 'ADD_NODE', node: scene }]);
 
       // Should not throw due to frozen object
@@ -523,7 +523,7 @@ describe('applyPatch', () => {
     it('should allow later patches to reference nodes from earlier patches', () => {
       const patch1 = createMinimalPatch('sv0', [
         { op: 'ADD_NODE', node: createCharacter({ id: 'char_1' }) },
-        { op: 'ADD_NODE', node: createScene('beat_Catalyst', { id: 'scene_1' }) },
+        { op: 'ADD_NODE', node: createScene({ id: 'scene_1' }) },
       ]);
       const patch2 = createMinimalPatch('sv0', [
         { op: 'ADD_EDGE', edge: edges.hasCharacter('scene_1', 'char_1') },
@@ -537,7 +537,7 @@ describe('applyPatch', () => {
 
   describe('tryApplyPatch', () => {
     it('should return graph on success', () => {
-      const scene = createScene('beat_Catalyst');
+      const scene = createScene();
       const patch = createMinimalPatch('sv0', [{ op: 'ADD_NODE', node: scene }]);
 
       const result = tryApplyPatch(graph, patch);

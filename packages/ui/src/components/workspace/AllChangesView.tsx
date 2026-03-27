@@ -211,7 +211,7 @@ export function AllChangesView() {
                   ? '\uD83D\uDCCD'
                   : nodeType === 'Scene'
                   ? '\uD83C\uDFAC'
-                  : nodeType === 'StoryBeat'
+                  : nodeType === 'PlotPoint'
                   ? '\uD83D\uDCCB'
                   : nodeType === 'Beat'
                   ? '\uD83C\uDFB5'

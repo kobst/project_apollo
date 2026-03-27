@@ -10,7 +10,7 @@ export type StoryMapCategory =
   | 'objects'
   // Outline
   | 'board'
-  | 'storyBeats'
+  | 'plotPoints'
   | 'scenes'
   | 'unassigned';
 
@@ -36,7 +36,7 @@ const STORY_ELEMENTS_CATEGORIES: CategoryConfig[] = [
 
 const OUTLINE_CATEGORIES: CategoryConfig[] = [
   { id: 'board', label: 'Structure Board', special: true },
-  { id: 'storyBeats', label: 'Story Beats', statKey: 'storyBeats' },
+  { id: 'plotPoints', label: 'Plot Points', statKey: 'plotPoints' },
   { id: 'scenes', label: 'Scenes', statKey: 'scenes' },
   { id: 'unassigned', label: 'Unassigned', special: true },
 ];
@@ -89,7 +89,7 @@ export function StoryMap({ selectedCategory, onSelectCategory }: StoryMapProps) 
       };
     }
 
-    // For unassigned, show staging count (storyBeats + scenes not in structure)
+    // For unassigned, show staging count (plotPoints + scenes not in structure)
     // For now, just show 0 since we don't track this yet
     if (config.id === 'unassigned') {
       return {

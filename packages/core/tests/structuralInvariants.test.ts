@@ -175,7 +175,7 @@ describe('Structural Invariants', () => {
   describe('Scene must have exactly one beat assignment', () => {
     it('should validate scene with valid beat_id', () => {
       const graph = createGraphWith15Beats();
-      const scene = createScene('beat_Catalyst', { id: 'scene_test' });
+      const scene = createScene({ id: 'scene_test' });
       graph.nodes.set(scene.id, scene);
 
       const result = validateGraph(graph);
@@ -183,25 +183,20 @@ describe('Structural Invariants', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should reject scene with non-existent beat_id', () => {
+    it('should accept scene without beat_id (scenes are linked via PlotPoint edges)', () => {
       const graph = createGraphWith15Beats();
-      const scene = createScene('beat_NonExistent', { id: 'scene_orphan' });
+      const scene = createScene({ id: 'scene_orphan' });
       graph.nodes.set(scene.id, scene);
 
       const result = validateGraph(graph);
 
-      expect(result.success).toBe(false);
-      expect(
-        result.errors.some(
-          (e) => e.code === 'FK_INTEGRITY' && e.field === 'beat_id'
-        )
-      ).toBe(true);
+      expect(result.success).toBe(true);
     });
 
     it('should allow multiple scenes per beat (order_index differentiates)', () => {
       const graph = createGraphWith15Beats();
-      const scene1 = createScene('beat_Catalyst', { id: 'scene_1', order_index: 1 });
-      const scene2 = createScene('beat_Catalyst', { id: 'scene_2', order_index: 2 });
+      const scene1 = createScene({ id: 'scene_1', order_index: 1 });
+      const scene2 = createScene({ id: 'scene_2', order_index: 2 });
       graph.nodes.set(scene1.id, scene1);
       graph.nodes.set(scene2.id, scene2);
 

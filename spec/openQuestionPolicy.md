@@ -136,7 +136,7 @@ Sessions remain immutable and reusable for branching until discarded.
 ## 10. Default Session Entry Points by Story Maturity
 
 ### Early (Sparse Graph)
-- STRUCTURE – Populate key beats (StoryBeats)
+- STRUCTURE – Populate key beats (PlotPoints)
 - STRUCTURE – Place existing scenes
 - CHARACTER – Define main characters
 

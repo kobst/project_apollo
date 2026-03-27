@@ -242,11 +242,11 @@ function DetailView({
     }
   };
 
-  // Generate StoryBeat from direction
-  const handleGenerateStoryBeat = async () => {
+  // Generate PlotPoint from direction
+  const handleGeneratePlotPoint = async () => {
     if (!currentStoryId) return;
     try {
-      await api.proposeStoryBeats(currentStoryId, {
+      await api.proposePlotPoints(currentStoryId, {
         focus: 'all',
         direction: `${idea.title}: ${idea.description}`.slice(0, 300),
         packageCount: 3,
@@ -384,10 +384,10 @@ function DetailView({
           <button
             type="button"
             className={`${styles.actionButton} ${styles.generateButton}`}
-            onClick={() => void handleGenerateStoryBeat()}
+            onClick={() => void handleGeneratePlotPoint()}
             disabled={loading}
           >
-            Generate StoryBeat
+            Generate PlotPoint
           </button>
         )}
         <button

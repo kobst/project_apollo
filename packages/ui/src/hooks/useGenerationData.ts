@@ -13,7 +13,7 @@ export interface BeatInfo {
   beatType: string;
   act: number;
   positionIndex: number;
-  hasMissingStoryBeats: boolean;
+  hasMissingPlotPoints: boolean;
 }
 
 export interface CharacterInfo {
@@ -22,7 +22,7 @@ export interface CharacterInfo {
   role?: string | undefined;
 }
 
-export interface StoryBeatInfo {
+export interface PlotPointInfo {
   id: string;
   title: string;
   intent: string;
@@ -36,8 +36,8 @@ interface UseGenerationDataResult {
   beats: BeatInfo[];
   /** Characters in the story */
   characters: CharacterInfo[];
-  /** Story beats (approved ones for scene generation) */
-  storyBeats: StoryBeatInfo[];
+  /** Plot points (approved ones for scene generation) */
+  plotPoints: PlotPointInfo[];
   /** Loading state */
   loading: boolean;
   /** Error message */
@@ -92,8 +92,8 @@ export function useGenerationData(storyId: string | null): UseGenerationDataResu
           beatType: beat.beatType,
           act: beat.act,
           positionIndex: beat.positionIndex,
-          // A beat has missing story beats if it has no story beats aligned
-          hasMissingStoryBeats: beat.storyBeats.length === 0,
+          // A beat has missing plot points if it has no plot points aligned
+          hasMissingPlotPoints: beat.plotPoints.length === 0,
         });
       }
     }
@@ -109,38 +109,38 @@ export function useGenerationData(storyId: string | null): UseGenerationDataResu
     }));
   }, [characterNodes]);
 
-  // Extract story beats from outline
-  const storyBeats = useMemo((): StoryBeatInfo[] => {
+  // Extract plot points from outline
+  const plotPoints = useMemo((): PlotPointInfo[] => {
     if (!outline) return [];
 
-    const result: StoryBeatInfo[] = [];
+    const result: PlotPointInfo[] = [];
 
-    // Collect story beats from all acts
+    // Collect plot points from all acts
     for (const act of outline.acts) {
       for (const beat of act.beats) {
-        for (const storyBeat of beat.storyBeats) {
+        for (const plotPoint of beat.plotPoints) {
           result.push({
-            id: storyBeat.id,
-            title: storyBeat.title,
-            intent: storyBeat.intent,
+            id: plotPoint.id,
+            title: plotPoint.title,
+            intent: plotPoint.intent,
             act: beat.act,
-            sceneCount: storyBeat.scenes.length,
+            sceneCount: plotPoint.scenes.length,
             // Assume status is 'approved' if not specified (committed beats)
-            status: (storyBeat.status as 'proposed' | 'approved' | 'deprecated') ?? 'approved',
+            status: (plotPoint.status as 'proposed' | 'approved' | 'deprecated') ?? 'approved',
           });
         }
       }
     }
 
-    // Add unassigned story beats
-    for (const storyBeat of outline.unassignedStoryBeats) {
+    // Add unassigned plot points
+    for (const plotPoint of outline.unassignedPlotPoints) {
       result.push({
-        id: storyBeat.id,
-        title: storyBeat.title,
-        intent: storyBeat.intent,
+        id: plotPoint.id,
+        title: plotPoint.title,
+        intent: plotPoint.intent,
         act: undefined,
-        sceneCount: storyBeat.scenes.length,
-        status: (storyBeat.status as 'proposed' | 'approved' | 'deprecated') ?? 'approved',
+        sceneCount: plotPoint.scenes.length,
+        status: (plotPoint.status as 'proposed' | 'approved' | 'deprecated') ?? 'approved',
       });
     }
 
@@ -150,7 +150,7 @@ export function useGenerationData(storyId: string | null): UseGenerationDataResu
   return {
     beats,
     characters,
-    storyBeats,
+    plotPoints,
     loading,
     error,
     refresh,

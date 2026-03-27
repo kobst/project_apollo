@@ -29,7 +29,7 @@ The MVP demonstrates:
 For MVP, lock this edge/type set only:
 
 - `INVOLVES` (Conflict → Character)
-- `FULFILLS` (Scene → Beat) *(or implicit via Scene.beat_id; still define semantics)*
+- `FULFILLS` (Scene → Beat) *(or implicit via PlotPoint REALIZED_BY edge; still define semantics)*
 - `MANIFESTS_IN` (Conflict → Scene)
 - `LOCATED_AT` (Scene → Location) *(alias of SET_IN)*
 - `HAS_ARC` (Character → CharacterArc)
@@ -227,7 +227,7 @@ If Scene is added:
 
 has scene_overview non-empty
 
-has beat_id set
+has PlotPoint attachment set
 
 has at least one LOCATED_AT edge OR location parse is available
 
@@ -282,7 +282,7 @@ LOCATED_AT(scene_001 → loc_001)
 
 HAS_CHARACTER(scene_001 → char_001)
 
-FULFILLS(scene_001 → beat_catalyst) (or implicit via beat_id)
+FULFILLS(scene_001 → beat_catalyst) (or implicit via PlotPoint attachment)
 
 sv_001 summary:
 

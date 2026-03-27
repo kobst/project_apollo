@@ -108,7 +108,7 @@ export interface EdgeChange {
 ### 2.2 Update all orchestrators to use canonical schema
 
 **Files to update**:
-- `storyBeatOrchestrator.ts` — uses `primary.nodes[]` → migrate to `changes.nodes[]`
+- `plotPointOrchestrator.ts` — uses `primary.nodes[]` → migrate to `changes.nodes[]`
 - `characterOrchestrator.ts` — already uses `changes.nodes[]` ✓
 - `expandOrchestrator.ts` — already uses `changes.nodes[]` ✓
 - `sceneOrchestrator.ts` — verify schema
@@ -173,7 +173,7 @@ export function buildContextSection(state: StoryState, options: ContextOptions):
 characters: ${formatCompactNodes(state.characters)}
 locations: ${formatCompactNodes(state.locations)}
 beats: ${formatCompactNodes(state.beats)}
-storyBeats: ${formatCompactNodes(state.storyBeats)}
+plotPoints: ${formatCompactNodes(state.plotPoints)}
 scenes: ${formatCompactNodes(state.scenes)}`;
 }
 
@@ -191,14 +191,14 @@ export function buildOutputSchema(mode: GenerationMode): string {
 3. Consolidate "CRITICAL CONSTRAINTS" into scannable bullet points
 4. Remove duplicate "Guidelines" sections
 
-**Before** (storyBeatOrchestrator):
+**Before** (plotPointOrchestrator):
 ```
 ## CRITICAL CONSTRAINTS - MUST FOLLOW
 
 **STRICT OUTPUT RULES:**
-1. PRIMARY section: ONLY StoryBeat nodes. NO Scene, Character, Location, or Object nodes in primary.
-2. Each StoryBeat MUST have exactly one ALIGNS_WITH edge to a Beat node.
-3. StoryBeats MAY have PRECEDES edges to other StoryBeats for causal ordering.
+1. PRIMARY section: ONLY PlotPoint nodes. NO Scene, Character, Location, or Object nodes in primary.
+2. Each PlotPoint MUST have exactly one alignedBeatId edge to a Beat node.
+3. PlotPoints MAY have PRECEDES edges to other PlotPoints for causal ordering.
 4. SUPPORTING section: MAY include Character or Location nodes if needed.
 5. You MUST generate exactly 1 packages. Not fewer, not more.
 ```
@@ -206,10 +206,10 @@ export function buildOutputSchema(mode: GenerationMode): string {
 **After**:
 ```
 ## Output Rules
-- PRIMARY: StoryBeat nodes only, each with ALIGNS_WITH edge to Beat
+- PRIMARY: PlotPoint nodes only, each with alignedBeatId edge to Beat
 - SUPPORTING: Character/Location nodes if essential
 - Packages: exactly {packageCount}
-- Edges: ALIGNS_WITH (required), PRECEDES (optional for ordering)
+- Edges: alignedBeatId (required), PRECEDES (optional for ordering)
 ```
 
 ### 3.3 Move to structured context format

@@ -30,7 +30,7 @@ The coverage pyramid consists of five tiers, ordered from most fundamental (top)
 | `storyContext` | Story Context | Constitution logline | Logline set? 1/1 or 0/1 |
 | `foundations` | Foundations | Character, Location, Object | Count of present types / 3 |
 | `structure` | Structure | Distinct Beat types | Unique beat_types / 15 |
-| `storyBeats` | Story Beats | Active StoryBeats with SATISFIED_BY edges | Linked SBs / total active SBs |
+| `plotPoints` | Plot Points | Active PlotPoints with REALIZED_BY edges | Linked SBs / total active SBs |
 | `scenes` | Scenes | Scenes with Character + Location | Complete scenes / total scenes |
 
 ### 1.1 Tier Computation Details
@@ -52,12 +52,12 @@ The coverage pyramid consists of five tiers, ordered from most fundamental (top)
 - `total`: 15
 - `percent`: (covered / 15) * 100
 
-**Story Beats Tier:**
+**Plot Points Tier:**
 - Active = proposed or approved (excludes deprecated)
-- A story beat is "covered" if it has a SATISFIED_BY edge from a Scene
-- `covered`: Active StoryBeats with SATISFIED_BY edges
-- `total`: All active StoryBeats
-- `percent`: (covered / total) * 100, or 0% if no active StoryBeats
+- A plot point is "covered" if it has a REALIZED_BY edge from a Scene
+- `covered`: Active PlotPoints with REALIZED_BY edges
+- `total`: All active PlotPoints
+- `percent`: (covered / total) * 100, or 0% if no active PlotPoints
 
 **Scenes Tier:**
 - A scene is "complete" if it has both HAS_CHARACTER and LOCATED_AT edges
@@ -124,15 +124,14 @@ Lint rule violations are mapped to coverage tiers:
 | Rule ID | Label |
 |---------|-------|
 | `STC_BEAT_ORDERING` | Beat Order Issue |
-| `SCENE_ACT_BOUNDARY` | Scene Act Mismatch |
 
-### Story Beats Tier
+### Plot Points Tier
 | Rule ID | Label |
 |---------|-------|
-| `SB_EVENT_REALIZATION` | Unrealized StoryBeat |
-| `SB_DAG_NO_CYCLES` | StoryBeat Cycle Detected |
-| `SB_ORDER_UNIQUE` | Duplicate StoryBeat Order |
-| `SB_ACT_ALIGNMENT` | StoryBeat Act Mismatch |
+| `PP_EVENT_REALIZATION` | Unrealized PlotPoint |
+| `PP_DAG_NO_CYCLES` | PlotPoint Cycle Detected |
+| `PP_ORDER_UNIQUE` | Duplicate PlotPoint Order |
+| `PP_ACT_ALIGNMENT` | PlotPoint Act Mismatch |
 
 ### Scenes Tier
 | Rule ID | Label |
@@ -140,7 +139,7 @@ Lint rule violations are mapped to coverage tiers:
 | `SCENE_ORDER_UNIQUE` | Duplicate Scene Order |
 | `SCENE_HAS_CHARACTER` | Scene Without Character |
 | `SCENE_HAS_LOCATION` | Scene Without Location |
-| `SCENE_HAS_STORYBEAT` | Unlinked Scene |
+| `SCENE_HAS_PLOTPOINT` | Unlinked Scene |
 | `EDGE_ORDER_UNIQUE` | Duplicate Edge Order |
 
 ---
@@ -179,7 +178,7 @@ interface TierSummary {
       { "tier": "storyContext", "label": "Story Context", "covered": 1, "total": 1, "percent": 100 },
       { "tier": "foundations", "label": "Foundations", "covered": 2, "total": 3, "percent": 66 },
       { "tier": "structure", "label": "Structure", "covered": 15, "total": 15, "percent": 100 },
-      { "tier": "storyBeats", "label": "Story Beats", "covered": 0, "total": 2, "percent": 0 },
+      { "tier": "plotPoints", "label": "Plot Points", "covered": 0, "total": 2, "percent": 0 },
       { "tier": "scenes", "label": "Scenes", "covered": 0, "total": 3, "percent": 0 }
     ],
     "gaps": [
@@ -210,7 +209,7 @@ Left navigation panel in Workspace showing all categories:
 - Story Context, Characters, Locations, Objects
 
 **Outline Section:**
-- Structure Board (beat view), Story Beats, Scenes
+- Structure Board (beat view), Plot Points, Scenes
 
 Each category row displays:
 - Label

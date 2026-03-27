@@ -1,28 +1,28 @@
 /**
- * Modal for creating a StoryBeat without aligning to a Beat.
- * Creates an unassigned StoryBeat that can later be dragged to a Beat.
+ * Modal for creating a PlotPoint without aligning to a Beat.
+ * Creates an unassigned PlotPoint that can later be dragged to a Beat.
  */
 
 import { useState, useCallback } from 'react';
-import type { CreateStoryBeatRequest, StoryBeatIntent, StoryBeatPriority } from '../../api/types';
+import type { CreatePlotPointRequest, PlotPointIntent, PlotPointPriority } from '../../api/types';
 import styles from './AddStoryBeatModal.module.css';
 
 interface CreateStoryBeatModalProps {
   /** Called when user confirms creation */
-  onAdd: (data: CreateStoryBeatRequest) => void;
+  onAdd: (data: CreatePlotPointRequest) => void;
   /** Called when user cancels */
   onCancel: () => void;
   /** Loading state */
   saving?: boolean;
 }
 
-const INTENT_OPTIONS: { value: StoryBeatIntent; label: string }[] = [
+const INTENT_OPTIONS: { value: PlotPointIntent; label: string }[] = [
   { value: 'plot', label: 'Plot' },
   { value: 'character', label: 'Character' },
   { value: 'tone', label: 'Tone' },
 ];
 
-const PRIORITY_OPTIONS: { value: StoryBeatPriority; label: string }[] = [
+const PRIORITY_OPTIONS: { value: PlotPointPriority; label: string }[] = [
   { value: 'high', label: 'High' },
   { value: 'medium', label: 'Medium' },
   { value: 'low', label: 'Low' },
@@ -43,9 +43,9 @@ export function CreateStoryBeatModal({
   saving = false,
 }: CreateStoryBeatModalProps) {
   const [title, setTitle] = useState('');
-  const [intent, setIntent] = useState<StoryBeatIntent>('plot');
+  const [intent, setIntent] = useState<PlotPointIntent>('plot');
   const [summary, setSummary] = useState('');
-  const [priority, setPriority] = useState<StoryBeatPriority>('medium');
+  const [priority, setPriority] = useState<PlotPointPriority>('medium');
   const [act, setAct] = useState<1 | 2 | 3 | 4 | 5 | undefined>(undefined);
 
   const canSubmit = title.trim().length > 0 && !saving;
@@ -53,11 +53,11 @@ export function CreateStoryBeatModal({
   const handleSubmit = useCallback(() => {
     if (!canSubmit) return;
 
-    const data: CreateStoryBeatRequest = {
+    const data: CreatePlotPointRequest = {
       title: title.trim(),
       intent,
       priority,
-      // No alignToBeatId - this creates an unassigned story beat
+      // No alignToBeatId - this creates an unassigned plot point
     };
 
     if (summary.trim()) {
@@ -84,7 +84,7 @@ export function CreateStoryBeatModal({
     <div className={styles.overlay} onClick={onCancel} onKeyDown={handleKeyDown}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
-          <h3 className={styles.title}>Create Story Beat</h3>
+          <h3 className={styles.title}>Create Plot Point</h3>
           <button
             className={styles.closeBtn}
             onClick={onCancel}
@@ -131,7 +131,7 @@ export function CreateStoryBeatModal({
               id="cpp-intent"
               className={styles.select}
               value={intent}
-              onChange={(e) => setIntent(e.target.value as StoryBeatIntent)}
+              onChange={(e) => setIntent(e.target.value as PlotPointIntent)}
               disabled={saving}
             >
               {INTENT_OPTIONS.map((opt) => (
@@ -171,7 +171,7 @@ export function CreateStoryBeatModal({
               id="cpp-priority"
               className={styles.select}
               value={priority}
-              onChange={(e) => setPriority(e.target.value as StoryBeatPriority)}
+              onChange={(e) => setPriority(e.target.value as PlotPointPriority)}
               disabled={saving}
             >
               {PRIORITY_OPTIONS.map((opt) => (
@@ -214,7 +214,7 @@ export function CreateStoryBeatModal({
             disabled={!canSubmit}
             type="button"
           >
-            {saving ? 'Creating...' : 'Create Story Beat'}
+            {saving ? 'Creating...' : 'Create Plot Point'}
           </button>
         </div>
       </div>

@@ -85,7 +85,7 @@ export function needsMentionsMigration(graph: GraphState): boolean {
   
   // Check if there are content nodes
   const hasContentNodes = Array.from(graph.nodes.values()).some(
-    n => n.type === 'StoryBeat' || n.type === 'Scene' || n.type === 'CharacterArc'
+    n => n.type === 'PlotPoint' || n.type === 'Scene' || n.type === 'CharacterArc'
   );
   
   // Needs migration if we have entities and content but no mentions
@@ -109,7 +109,7 @@ export function getMigrationStats(graph: GraphState): {
   );
   
   const contentNodes = Array.from(graph.nodes.values()).filter(
-    n => n.type === 'StoryBeat' || n.type === 'Scene' || n.type === 'CharacterArc'
+    n => n.type === 'PlotPoint' || n.type === 'Scene' || n.type === 'CharacterArc'
   );
   
   const mentionsEdges = graph.edges.filter(e => e.type === 'MENTIONS');

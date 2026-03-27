@@ -1,12 +1,12 @@
 /**
- * StoryBeat Generation Orchestrator
+ * PlotPoint Generation Orchestrator
  *
- * Handles StoryBeat-only generation: generates StoryBeat nodes to fill
- * structural gaps (beats without ALIGNS_WITH edges).
+ * Handles PlotPoint-only generation: generates PlotPoint nodes to fill
+ * structural gaps (beats without aligned PlotPoints).
  *
  * Key constraints:
- * - ONLY StoryBeat nodes are generated
- * - ONLY ALIGNS_WITH and PRECEDES edges are allowed
+ * - ONLY PlotPoint nodes are generated
+ * - ONLY PRECEDES edges are allowed (alignment uses alignedBeatId property)
  * - Session management for reviewing/accepting packages
  */
 
@@ -15,9 +15,8 @@ import {
   computeUnalignedBeats,
   getNodesByType,
   type MissingBeatInfo,
-  type StoryBeat,
+  type PlotPoint,
   type Character,
-  type Beat,
 } from '@apollo/core';
 import type { StorageContext } from '../config.js';
 import {
@@ -37,24 +36,26 @@ import { LLMClient, type StreamCallbacks } from './llmClient.js';
 // Types
 // =============================================================================
 
-export interface ProposeStoryBeatsRequest {
+export interface ProposePlotPointsRequest {
   /** Beat IDs or BeatTypes to always include */
   priorityBeats?: string[];
   /** Number of package alternatives to generate (default: 3) */
   packageCount?: number;
-  /** Max StoryBeats per package (default: 5) */
-  maxStoryBeatsPerPackage?: number;
+  /** Max PlotPoints per package (default: 5) */
+  maxPlotPointsPerPackage?: number;
   /** User guidance for generation */
   direction?: string;
   /** Creativity level 0-1 (default: 0.5) */
   creativity?: number;
-  /** Expansion scope: 'constrained' (StoryBeats only) or 'flexible' (may include supporting) */
+  /** Expansion scope: 'constrained' (PlotPoints only) or 'flexible' (may include supporting) */
   expansionScope?: ai.ExpansionScope;
   /** Target specific act for generation */
   targetAct?: 1 | 2 | 3 | 4 | 5;
+  /** Optional problem statement describing what narrative problem to solve */
+  problemStatement?: string;
 }
 
-export interface ProposeStoryBeatsResponse {
+export interface ProposePlotPointsResponse {
   sessionId: string;
   packages: ai.NarrativePackage[];
   missingBeats: MissingBeatInfo[];
@@ -65,34 +66,35 @@ export interface ProposeStoryBeatsResponse {
 // =============================================================================
 
 /**
- * Generate StoryBeat packages to fill structural gaps.
+ * Generate PlotPoint packages to fill structural gaps.
  *
  * Flow:
  * 1. Load graph state and compute unaligned beats
- * 2. Serialize context (story context, existing StoryBeats, characters)
- * 3. Build StoryBeat-specific prompt
+ * 2. Serialize context (story context, existing PlotPoints, characters)
+ * 3. Build PlotPoint-specific prompt
  * 4. Call LLM
- * 5. Parse and validate response (filter non-StoryBeat nodes)
+ * 5. Parse and validate response (filter non-PlotPoint nodes)
  * 6. Create/update session
  * 7. Return packages with missing beats info
  */
-export async function proposeStoryBeats(
+export async function proposePlotPoints(
   storyId: string,
-  request: ProposeStoryBeatsRequest,
+  request: ProposePlotPointsRequest,
   ctx: StorageContext,
   llmClient: LLMClient,
   streamCallbacks?: StreamCallbacks
-): Promise<ProposeStoryBeatsResponse> {
-  console.log(`[proposeStoryBeats] Starting generation for story: ${storyId}`);
+): Promise<ProposePlotPointsResponse> {
+  console.log(`[proposePlotPoints] Starting generation for story: ${storyId}`);
 
   const {
     priorityBeats = [],
     packageCount = 3,
-    maxStoryBeatsPerPackage = 5,
+    maxPlotPointsPerPackage = 5,
     direction,
     creativity = 0.5,
     expansionScope = 'flexible',
     targetAct,
+    problemStatement,
   } = request;
 
   // 1. Load graph state
@@ -108,11 +110,11 @@ export async function proposeStoryBeats(
 
   // 2. Compute unaligned beats (opportunities)
   const missingBeats = computeUnalignedBeats(graph);
-  console.log(`[proposeStoryBeats] Found ${missingBeats.length} unaligned beats`);
+  console.log(`[proposePlotPoints] Found ${missingBeats.length} unaligned beats`);
 
   // If no missing beats, return early with empty packages
   if (missingBeats.length === 0) {
-    console.log('[proposeStoryBeats] No missing beats to fill');
+    console.log('[proposePlotPoints] No missing beats to fill');
     return {
       sessionId: '',
       packages: [],
@@ -135,27 +137,27 @@ export async function proposeStoryBeats(
   // Note: storyContext intentionally omitted - it's in system prompt now
 
   const storyContext = ai.serializeStoryState(graph, metadata);
-  const existingStoryBeats = serializeExistingStoryBeats(graph);
+  const existingPlotPoints = serializeExistingPlotPoints(graph);
   const characters = serializeCharacters(graph);
 
-  // 5. Get filtered ideas for storyBeat task
-  const ideasResult = ai.getIdeasForTask(graph, 'storyBeat', undefined, 5);
+  // 5. Get filtered ideas for plotPoint task
+  const ideasResult = ai.getIdeasForTask(graph, 'plotPoint', undefined, 5);
 
-  // 5b. Get filtered guidelines for storyBeat task
+  // 5b. Get filtered guidelines for plotPoint task
   const guidelinesResult = ai.getGuidelinesForTask(
     state.metadata?.storyContext?.operational,
     'storyBeat'
   );
 
   // 6. Build prompt
-  const promptParams: ai.StoryBeatPromptParams = {
+  const promptParams: ai.PlotPointPromptParams = {
     storyContext,
-    existingStoryBeats,
+    existingPlotPoints: existingPlotPoints,
     characters,
     missingBeats,
     priorityBeats,
     packageCount,
-    maxStoryBeatsPerPackage,
+    maxPlotPointsPerPackage: maxPlotPointsPerPackage,
     creativity,
     expansionScope,
   };
@@ -171,11 +173,14 @@ export async function proposeStoryBeats(
   if (guidelinesResult.serialized) {
     promptParams.guidelines = guidelinesResult.serialized;
   }
+  if (problemStatement) {
+    promptParams.problemStatement = problemStatement;
+  }
 
-  const prompt = ai.buildStoryBeatPrompt(promptParams);
+  const prompt = ai.buildPlotPointPrompt(promptParams);
 
   // 7. Call LLM (with system prompt if available)
-  console.log(`[proposeStoryBeats] Calling LLM (streaming: ${Boolean(streamCallbacks)}, systemPrompt: ${Boolean(systemPrompt)})...`);
+  console.log(`[proposePlotPoints] Calling LLM (streaming: ${Boolean(streamCallbacks)}, systemPrompt: ${Boolean(systemPrompt)})...`);
   let response: string;
 
   try {
@@ -186,25 +191,25 @@ export async function proposeStoryBeats(
       const llmResponse = await llmClient.complete(prompt, systemPrompt);
       response = llmResponse.content;
     }
-    console.log(`[proposeStoryBeats] LLM response received, length: ${response.length}`);
+    console.log(`[proposePlotPoints] LLM response received, length: ${response.length}`);
   } catch (llmError) {
-    console.error('[proposeStoryBeats] LLM call failed:', llmError);
+    console.error('[proposePlotPoints] LLM call failed:', llmError);
     throw llmError;
   }
 
   // 8. Parse response
-  console.log('[proposeStoryBeats] Parsing LLM response...');
+  console.log('[proposePlotPoints] Parsing LLM response...');
   let result: ai.GenerationResult;
   try {
     result = ai.parseGenerationResponse(response);
   } catch (parseError) {
-    console.error('[proposeStoryBeats] Failed to parse LLM response:', parseError);
+    console.error('[proposePlotPoints] Failed to parse LLM response:', parseError);
     console.error('Raw response (first 2000 chars):', response.slice(0, 2000));
     throw parseError;
   }
 
-  // 9. Validate and filter - ONLY allow StoryBeat nodes and valid edges
-  const filteredPackages = filterStoryBeatPackages(result.packages, graph);
+  // 9. Validate and filter - ONLY allow PlotPoint nodes and valid edges
+  const filteredPackages = filterPlotPointPackages(result.packages, graph);
 
   // 10. Validate and fix IDs
   const existingNodeIds = new Set(graph.nodes.keys());
@@ -212,7 +217,7 @@ export async function proposeStoryBeats(
   const validation = ai.validateGeneratedIds(filteredResult, existingNodeIds);
 
   if (!validation.valid) {
-    console.warn('[proposeStoryBeats] Regenerating invalid IDs:', validation.errors);
+    console.warn('[proposePlotPoints] Regenerating invalid IDs:', validation.errors);
     const fixedResult = ai.regenerateInvalidIds(filteredResult, existingNodeIds);
     filteredResult.packages = fixedResult.packages;
   }
@@ -220,7 +225,7 @@ export async function proposeStoryBeats(
   // 11. Validate edge references
   const edgeValidation = ai.validateEdgeReferences(filteredResult, existingNodeIds);
   if (!edgeValidation.valid) {
-    console.warn('[proposeStoryBeats] Invalid edge references:', edgeValidation.errors);
+    console.warn('[proposePlotPoints] Invalid edge references:', edgeValidation.errors);
   }
 
   // 10. Check if any package addresses priority beats
@@ -231,7 +236,7 @@ export async function proposeStoryBeats(
       missingBeats
     );
     if (!addressesPriority) {
-      console.warn('[proposeStoryBeats] Warning: No package addresses priority beats');
+      console.warn('[proposePlotPoints] Warning: No package addresses priority beats');
     }
   }
 
@@ -239,7 +244,7 @@ export async function proposeStoryBeats(
   const validatedPackages = ai.validatePackages(filteredResult.packages, graph);
   const validationSummary = ai.getValidationSummary(validatedPackages);
   if (validationSummary !== 'No validation warnings') {
-    console.warn(`[proposeStoryBeats] Package validation: ${validationSummary}`);
+    console.warn(`[proposePlotPoints] Package validation: ${validationSummary}`);
   }
   // 10c. Compute deterministic impact
   filteredResult.packages = validatedPackages.map(pkg => ({
@@ -259,7 +264,7 @@ export async function proposeStoryBeats(
       for (const pkg of filteredResult.packages) {
         const texts: string[] = [];
         for (const nc of pkg.changes.nodes) {
-          if (nc.node_type === 'StoryBeat' && nc.data) {
+          if (nc.node_type === 'PlotPoint' && nc.data) {
             const t = `${nc.data.title ?? ''}\n${nc.data.summary ?? ''}`;
             texts.push(String(t).toLowerCase());
           }
@@ -297,7 +302,7 @@ export async function proposeStoryBeats(
 
   session = await createGenerationSession(
     storyId,
-    { type: 'naked' }, // StoryBeat generation doesn't have a specific target
+    { type: 'naked' }, // PlotPoint generation doesn't have a specific target
     sessionParams,
     ctx,
     versionInfo ?? undefined
@@ -321,23 +326,14 @@ export async function proposeStoryBeats(
 // =============================================================================
 
 /**
- * Serialize existing StoryBeats with their alignments.
+ * Serialize existing PlotPoints with their alignments.
  */
-function serializeExistingStoryBeats(graph: import('@apollo/core').GraphState): string {
-  const storyBeats = getNodesByType<StoryBeat>(graph, 'StoryBeat');
-  const activeStoryBeats = storyBeats.filter((sb) => sb.status !== 'deprecated');
+function serializeExistingPlotPoints(graph: import('@apollo/core').GraphState): string {
+  const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
+  const activePlotPoints = plotPoints.filter((sb) => sb.status !== 'deprecated');
 
-  if (activeStoryBeats.length === 0) {
-    return '[No existing StoryBeats]';
-  }
-
-  // Get ALIGNS_WITH edges to find beat alignments
-  const alignsWithEdges = graph.edges.filter((e) => e.type === 'ALIGNS_WITH');
-  const alignmentMap = new Map<string, string[]>();
-  for (const edge of alignsWithEdges) {
-    const existing = alignmentMap.get(edge.from) ?? [];
-    existing.push(edge.to);
-    alignmentMap.set(edge.from, existing);
+  if (activePlotPoints.length === 0) {
+    return '[No existing PlotPoints]';
   }
 
   // Get PRECEDES edges for ordering
@@ -350,16 +346,16 @@ function serializeExistingStoryBeats(graph: import('@apollo/core').GraphState): 
   }
 
   const lines: string[] = [];
-  for (const sb of activeStoryBeats) {
-    const alignments = alignmentMap.get(sb.id) ?? [];
+  for (const sb of activePlotPoints) {
+    const alignedBeatId = (sb as any).alignedBeatId as string | undefined;
     const precedes = precedesMap.get(sb.id) ?? [];
 
     let line = `- **${sb.id}**: "${sb.title}"`;
     if (sb.summary) {
       line += ` - ${truncate(sb.summary, 60)}`;
     }
-    if (alignments.length > 0) {
-      line += ` [ALIGNS_WITH: ${alignments.join(', ')}]`;
+    if (alignedBeatId) {
+      line += ` [alignedBeatId: ${alignedBeatId}]`;
     }
     if (precedes.length > 0) {
       line += ` [PRECEDES: ${precedes.join(', ')}]`;
@@ -397,54 +393,42 @@ function serializeCharacters(graph: import('@apollo/core').GraphState): string {
 }
 
 /**
- * Filter packages to only include StoryBeat nodes and valid edges.
+ * Filter packages to only include PlotPoint nodes and valid edges.
  */
-function filterStoryBeatPackages(
+function filterPlotPointPackages(
   packages: ai.NarrativePackage[],
   graph: import('@apollo/core').GraphState
 ): ai.NarrativePackage[] {
-  const validEdgeTypes = new Set(['ALIGNS_WITH', 'PRECEDES']);
-
-  // Get all Beat IDs for validating ALIGNS_WITH targets
-  const beats = getNodesByType<Beat>(graph, 'Beat');
-  const beatIds = new Set(beats.map((b) => b.id));
+  const validEdgeTypes = new Set(['PRECEDES']);
 
   return packages.map((pkg) => {
-    // Filter nodes - only StoryBeats
+    // Filter nodes - only PlotPoints
     const validNodes = pkg.changes.nodes.filter((node) => {
-      if (node.node_type !== 'StoryBeat') {
-        console.warn(`[filterStoryBeatPackages] Filtering out non-StoryBeat node: ${node.node_type}`);
+      if (node.node_type !== 'PlotPoint') {
+        console.warn(`[filterPlotPointPackages] Filtering out non-PlotPoint node: ${node.node_type}`);
         return false;
       }
       return true;
     });
 
-    // Build set of new StoryBeat IDs for validating PRECEDES edges
-    const newStoryBeatIds = new Set(validNodes.map((n) => n.node_id));
+    // Build set of new PlotPoint IDs for validating PRECEDES edges
+    const newPlotPointIds = new Set(validNodes.map((n) => n.node_id));
 
-    // Get existing StoryBeat IDs
-    const existingStoryBeats = getNodesByType<StoryBeat>(graph, 'StoryBeat');
-    const existingStoryBeatIds = new Set(existingStoryBeats.map((sb) => sb.id));
+    // Get existing PlotPoint IDs
+    const existingPlotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
+    const existingPlotPointIds = new Set(existingPlotPoints.map((sb) => sb.id));
 
-    // Filter edges - only ALIGNS_WITH and PRECEDES with valid targets
+    // Filter edges - only PRECEDES with valid targets
     const validEdges = pkg.changes.edges.filter((edge) => {
       if (!validEdgeTypes.has(edge.edge_type)) {
-        console.warn(`[filterStoryBeatPackages] Filtering out invalid edge type: ${edge.edge_type}`);
+        console.warn(`[filterPlotPointPackages] Filtering out invalid edge type: ${edge.edge_type}`);
         return false;
       }
 
-      // Validate ALIGNS_WITH targets are Beat IDs
-      if (edge.edge_type === 'ALIGNS_WITH') {
-        if (!beatIds.has(edge.to)) {
-          console.warn(`[filterStoryBeatPackages] ALIGNS_WITH edge targets non-Beat: ${edge.to}`);
-          return false;
-        }
-      }
-
-      // Validate PRECEDES targets are StoryBeat IDs (new or existing)
+      // Validate PRECEDES targets are PlotPoint IDs (new or existing)
       if (edge.edge_type === 'PRECEDES') {
-        if (!newStoryBeatIds.has(edge.to) && !existingStoryBeatIds.has(edge.to)) {
-          console.warn(`[filterStoryBeatPackages] PRECEDES edge targets non-StoryBeat: ${edge.to}`);
+        if (!newPlotPointIds.has(edge.to) && !existingPlotPointIds.has(edge.to)) {
+          console.warn(`[filterPlotPointPackages] PRECEDES edge targets non-PlotPoint: ${edge.to}`);
           return false;
         }
       }
@@ -452,7 +436,7 @@ function filterStoryBeatPackages(
       return true;
     });
 
-    // Build changes object without storyContext (not relevant for StoryBeat-only generation)
+    // Build changes object without storyContext (not relevant for PlotPoint-only generation)
     const changes: ai.NarrativePackage['changes'] = {
       nodes: validNodes,
       edges: validEdges,
@@ -490,10 +474,10 @@ function checkPriorityBeatsCoverage(
     }
   }
 
-  // Check if any package has an ALIGNS_WITH edge to a priority beat
+  // Check if any package has nodes with alignedBeatId pointing to a priority beat
   for (const pkg of packages) {
-    for (const edge of pkg.changes.edges) {
-      if (edge.edge_type === 'ALIGNS_WITH' && priorityBeatIds.has(edge.to)) {
+    for (const nodeChange of pkg.changes.nodes) {
+      if (nodeChange.data?.alignedBeatId && priorityBeatIds.has(nodeChange.data.alignedBeatId as string)) {
         return true;
       }
     }

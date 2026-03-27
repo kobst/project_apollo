@@ -180,7 +180,7 @@ export async function removeExtractionProposalById(
 // Generation Session Types
 // =============================================================================
 
-export type GenerationEntryPointType = 'beat' | 'storyBeat' | 'character' | 'gap' | 'idea' | 'naked';
+export type GenerationEntryPointType = 'beat' | 'plotPoint' | 'character' | 'gap' | 'idea' | 'naked';
 
 export interface GenerationEntryPoint {
   type: GenerationEntryPointType;
@@ -237,7 +237,7 @@ export interface IdeaRefinementVariant {
   resolution?: string;
   confidence?: number;
   suggestedArtifacts?: Array<{
-    type: 'StoryBeat' | 'Scene';
+    type: 'PlotPoint' | 'Scene';
     title: string;
     summary?: string;
     rationale?: string;
@@ -366,13 +366,13 @@ export async function markSessionArchived(
 
 /**
  * Migrate a generation session to current schema.
- * Handles renames like PlotPoint → StoryBeat.
+ * Handles renames like StoryBeat → PlotPoint.
  */
 function migrateGenerationSession(session: GenerationSession): GenerationSession {
   for (const pkg of session.packages) {
     for (const nodeChange of pkg.changes.nodes) {
-      if (nodeChange.node_type === 'PlotPoint') {
-        nodeChange.node_type = 'StoryBeat';
+      if (nodeChange.node_type === 'StoryBeat') {
+        nodeChange.node_type = 'PlotPoint';
       }
     }
   }

@@ -89,7 +89,7 @@ typescriptinterface SectionChangeCounts {
 
 Computed from `stagedPackage` by categorizing proposed nodes:
 - **Premise**: Premise, GenreTone, Setting nodes
-- **Structure Board**: Beat, StoryBeat, Scene nodes
+- **Structure Board**: Beat, PlotPoint, Scene nodes
 - **Elements**: Character, Location, Object nodes
 - **Story Context**: ThematicConcerns, or similar context nodes
 
@@ -440,7 +440,7 @@ typescriptconst nodeFieldConfig: Record<NodeType, FieldConfig[]> = {
     { key: 'archetype', label: 'Archetype', type: 'select', options: archetypeOptions },
     { key: 'status', label: 'Status', type: 'select', options: statusOptions },
   ],
-  StoryBeat: [
+  PlotPoint: [
     { key: 'title', label: 'Title', type: 'text' },
     { key: 'summary', label: 'Summary', type: 'textarea' },
     { key: 'intent', label: 'Intent', type: 'select', options: ['PLOT', 'CHARACTER', 'TONE'] },
@@ -508,7 +508,7 @@ typescriptfunction groupProposedNodes(nodes: ProposedNode[]) {
   return {
     storyContext: nodes.filter(n => ['ThematicConcerns', 'StoryContext'].includes(n.type)),
     elements: nodes.filter(n => ['Character', 'Location', 'Object'].includes(n.type)),
-    structure: nodes.filter(n => ['StoryBeat', 'Scene', 'Beat'].includes(n.type)),
+    structure: nodes.filter(n => ['PlotPoint', 'Scene', 'Beat'].includes(n.type)),
   };
 }
 ```
@@ -746,8 +746,8 @@ WorkspaceView
 │   ├── StructureBoardView
 │   │   ├── ActRow
 │   │   │   ├── BeatColumn
-│   │   │   │   ├── StoryBeatCard (committed)
-│   │   │   │   ├── ProposedStoryBeatCard (inline editor)
+│   │   │   │   ├── PlotPointCard (committed)
+│   │   │   │   ├── ProposedPlotPointCard (inline editor)
 │   │   │   │   ├── SceneCard (committed)
 │   │   │   │   └── ProposedSceneCard (inline editor)
 │   ├── ElementsView
@@ -971,7 +971,7 @@ typescriptconst nodeSectionMapping: Record<string, Section> = {
   
   // Structure Board section
   Beat: 'structureBoard',
-  StoryBeat: 'structureBoard',
+  PlotPoint: 'structureBoard',
   Scene: 'structureBoard',
   
   // Elements section

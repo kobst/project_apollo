@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary
 
-**Problem:** There's a gap between loose user thoughts ("I want Act 1 to end with comic relief before violence") and concrete artifacts (StoryBeats, Scenes). The current workflow forces users to jump directly from vague direction to concrete proposals, without a space to explore, discuss, and clarify intent first.
+**Problem:** There's a gap between loose user thoughts ("I want Act 1 to end with comic relief before violence") and concrete artifacts (PlotPoints, Scenes). The current workflow forces users to jump directly from vague direction to concrete proposals, without a space to explore, discuss, and clarify intent first.
 
 **Solution:** Enhance the existing `Idea` node type to serve as a flexible planning and discussion layer (UI: **"Planning"** section). Ideas become a scratchpad where users can:
 - Ask questions ("Who committed the crime and why?")
@@ -20,7 +20,7 @@
 
 **Why not a new "Intent" node type?** Ideas already exist, have UI, have API endpoints, and are already filtered/serialized for prompts. Extending Ideas is simpler than creating parallel infrastructure.
 
-**Why not the "Intent Board" UI proposal?** A planning board for StoryBeats is UI polish, not a solution to the core problem (need for pre-artifact discussion). We can add that later if needed, but it doesn't address the workflow gap.
+**Why not the "Intent Board" UI proposal?** A planning board for PlotPoints is UI polish, not a solution to the core problem (need for pre-artifact discussion). We can add that later if needed, but it doesn't address the workflow gap.
 
 ---
 
@@ -31,7 +31,7 @@
 ```
 User thought: "I want comic relief before the violence"
   ↓ (no intermediate step)
-StoryBeat generation: "Generate beats for Catalyst"
+PlotPoint generation: "Generate beats for Catalyst"
   ↓
 LLM generates: Concrete beat with specific characters/actions
   ↓
@@ -58,7 +58,7 @@ Based on your description:
 |--------------|---------------------|
 | **StoryContext** | Too high-level (themes, tone); gets serialized into every prompt (bloat); not meant for Q&A |
 | **Ideas** | Underutilized; seen as "rejected proposals" not planning notes; lacks structure for questions/directions |
-| **StoryBeats** | Too concrete; requires commitment to structure before exploration |
+| **PlotPoints** | Too concrete; requires commitment to structure before exploration |
 | **Comments/Notes** | If they exist, they're disconnected from generation |
 
 ---
@@ -126,7 +126,7 @@ export interface Idea extends BaseNode {
   title: string;
   description: string;
   source: 'user' | 'ai';
-  suggestedType?: 'StoryBeat' | 'Scene' | 'Character' | 'Location' | 'Object';
+  suggestedType?: 'PlotPoint' | 'Scene' | 'Character' | 'Location' | 'Object';
   status?: 'active' | 'promoted' | 'dismissed';
   category?: 'character' | 'plot' | 'scene' | 'worldbuilding' | 'general';
   sourcePackageId?: string;
@@ -159,15 +159,15 @@ export interface Idea extends BaseNode {
   
   /** Generation tracking */
   generationContext?: {
-    task: string;                // "generate-storybeats-for-catalyst"
+    task: string;                // "generate-plotpoints-for-catalyst"
     timestamp: string;
     promptSnippet?: string;      // First 200 chars of user input
   };
   
   /** Provenance: which artifacts used this idea */
   informedArtifacts?: Array<{
-    artifactId: string;          // "storybeat_xyz"
-    artifactType: 'StoryBeat' | 'Scene' | 'Character';
+    artifactId: string;          // "plotpoint_xyz"
+    artifactType: 'PlotPoint' | 'Scene' | 'Character';
     packageId: string;           // Which package generated it
     timestamp: string;
   }>;
@@ -335,9 +335,9 @@ function isIdeaFulfilled(idea: Idea, graph: GraphState): boolean {
         l.name.toLowerCase().includes(idea.title.toLowerCase())
       );
     }
-    case 'StoryBeat': {
-      // Check if there's a StoryBeat with similar title
-      const beats = getNodesByType<StoryBeat>(graph, 'StoryBeat');
+    case 'PlotPoint': {
+      // Check if there's a PlotPoint with similar title
+      const beats = getNodesByType<PlotPoint>(graph, 'PlotPoint');
       return beats.some(b => 
         b.title.toLowerCase().includes(idea.title.toLowerCase()) ||
         idea.title.toLowerCase().includes(b.title.toLowerCase())
@@ -390,7 +390,7 @@ function computeFreshnessScore(idea: Idea): number {
 ```typescript
 export type IdeaTaskType =
   | 'character'
-  | 'storyBeat'
+  | 'plotPoint'
   | 'scene'
   | 'expand'
   | 'generate'
@@ -414,7 +414,7 @@ export function getIdeasForTask(
   const relevantKinds: IdeaKind[] = ['proposal']; // Always include proposals
   
   // Questions and directions are useful for all generation tasks
-  if (['storyBeat', 'scene', 'generate', 'expand'].includes(taskType)) {
+  if (['plotPoint', 'scene', 'generate', 'expand'].includes(taskType)) {
     relevantKinds.push('question', 'direction', 'note');
   }
   
@@ -648,7 +648,7 @@ POST /stories/:id/ideas
 
 ### 7.1 The Refine Pattern for Ideas
 
-Instead of a separate discussion thread, we **reuse the existing refine pattern** already built for StoryBeats and Scenes. This provides structured iteration without building new infrastructure.
+Instead of a separate discussion thread, we **reuse the existing refine pattern** already built for PlotPoints and Scenes. This provides structured iteration without building new infrastructure.
 
 **Core concept:** User provides guidance → System generates 2-3 refined variants → User picks one or refines further
 
@@ -658,7 +658,7 @@ Instead of a separate discussion thread, we **reuse the existing refine pattern*
 POST /stories/:id/ideas/:ideaId/refine
 {
   guidance: "Consider Morrison's military background and Flores' loyalty",
-  generateArtifacts?: boolean  // Also suggest concrete StoryBeats/Scenes?
+  generateArtifacts?: boolean  // Also suggest concrete PlotPoints/Scenes?
 }
 
 Response:
@@ -682,7 +682,7 @@ Response:
       description: "Show flashback or reference in Act 1...",
       suggestedArtifacts: [
         {
-          type: "StoryBeat",
+          type: "PlotPoint",
           title: "Flores follows orders without question",
           summary: "Scene showing Flores' automatic deference to Morrison",
           rationale: "Establishes their dynamic before the heist"
@@ -702,7 +702,7 @@ Response:
 
 **For DIRECTION ideas:**
 - Make more specific and actionable, OR
-- Suggest concrete StoryBeats that realize it, OR
+- Suggest concrete PlotPoints that realize it, OR
 - Identify prerequisites to achieve it
 
 **For CONSTRAINT ideas:**
@@ -748,7 +748,7 @@ export async function refineIdea(
     constraints
   });
   
-  // 4. Call LLM (same as StoryBeat refine)
+  // 4. Call LLM (same as PlotPoint refine)
   const response = await llmClient.complete(prompt);
   const parsed = parseIdeaRefinementResponse(response.content);
   
@@ -839,7 +839,7 @@ ${relatedIdeas.map(i => `- ${i.title}: ${i.description.slice(0, 100)}`).join('\n
 Based on the guidance, generate 2-3 refined variants of this idea:
 
 1. **If QUESTION:** Provide more specific sub-questions OR suggest resolution OR clarify intent
-2. **If DIRECTION:** Make more specific and actionable OR suggest concrete StoryBeats
+2. **If DIRECTION:** Make more specific and actionable OR suggest concrete PlotPoints
 3. **If CONSTRAINT:** Clarify boundaries OR add concrete examples
 
 ## Output Format
@@ -856,7 +856,7 @@ Based on the guidance, generate 2-3 refined variants of this idea:
       "confidence": 0.0-1.0,
       "suggestedArtifacts": [
         {
-          "type": "StoryBeat" | "Scene",
+          "type": "PlotPoint" | "Scene",
           "title": "...",
           "summary": "...",
           "rationale": "Why this realizes the idea"
@@ -884,7 +884,7 @@ Output JSON only.`;
 | **UX** | Open-ended conversation | Structured convergence |
 | **Output** | Text thread | Concrete Idea variants |
 | **Progress** | Can circle endlessly | Each step moves forward |
-| **Artifacts** | Manual bridge | Natural transition to StoryBeats |
+| **Artifacts** | Manual bridge | Natural transition to PlotPoints |
 | **Complexity** | Medium | Low (existing code) |
 
 ### 7.7 Workflow Example
@@ -906,7 +906,7 @@ Output JSON only.`;
    → Next generation includes: "Established: Morrison organized crime"
 
 5. User picks Variant C (direction)
-   → Clicks "Generate StoryBeat from this"
+   → Clicks "Generate PlotPoint from this"
    → System creates beat with this direction
 ```
 
@@ -920,7 +920,7 @@ When generation uses ideas, record provenance:
 
 ```typescript
 // During generation (in orchestrator)
-const ideasResult = getIdeasForTask(graph, 'storyBeat', { targetBeat: 'beat_Catalyst' });
+const ideasResult = getIdeasForTask(graph, 'plotPoint', { targetBeat: 'beat_Catalyst' });
 
 // After successful generation and user accepts package
 const pkg = result.packages[0];
@@ -949,10 +949,10 @@ for (const ideaId of ideasResult.includedIds) {
 ### 8.2 Display Provenance in UI
 
 **Idea card shows:**
-- "Used in 3 StoryBeats" (link to artifacts)
+- "Used in 3 PlotPoints" (link to artifacts)
 - "Last used: 2 hours ago"
 
-**StoryBeat/Scene shows:**
+**PlotPoint/Scene shows:**
 - "Informed by Ideas: [link] [link]"
 
 **Benefits:**
@@ -1025,7 +1025,7 @@ for (const ideaId of ideasResult.includedIds) {
 Request:
 {
   guidance: "Consider Morrison's military background",
-  generateArtifacts?: boolean  // Also suggest StoryBeats/Scenes?
+  generateArtifacts?: boolean  // Also suggest PlotPoints/Scenes?
 }
 
 Response:
@@ -1086,8 +1086,8 @@ Response:
   idea: {...},
   informedArtifacts: [
     {
-      id: 'storybeat_xyz',
-      type: 'StoryBeat',
+      id: 'plotpoint_xyz',
+      type: 'PlotPoint',
       title: '...',
       packageId: 'pkg_...',
       createdAt: '...'
@@ -1095,7 +1095,7 @@ Response:
   ],
   usageHistory: [
     {
-      task: 'generate-storybeats-catalyst',
+      task: 'generate-plotpoints-catalyst',
       timestamp: '...',
       included: true
     }
@@ -1124,7 +1124,7 @@ Response:
 **Stash Dropdown (updated):**
 ```
 Stash:
-├─ Story Beats (3)
+├─ Plot Points (3)
 ├─ Scenes (5)
 └─ Planning (12)    ← renamed from "Ideas"
 ```
@@ -1155,7 +1155,7 @@ Planning
 ┌─ DIRECTIONS ───────────────────────┐
 │ 📍 Act 1: Comic relief before      │
 │    violence (beat_Catalyst)         │
-│    [Edit] [Generate StoryBeat]      │
+│    [Edit] [Generate PlotPoint]      │
 └─────────────────────────────────────┘
 
 ┌─ PROPOSALS (existing behavior) ────┐
@@ -1202,9 +1202,9 @@ Planning
 │ Target: beat_Catalyst • Act 1      │
 │ Themes: tension, irony             │
 │                                     │
-│ [Generate StoryBeat from this]     │
+│ [Generate PlotPoint from this]     │
 │                                     │
-│ Informed: storybeat_xyz (2h ago)   │
+│ Informed: plotpoint_xyz (2h ago)   │
 └────────────────────────────────────┘
 ```
 
@@ -1241,16 +1241,16 @@ After refinement:
 │ 📍 Option 3: DIRECTION             │
 │ "Reveal Morrison gradually in     │
 │  Act 2 via Dante"                 │
-│  → Suggests StoryBeat              │
-│  [Accept & Generate StoryBeat]    │
+│  → Suggests PlotPoint              │
+│  [Accept & Generate PlotPoint]    │
 └────────────────────────────────────┘
 ```
 
 ### 10.6 Generation Flow Integration
 
-**When user clicks "Generate StoryBeats":**
+**When user clicks "Generate PlotPoints":**
 ```
-┌─ Generate StoryBeats ──────────────┐
+┌─ Generate PlotPoints ──────────────┐
 │ For: beat_Catalyst (Act 1)         │
 │                                     │
 │ Relevant Planning Context:         │
@@ -1265,7 +1265,7 @@ After refinement:
 
 After generation:
 ```
-✓ Generated 3 StoryBeats
+✓ Generated 3 PlotPoints
 
 These ideas were used:
 • Direction: "Act 1 comic relief" ✓
@@ -1321,7 +1321,7 @@ These questions need answers:
 7. Next generation automatically includes:
    "Established Context: Flores helps Morrison due to military loyalty and guilt"
    
-8. Generated StoryBeat references this context in rationale
+8. Generated PlotPoint references this context in rationale
 ```
 
 ### 11.2 Direction → Targeted Generation
@@ -1334,7 +1334,7 @@ These questions need answers:
    TargetBeat: beat_Catalyst
    TargetAct: 1
 
-2. User clicks "Generate StoryBeat from this"
+2. User clicks "Generate PlotPoint from this"
    System filters ideas:
    - Includes this direction
    - Includes other Act 1 / Catalyst ideas
@@ -1344,11 +1344,11 @@ These questions need answers:
    "## Story Direction
     - Act 1 ends with humanizing moment: Need comic relief with Dante before violence"
    
-4. LLM generates StoryBeat aligned with this direction
+4. LLM generates PlotPoint aligned with this direction
 
 5. Provenance tracked:
    idea.informedArtifacts.push({
-     artifactId: 'storybeat_xyz',
+     artifactId: 'plotpoint_xyz',
      ...
    })
 ```

@@ -42,7 +42,7 @@ ${constraintLines}${relatedLines}
 Based on the guidance, generate 2-3 refined variants of this idea:
 
 1. **If QUESTION:** Provide more specific sub-questions OR suggest resolution OR clarify intent
-2. **If DIRECTION:** Make more specific and actionable OR suggest concrete StoryBeats
+2. **If DIRECTION:** Make more specific and actionable OR suggest concrete PlotPoints
 3. **If CONSTRAINT:** Clarify boundaries OR add concrete examples
 
 ## Output Format
@@ -59,7 +59,7 @@ Based on the guidance, generate 2-3 refined variants of this idea:
       "confidence": 0.0,
       "suggestedArtifacts": [
         {
-          "type": "StoryBeat" | "Scene",
+          "type": "PlotPoint" | "Scene",
           "title": "...",
           "summary": "...",
           "rationale": "Why this realizes the idea"

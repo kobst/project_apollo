@@ -38,13 +38,13 @@ import type {
   PreCommitLintData,
   BulkAttachRequest,
   BulkAttachData,
-  StoryBeatData,
-  StoryBeatsListData,
-  CreateStoryBeatRequest,
-  CreateStoryBeatData,
-  UpdateStoryBeatData,
-  DeleteStoryBeatData,
-  StoryBeatFilters,
+  PlotPointData,
+  PlotPointsListData,
+  CreatePlotPointRequest,
+  CreatePlotPointData,
+  UpdatePlotPointData,
+  DeletePlotPointData,
+  PlotPointFilters,
   SceneData,
   ScenesListData,
   CreateSceneRequest,
@@ -94,8 +94,8 @@ import type {
   ProposeResponseData,
   ProposeRefineRequest,
   // New Generation API types
-  ProposeStoryBeatsRequest,
-  ProposeStoryBeatsResponse,
+  ProposePlotPointsRequest,
+  ProposePlotPointsResponse,
   ProposeCharactersRequest,
   ProposeCharactersResponse,
   ProposeScenesRequest,
@@ -266,7 +266,7 @@ export const api = {
     POST<BulkAttachData>(`/stories/${storyId}/relations/bulk-attach`, data),
 
   // Plot Points
-  listStoryBeats: (storyId: string, filters?: StoryBeatFilters, limit?: number, offset?: number) => {
+  listPlotPoints: (storyId: string, filters?: PlotPointFilters, limit?: number, offset?: number) => {
     const params = new URLSearchParams();
     if (filters?.status) params.set('status', filters.status);
     if (filters?.act) params.set('act', filters.act.toString());
@@ -275,16 +275,16 @@ export const api = {
     if (limit) params.set('limit', limit.toString());
     if (offset) params.set('offset', offset.toString());
     const query = params.toString();
-    return GET<StoryBeatsListData>(`/stories/${storyId}/story-beats${query ? `?${query}` : ''}`);
+    return GET<PlotPointsListData>(`/stories/${storyId}/plot-points${query ? `?${query}` : ''}`);
   },
-  getStoryBeat: (storyId: string, sbId: string) =>
-    GET<StoryBeatData>(`/stories/${storyId}/story-beats/${sbId}`),
-  createStoryBeat: (storyId: string, data: CreateStoryBeatRequest) =>
-    POST<CreateStoryBeatData>(`/stories/${storyId}/story-beats`, data),
-  updateStoryBeat: (storyId: string, sbId: string, changes: Record<string, unknown>) =>
-    PATCH<UpdateStoryBeatData>(`/stories/${storyId}/story-beats/${sbId}`, { changes }),
-  deleteStoryBeat: (storyId: string, sbId: string) =>
-    DELETE<DeleteStoryBeatData>(`/stories/${storyId}/story-beats/${sbId}`),
+  getPlotPoint: (storyId: string, ppId: string) =>
+    GET<PlotPointData>(`/stories/${storyId}/plot-points/${ppId}`),
+  createPlotPoint: (storyId: string, data: CreatePlotPointRequest) =>
+    POST<CreatePlotPointData>(`/stories/${storyId}/plot-points`, data),
+  updatePlotPoint: (storyId: string, ppId: string, changes: Record<string, unknown>) =>
+    PATCH<UpdatePlotPointData>(`/stories/${storyId}/plot-points/${ppId}`, { changes }),
+  deletePlotPoint: (storyId: string, ppId: string) =>
+    DELETE<DeletePlotPointData>(`/stories/${storyId}/plot-points/${ppId}`),
 
   // Scenes
   listScenes: (storyId: string, filters?: SceneFilters, limit?: number, offset?: number) => {
@@ -518,10 +518,10 @@ export const api = {
   // =========================================================================
 
   /**
-   * Generate story beats aligned to structure.
+   * Generate plot points aligned to structure.
    */
-  proposeStoryBeats: (storyId: string, data: ProposeStoryBeatsRequest) =>
-    POST<ProposeStoryBeatsResponse>(`/stories/${storyId}/propose/story-beats`, data),
+  proposePlotPoints: (storyId: string, data: ProposePlotPointsRequest) =>
+    POST<ProposePlotPointsResponse>(`/stories/${storyId}/propose/plot-points`, data),
 
   /**
    * Generate characters and arcs.
@@ -530,7 +530,7 @@ export const api = {
     POST<ProposeCharactersResponse>(`/stories/${storyId}/propose/characters`, data),
 
   /**
-   * Generate scenes from committed story beats.
+   * Generate scenes from committed plot points.
    */
   proposeScenes: (storyId: string, data: ProposeScenesRequest) =>
     POST<ProposeScenesResponse>(`/stories/${storyId}/propose/scenes`, data),

@@ -1,10 +1,10 @@
 /**
  * project-apollo migrate:storybeat-abstraction
  *
- * Detect scene-like StoryBeats and split them into:
- * - New abstract StoryBeat (retaining ALIGNS_WITH)
- * - New concrete Scene (SATISFIED_BY)
- * - Mark original StoryBeat as deprecated
+ * Detect scene-like PlotPoints and split them into:
+ * - New abstract PlotPoint (retaining alignedBeatId FK)
+ * - New concrete Scene (REALIZED_BY)
+ * - Mark original PlotPoint as deprecated
  */
 
 import type { Command } from 'commander';
@@ -14,9 +14,8 @@ import {
   validatePatch,
   generateEdgeId,
   type Patch,
-  type StoryBeat,
+  type PlotPoint,
   type Scene,
-  type GraphState,
 } from '@apollo/core';
 import {
   loadGraph,
@@ -26,8 +25,8 @@ import {
 import { CLIError } from '../utils/errors.js';
 import { heading, success, formatPatch, formatValidationErrors } from '../utils/format.js';
 
-function isStoryBeat(node: unknown): node is StoryBeat {
-  return Boolean(node) && (node as StoryBeat).type === 'StoryBeat';
+function isPlotPoint(node: unknown): node is PlotPoint {
+  return Boolean(node) && (node as PlotPoint).type === 'PlotPoint';
 }
 
 function isSceneLikeSummary(summary?: string): boolean {
@@ -92,7 +91,7 @@ function classifyNarrativeFunction(summary?: string): NarrativeFunction | undefi
 export function migrateStoryBeatAbstractionCommand(program: Command): void {
   program
     .command('migrate:storybeat-abstraction')
-    .description('Split scene-like StoryBeats into abstract StoryBeat + concrete Scene and deprecate originals')
+    .description('Split scene-like PlotPoints into abstract PlotPoint + concrete Scene and deprecate originals')
     .option('-y, --yes', 'Apply without confirmation (non-interactive)')
     .option('--dry-run', 'Show the generated patch without applying')
     .action(async (opts: { yes?: boolean; dryRun?: boolean }) => {
@@ -109,15 +108,15 @@ export function migrateStoryBeatAbstractionCommand(program: Command): void {
         throw new CLIError('Current story not found.');
       }
 
-      // Collect scene-like StoryBeats
-      const storyBeats: StoryBeat[] = [];
+      // Collect scene-like PlotPoints
+      const plotPoints: PlotPoint[] = [];
       for (const [, node] of graph.nodes) {
-        if (isStoryBeat(node)) storyBeats.push(node);
+        if (isPlotPoint(node)) plotPoints.push(node);
       }
 
-      const candidates = storyBeats.filter((sb) => isSceneLikeSummary(sb.summary));
+      const candidates = plotPoints.filter((pp) => isSceneLikeSummary(pp.summary));
       if (candidates.length === 0) {
-        console.log(pc.green('No scene-like StoryBeats detected.'));
+        console.log(pc.green('No scene-like PlotPoints detected.'));
         return;
       }
 
@@ -126,19 +125,23 @@ export function migrateStoryBeatAbstractionCommand(program: Command): void {
       const ops: Patch['ops'] = [];
       let migrated = 0;
 
-      for (const sb of candidates) {
-        const newSbId = `sb_migrated_${sb.id}`;
-        const sceneId = `scene_from_${sb.id}`;
-        const heading = extractHeadingFromSummary(sb.summary) ?? 'INT. LOCATION - TIME';
-        const abstractSummary = extractAbstractFunction(sb.summary);
-        const nf = classifyNarrativeFunction(sb.summary);
+      for (const pp of candidates) {
+        const newPpId = `pp_migrated_${pp.id}`;
+        const sceneId = `scene_from_${pp.id}`;
+        const heading = extractHeadingFromSummary(pp.summary) ?? 'INT. LOCATION - TIME';
+        const abstractSummary = extractAbstractFunction(pp.summary);
+        const nf = classifyNarrativeFunction(pp.summary);
 
-        const newStoryBeat: StoryBeat = {
-          ...sb,
-          id: newSbId,
-          title: sb.title, // Keep title; users can refine later
+        // Carry forward alignedBeatId FK from original PlotPoint
+        const originalAlignedBeatId = (pp as any).alignedBeatId;
+
+        const newPlotPoint: PlotPoint = {
+          ...pp,
+          id: newPpId,
+          title: pp.title, // Keep title; users can refine later
           summary: abstractSummary,
           ...(nf && { narrative_function: nf }),
+          ...(originalAlignedBeatId && { alignedBeatId: originalAlignedBeatId }),
           status: 'proposed',
           createdAt: now,
           updatedAt: now,
@@ -148,35 +151,24 @@ export function migrateStoryBeatAbstractionCommand(program: Command): void {
           type: 'Scene',
           id: sceneId,
           heading,
-          scene_overview: sb.summary ?? '',
-          order_index: sb.order_index ?? 1,
+          scene_overview: pp.summary ?? '',
+          order_index: pp.order_index ?? 1,
           status: 'DRAFT',
           source_provenance: 'MIGRATION',
         };
 
         // Add nodes
-        ops.push({ op: 'ADD_NODE', node: newStoryBeat });
+        ops.push({ op: 'ADD_NODE', node: newPlotPoint });
         ops.push({ op: 'ADD_NODE', node: newScene });
 
-        // Preserve ALIGNS_WITH edge (StoryBeat -> Beat) on new StoryBeat
-        const aligns = (graph as GraphState).edges.find(
-          (e) => e.type === 'ALIGNS_WITH' && e.from === sb.id
-        );
-        if (aligns) {
-          ops.push({
-            op: 'ADD_EDGE',
-            edge: { id: generateEdgeId(), type: 'ALIGNS_WITH', from: newSbId, to: aligns.to },
-          });
-        }
-
-        // Add SATISFIED_BY: StoryBeat -> Scene
+        // Add REALIZED_BY: PlotPoint -> Scene
         ops.push({
           op: 'ADD_EDGE',
-          edge: { id: generateEdgeId(), type: 'SATISFIED_BY', from: newSbId, to: sceneId },
+          edge: { id: generateEdgeId(), type: 'REALIZED_BY', from: newPpId, to: sceneId },
         });
 
-        // Deprecate original StoryBeat
-        ops.push({ op: 'UPDATE_NODE', id: sb.id, set: { status: 'deprecated', updatedAt: now } });
+        // Deprecate original PlotPoint
+        ops.push({ op: 'UPDATE_NODE', id: pp.id, set: { status: 'deprecated', updatedAt: now } });
 
         migrated += 1;
       }
@@ -199,7 +191,7 @@ export function migrateStoryBeatAbstractionCommand(program: Command): void {
       }
 
       // Dry-run or apply
-      const summary = `Migrate StoryBeat Abstraction (${migrated} StoryBeats)`;
+      const summary = `Migrate PlotPoint Abstraction (${migrated} PlotPoints)`;
       heading(summary);
       console.log(pc.dim(`Detected ${candidates.length} candidate(s).`));
       console.log();

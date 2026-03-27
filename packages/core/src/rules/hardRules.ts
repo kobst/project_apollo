@@ -6,12 +6,10 @@
 
 import type { GraphState } from '../core/graph.js';
 import { getNodesByType } from '../core/graph.js';
-import type { Beat, StoryBeat } from '../types/nodes.js';
+import type { Beat, PlotPoint } from '../types/nodes.js';
 import type { Rule, RuleViolation, Fix, LintScope } from './types.js';
 import {
   getBeatsInScope,
-  getScenesInScope,
-  getActForBeat,
   getActForBeatId,
   getPositionForBeat,
   createViolation,
@@ -28,105 +26,8 @@ import { EDGE_TYPES } from '../types/edges.js';
 // =============================================================================
 // SCENE_ORDER_UNIQUE - REMOVED
 // =============================================================================
-// Scene ordering is now auto-computed via computeOrder() based on StoryBeat attachment.
+// Scene ordering is now auto-computed via computeOrder() based on PlotPoint attachment.
 // The order_index field is optional and automatically maintained.
-
-// =============================================================================
-// SCENE_ACT_BOUNDARY
-// =============================================================================
-
-/**
- * A Scene's beat_id must reference a Beat in the correct Act.
- * The expected act is determined by BEAT_ACT_MAP.
- */
-export const SCENE_ACT_BOUNDARY: Rule = {
-  id: 'SCENE_ACT_BOUNDARY',
-  name: 'Scene Must Link to Beat in Correct Act',
-  severity: 'hard',
-  category: 'act_boundary',
-  description: 'A scene cannot be linked to a beat with an incorrect act assignment',
-
-  evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
-    const violations: RuleViolation[] = [];
-    const scenes = getScenesInScope(graph, scope);
-
-    for (const scene of scenes) {
-      // Skip scenes without beat_id (they use StoryBeat edges instead)
-      if (!scene.beat_id) continue;
-      const beat = graph.nodes.get(scene.beat_id) as Beat | undefined;
-      if (!beat || beat.type !== 'Beat') continue;
-
-      // Get expected act based on beat_type
-      const expectedAct = getActForBeat(beat);
-
-      if (beat.act !== expectedAct) {
-        violations.push(
-          createViolation(
-            'SCENE_ACT_BOUNDARY',
-            'hard',
-            'act_boundary',
-            `Scene "${scene.heading}" links to Beat "${beat.beat_type}" which is in Act ${beat.act} but should be in Act ${expectedAct}`,
-            {
-              nodeId: scene.id,
-              nodeType: 'Scene',
-              relatedNodeIds: [beat.id],
-              context: {
-                sceneHeading: scene.heading,
-                beatType: beat.beat_type,
-                actualAct: beat.act,
-                expectedAct,
-                beatId: beat.id,
-              },
-            }
-          )
-        );
-      }
-    }
-
-    return violations;
-  },
-
-  suggestFix: (graph: GraphState, violation: RuleViolation): Fix | null => {
-    // This violation is about the Beat's act being wrong, not the Scene's beat_id
-    // The fix is to correct the Beat's act field
-    const context = violation.context as {
-      beatId?: string;
-      expectedAct?: number;
-    } | undefined;
-
-    if (!context?.beatId || !context?.expectedAct) return null;
-
-    const beat = graph.nodes.get(context.beatId) as Beat | undefined;
-    if (!beat || beat.type !== 'Beat') return null;
-
-    const ops: UpdateNodeOp[] = [
-      {
-        op: 'UPDATE_NODE' as const,
-        id: beat.id,
-        set: { act: context.expectedAct },
-      },
-    ];
-
-    const patch = createPatch('', ops, {
-      source: 'fix',
-      ruleId: 'SCENE_ACT_BOUNDARY',
-    });
-
-    const inversePatch = generateInversePatch(graph, patch);
-
-    return {
-      id: generateFixId(violation.id, 'correct_act'),
-      violationId: violation.id,
-      violationRuleId: 'SCENE_ACT_BOUNDARY',
-      label: `Set "${beat.beat_type}" to Act ${context.expectedAct}`,
-      description: `Correct the beat's act assignment to match its beat_type`,
-      patch,
-      inversePatch,
-      affectedNodeIds: [beat.id],
-      operationCount: 1,
-    };
-  },
-};
 
 // =============================================================================
 // STC_BEAT_ORDERING
@@ -360,20 +261,20 @@ export const EDGE_ORDER_UNIQUE: Rule = {
 };
 
 // =============================================================================
-// SB_DAG_NO_CYCLES
+// PP_DAG_NO_CYCLES
 // =============================================================================
 
 /**
- * PRECEDES edges between StoryBeats must not create cycles.
+ * PRECEDES edges between PlotPoints must not create cycles.
  * The PRECEDES relationship forms a DAG (Directed Acyclic Graph).
  * No auto-fix available - user must decide which edge to remove.
  */
-export const SB_DAG_NO_CYCLES: Rule = {
-  id: 'SB_DAG_NO_CYCLES',
-  name: 'StoryBeat PRECEDES Must Be Acyclic',
+export const PP_DAG_NO_CYCLES: Rule = {
+  id: 'PP_DAG_NO_CYCLES',
+  name: 'PlotPoint PRECEDES Must Be Acyclic',
   severity: 'hard',
   category: 'structure',
-  description: 'PRECEDES edges between story beats must not create cycles',
+  description: 'PRECEDES edges between plot points must not create cycles',
 
   evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
     const violations: RuleViolation[] = [];
@@ -440,21 +341,21 @@ export const SB_DAG_NO_CYCLES: Rule = {
     for (const nodeId of cycleNodes) {
       if (!isNodeInScope(scope, nodeId)) continue;
 
-      const storyBeat = graph.nodes.get(nodeId) as StoryBeat | undefined;
-      if (!storyBeat || storyBeat.type !== 'StoryBeat') continue;
+      const plotPoint = graph.nodes.get(nodeId) as PlotPoint | undefined;
+      if (!plotPoint || plotPoint.type !== 'PlotPoint') continue;
 
       violations.push(
         createViolation(
-          'SB_DAG_NO_CYCLES',
+          'PP_DAG_NO_CYCLES',
           'hard',
           'structure',
-          `StoryBeat "${storyBeat.title}" is part of a cycle in PRECEDES edges`,
+          `PlotPoint "${plotPoint.title}" is part of a cycle in PRECEDES edges`,
           {
-            nodeId: storyBeat.id,
-            nodeType: 'StoryBeat',
+            nodeId: plotPoint.id,
+            nodeType: 'PlotPoint',
             relatedNodeIds: [...cycleNodes].filter((id) => id !== nodeId),
             context: {
-              storyBeatTitle: storyBeat.title,
+              plotPointTitle: plotPoint.title,
               cycleNodeIds: [...cycleNodes],
             },
           }
@@ -472,66 +373,62 @@ export const SB_DAG_NO_CYCLES: Rule = {
 // =============================================================================
 // SB_ORDER_UNIQUE - REMOVED
 // =============================================================================
-// StoryBeat scene ordering is now auto-computed via computeOrder() based on SATISFIED_BY edges.
-// The SATISFIED_BY edge properties.order is used for sorting within a StoryBeat.
+// PlotPoint scene ordering is now auto-computed via computeOrder() based on REALIZED_BY edges.
+// The REALIZED_BY edge properties.order is used for sorting within a PlotPoint.
 
 // =============================================================================
-// SB_ACT_ALIGNMENT
+// PP_ACT_ALIGNMENT
 // =============================================================================
 
 /**
- * If a StoryBeat has both an act field and an ALIGNS_WITH edge to a Beat,
- * the StoryBeat's act must match the Beat's act.
- * Fix: Update StoryBeat's act to match the aligned Beat.
+ * If a PlotPoint has both an act field and an alignedBeatId,
+ * the PlotPoint's act must match the Beat's act.
+ * Fix: Update PlotPoint's act to match the aligned Beat.
  */
-export const SB_ACT_ALIGNMENT: Rule = {
-  id: 'SB_ACT_ALIGNMENT',
-  name: 'StoryBeat Act Must Match Aligned Beat',
+export const PP_ACT_ALIGNMENT: Rule = {
+  id: 'PP_ACT_ALIGNMENT',
+  name: 'PlotPoint Act Must Match Aligned Beat',
   severity: 'hard',
   category: 'act_boundary',
-  description: 'If a story beat aligns with a beat, their act values must match',
+  description: 'If a plot point aligns with a beat, their act values must match',
 
   evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
     const violations: RuleViolation[] = [];
-    const storyBeats = getNodesByType<StoryBeat>(graph, 'StoryBeat');
+    const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
 
-    for (const sb of storyBeats) {
+    for (const pp of plotPoints) {
       // Skip if not in scope
-      if (!isNodeInScope(scope, sb.id)) continue;
+      if (!isNodeInScope(scope, pp.id)) continue;
 
-      // Skip if no act is set on StoryBeat
-      if (sb.act === undefined) continue;
+      // Skip if no act is set on PlotPoint
+      if (pp.act === undefined) continue;
 
-      // Find ALIGNS_WITH edge from this StoryBeat
-      const alignsWithEdge = graph.edges.find(
-        (e) => e.type === 'ALIGNS_WITH' && e.from === sb.id
-      );
-
-      if (!alignsWithEdge) continue;
+      // Skip if no alignedBeatId
+      if (!pp.alignedBeatId) continue;
 
       // Get the aligned beat's act
-      const beatAct = getActForBeatId(graph, alignsWithEdge.to);
+      const beatAct = getActForBeatId(graph, pp.alignedBeatId);
       if (beatAct === undefined) continue;
 
       // Check if acts match
-      if (sb.act !== beatAct) {
-        const beat = graph.nodes.get(alignsWithEdge.to) as Beat | undefined;
+      if (pp.act !== beatAct) {
+        const beat = graph.nodes.get(pp.alignedBeatId) as Beat | undefined;
         violations.push(
           createViolation(
-            'SB_ACT_ALIGNMENT',
+            'PP_ACT_ALIGNMENT',
             'hard',
             'act_boundary',
-            `StoryBeat "${sb.title}" is in Act ${sb.act} but aligns with Beat "${beat?.beat_type}" in Act ${beatAct}`,
+            `PlotPoint "${pp.title}" is in Act ${pp.act} but aligns with Beat "${beat?.beat_type}" in Act ${beatAct}`,
             {
-              nodeId: sb.id,
-              nodeType: 'StoryBeat',
+              nodeId: pp.id,
+              nodeType: 'PlotPoint',
               field: 'act',
-              relatedNodeIds: [alignsWithEdge.to],
+              relatedNodeIds: [pp.alignedBeatId],
               context: {
-                storyBeatId: sb.id,
-                storyBeatTitle: sb.title,
-                storyBeatAct: sb.act,
-                beatId: alignsWithEdge.to,
+                plotPointId: pp.id,
+                plotPointTitle: pp.title,
+                plotPointAct: pp.act,
+                beatId: pp.alignedBeatId,
                 beatType: beat?.beat_type,
                 beatAct,
               },
@@ -546,29 +443,29 @@ export const SB_ACT_ALIGNMENT: Rule = {
 
   suggestFix: (graph: GraphState, violation: RuleViolation): Fix | null => {
     const context = violation.context as {
-      storyBeatId?: string;
-      storyBeatTitle?: string;
+      plotPointId?: string;
+      plotPointTitle?: string;
       beatAct?: 1 | 2 | 3 | 4 | 5;
     } | undefined;
 
-    if (!context?.storyBeatId || !context?.beatAct) return null;
+    if (!context?.plotPointId || !context?.beatAct) return null;
 
-    const { storyBeatId, beatAct } = context;
+    const { plotPointId, beatAct } = context;
 
-    const storyBeat = graph.nodes.get(storyBeatId) as StoryBeat | undefined;
-    if (!storyBeat || storyBeat.type !== 'StoryBeat') return null;
+    const plotPoint = graph.nodes.get(plotPointId) as PlotPoint | undefined;
+    if (!plotPoint || plotPoint.type !== 'PlotPoint') return null;
 
     const ops: UpdateNodeOp[] = [
       {
         op: 'UPDATE_NODE' as const,
-        id: storyBeatId,
+        id: plotPointId,
         set: { act: beatAct },
       },
     ];
 
     const patch = createPatch('', ops, {
       source: 'fix',
-      ruleId: 'SB_ACT_ALIGNMENT',
+      ruleId: 'PP_ACT_ALIGNMENT',
     });
 
     const inversePatch = generateInversePatch(graph, patch);
@@ -576,12 +473,12 @@ export const SB_ACT_ALIGNMENT: Rule = {
     return {
       id: generateFixId(violation.id, 'align_act'),
       violationId: violation.id,
-      violationRuleId: 'SB_ACT_ALIGNMENT',
-      label: `Set "${storyBeat.title}" to Act ${beatAct}`,
-      description: `Update the story beat's act to match the aligned beat`,
+      violationRuleId: 'PP_ACT_ALIGNMENT',
+      label: `Set "${plotPoint.title}" to Act ${beatAct}`,
+      description: `Update the plot point's act to match the aligned beat`,
       patch,
       inversePatch,
-      affectedNodeIds: [storyBeatId],
+      affectedNodeIds: [plotPointId],
       operationCount: 1,
     };
   },
@@ -595,13 +492,12 @@ export const SB_ACT_ALIGNMENT: Rule = {
  * All hard rules that block commit.
  */
 export const HARD_RULES: Rule[] = [
-  // Note: SCENE_ORDER_UNIQUE and SB_ORDER_UNIQUE were removed
-  // Scene and StoryBeat ordering is now auto-computed via computeOrder()
-  SCENE_ACT_BOUNDARY,
+  // Note: SCENE_ORDER_UNIQUE and PP_ORDER_UNIQUE were removed
+  // Scene and PlotPoint ordering is now auto-computed via computeOrder()
   STC_BEAT_ORDERING,
   EDGE_ORDER_UNIQUE,
-  SB_DAG_NO_CYCLES,
-  SB_ACT_ALIGNMENT,
+  PP_DAG_NO_CYCLES,
+  PP_ACT_ALIGNMENT,
 ];
 
 /**

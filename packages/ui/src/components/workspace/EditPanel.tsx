@@ -1,5 +1,5 @@
 /**
- * EditPanel - Modal for editing StoryBeats and Scenes.
+ * EditPanel - Modal for editing PlotPoints and Scenes.
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -7,14 +7,14 @@ import { useStory } from '../../context/StoryContext';
 import { useGeneration } from '../../context/GenerationContext';
 import { useSavedPackages } from '../../context/SavedPackagesContext';
 import { api } from '../../api/client';
-import type { OutlineStoryBeat, OutlineScene, ImpactEnrichment } from '../../api/types';
+import type { OutlinePlotPoint, OutlineScene, ImpactEnrichment } from '../../api/types';
 import styles from './EditPanel.module.css';
 
-type EditItemType = 'storybeat' | 'scene';
+type EditItemType = 'plotpoint' | 'scene';
 
 interface EditPanelProps {
   itemType: EditItemType;
-  item: OutlineStoryBeat | OutlineScene;
+  item: OutlinePlotPoint | OutlineScene;
   onClose: () => void;
   onSave?: () => void;
 }
@@ -97,8 +97,8 @@ export function EditPanel({ itemType, item, onClose, onSave }: EditPanelProps) {
   });
 
   useEffect(() => {
-    if (itemType === 'storybeat') {
-      const sb = item as OutlineStoryBeat;
+    if (itemType === 'plotpoint') {
+      const sb = item as OutlinePlotPoint;
       setSbData({
         title: sb.title || '',
         intent: sb.intent || 'plot',
@@ -128,8 +128,8 @@ export function EditPanel({ itemType, item, onClose, onSave }: EditPanelProps) {
     setError(null);
 
     try {
-      if (itemType === 'storybeat') {
-        await api.updateStoryBeat(currentStoryId, item.id, {
+      if (itemType === 'plotpoint') {
+        await api.updatePlotPoint(currentStoryId, item.id, {
           title: sbData.title.trim() || undefined,
           intent: sbData.intent || undefined,
           summary: sbData.summary.trim() || undefined,
@@ -171,8 +171,8 @@ export function EditPanel({ itemType, item, onClose, onSave }: EditPanelProps) {
   );
 
   // Collect AI insights from enrichment data across all packages
-  const itemName = itemType === 'storybeat'
-    ? (item as OutlineStoryBeat).title
+  const itemName = itemType === 'plotpoint'
+    ? (item as OutlinePlotPoint).title
     : (item as OutlineScene).heading;
 
   const aiInsights = useMemo(() => {
@@ -206,7 +206,7 @@ export function EditPanel({ itemType, item, onClose, onSave }: EditPanelProps) {
     return results;
   }, [itemName, item.id, session?.packages, savedPackages, acceptedEnrichments]);
 
-  const title = itemType === 'storybeat' ? 'Edit Story Beat' : 'Edit Scene';
+  const title = itemType === 'plotpoint' ? 'Edit Story Beat' : 'Edit Scene';
 
   return (
     <div className={styles.overlay} onClick={onClose} onKeyDown={handleKeyDown}>
@@ -226,7 +226,7 @@ export function EditPanel({ itemType, item, onClose, onSave }: EditPanelProps) {
         <div className={styles.content}>
           {error && <div className={styles.error}>{error}</div>}
 
-          {itemType === 'storybeat' ? (
+          {itemType === 'plotpoint' ? (
             <div className={styles.form}>
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="sb-title">

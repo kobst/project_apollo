@@ -19,8 +19,8 @@ import type {
   StoryContextChange,
   ProposeRequest,
   ProposeResponseData,
-  ProposeStoryBeatsRequest,
-  ProposeStoryBeatsResponse,
+  ProposePlotPointsRequest,
+  ProposePlotPointsResponse,
   ProposeCharactersRequest,
   ProposeCharactersResponse,
   ProposeScenesRequest,
@@ -61,8 +61,8 @@ interface GenerationContextValue {
   // Actions
   /** Unified propose (main AI pipeline) */
   propose: (storyId: string, request: ProposeRequest) => Promise<ProposeResponseData>;
-  /** Propose Story Beats */
-  proposeStoryBeats: (storyId: string, request: ProposeStoryBeatsRequest) => Promise<ProposeStoryBeatsResponse>;
+  /** Propose Plot Points */
+  proposePlotPoints: (storyId: string, request: ProposePlotPointsRequest) => Promise<ProposePlotPointsResponse>;
   /** Propose Characters */
   proposeCharacters: (storyId: string, request: ProposeCharactersRequest) => Promise<ProposeCharactersResponse>;
   /** Propose Scenes */
@@ -206,7 +206,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
   // Map ProposeEntryPointType to GenerationEntryPointType
   const mapProposeToGenerationEntryPointType = (
     proposeType: 'freeText' | 'node' | 'beat' | 'gap' | 'document'
-  ): 'beat' | 'storyBeat' | 'character' | 'gap' | 'idea' | 'naked' => {
+  ): 'beat' | 'plotPoint' | 'character' | 'gap' | 'idea' | 'naked' => {
     switch (proposeType) {
       case 'freeText': return 'naked';
       case 'node': return 'character'; // Default node to character
@@ -256,7 +256,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     sessionId: string,
     storyId: string,
     packages: NarrativePackage[],
-    entryPointType: 'beat' | 'storyBeat' | 'character' | 'gap' | 'idea' | 'naked',
+    entryPointType: 'beat' | 'plotPoint' | 'character' | 'gap' | 'idea' | 'naked',
     orchestration?: GenerateResponseData['orchestration'] | null
   ) => {
     const newSession: GenerationSession = {
@@ -274,20 +274,20 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     setOrchestrationInfo(orchestration ?? null);
   };
 
-  // Propose Story Beats
-  const proposeStoryBeats = useCallback(
-    async (storyId: string, request: ProposeStoryBeatsRequest): Promise<ProposeStoryBeatsResponse> => {
+  // Propose Plot Points
+  const proposePlotPoints = useCallback(
+    async (storyId: string, request: ProposePlotPointsRequest): Promise<ProposePlotPointsResponse> => {
       try {
         setLoading(true);
         setError(null);
-        const genRequest: any = { intent: { mode: 'storyBeats' as const, focus: request.priorityBeatIds ?? [] } };
+        const genRequest: any = { intent: { mode: 'plotPoints' as const, focus: request.priorityBeatIds ?? [] } };
         if (request.direction) genRequest.direction = request.direction;
         if (request.packageCount !== undefined) genRequest.packageCount = request.packageCount;
         if (request.creativity !== undefined) genRequest.creativity = request.creativity;
         const data: GenerateResponseData = await api.generate(storyId, genRequest);
         createSessionFromResponse(data.sessionId, storyId, data.packages, 'beat', data.orchestration ?? null);
         // Backfill to original response shape minimally
-        return { sessionId: data.sessionId, packages: data.packages } as unknown as ProposeStoryBeatsResponse;
+        return { sessionId: data.sessionId, packages: data.packages } as unknown as ProposePlotPointsResponse;
       } catch (err) {
         setError((err as Error).message);
         throw err;
@@ -327,12 +327,12 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
       try {
         setLoading(true);
         setError(null);
-        const genRequest: any = { intent: { mode: 'scenes' as const, focus: request.storyBeatIds } };
+        const genRequest: any = { intent: { mode: 'scenes' as const, focus: request.plotPointIds } };
         if (request.direction) genRequest.direction = request.direction;
         if (request.packageCount !== undefined) genRequest.packageCount = request.packageCount;
         if (request.creativity !== undefined) genRequest.creativity = request.creativity;
         const data: GenerateResponseData = await api.generate(storyId, genRequest);
-        createSessionFromResponse(data.sessionId, storyId, data.packages, 'storyBeat', data.orchestration ?? null);
+        createSessionFromResponse(data.sessionId, storyId, data.packages, 'plotPoint', data.orchestration ?? null);
         return { sessionId: data.sessionId, packages: data.packages } as unknown as ProposeScenesResponse;
       } catch (err) {
         setError((err as Error).message);
@@ -840,7 +840,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
     error,
     isOpen,
     propose,
-    proposeStoryBeats,
+    proposePlotPoints,
     proposeCharacters,
     proposeScenes,
     proposeExpand,

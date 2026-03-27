@@ -10,7 +10,7 @@ import {
 } from '../src/stubs/extractorStub.js';
 import type { GraphState } from '../src/core/graph.js';
 import type { Patch } from '../src/types/patch.js';
-import { createScene, createCharacter, resetIdCounter } from './helpers/index.js';
+import { createScene, createCharacter, createPlotPoint, resetIdCounter } from './helpers/index.js';
 import { edges } from './helpers/index.js';
 import { fixtures } from './fixtures/index.js';
 
@@ -99,26 +99,23 @@ describe('End-to-end loop', () => {
           {
             op: 'ADD_NODE',
             node: {
-              type: 'StoryBeat',
+              type: 'PlotPoint',
               id: 'sb_catalyst_001',
               title: 'The inciting incident',
               intent: 'plot',
               status: 'proposed',
+              alignedBeatId: 'beat_Catalyst',
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             },
           },
           {
-            op: 'ADD_EDGE',
-            edge: edges.alignsWith('sb_catalyst_001', 'beat_Catalyst'),
-          },
-          {
             op: 'ADD_NODE',
-            node: createScene('beat_Catalyst', { id: 'scene_catalyst_001' }),
+            node: createScene({ id: 'scene_catalyst_001' }),
           },
           {
             op: 'ADD_EDGE',
-            edge: edges.satisfiedBy('sb_catalyst_001', 'scene_catalyst_001', 1),
+            edge: edges.realizedBy('sb_catalyst_001', 'scene_catalyst_001', 1),
           },
           {
             op: 'UPDATE_NODE',
@@ -194,7 +191,7 @@ describe('End-to-end loop', () => {
         ops: [
           {
             op: 'ADD_NODE',
-            node: createScene('nonexistent_beat'),
+            node: createPlotPoint({ alignedBeatId: 'nonexistent_beat' }),
           },
         ],
       };
@@ -233,7 +230,7 @@ describe('End-to-end loop', () => {
         ops: [
           {
             op: 'ADD_NODE',
-            node: createScene('beat_Catalyst', { scene_overview: 'Too short' }),
+            node: createScene({ scene_overview: 'Too short' }),
           },
         ],
       };
@@ -261,7 +258,7 @@ describe('End-to-end loop', () => {
         ops: [
           {
             op: 'ADD_NODE',
-            node: createScene('beat_Catalyst', { id: 'scene_test' }),
+            node: createScene({ id: 'scene_test' }),
           },
         ],
       };
@@ -304,7 +301,7 @@ describe('End-to-end loop', () => {
         ops: [
           {
             op: 'ADD_NODE',
-            node: createScene('beat_Catalyst', { id: 'scene_1' }),
+            node: createScene({ id: 'scene_1' }),
           },
         ],
       };
@@ -333,30 +330,26 @@ describe('End-to-end loop', () => {
       const seedPatch = fixtures.seedPatch();
       graph = applyPatch(graph, seedPatch);
 
-      // Add scene to Catalyst via StoryBeat hierarchy
+      // Add scene to Catalyst via PlotPoint hierarchy
       const sceneForCatalyst: Patch = {
         type: 'Patch',
         id: 'patch_catalyst_scene',
         base_story_version_id: 'sv0',
         created_at: new Date().toISOString(),
         ops: [
-          // Create StoryBeat
+          // Create PlotPoint
           {
             op: 'ADD_NODE',
             node: {
-              type: 'StoryBeat',
+              type: 'PlotPoint',
               id: 'sb_catalyst_001',
               title: 'Dam Discovery',
               intent: 'plot',
               status: 'proposed',
+              alignedBeatId: 'beat_Catalyst',
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             },
-          },
-          // Align StoryBeat with Beat
-          {
-            op: 'ADD_EDGE',
-            edge: edges.alignsWith('sb_catalyst_001', 'beat_Catalyst'),
           },
           // Create Scene
           {
@@ -370,10 +363,10 @@ describe('End-to-end loop', () => {
               status: 'DRAFT',
             },
           },
-          // Attach Scene to StoryBeat
+          // Attach Scene to PlotPoint
           {
             op: 'ADD_EDGE',
-            edge: edges.satisfiedBy('sb_catalyst_001', 'scene_catalyst_001', 1),
+            edge: edges.realizedBy('sb_catalyst_001', 'scene_catalyst_001', 1),
           },
           {
             op: 'ADD_EDGE',
@@ -399,7 +392,7 @@ describe('End-to-end loop', () => {
       // Check scene exists
       expect(graph.nodes.has('scene_catalyst_001')).toBe(true);
 
-      // Check StoryBeat exists (new hierarchy)
+      // Check PlotPoint exists (new hierarchy)
       expect(graph.nodes.has('sb_catalyst_001')).toBe(true);
 
       // Check beat status updated
@@ -409,15 +402,14 @@ describe('End-to-end loop', () => {
       >;
       expect(catalystBeat.status).toBe('REALIZED');
 
-      // Check edges exist (4 total from sceneForCatalyst)
-      // sceneForCatalyst: ALIGNS_WITH, SATISFIED_BY, HAS_CHARACTER, LOCATED_AT
-      expect(graph.edges.length).toBe(4);
+      // Check edges exist (3 total from sceneForCatalyst)
+      // sceneForCatalyst: REALIZED_BY, HAS_CHARACTER, LOCATED_AT
+      expect(graph.edges.length).toBe(3);
 
-      // Check StoryBeat hierarchy edges exist
-      expect(graph.edges.some((e) => e.type === 'ALIGNS_WITH' && e.from === 'sb_catalyst_001')).toBe(true);
-      expect(graph.edges.some((e) => e.type === 'SATISFIED_BY' && e.from === 'sb_catalyst_001')).toBe(true);
+      // Check PlotPoint hierarchy edges exist
+      expect(graph.edges.some((e) => e.type === 'REALIZED_BY' && e.from === 'sb_catalyst_001')).toBe(true);
 
-      // Derive OQs - should have 14 BeatUnrealized (not 15) because Catalyst has scene via StoryBeat
+      // Derive OQs - should have 14 BeatUnrealized (not 15) because Catalyst has scene via PlotPoint
       const questions = deriveOpenQuestions(graph);
       const beatOQs = questions.filter((q) => q.type === 'BeatUnrealized');
       expect(beatOQs.length).toBe(14);

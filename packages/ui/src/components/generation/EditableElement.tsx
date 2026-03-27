@@ -156,15 +156,15 @@ function formatEdgeRelationship(
         label: `${toName} in ${fromName}`,
         description: 'Object appears in scene',
       };
-    case 'SATISFIED_BY':
+    case 'REALIZED_BY':
       return {
         label: `${fromName} realized by ${toName}`,
-        description: 'StoryBeat realized by scene',
+        description: 'PlotPoint realized by scene',
       };
-    case 'ALIGNS_WITH':
+    case 'ALIGNS_WITH':  // legacy - should not appear in new packages
       return {
         label: `${fromName} aligns with ${toName}`,
-        description: 'StoryBeat aligns with beat',
+        description: 'PlotPoint aligns with beat',
       };
     case 'PRECEDES':
       return {
@@ -174,7 +174,7 @@ function formatEdgeRelationship(
     case 'ADVANCES':
       return {
         label: `${fromName} advances ${toName}`,
-        description: 'StoryBeat advances character arc',
+        description: 'PlotPoint advances character arc',
       };
     case 'HAS_ARC':
       return {

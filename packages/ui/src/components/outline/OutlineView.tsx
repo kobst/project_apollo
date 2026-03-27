@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useStory } from '../../context/StoryContext';
 import { useStashContext } from '../../context/StashContext';
 import { api } from '../../api/client';
-import type { OutlineData, OutlineStoryBeat, OutlineScene, OutlineIdea, CreateSceneRequest, CreateIdeaRequest } from '../../api/types';
+import type { OutlineData, OutlinePlotPoint, OutlineScene, OutlineIdea, CreateSceneRequest, CreateIdeaRequest } from '../../api/types';
 import { ActRow } from './ActRow';
 import { StashSection } from './StashSection';
 import { CreateStoryBeatModal } from './CreateStoryBeatModal';
@@ -18,10 +18,10 @@ export function OutlineView() {
   const [error, setError] = useState<string | null>(null);
 
   // Modal states
-  const [showStoryBeatModal, setShowStoryBeatModal] = useState(false);
+  const [showPlotPointModal, setShowPlotPointModal] = useState(false);
   const [showSceneModal, setShowSceneModal] = useState(false);
   const [showIdeaModal, setShowIdeaModal] = useState(false);
-  const [savingStoryBeat, setSavingStoryBeat] = useState(false);
+  const [savingPlotPoint, setSavingPlotPoint] = useState(false);
   const [savingScene, setSavingScene] = useState(false);
   const [savingIdea, setSavingIdea] = useState(false);
 
@@ -46,22 +46,22 @@ export function OutlineView() {
     void fetchOutline();
   }, [fetchOutline]);
 
-  // Handle creating a new unassigned StoryBeat
-  const handleAddStoryBeat = useCallback(async (data: Parameters<typeof api.createStoryBeat>[1]) => {
+  // Handle creating a new unassigned PlotPoint
+  const handleAddPlotPoint = useCallback(async (data: Parameters<typeof api.createPlotPoint>[1]) => {
     if (!currentStoryId) return;
 
-    setSavingStoryBeat(true);
+    setSavingPlotPoint(true);
     try {
-      await api.createStoryBeat(currentStoryId, data);
-      setShowStoryBeatModal(false);
-      // Refresh outline to show the new story beat
+      await api.createPlotPoint(currentStoryId, data);
+      setShowPlotPointModal(false);
+      // Refresh outline to show the new plot point
       await fetchOutline();
       // Also refresh status to update counts
       void refreshStatus();
     } catch (err) {
-      console.error('Failed to create story beat:', err);
+      console.error('Failed to create plot point:', err);
     } finally {
-      setSavingStoryBeat(false);
+      setSavingPlotPoint(false);
     }
   }, [currentStoryId, fetchOutline, refreshStatus]);
 
@@ -104,10 +104,10 @@ export function OutlineView() {
     }
   }, [currentStoryId, fetchOutline, refreshStatus]);
 
-  // Handle clicking on an unassigned story beat
-  const handleStoryBeatClick = useCallback((pp: OutlineStoryBeat) => {
+  // Handle clicking on an unassigned plot point
+  const handlePlotPointClick = useCallback((pp: OutlinePlotPoint) => {
     // For now, just log - could open a detail modal in the future
-    console.log('Clicked story beat:', pp.id);
+    console.log('Clicked plot point:', pp.id);
   }, []);
 
   // Handle clicking on an unassigned scene
@@ -160,10 +160,10 @@ export function OutlineView() {
   }
 
   // Calculate total unassigned count
-  const unassignedStoryBeatCount = outline.unassignedStoryBeats?.length ?? 0;
+  const unassignedPlotPointCount = outline.unassignedPlotPoints?.length ?? 0;
   const unassignedSceneCount = outline.unassignedScenes?.length ?? 0;
   const unassignedIdeaCount = outline.unassignedIdeas?.length ?? 0;
-  const totalUnassignedCount = unassignedStoryBeatCount + unassignedSceneCount + unassignedIdeaCount;
+  const totalUnassignedCount = unassignedPlotPointCount + unassignedSceneCount + unassignedIdeaCount;
 
   return (
     <div className={styles.container}>
@@ -176,7 +176,7 @@ export function OutlineView() {
             <strong>{outline.summary.totalBeats}</strong> beats
           </span>
           <span className={styles.summaryItem}>
-            <strong>{outline.summary.totalStoryBeats}</strong> story beats
+            <strong>{outline.summary.totalPlotPoints}</strong> plot points
           </span>
           <span className={styles.summaryItem}>
             <strong>{outline.summary.totalScenes}</strong> scenes
@@ -202,24 +202,24 @@ export function OutlineView() {
 
         {/* Stash Section */}
         <StashSection
-          storyBeats={outline.unassignedStoryBeats ?? []}
+          plotPoints={outline.unassignedPlotPoints ?? []}
           scenes={outline.unassignedScenes ?? []}
           ideas={outline.unassignedIdeas ?? []}
-          onAddStoryBeat={() => setShowStoryBeatModal(true)}
+          onAddPlotPoint={() => setShowPlotPointModal(true)}
           onAddScene={() => setShowSceneModal(true)}
           onAddIdea={() => setShowIdeaModal(true)}
-          onStoryBeatClick={handleStoryBeatClick}
+          onPlotPointClick={handlePlotPointClick}
           onSceneClick={handleSceneClick}
           onIdeaClick={handleIdeaClick}
         />
       </div>
 
       {/* Create Plot Point Modal */}
-      {showStoryBeatModal && (
+      {showPlotPointModal && (
         <CreateStoryBeatModal
-          onAdd={handleAddStoryBeat}
-          onCancel={() => setShowStoryBeatModal(false)}
-          saving={savingStoryBeat}
+          onAdd={handleAddPlotPoint}
+          onCancel={() => setShowPlotPointModal(false)}
+          saving={savingPlotPoint}
         />
       )}
 

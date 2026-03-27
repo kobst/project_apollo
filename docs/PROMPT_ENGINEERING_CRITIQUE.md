@@ -51,7 +51,7 @@ The system prompt says:
 > "You are an AI story development assistant helping to craft a compelling narrative..."
 
 Then the user prompt opens with:
-> "You are a story structure specialist generating StoryBeat nodes..."
+> "You are a story structure specialist generating PlotPoint nodes..."
 
 **Problem**: The model is being told what it is twice, with slightly different framing.
 
@@ -61,7 +61,7 @@ Then the user prompt opens with:
 
 ### 2.2 Prompt Length
 
-The Story Beats prompt is ~3,500 tokens before the LLM even starts thinking. This leads to:
+The Plot Points prompt is ~3,500 tokens before the LLM even starts thinking. This leads to:
 - Higher costs
 - Potential "lost in the middle" effect
 - Slower response times
@@ -75,7 +75,7 @@ The Story Beats prompt is ~3,500 tokens before the LLM even starts thinking. Thi
 
 | Endpoint | Package Schema |
 |----------|----------------|
-| `/propose/story-beats` | `primary.nodes[]`, `primary.edges[]`, `supporting` |
+| `/propose/plot-points` | `primary.nodes[]`, `primary.edges[]`, `supporting` |
 | `/propose/characters` | `changes.nodes[]`, `changes.edges[]` |
 | `/propose/expand` | `changes.nodes[]`, `changes.edges[]`, `changes.storyContext[]` |
 | `/propose/refine` | `changes.node_changes[]`, `changes.edge_changes[]` |
@@ -102,7 +102,7 @@ Excellent — gives the model a clear creative North Star.
 ### 3.2 Explicit Edge Type Constraints ✓
 ```
 **VALID EDGE TYPES:**
-- PRIMARY: ALIGNS_WITH (StoryBeat -> Beat, REQUIRED)
+- PRIMARY: alignedBeatId (PlotPoint -> Beat, REQUIRED)
 - SUPPORTING: FEATURES_CHARACTER, LOCATED_AT
 ```
 
@@ -128,16 +128,16 @@ Good self-documentation pattern that helps with staging.
 **Before** (too verbose):
 ```
 **STRICT OUTPUT RULES:**
-1. PRIMARY section: ONLY StoryBeat nodes. NO Scene, Character, Location, or Object nodes in primary.
-2. Each StoryBeat MUST have exactly one ALIGNS_WITH edge to a Beat node.
-3. StoryBeats MAY have PRECEDES edges to other StoryBeats for causal ordering.
+1. PRIMARY section: ONLY PlotPoint nodes. NO Scene, Character, Location, or Object nodes in primary.
+2. Each PlotPoint MUST have exactly one alignedBeatId edge to a Beat node.
+3. PlotPoints MAY have PRECEDES edges to other PlotPoints for causal ordering.
 ...
 ```
 
 **After** (scannable):
 ```
 ## Output Rules
-- PRIMARY: StoryBeat nodes only → each MUST have ALIGNS_WITH edge to a Beat
+- PRIMARY: PlotPoint nodes only → each MUST have alignedBeatId edge to a Beat
 - SUPPORTING: Character/Location nodes if needed
 - Package count: exactly {packageCount}
 ```

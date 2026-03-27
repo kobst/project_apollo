@@ -65,15 +65,11 @@ export const edges = {
   appearsIn: (motifId: string, sceneId: string, id?: string): Edge =>
     createEdge('APPEARS_IN', motifId, sceneId, { id }),
 
-  /** StoryBeat aligns with Beat */
-  alignsWith: (storyBeatId: string, beatId: string, id?: string): Edge =>
-    createEdge('ALIGNS_WITH', storyBeatId, beatId, { id }),
+  /** PlotPoint realized by Scene (with order) */
+  realizedBy: (plotPointId: string, sceneId: string, order: number, id?: string): Edge =>
+    createEdge('REALIZED_BY', plotPointId, sceneId, { id, properties: { order } }),
 
-  /** StoryBeat satisfied by Scene (with order) */
-  satisfiedBy: (storyBeatId: string, sceneId: string, order: number, id?: string): Edge =>
-    createEdge('SATISFIED_BY', storyBeatId, sceneId, { id, properties: { order } }),
-
-  /** StoryBeat precedes StoryBeat (causal chain) */
+  /** PlotPoint precedes PlotPoint (causal chain) */
   precedes: (fromSBId: string, toSBId: string, id?: string): Edge =>
     createEdge('PRECEDES', fromSBId, toSBId, { id }),
 };

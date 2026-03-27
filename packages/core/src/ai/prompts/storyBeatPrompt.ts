@@ -1,7 +1,7 @@
 /**
- * StoryBeat-specific prompt builder.
+ * PlotPoint-specific prompt builder.
  *
- * Generates ONLY StoryBeat nodes to fill structural gaps (beats without alignment).
+ * Generates ONLY PlotPoint nodes to fill structural gaps (beats without alignment).
  * Strict constraints ensure no other node types are generated.
  */
 
@@ -11,47 +11,51 @@ import {
   PROMPT_VERSION,
   JSON_OUTPUT_RULES,
   getCreativityLabel,
+  getProblemStatementSection,
 } from './shared.js';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface StoryBeatPromptParams {
+export interface PlotPointPromptParams {
   storyContext: string;
-  existingStoryBeats: string;
+  existingPlotPoints: string;
   characters: string;
   missingBeats: MissingBeatInfo[];
   priorityBeats: string[];
   packageCount: number;
-  maxStoryBeatsPerPackage: number;
+  maxPlotPointsPerPackage: number;
   direction?: string;
   creativity: number;
   expansionScope?: ExpansionScope;
   targetAct?: 1 | 2 | 3 | 4 | 5;
   ideas?: string;
   guidelines?: string;
+  /** Optional problem statement describing what narrative problem to solve */
+  problemStatement?: string;
 }
 
 // =============================================================================
 // Prompt Builder
 // =============================================================================
 
-export function buildStoryBeatPrompt(params: StoryBeatPromptParams): string {
+export function buildPlotPointPrompt(params: PlotPointPromptParams): string {
   const {
     storyContext,
-    existingStoryBeats,
+    existingPlotPoints,
     characters,
     missingBeats,
     priorityBeats,
     packageCount,
-    maxStoryBeatsPerPackage,
+    maxPlotPointsPerPackage,
     direction,
     creativity,
     expansionScope = 'flexible',
     targetAct,
     ideas,
     guidelines,
+    problemStatement,
   } = params;
 
   const creativityLabel = getCreativityLabel(creativity);
@@ -64,21 +68,21 @@ export function buildStoryBeatPrompt(params: StoryBeatPromptParams): string {
   const missingBeatsText = formatMissingBeats(filteredMissingBeats);
   const priorityBeatsText = formatPriorityBeats(priorityBeats, filteredMissingBeats);
 
-  return `## StoryBeat Generator v${PROMPT_VERSION}
+  return `## PlotPoint Generator v${PROMPT_VERSION}
 
-Generate StoryBeat nodes to fill structural gaps.
+Generate PlotPoint nodes to fill structural gaps.
+${getProblemStatementSection(problemStatement)}
 
 ## Rules
-- PRIMARY: StoryBeat nodes only (no Scene/Character/Location/Object)
-- Each StoryBeat MUST have ALIGNS_WITH edge to a Beat
-- Optional PRECEDES edges for causal ordering between StoryBeats
+- PRIMARY: PlotPoint nodes only (no Scene/Character/Location/Object)
+- Each PlotPoint MUST include an \`alignedBeatId\` field in its data, referencing a Beat node ID
+- Optional PRECEDES edges for causal ordering between PlotPoints
 ${isConstrained ? '- No supporting content' : '- SUPPORTING: May include Character/Location nodes if essential'}
 - Generate exactly ${packageCount} package(s)
 
 ## Edge Types
-- ALIGNS_WITH: StoryBeat → Beat (REQUIRED)
-- PRECEDES: StoryBeat → StoryBeat (optional)
-${isConstrained ? '' : '- FEATURES_CHARACTER: StoryBeat → Character\n- LOCATED_AT: Scene → Location'}
+- PRECEDES: PlotPoint → PlotPoint (optional)
+${isConstrained ? '' : '- FEATURES_CHARACTER: PlotPoint → Character\n- LOCATED_AT: Scene → Location'}
 
 ## Story Context
 ${storyContext}
@@ -86,14 +90,14 @@ ${storyContext}
 ## Missing Beats${targetAct ? ` (Act ${targetAct})` : ''}
 ${missingBeatsText}
 ${priorityBeatsText}
-## Existing StoryBeats
-${existingStoryBeats || '[None]'}
+## Existing PlotPoints
+${existingPlotPoints || '[None]'}
 
 ## Characters (reference only)
 ${characters || '[None]'}
 ${direction ? `\n## Direction\n"${direction}"\n` : ''}${ideas ? `\n${ideas}` : ''}${guidelines ? `\n${guidelines}` : ''}
 ## Abstraction Guidance
-- CRITICAL: StoryBeats are ABSTRACT narrative functions, NOT scene descriptions.
+- CRITICAL: PlotPoints are ABSTRACT narrative functions, NOT scene descriptions.
 - Do describe narrative intent (what/why), emotional/stakes shift, and purpose.
 - Do NOT include specific locations (no "INT./EXT."), dialogue, or concrete actions.
 - Think "narrative intent" not "scene synopsis".
@@ -103,12 +107,13 @@ Examples:
 - GOOD (abstract intent): "Establish Cain's personal code — he values honor over institutional authority; show skepticism toward badges."
 
 ## Settings
-Creativity: ${creativityLabel} (${creativity}) | Scope: ${expansionScope} | Max per pkg: ${maxStoryBeatsPerPackage}
+Creativity: ${creativityLabel} (${creativity}) | Scope: ${expansionScope} | Max per pkg: ${maxPlotPointsPerPackage}
 
-## StoryBeat Schema
+## PlotPoint Schema
 Required fields:
 - title: Short evocative title
 - summary: 2-3 sentences (what happens, who, why it matters)
+- alignedBeatId: ID of the Beat this PlotPoint aligns with (e.g., "beat_Midpoint")
 - narrative_function: "theme_establishment" | "character_introduction" | "character_development" | "plot_revelation" | "reversal" | "escalation" | "resolution" | "tone_setter"
 - intent: "plot" | "character" | "tone"
 - priority: "low" | "medium" | "high"
@@ -126,9 +131,9 @@ ${JSON_OUTPUT_RULES}
   "confidence": 0.85,
   "style_tags": ["..."],
   "primary": {
-    "type": "StoryBeat",
-    "nodes": [{"operation": "add", "node_type": "StoryBeat", "node_id": "storybeat_{ts}_{5char}", "data": {"title": "...", "summary": "...", "narrative_function": "theme_establishment", "intent": "plot", "priority": "high", "stakes_change": "up", "urgency": "high"}}],
-    "edges": [{"operation": "add", "edge_type": "ALIGNS_WITH", "from": "storybeat_{ts}_{5char}", "to": "beat_Midpoint"}]
+    "type": "PlotPoint",
+    "nodes": [{"operation": "add", "node_type": "PlotPoint", "node_id": "plotpoint_{ts}_{5char}", "data": {"title": "...", "summary": "...", "alignedBeatId": "beat_Midpoint", "narrative_function": "theme_establishment", "intent": "plot", "priority": "high", "stakes_change": "up", "urgency": "high"}}],
+    "edges": []
   },${isConstrained ? '' : `
   "supporting": {"nodes": [], "edges": []},`}
 }]}

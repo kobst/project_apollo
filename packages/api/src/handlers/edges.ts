@@ -86,7 +86,7 @@ function edgeToData(edge: Edge): EdgeData {
  * Check if edge type affects ordering and recompute if needed.
  */
 function recomputeOrderIfNeeded(graph: ReturnType<typeof deserializeGraph>, edgeType: EdgeType): ReturnType<typeof deserializeGraph> {
-  if (edgeType === 'ALIGNS_WITH' || edgeType === 'SATISFIED_BY') {
+  if (edgeType === 'REALIZED_BY') {
     const orderResult = computeOrder(graph);
     if (orderResult.ops.length > 0) {
       return applyOrderUpdates(graph, orderResult);
@@ -547,10 +547,10 @@ export function createBatchEdgesHandler(ctx: StorageContext) {
       let updatedGraph = applyPatch(graph, patch);
 
       // Recompute order_index if any edges affect ordering
-      const hasOrderingEdges = edgesToAdd.some(e => e.type === 'ALIGNS_WITH' || e.type === 'SATISFIED_BY') ||
+      const hasOrderingEdges = edgesToAdd.some(e => e.type === 'REALIZED_BY') ||
         deletes?.some(id => {
           const edge = graph.edges.find(e => e.id === id);
-          return edge && (edge.type === 'ALIGNS_WITH' || edge.type === 'SATISFIED_BY');
+          return edge && (edge.type === 'REALIZED_BY');
         });
       if (hasOrderingEdges) {
         const orderResult = computeOrder(updatedGraph);

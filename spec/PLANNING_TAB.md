@@ -187,17 +187,17 @@ Shown when a sidebar item is clicked. Full editable detail of a single idea.
 │ │ Used 3 times · Informed 2 artifacts              │ │
 │ │ Last used: 2 hours ago                           │ │
 │ │                                                  │ │
-│ │ → StoryBeat: "Cain's quiet moment at the dock"   │ │
+│ │ → PlotPoint: "Cain's quiet moment at the dock"   │ │
 │ │ → Scene: "INT. BODY SHOP - EVENING"              │ │
 │ └──────────────────────────────────────────────────┘ │
 │                                                      │
 │ Source: AI    Status: Active    Created: 2h ago       │
 │                                                      │
-│ [ Refine with AI ] [ Generate StoryBeat ] [ Dismiss ] │
+│ [ Refine with AI ] [ Generate PlotPoint ] [ Dismiss ] │
 │ [ Delete ]                                           │
 └──────────────────────────────────────────────────────┘
 All fields are inline-editable. Changes auto-save (matching the existing pattern in Context fields). The provenance section is read-only and populated automatically when artifacts reference this idea.
-"Generate StoryBeat" button appears on Directions and Proposals. Clicking it switches to the Workspace tab and pre-populates the AI Generation panel's Direction field with this idea's content, with relevant constraints auto-included. (See §8.2.)
+"Generate PlotPoint" button appears on Directions and Proposals. Clicking it switches to the Workspace tab and pre-populates the AI Generation panel's Direction field with this idea's content, with relevant constraints auto-included. (See §8.2.)
 5.3 Refinement Session View
 Triggered by clicking "Refine with AI" on any idea. The center area transitions to a session layout:
 ┌──────────────────────────────────────────────────────┐
@@ -269,7 +269,7 @@ Generation modes:
 
 Questions about [Act] — AI analyzes the act's structure and proposes unresolved questions
 Constraints from premise — AI reads Constitution/premise and suggests constraints
-Directions for unfilled beats — AI identifies beats without story beats and suggests directions
+Directions for unfilled beats — AI identifies beats without plot points and suggests directions
 Character proposals — AI suggests characters to fill gaps (e.g., scenes without characters)
 General brainstorm — freeform; the Focus field drives the generation
 
@@ -298,23 +298,23 @@ A read-only, compact view of the story bible below the generation controls. Orga
 ┌─ STORY BIBLE REFERENCE ────────────────────────┐
 │                                                │
 │ ▼ Structure                                    │
-│   Act 1 - Setup (5 beats, 4 story beats)       │
+│   Act 1 - Setup (5 beats, 4 plot points)       │
 │     Opening Image ●                            │
 │     Theme Stated ●                             │
 │     Setup ●                                    │
 │     Catalyst ○                                 │
 │     Debate ○                                   │
-│   Act 2A - Fun & Games (3 beats, 1 story beat) │
+│   Act 2A - Fun & Games (3 beats, 1 plot point) │
 │     Break Into Two ○                           │
 │     B Story ○                                  │
 │     Fun & Games ●                              │
-│   Act 3 - Midpoint (2 beats, 1 story beat)     │
+│   Act 3 - Midpoint (2 beats, 1 plot point)     │
 │     Midpoint ●                                 │
 │     Bad Guys Close In ○                        │
-│   Act 4 - All Is Lost (2 beats, 1 story beat)  │
+│   Act 4 - All Is Lost (2 beats, 1 plot point)  │
 │     All Is Lost ●                              │
 │     Dark Night Of Soul ○                       │
-│   Act 5 - Finale (3 beats, 0 story beats)      │
+│   Act 5 - Finale (3 beats, 0 plot points)      │
 │     Break Into Three ○                         │
 │     Finale ○                                   │
 │     Final Image ○                              │
@@ -325,7 +325,7 @@ A read-only, compact view of the story bible below the generation controls. Orga
 │                                                │
 └────────────────────────────────────────────────┘
 
-● = beat has story beat(s) assigned, ○ = unfilled
+● = beat has plot point(s) assigned, ○ = unfilled
 Characters section shows names only (one-liners)
 Locations section shows names only
 Constraints section mirrors the Constraints group from the sidebar — this dual visibility reinforces that constraints are always-on guardrails
@@ -344,7 +344,7 @@ typescript// On the Idea interface
 lastUsedAt?: string;        // ISO timestamp, updated when idea is included in generation
 provenanceLinks?: Array<{   // Populated when artifacts reference this idea
   artifactId: string;
-  artifactType: 'StoryBeat' | 'Scene' | 'Character' | 'Location';
+  artifactType: 'PlotPoint' | 'Scene' | 'Character' | 'Location';
   artifactTitle: string;
   linkedAt: string;         // ISO timestamp
 }>;
@@ -366,11 +366,11 @@ Existing ideas in the Stash retain all current data. The `kind` field defaults t
 4. Form clears for next entry
 5. If user wants to add targeting/description, they select the new idea in the sidebar and edit in the center detail view
 
-### 8.2 Direction → Generate StoryBeat Flow
+### 8.2 Direction → Generate PlotPoint Flow
 
 1. User selects a Direction in the sidebar
 2. Center area shows the direction's detail view
-3. User clicks "Generate StoryBeat"
+3. User clicks "Generate PlotPoint"
 4. App switches to Workspace tab
 5. AI Generation panel's Direction field is pre-populated with the idea's title + description
 6. Relevant constraints (all active constraints from Planning) are auto-included in the generation context

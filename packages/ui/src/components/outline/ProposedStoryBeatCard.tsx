@@ -4,14 +4,14 @@
  */
 
 import { useState, useCallback } from 'react';
-import type { MergedOutlineStoryBeat } from '../../utils/outlineMergeUtils';
+import type { MergedOutlinePlotPoint } from '../../utils/outlineMergeUtils';
 import { ProposedSceneCard } from './ProposedSceneCard';
 import styles from './ProposedStoryBeatCard.module.css';
 import { useStory } from '../../context/StoryContext';
 import { useStashContext } from '../../context/StashContext';
 
 interface ProposedStoryBeatCardProps {
-  storyBeat: MergedOutlineStoryBeat;
+  plotPoint: MergedOutlinePlotPoint;
   beatId: string;
   onEdit: (nodeId: string, updates: Partial<Record<string, unknown>>) => void;
   onRemove?: ((nodeId: string) => void) | undefined;
@@ -26,7 +26,7 @@ const INTENT_OPTIONS = [
 ];
 
 export function ProposedStoryBeatCard({
-  storyBeat,
+  plotPoint,
   beatId: _beatId,
   onEdit,
   onRemove,
@@ -34,51 +34,51 @@ export function ProposedStoryBeatCard({
   onUndoRemove,
 }: ProposedStoryBeatCardProps) {
   const { currentStoryId } = useStory();
-  const { createStoryBeat } = useStashContext();
+  const { createPlotPoint } = useStashContext();
   const [isExpanded, setIsExpanded] = useState(false);
   const [localData, setLocalData] = useState({
-    title: storyBeat.title,
-    intent: storyBeat.intent,
-    summary: (storyBeat as unknown as { summary?: string }).summary ?? '',
+    title: plotPoint.title,
+    intent: plotPoint.intent,
+    summary: (plotPoint as unknown as { summary?: string }).summary ?? '',
   });
 
   const operationClass =
-    storyBeat._operation === 'add'
+    plotPoint._operation === 'add'
       ? styles.opAdd
-      : storyBeat._operation === 'modify'
+      : plotPoint._operation === 'modify'
       ? styles.opModify
       : styles.opDelete;
 
   const operationLabel =
-    storyBeat._operation === 'add'
+    plotPoint._operation === 'add'
       ? 'PROPOSED'
-      : storyBeat._operation === 'modify'
+      : plotPoint._operation === 'modify'
       ? 'MODIFIED'
       : 'REMOVING';
 
   const handleFieldChange = useCallback(
     (key: string, value: string) => {
       setLocalData((prev) => ({ ...prev, [key]: value }));
-      onEdit(storyBeat.id, { [key]: value });
+      onEdit(plotPoint.id, { [key]: value });
     },
-    [storyBeat.id, onEdit]
+    [plotPoint.id, onEdit]
   );
 
   const handleRemove = useCallback(() => {
-    onRemove?.(storyBeat.id);
-  }, [storyBeat.id, onRemove]);
+    onRemove?.(plotPoint.id);
+  }, [plotPoint.id, onRemove]);
 
   const handleUndoRemove = useCallback(() => {
-    onUndoRemove?.(storyBeat.id);
-  }, [storyBeat.id, onUndoRemove]);
+    onUndoRemove?.(plotPoint.id);
+  }, [plotPoint.id, onUndoRemove]);
 
   const toggleExpand = useCallback(() => {
     setIsExpanded((prev) => !prev);
   }, []);
 
   // Count scenes (both existing converted and proposed)
-  const sceneCount = storyBeat.scenes.length;
-  const proposedSceneCount = storyBeat.scenes.filter((s) => s._isProposed).length;
+  const sceneCount = plotPoint.scenes.length;
+  const proposedSceneCount = plotPoint.scenes.filter((s) => s._isProposed).length;
 
   // Removed state
   if (isRemoved) {
@@ -87,7 +87,7 @@ export function ProposedStoryBeatCard({
         <div className={styles.removedContent}>
           <span className={styles.removedIcon}>{'\u2715'}</span>
           <span className={styles.removedLabel}>
-            StoryBeat: {storyBeat.title} - will not be added
+            PlotPoint: {plotPoint.title} - will not be added
           </span>
           {onUndoRemove && (
             <button
@@ -126,7 +126,7 @@ export function ProposedStoryBeatCard({
       {/* Collapsed: show scenes preview */}
       {!isExpanded && sceneCount > 0 && (
         <div className={styles.scenesPreview}>
-          {storyBeat.scenes.slice(0, 2).map((scene) => (
+          {plotPoint.scenes.slice(0, 2).map((scene) => (
             <div
               key={scene.id}
               className={`${styles.scenePreviewItem} ${scene._isProposed ? styles.proposed : ''}`}
@@ -149,11 +149,11 @@ export function ProposedStoryBeatCard({
       {isExpanded && (
         <div className={styles.expandedContent}>
           {/* Show previous data for modifications */}
-          {storyBeat._operation === 'modify' && storyBeat._previousData && (
+          {plotPoint._operation === 'modify' && plotPoint._previousData && (
             <div className={styles.previousData}>
               <span className={styles.previousLabel}>Previous:</span>
               <span className={styles.previousValue}>
-                {(storyBeat._previousData.title as string) ?? 'Untitled'}
+                {(plotPoint._previousData.title as string) ?? 'Untitled'}
               </span>
             </div>
           )}
@@ -208,11 +208,11 @@ export function ProposedStoryBeatCard({
                 )}
               </h4>
               <div className={styles.scenesList}>
-                {storyBeat.scenes.map((scene) => (
+                {plotPoint.scenes.map((scene) => (
                   <ProposedSceneCard
                     key={scene.id}
                     scene={scene}
-                    parentStoryBeatId={storyBeat.id}
+                    parentPlotPointId={plotPoint.id}
                     onEdit={onEdit}
                     onRemove={scene._isProposed && scene._operation === 'add' ? onRemove : undefined}
                     isRemoved={false}
@@ -235,7 +235,7 @@ export function ProposedStoryBeatCard({
               className={styles.doneButton}
               onClick={async () => {
                 if (!currentStoryId) return;
-                await createStoryBeat({
+                await createPlotPoint({
                   title: localData.title,
                   intent: localData.intent as 'plot' | 'character' | 'tone',
                   ...(localData.summary ? { summary: localData.summary } : {}),
@@ -245,7 +245,7 @@ export function ProposedStoryBeatCard({
             >
               Send to Stash
             </button>
-            {onRemove && storyBeat._operation === 'add' && (
+            {onRemove && plotPoint._operation === 'add' && (
               <button
                 className={styles.removeButton}
                 onClick={handleRemove}

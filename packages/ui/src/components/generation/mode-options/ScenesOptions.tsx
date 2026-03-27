@@ -1,16 +1,16 @@
 /**
  * ScenesOptions - Options for Scenes generation mode.
- * Select committed story beats to generate scenes from.
+ * Select committed plot points to generate scenes from.
  */
 
 import styles from './ModeOptions.module.css';
 
 export interface ScenesOptionsState {
-  storyBeatIds: string[];
+  plotPointIds: string[];
   scenesPerBeat: number;
 }
 
-interface StoryBeatInfo {
+interface PlotPointInfo {
   id: string;
   title: string;
   intent: string;
@@ -24,8 +24,8 @@ interface ScenesOptionsProps {
   value: ScenesOptionsState;
   /** Callback when options change */
   onChange: (options: ScenesOptionsState) => void;
-  /** Available story beats (only approved ones) */
-  storyBeats?: StoryBeatInfo[];
+  /** Available plot points (only approved ones) */
+  plotPoints?: PlotPointInfo[];
   /** Whether controls are disabled */
   disabled?: boolean;
 }
@@ -41,25 +41,25 @@ const SCENES_PER_BEAT_OPTIONS = [
 export function ScenesOptions({
   value,
   onChange,
-  storyBeats = [],
+  plotPoints = [],
   disabled = false,
 }: ScenesOptionsProps) {
-  // Only show approved story beats
-  const approvedBeats = storyBeats.filter((sb) => sb.status === 'approved');
+  // Only show approved plot points
+  const approvedBeats = plotPoints.filter((sb) => sb.status === 'approved');
 
   const handleBeatToggle = (beatId: string) => {
-    const newIds = value.storyBeatIds.includes(beatId)
-      ? value.storyBeatIds.filter((id) => id !== beatId)
-      : [...value.storyBeatIds, beatId];
-    onChange({ ...value, storyBeatIds: newIds });
+    const newIds = value.plotPointIds.includes(beatId)
+      ? value.plotPointIds.filter((id) => id !== beatId)
+      : [...value.plotPointIds, beatId];
+    onChange({ ...value, plotPointIds: newIds });
   };
 
   const handleSelectAll = () => {
-    onChange({ ...value, storyBeatIds: approvedBeats.map((sb) => sb.id) });
+    onChange({ ...value, plotPointIds: approvedBeats.map((sb) => sb.id) });
   };
 
   const handleClearAll = () => {
-    onChange({ ...value, storyBeatIds: [] });
+    onChange({ ...value, plotPointIds: [] });
   };
 
   const handleScenesPerBeatChange = (count: number) => {
@@ -67,8 +67,8 @@ export function ScenesOptions({
   };
 
   // Group by act
-  const beatsByAct = new Map<number, StoryBeatInfo[]>();
-  const unassignedBeats: StoryBeatInfo[] = [];
+  const beatsByAct = new Map<number, PlotPointInfo[]>();
+  const unassignedBeats: PlotPointInfo[] = [];
 
   for (const beat of approvedBeats) {
     if (beat.act !== undefined) {
@@ -111,9 +111,9 @@ export function ScenesOptions({
 
         {approvedBeats.length === 0 ? (
           <div className={styles.emptyState}>
-            <p>No committed story beats available.</p>
+            <p>No committed plot points available.</p>
             <p className={styles.emptyHint}>
-              Generate and approve story beats first, then return here to create scenes.
+              Generate and approve plot points first, then return here to create scenes.
             </p>
           </div>
         ) : (
@@ -128,7 +128,7 @@ export function ScenesOptions({
                       <label key={beat.id} className={styles.beatOption}>
                         <input
                           type="checkbox"
-                          checked={value.storyBeatIds.includes(beat.id)}
+                          checked={value.plotPointIds.includes(beat.id)}
                           onChange={() => handleBeatToggle(beat.id)}
                           disabled={disabled}
                         />
@@ -151,7 +151,7 @@ export function ScenesOptions({
                     <label key={beat.id} className={styles.beatOption}>
                       <input
                         type="checkbox"
-                        checked={value.storyBeatIds.includes(beat.id)}
+                        checked={value.plotPointIds.includes(beat.id)}
                         onChange={() => handleBeatToggle(beat.id)}
                         disabled={disabled}
                       />
@@ -188,11 +188,11 @@ export function ScenesOptions({
       </div>
 
       {/* Summary */}
-      {value.storyBeatIds.length > 0 && (
+      {value.plotPointIds.length > 0 && (
         <div className={styles.summary}>
-          Will generate {value.storyBeatIds.length * value.scenesPerBeat} scene
-          {value.storyBeatIds.length * value.scenesPerBeat !== 1 ? 's' : ''} from{' '}
-          {value.storyBeatIds.length} story beat{value.storyBeatIds.length !== 1 ? 's' : ''}
+          Will generate {value.plotPointIds.length * value.scenesPerBeat} scene
+          {value.plotPointIds.length * value.scenesPerBeat !== 1 ? 's' : ''} from{' '}
+          {value.plotPointIds.length} plot point{value.plotPointIds.length !== 1 ? 's' : ''}
         </div>
       )}
     </div>

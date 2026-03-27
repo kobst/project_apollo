@@ -42,3 +42,10 @@ export {
   filterGapsByType,
   groupGapsByKey,
 } from './deriveNarrativeGaps.js';
+
+// Impact diffing
+export { computeImpactDiff, computeImpactDiffFromPatch } from './impactDiff.js';
+export type { ImpactDiff, TierChange } from './impactDiff.js';
+
+// Gap to statement
+export { gapToStatement, gapsToStatement } from './gapToStatement.js';

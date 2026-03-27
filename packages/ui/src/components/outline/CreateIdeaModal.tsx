@@ -18,7 +18,7 @@ interface CreateIdeaModalProps {
 
 const SUGGESTED_TYPE_OPTIONS: { value: IdeaSuggestedType | undefined; label: string }[] = [
   { value: undefined, label: 'Not sure yet' },
-  { value: 'StoryBeat', label: 'Story Beat' },
+  { value: 'PlotPoint', label: 'Plot Point' },
   { value: 'Scene', label: 'Scene' },
   { value: 'Character', label: 'Character' },
   { value: 'Location', label: 'Location' },

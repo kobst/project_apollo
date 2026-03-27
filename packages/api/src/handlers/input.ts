@@ -149,7 +149,6 @@ export function createInputHandler(ctx: StorageContext) {
             id: nodeId,
             heading: (rest.heading as string) ?? 'INT. LOCATION - DAY',
             scene_overview: overview,
-            beat_id: beatId.startsWith('beat_') ? beatId : `beat_${beatId}`,
             order_index: rest.order ? Number(rest.order) : 1,
             status: 'DRAFT',
             source_provenance: 'USER',

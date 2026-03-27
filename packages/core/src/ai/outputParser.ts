@@ -418,6 +418,9 @@ function normalizePrimarySupporting(
     );
   }
 
+  // Convert any ALIGNS_WITH edges into alignedBeatId on PlotPoint node data
+  convertAlignsWithToProperty(result.nodes, result.edges);
+
   return result;
 }
 
@@ -583,10 +586,9 @@ function inferEdgeType(from: string, to: string): string {
   if (fp === 'scene' && tp === 'char') return 'HAS_CHARACTER';
   if (fp === 'scene' && tp === 'location') return 'LOCATED_AT';
   if (fp === 'scene' && tp === 'obj') return 'FEATURES_OBJECT';
-  if (fp === 'storybeat' && tp === 'beat') return 'ALIGNS_WITH';
-  if (fp === 'storybeat' && tp === 'scene') return 'SATISFIED_BY';
+  if (fp === 'plotpoint' && tp === 'scene') return 'REALIZED_BY';
   if (fp === 'scene' && tp === 'scene') return 'PRECEDES';
-  if (fp === 'storybeat' && tp === 'storybeat') return 'PRECEDES';
+  if (fp === 'plotpoint' && tp === 'plotpoint') return 'PRECEDES';
   if (fp === 'beat' && tp === 'beat') return 'PRECEDES';
   return 'RELATED_TO';
 }
@@ -656,7 +658,37 @@ function normalizeDirectChanges(
     );
   }
 
+  // Convert any ALIGNS_WITH edges into alignedBeatId on PlotPoint node data
+  convertAlignsWithToProperty(result.nodes, result.edges);
+
   return result;
+}
+
+/**
+ * Convert ALIGNS_WITH edges into alignedBeatId property on PlotPoint node data.
+ * ALIGNS_WITH is no longer an edge type; alignment is stored as an FK on PlotPoint.
+ * Mutates both arrays in place: removes ALIGNS_WITH edges and sets alignedBeatId on matching nodes.
+ */
+function convertAlignsWithToProperty(nodes: NodeChange[], edges: EdgeChange[]): void {
+  const indicesToRemove: number[] = [];
+
+  for (let i = 0; i < edges.length; i++) {
+    const edge = edges[i]!;
+    if (edge.edge_type === 'ALIGNS_WITH') {
+      // Find the corresponding PlotPoint node and set alignedBeatId
+      const node = nodes.find((n) => n.node_id === edge.from);
+      if (node) {
+        if (!node.data) node.data = {};
+        node.data.alignedBeatId = edge.to;
+      }
+      indicesToRemove.push(i);
+    }
+  }
+
+  // Remove ALIGNS_WITH edges in reverse order to preserve indices
+  for (let i = indicesToRemove.length - 1; i >= 0; i--) {
+    edges.splice(indicesToRemove[i]!, 1);
+  }
 }
 
 /**

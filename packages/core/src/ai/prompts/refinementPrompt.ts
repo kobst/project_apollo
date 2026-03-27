@@ -58,8 +58,8 @@ ${JSON_OUTPUT_RULES}
   "style_tags": ["..."],
   "changes": {
     "storyContext": [{"operation": {"type": "addThematicPillar", "pillar": "..."}}],
-    "nodes": [{"operation": "add", "node_type": "StoryBeat", "node_id": "storybeat_{ts}_{5char}", "data": {"title": "...", "summary": "..."}}],
-    "edges": [{"operation": "add", "edge_type": "ALIGNS_WITH", "from": "storybeat_{ts}_{5char}", "to": "beat_xxx"}]
+    "nodes": [{"operation": "add", "node_type": "PlotPoint", "node_id": "plotpoint_{ts}_{5char}", "data": {"title": "...", "summary": "...", "alignedBeatId": "beat_xxx"}}],
+    "edges": []
   }
 }]}
 \`\`\`

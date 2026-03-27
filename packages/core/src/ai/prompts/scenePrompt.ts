@@ -1,10 +1,10 @@
 /**
  * Scene-specific prompt builder.
- * Generates Scene nodes linked to StoryBeats via SATISFIED_BY edges.
+ * Generates Scene nodes linked to PlotPoints via REALIZED_BY edges.
  */
 
 import type { ExpansionScope, ValidatedBeatInfo } from '../types.js';
-import { PROMPT_VERSION, JSON_OUTPUT_RULES, getCreativityLabel } from './shared.js';
+import { PROMPT_VERSION, JSON_OUTPUT_RULES, getCreativityLabel, getProblemStatementSection } from './shared.js';
 
 // =============================================================================
 // Types
@@ -24,6 +24,8 @@ export interface ScenePromptParams {
   expansionScope?: ExpansionScope;
   ideas?: string;
   guidelines?: string;
+  /** Optional problem statement describing what narrative problem to solve */
+  problemStatement?: string;
 }
 
 // =============================================================================
@@ -45,6 +47,7 @@ export function buildScenePrompt(params: ScenePromptParams): string {
     expansionScope = 'flexible',
     ideas,
     guidelines,
+    problemStatement,
   } = params;
 
   const creativityLabel = getCreativityLabel(creativity);
@@ -53,18 +56,19 @@ export function buildScenePrompt(params: ScenePromptParams): string {
 
   return `## Scene Generator v${PROMPT_VERSION}
 
-Generate Scene nodes for StoryBeats.
+Generate Scene nodes for PlotPoints.
+${getProblemStatementSection(problemStatement)}
 
 ## Rules
 - PRIMARY: Scene nodes only
-- Each Scene MUST have SATISFIED_BY edge to a StoryBeat
+- Each Scene MUST have REALIZED_BY edge to a PlotPoint
 - Use HAS_CHARACTER edges to existing Characters
 - Use LOCATED_AT edges to existing Locations
 ${isConstrained ? '- No supporting content - use only existing nodes' : '- SUPPORTING: May create Character/Location/Object nodes'}
 - Generate exactly ${packageCount} package(s)
 
 ## Edge Types
-- SATISFIED_BY: Scene → StoryBeat (REQUIRED)
+- REALIZED_BY: Scene → PlotPoint (REQUIRED)
 - HAS_CHARACTER: Scene → Character
 - LOCATED_AT: Scene → Location
 - FEATURES_OBJECT: Scene → Object
@@ -72,7 +76,7 @@ ${isConstrained ? '- No supporting content - use only existing nodes' : '- SUPPO
 ## Story Context
 ${storyContext}
 
-## StoryBeats to Generate Scenes For
+## PlotPoints to Generate Scenes For
 ${beatsSection}
 
 ## Existing Characters (for HAS_CHARACTER)
@@ -106,7 +110,7 @@ ${JSON_OUTPUT_RULES}
     "type": "Scene",
     "nodes": [{"operation": "add", "node_type": "Scene", "node_id": "scene_{ts}_{5char}", "data": {"heading": "INT. LOCATION - TIME", "scene_overview": "...", "goal": "...", "conflict": "...", "outcome": "..."}}],
     "edges": [
-      {"operation": "add", "edge_type": "SATISFIED_BY", "from": "scene_{ts}_{5char}", "to": "storybeat_xxx"},
+      {"operation": "add", "edge_type": "REALIZED_BY", "from": "scene_{ts}_{5char}", "to": "plotpoint_xxx"},
       {"operation": "add", "edge_type": "HAS_CHARACTER", "from": "scene_{ts}_{5char}", "to": "char_xxx"},
       {"operation": "add", "edge_type": "LOCATED_AT", "from": "scene_{ts}_{5char}", "to": "loc_xxx"}
     ]
@@ -123,6 +127,6 @@ Output JSON only. No markdown blocks or explanation.`;
 // =============================================================================
 
 function formatValidatedBeats(beats: ValidatedBeatInfo[]): string {
-  if (beats.length === 0) return '[No StoryBeats to generate scenes for]';
-  return beats.map((b) => `- ${b.storyBeatId}: "${b.title}" (→ ${b.alignedTo})`).join('\n');
+  if (beats.length === 0) return '[No PlotPoints to generate scenes for]';
+  return beats.map((b) => `- ${b.plotPointId}: "${b.title}" (→ ${b.alignedTo})`).join('\n');
 }

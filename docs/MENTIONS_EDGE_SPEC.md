@@ -10,7 +10,7 @@
 
 ### 1.1 Current Limitations
 
-The Apollo graph tracks **structural relationships** via edges (HAS_CHARACTER, LOCATED_AT, ALIGNS_WITH), but does not track **textual references** to entities within node content.
+The Apollo graph tracks **structural relationships** via edges (HAS_CHARACTER, LOCATED_AT, alignedBeatId), but does not track **textual references** to entities within node content.
 
 **Example:**
 ```
@@ -49,10 +49,10 @@ The edges capture that Cain and Dante are IN the scene, but the text also mentio
 Introduce a new edge type `MENTIONS` that links content nodes to the entities they reference in text:
 
 ```
-StoryBeat --MENTIONS--> Character
+PlotPoint --MENTIONS--> Character
 Scene --MENTIONS--> Character
 Scene --MENTIONS--> Location
-StoryBeat --MENTIONS--> Location
+PlotPoint --MENTIONS--> Location
 * --MENTIONS--> Object
 ```
 
@@ -63,7 +63,7 @@ These edges are **derived** from text content, not manually created. They're com
 ```typescript
 interface MentionsEdge {
   type: 'MENTIONS';
-  from: string;           // Node ID containing the text (scene, storybeat, etc.)
+  from: string;           // Node ID containing the text (scene, plotpoint, etc.)
   to: string;             // Entity ID being mentioned (character, location, object)
   properties: {
     field: string;        // Which field contains the mention ('summary', 'description', etc.)
@@ -156,7 +156,7 @@ function buildPatterns(name: string, aliases: string[] = []): Pattern[] {
 
 ```typescript
 const EXTRACTABLE_FIELDS: Record<string, string[]> = {
-  'StoryBeat': ['title', 'summary'],
+  'PlotPoint': ['title', 'summary'],
   'Scene': ['heading', 'scene_overview', 'key_actions'],
   'Character': ['description', 'backstory'],
   'Location': ['description'],
@@ -333,10 +333,10 @@ function validateTemporalConsistency(
   // Get character introduction points
   const introductions = computeIntroductionPoints(graph);
   
-  // Check each StoryBeat
-  const storyBeats = getNodesByType(graph, 'StoryBeat');
+  // Check each PlotPoint
+  const plotPoints = getNodesByType(graph, 'PlotPoint');
   
-  for (const beat of storyBeats) {
+  for (const beat of plotPoints) {
     const alignedTo = getAlignedBeat(beat.id, graph);
     if (!alignedTo) continue;
     
@@ -359,7 +359,7 @@ function validateTemporalConsistency(
         const entity = getNode(mention.to, graph);
         violations.push({
           nodeId: beat.id,
-          nodeType: 'StoryBeat',
+          nodeType: 'PlotPoint',
           mentionedEntity: mention.to,
           mentionedEntityName: entity.data.name,
           atBeat: alignedTo,
@@ -401,14 +401,14 @@ function computeIntroductionPoints(graph: GraphState): Map<string, string> {
       }
     }
     
-    // Check MENTIONS edges (character mentioned in story beat)
+    // Check MENTIONS edges (character mentioned in plot point)
     const mentionEdges = graph.edges.filter(
       e => e.type === 'MENTIONS' && e.to === char.id
     );
     
     for (const edge of mentionEdges) {
       const node = getNode(edge.from, graph);
-      if (node.type === 'StoryBeat') {
+      if (node.type === 'PlotPoint') {
         const alignedBeat = getAlignedBeat(node.id, graph);
         if (alignedBeat) {
           const pos = beatOrder.get(alignedBeat) ?? Infinity;
@@ -469,9 +469,9 @@ function validateProposal(
   
   // Add proposed introductions
   for (const node of pkg.changes.nodes) {
-    if (node.node_type === 'StoryBeat') {
+    if (node.node_type === 'PlotPoint') {
       const alignedEdge = pkg.changes.edges.find(
-        e => e.edge_type === 'ALIGNS_WITH' && e.from === node.node_id
+        e => e.edge_type === 'alignedBeatId' && e.from === node.node_id
       );
       if (alignedEdge) {
         // Characters mentioned here are "introduced" at this beat (for proposal purposes)
@@ -485,11 +485,11 @@ function validateProposal(
     }
   }
   
-  // Validate each proposed StoryBeat
+  // Validate each proposed PlotPoint
   for (const node of pkg.changes.nodes) {
-    if (node.node_type === 'StoryBeat') {
+    if (node.node_type === 'PlotPoint') {
       const alignedEdge = pkg.changes.edges.find(
-        e => e.edge_type === 'ALIGNS_WITH' && e.from === node.node_id
+        e => e.edge_type === 'alignedBeatId' && e.from === node.node_id
       );
       if (!alignedEdge) continue;
       
@@ -520,7 +520,7 @@ function validateProposal(
           const entity = allEntities.find(e => e.id === mention.entityId);
           violations.push({
             nodeId: node.node_id,
-            nodeType: 'StoryBeat',
+            nodeType: 'PlotPoint',
             mentionedEntity: mention.entityId,
             mentionedEntityName: entity?.name || mention.entityId,
             atBeat: targetBeat,
@@ -556,8 +556,8 @@ function validateProposal(
 ### 4.2 Orchestrator Integration
 
 ```typescript
-// In storyBeatOrchestrator.ts (and others)
-export async function proposeStoryBeats(...): Promise<ProposeStoryBeatsResponse> {
+// In plotPointOrchestrator.ts (and others)
+export async function proposePlotPoints(...): Promise<ProposePlotPointsResponse> {
   // ... existing generation code ...
   
   // After parsing LLM response, validate proposals
@@ -808,7 +808,7 @@ describe('validateTemporalConsistency', () => {
   it('detects character used before introduction', () => {
     const graph = createTestGraph();
     // Flores introduced at beat_FunAndGames
-    // StoryBeat at beat_Catalyst mentions Flores
+    // PlotPoint at beat_Catalyst mentions Flores
     
     const violations = validateTemporalConsistency(graph);
     expect(violations).toHaveLength(1);

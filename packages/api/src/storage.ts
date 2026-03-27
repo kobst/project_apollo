@@ -156,19 +156,19 @@ export function serializeGraph(graph: GraphState): SerializedGraph {
 
 /**
  * Migrate legacy node types to current schema.
- * Handles renames like PlotPoint → StoryBeat.
+ * Handles renames like StoryBeat → PlotPoint.
  */
 function migrateNodeType(node: KGNode): KGNode {
-  // Migrate PlotPoint → StoryBeat (legacy data may have old type name)
+  // Migrate StoryBeat → PlotPoint (legacy data may have old type name)
   const nodeType = node.type as string;
-  if (nodeType === 'PlotPoint') {
-    return { ...node, type: 'StoryBeat' } as KGNode;
+  if (nodeType === 'StoryBeat') {
+    return { ...node, type: 'PlotPoint' } as KGNode;
   }
   return node;
 }
 
 export function deserializeGraph(data: SerializedGraph): GraphState {
-  // Migrate nodes to current schema (e.g., PlotPoint → StoryBeat)
+  // Migrate nodes to current schema (e.g., StoryBeat → PlotPoint)
   const nodes = new Map<string, KGNode>();
   for (const [id, node] of Object.entries(data.nodes)) {
     nodes.set(id, migrateNodeType(node));

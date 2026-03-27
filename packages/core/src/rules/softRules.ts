@@ -6,7 +6,7 @@
 
 import type { GraphState } from '../core/graph.js';
 import { getNodesByType } from '../core/graph.js';
-import type { StoryBeat } from '../types/nodes.js';
+import type { PlotPoint } from '../types/nodes.js';
 import type { Rule, RuleViolation, LintScope } from './types.js';
 import { getScenesInScope, isNodeInScope, createViolation } from './utils.js';
 import { registerRule } from './engine.js';
@@ -48,7 +48,6 @@ export const SCENE_HAS_CHARACTER: Rule = {
               nodeType: 'Scene',
               context: {
                 sceneHeading: scene.heading,
-                beatId: scene.beat_id,
               },
             }
           )
@@ -97,7 +96,6 @@ export const SCENE_HAS_LOCATION: Rule = {
               nodeType: 'Scene',
               context: {
                 sceneHeading: scene.heading,
-                beatId: scene.beat_id,
               },
             }
           )
@@ -111,49 +109,49 @@ export const SCENE_HAS_LOCATION: Rule = {
 
 
 // =============================================================================
-// SB_EVENT_REALIZATION
+// PP_EVENT_REALIZATION
 // =============================================================================
 
 /**
- * Approved StoryBeats should have at least one SATISFIED_BY edge to a scene.
- * This ensures that approved story beats are realized in the narrative.
+ * Approved PlotPoints should have at least one REALIZED_BY edge to a scene.
+ * This ensures that approved plot points are realized in the narrative.
  */
-export const SB_EVENT_REALIZATION: Rule = {
-  id: 'SB_EVENT_REALIZATION',
-  name: 'Approved StoryBeat Should Have Scene',
+export const PP_EVENT_REALIZATION: Rule = {
+  id: 'PP_EVENT_REALIZATION',
+  name: 'Approved PlotPoint Should Have Scene',
   severity: 'soft',
   category: 'completeness',
-  description: 'Approved story beats should be satisfied by at least one scene',
+  description: 'Approved plot points should be realized by at least one scene',
 
   evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
     const violations: RuleViolation[] = [];
-    const storyBeats = getNodesByType<StoryBeat>(graph, 'StoryBeat');
+    const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
 
-    for (const sb of storyBeats) {
+    for (const pp of plotPoints) {
       // Skip if not in scope
-      if (!isNodeInScope(scope, sb.id)) continue;
+      if (!isNodeInScope(scope, pp.id)) continue;
 
-      // Only check approved story beats
-      if (sb.status !== 'approved') continue;
+      // Only check approved plot points
+      if (pp.status !== 'approved') continue;
 
-      // Check for SATISFIED_BY edges from this story beat
-      const satisfiedByEdges = graph.edges.filter(
-        (e) => e.type === 'SATISFIED_BY' && e.from === sb.id
+      // Check for REALIZED_BY edges from this plot point
+      const realizedByEdges = graph.edges.filter(
+        (e) => e.type === 'REALIZED_BY' && e.from === pp.id
       );
 
-      if (satisfiedByEdges.length === 0) {
+      if (realizedByEdges.length === 0) {
         violations.push(
           createViolation(
-            'SB_EVENT_REALIZATION',
+            'PP_EVENT_REALIZATION',
             'soft',
             'completeness',
-            `Approved StoryBeat "${sb.title}" has no scenes satisfying it`,
+            `Approved PlotPoint "${pp.title}" has no scenes realizing it`,
             {
-              nodeId: sb.id,
-              nodeType: 'StoryBeat',
+              nodeId: pp.id,
+              nodeType: 'PlotPoint',
               context: {
-                storyBeatTitle: sb.title,
-                storyBeatStatus: sb.status,
+                plotPointTitle: pp.title,
+                plotPointStatus: pp.status,
               },
             }
           )
@@ -166,35 +164,35 @@ export const SB_EVENT_REALIZATION: Rule = {
 };
 
 // =============================================================================
-// STORYBEAT_TOO_CONCRETE
+// PLOTPOINT_TOO_CONCRETE
 // =============================================================================
 
 /**
- * Warn when a StoryBeat's summary appears to be scene-like rather than abstract intent.
+ * Warn when a PlotPoint's summary appears to be scene-like rather than abstract intent.
  * Heuristics:
  * - Contains INT./EXT. tokens
  * - Contains quoted dialogue (20+ chars inside quotes)
  * - Summary length > 300 chars
  * - Includes common location indicators (shop, warehouse, club, marina, garage)
  */
-export const STORYBEAT_TOO_CONCRETE: Rule = {
-  id: 'STORYBEAT_TOO_CONCRETE',
-  name: 'StoryBeat Summary Too Concrete',
+export const PLOTPOINT_TOO_CONCRETE: Rule = {
+  id: 'PLOTPOINT_TOO_CONCRETE',
+  name: 'PlotPoint Summary Too Concrete',
   severity: 'soft',
   category: 'completeness',
-  description: 'StoryBeat summaries should be abstract narrative intent, not scene synopses',
+  description: 'PlotPoint summaries should be abstract narrative intent, not scene synopses',
 
   evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
     const violations: RuleViolation[] = [];
-    const storyBeats = getNodesByType<StoryBeat>(graph, 'StoryBeat');
+    const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
 
     const locationIndicators = ['shop', 'warehouse', 'club', 'marina', 'garage'];
     const hasSceneHeading = (text: string) => /\bINT\.|\bEXT\./i.test(text);
     const hasLongDialogue = (text: string) => /"[^"]{20,}"/.test(text);
 
-    for (const sb of storyBeats) {
-      if (!isNodeInScope(scope, sb.id)) continue;
-      const s = (sb.summary ?? '').trim();
+    for (const pp of plotPoints) {
+      if (!isNodeInScope(scope, pp.id)) continue;
+      const s = (pp.summary ?? '').trim();
       if (!s) continue;
 
       const warnings: string[] = [];
@@ -207,13 +205,13 @@ export const STORYBEAT_TOO_CONCRETE: Rule = {
       if (warnings.length > 0) {
         violations.push(
           createViolation(
-            'STORYBEAT_TOO_CONCRETE',
+            'PLOTPOINT_TOO_CONCRETE',
             'soft',
             'completeness',
-            `StoryBeat "${sb.title}" summary may be too concrete (${warnings.join(', ')})`,
+            `PlotPoint "${pp.title}" summary may be too concrete (${warnings.join(', ')})`,
             {
-              nodeId: sb.id,
-              nodeType: 'StoryBeat',
+              nodeId: pp.id,
+              nodeType: 'PlotPoint',
               context: { warnings },
             }
           )
@@ -226,43 +224,42 @@ export const STORYBEAT_TOO_CONCRETE: Rule = {
 };
 
 // =============================================================================
-// SCENE_HAS_STORYBEAT
+// SCENE_HAS_PLOTPOINT
 // =============================================================================
 
 /**
- * Scene should be satisfied by at least one StoryBeat (via SATISFIED_BY edge).
+ * Scene should be realized by at least one PlotPoint (via REALIZED_BY edge).
  * This ensures scenes are connected to the story's causality chain.
  */
-export const SCENE_HAS_STORYBEAT: Rule = {
-  id: 'SCENE_HAS_STORYBEAT',
-  name: 'Scene Should Have StoryBeat',
+export const SCENE_HAS_PLOTPOINT: Rule = {
+  id: 'SCENE_HAS_PLOTPOINT',
+  name: 'Scene Should Have PlotPoint',
   severity: 'soft',
   category: 'completeness',
-  description: 'Scenes should be satisfied by at least one StoryBeat',
+  description: 'Scenes should be realized by at least one PlotPoint',
 
   evaluate: (graph: GraphState, scope: LintScope): RuleViolation[] => {
     const violations: RuleViolation[] = [];
     const scenes = getScenesInScope(graph, scope);
 
     for (const scene of scenes) {
-      // Check for incoming SATISFIED_BY edges (StoryBeat → Scene)
-      const satisfiedByEdges = graph.edges.filter(
-        (e) => e.type === 'SATISFIED_BY' && e.to === scene.id
+      // Check for incoming REALIZED_BY edges (PlotPoint → Scene)
+      const realizedByEdges = graph.edges.filter(
+        (e) => e.type === 'REALIZED_BY' && e.to === scene.id
       );
 
-      if (satisfiedByEdges.length === 0) {
+      if (realizedByEdges.length === 0) {
         violations.push(
           createViolation(
-            'SCENE_HAS_STORYBEAT',
+            'SCENE_HAS_PLOTPOINT',
             'soft',
             'completeness',
-            `Scene "${scene.heading}" is not connected to any StoryBeat`,
+            `Scene "${scene.heading}" is not connected to any PlotPoint`,
             {
               nodeId: scene.id,
               nodeType: 'Scene',
               context: {
                 sceneHeading: scene.heading,
-                beatId: scene.beat_id,
               },
             }
           )
@@ -294,9 +291,9 @@ export const SCENE_HAS_STORYBEAT: Rule = {
 export const SOFT_RULES: Rule[] = [
   SCENE_HAS_CHARACTER,
   SCENE_HAS_LOCATION,
-  SCENE_HAS_STORYBEAT,
-  SB_EVENT_REALIZATION,
-  STORYBEAT_TOO_CONCRETE,
+  SCENE_HAS_PLOTPOINT,
+  PP_EVENT_REALIZATION,
+  PLOTPOINT_TOO_CONCRETE,
 ];
 
 /**

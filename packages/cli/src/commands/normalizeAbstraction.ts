@@ -1,8 +1,8 @@
 /**
  * project-apollo normalize:abstraction
  *
- * 1) Normalize migrated StoryBeats (sb_migrated_*) to abstract summaries.
- * 2) Convert stash StoryBeats (no ALIGNS_WITH) with scene-like summaries into Scenes.
+ * 1) Normalize migrated PlotPoints (pp_migrated_*) to abstract summaries.
+ * 2) Convert stash PlotPoints (no alignedBeatId) with scene-like summaries into Scenes.
  */
 
 import type { Command } from 'commander';
@@ -11,14 +11,14 @@ import {
   applyPatch,
   validatePatch,
   type Patch,
-  type StoryBeat,
+  type PlotPoint,
   type Scene,
 } from '@apollo/core';
 import { loadGraph, updateState, getCurrentStoryId } from '../state/store.js';
 import { CLIError } from '../utils/errors.js';
 import { heading, success, formatPatch, formatValidationErrors } from '../utils/format.js';
 
-function isStoryBeat(node: unknown): node is StoryBeat { return !!node && (node as StoryBeat).type === 'StoryBeat'; }
+function isPlotPoint(node: unknown): node is PlotPoint { return !!node && (node as PlotPoint).type === 'PlotPoint'; }
 
 function isSceneLikeSummary(summary?: string): boolean {
   if (!summary) return false;
@@ -76,7 +76,7 @@ function classifyNarrativeFunction(summary?: string): NarrativeFunction | undefi
 export function normalizeAbstractionCommand(program: Command): void {
   program
     .command('normalize:abstraction')
-    .description('Normalize StoryBeat abstraction and convert stash scene-like StoryBeats to Scenes')
+    .description('Normalize PlotPoint abstraction and convert stash scene-like PlotPoints to Scenes')
     .option('--dry-run', 'Preview changes without applying')
     .option('-y, --yes', 'Apply without confirmation step')
     .action(async (opts: { dryRun?: boolean; yes?: boolean }) => {
@@ -88,14 +88,10 @@ export function normalizeAbstractionCommand(program: Command): void {
       const now = new Date().toISOString();
       const ops: Patch['ops'] = [];
 
-      // Build edge lookups
-      const alignsWith = graph.edges.filter((e) => e.type === 'ALIGNS_WITH');
-      const alignedSbIds = new Set(alignsWith.map((e) => e.from));
-
-      // 1) Normalize migrated StoryBeats (sb_migrated_*) to abstract summaries
+      // 1) Normalize migrated PlotPoints (pp_migrated_*) to abstract summaries
       for (const [, node] of graph.nodes) {
-        if (!isStoryBeat(node)) continue;
-        if (!String(node.id).startsWith('sb_migrated_')) continue;
+        if (!isPlotPoint(node)) continue;
+        if (!String(node.id).startsWith('pp_migrated_')) continue;
 
         const abstract = extractAbstract(node.summary);
         const nf = classifyNarrativeFunction(abstract ?? node.summary);
@@ -108,10 +104,10 @@ export function normalizeAbstractionCommand(program: Command): void {
         }
       }
 
-      // 2) Convert stash StoryBeats (no ALIGNS_WITH) with scene-like summary into Scenes (unattached)
+      // 2) Convert stash PlotPoints (no alignedBeatId) with scene-like summary into Scenes (unattached)
       for (const [, node] of graph.nodes) {
-        if (!isStoryBeat(node)) continue;
-        if (alignedSbIds.has(node.id)) continue; // skip aligned
+        if (!isPlotPoint(node)) continue;
+        if ((node as any).alignedBeatId) continue; // skip aligned
         if (!isSceneLikeSummary(node.summary)) continue;
 
         const heading = extractHeadingFromSummary(node.summary) ?? 'INT. LOCATION - TIME';
@@ -130,7 +126,7 @@ export function normalizeAbstractionCommand(program: Command): void {
       }
 
       if (ops.length === 0) {
-        console.log(pc.green('No changes needed. StoryBeats appear properly abstract; stash contains no scene-like StoryBeats.'));
+        console.log(pc.green('No changes needed. PlotPoints appear properly abstract; stash contains no scene-like PlotPoints.'));
         return;
       }
 

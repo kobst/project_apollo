@@ -25,7 +25,7 @@ These have been unified into a single `/propose` endpoint with a **creativity sl
 | `/:id/propose/active` | DELETE | Discard the active proposal |
 | `/:id/propose/commit` | POST | Commit (accept) a package from the proposal |
 | `/:id/propose/refine` | POST | Refine an existing package with guidance |
-| `/:id/propose/story-beats` | POST | Generate StoryBeat nodes only (see below) |
+| `/:id/propose/plot-points` | POST | Generate PlotPoint nodes only (see below) |
 
 #### Removed Endpoints
 
@@ -253,23 +253,23 @@ The Generation panel is now the single entry point for all AI features:
 
 ## Specialized Endpoints
 
-### StoryBeat-Only Generation
+### PlotPoint-Only Generation
 
-The `/propose/story-beats` endpoint provides a specialized generation flow for filling structural gaps with **only StoryBeat nodes**.
+The `/propose/plot-points` endpoint provides a specialized generation flow for filling structural gaps with **only PlotPoint nodes**.
 
 #### Use Cases
 
-- Filling in story beats after establishing basic structure
+- Filling in plot points after establishing basic structure
 - Generating narrative milestones without creating supporting elements (scenes, characters)
 - Focused structure development when beats exist but lack story content
 
 #### Request Schema
 
 ```typescript
-interface ProposeStoryBeatsRequest {
+interface ProposePlotPointsRequest {
   priorityBeats?: string[];           // Beat IDs or BeatTypes to always include
   packageCount?: number;              // default: 3
-  maxStoryBeatsPerPackage?: number;   // default: 5
+  maxPlotPointsPerPackage?: number;   // default: 5
   direction?: string;                 // User guidance
   creativity?: number;                // 0-1, default: 0.5
 }
@@ -278,10 +278,10 @@ interface ProposeStoryBeatsRequest {
 #### Response Schema
 
 ```typescript
-interface ProposeStoryBeatsResponse {
+interface ProposePlotPointsResponse {
   sessionId: string;
-  packages: NarrativePackage[];       // Only contains StoryBeat nodes
-  missingBeats: MissingBeatInfo[];    // All beats lacking StoryBeat alignment
+  packages: NarrativePackage[];       // Only contains PlotPoint nodes
+  missingBeats: MissingBeatInfo[];    // All beats lacking PlotPoint alignment
 }
 
 interface MissingBeatInfo {
@@ -294,11 +294,11 @@ interface MissingBeatInfo {
 
 #### Strict Constraints
 
-1. **Node Types**: ONLY `StoryBeat` nodes are generated. Scene, Character, Location, and Object nodes are filtered out.
-2. **Edge Types**: ONLY `ALIGNS_WITH` and `PRECEDES` edges are allowed:
-   - `ALIGNS_WITH`: StoryBeat → Beat (required for each StoryBeat)
-   - `PRECEDES`: StoryBeat → StoryBeat (optional, for causal ordering)
-3. **Validation**: ALIGNS_WITH edges must target valid Beat IDs
+1. **Node Types**: ONLY `PlotPoint` nodes are generated. Scene, Character, Location, and Object nodes are filtered out.
+2. **Edge Types**: ONLY `alignedBeatId` and `PRECEDES` edges are allowed:
+   - `alignedBeatId`: PlotPoint → Beat (required for each PlotPoint)
+   - `PRECEDES`: PlotPoint → PlotPoint (optional, for causal ordering)
+3. **Validation**: alignedBeatId edges must target valid Beat IDs
 
 #### Priority Beats
 
@@ -309,12 +309,12 @@ The `priorityBeats` parameter accepts Beat IDs (e.g., `beat_Catalyst`) or Beat t
 #### Example
 
 ```bash
-curl -X POST http://localhost:3000/stories/my-story/propose/story-beats \
+curl -X POST http://localhost:3000/stories/my-story/propose/plot-points \
   -H 'Content-Type: application/json' \
   -d '{
     "priorityBeats": ["Catalyst", "Midpoint"],
     "packageCount": 3,
-    "maxStoryBeatsPerPackage": 3,
+    "maxPlotPointsPerPackage": 3,
     "direction": "Focus on protagonist inner conflict"
   }'
 ```

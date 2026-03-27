@@ -1,16 +1,16 @@
 /**
  * outlineMergeUtils - Merges proposed nodes from staged packages into the outline structure.
  *
- * Uses edge relationships to determine placement:
- * - ALIGNS_WITH: StoryBeat -> Beat (determines which beat a StoryBeat belongs to)
- * - SATISFIED_BY: StoryBeat -> Scene (determines which StoryBeat a Scene fulfills)
+ * Uses relationships to determine placement:
+ * - alignedBeatId: PlotPoint property pointing to Beat (determines which beat a PlotPoint belongs to)
+ * - REALIZED_BY: PlotPoint -> Scene (determines which PlotPoint a Scene fulfills)
  */
 
 import type {
   OutlineData,
   OutlineAct,
   OutlineBeat,
-  OutlineStoryBeat,
+  OutlinePlotPoint,
   OutlineScene,
   OutlineIdea,
   NarrativePackage,
@@ -29,7 +29,7 @@ export interface MergedOutlineScene extends OutlineScene {
   _previousData?: Record<string, unknown> | undefined;
 }
 
-export interface MergedOutlineStoryBeat extends Omit<OutlineStoryBeat, 'scenes'> {
+export interface MergedOutlinePlotPoint extends Omit<OutlinePlotPoint, 'scenes'> {
   _isProposed?: boolean | undefined;
   _operation?: 'add' | 'modify' | 'delete' | undefined;
   _packageId?: string | undefined;
@@ -37,8 +37,8 @@ export interface MergedOutlineStoryBeat extends Omit<OutlineStoryBeat, 'scenes'>
   scenes: MergedOutlineScene[];
 }
 
-export interface MergedOutlineBeat extends Omit<OutlineBeat, 'storyBeats'> {
-  storyBeats: MergedOutlineStoryBeat[];
+export interface MergedOutlineBeat extends Omit<OutlineBeat, 'plotPoints'> {
+  plotPoints: MergedOutlinePlotPoint[];
 }
 
 /**
@@ -63,13 +63,13 @@ export interface MergedOutlineAct extends Omit<OutlineAct, 'beats'> {
   beats: MergedOutlineBeat[];
 }
 
-export interface MergedOutlineData extends Omit<OutlineData, 'acts' | 'unassignedStoryBeats' | 'unassignedScenes'> {
+export interface MergedOutlineData extends Omit<OutlineData, 'acts' | 'unassignedPlotPoints' | 'unassignedScenes'> {
   acts: MergedOutlineAct[];
-  unassignedStoryBeats: MergedOutlineStoryBeat[];
+  unassignedPlotPoints: MergedOutlinePlotPoint[];
   unassignedScenes: MergedOutlineScene[];
   unassignedIdeas: OutlineIdea[];
-  // Track proposed items that have no assignment edges
-  proposedUnassignedStoryBeats: MergedOutlineStoryBeat[];
+  // Track proposed items that have no assignment
+  proposedUnassignedPlotPoints: MergedOutlinePlotPoint[];
   proposedUnassignedScenes: MergedOutlineScene[];
   // Track proposed ideas from stashed ideas in packages
   proposedIdeas: MergedOutlineIdea[];
@@ -79,14 +79,14 @@ export interface MergedOutlineData extends Omit<OutlineData, 'acts' | 'unassigne
  * Merge proposed nodes from a staged package into the outline structure.
  *
  * Algorithm:
- * 1. Build map of proposed StoryBeats by ID
+ * 1. Build map of proposed PlotPoints by ID
  * 2. Build map of proposed Scenes by ID
- * 3. Build alignment map: Beat ID -> proposed StoryBeat IDs (from ALIGNS_WITH edges)
- * 4. Build satisfaction map: StoryBeat ID -> proposed Scene IDs (from SATISFIED_BY edges)
+ * 3. Build alignment map: Beat ID -> proposed PlotPoint IDs (from alignedBeatId property)
+ * 4. Build realization map: PlotPoint ID -> proposed Scene IDs (from REALIZED_BY edges)
  * 5. Clone outline structure
- * 6. For each beat, insert proposed StoryBeats that align to it
- * 7. For each StoryBeat (existing + proposed), insert proposed Scenes that satisfy it
- * 8. Track unassigned proposed items (no matching edges)
+ * 6. For each beat, insert proposed PlotPoints that align to it
+ * 7. For each PlotPoint (existing + proposed), insert proposed Scenes that realize it
+ * 8. Track unassigned proposed items (no matching relationships)
  */
 export function mergeProposedIntoOutline(
   outline: OutlineData,
@@ -102,27 +102,27 @@ export function mergeProposedIntoOutline(
         ...act,
         beats: act.beats.map((beat) => ({
           ...beat,
-          storyBeats: beat.storyBeats.map((pp) => ({
+          plotPoints: beat.plotPoints.map((pp) => ({
             ...pp,
             scenes: pp.scenes as MergedOutlineScene[],
           })),
         })),
       })),
-      unassignedStoryBeats: outline.unassignedStoryBeats.map((pp) => ({
+      unassignedPlotPoints: outline.unassignedPlotPoints.map((pp) => ({
         ...pp,
         scenes: pp.scenes as MergedOutlineScene[],
       })),
       unassignedScenes: outline.unassignedScenes as MergedOutlineScene[],
-      proposedUnassignedStoryBeats: [],
+      proposedUnassignedPlotPoints: [],
       proposedUnassignedScenes: [],
       proposedIdeas: [],
     };
   }
 
-  // Step 1: Build map of proposed StoryBeats
-  const proposedStoryBeats = new Map<string, MergedOutlineStoryBeat>();
+  // Step 1: Build map of proposed PlotPoints
+  const proposedPlotPoints = new Map<string, MergedOutlinePlotPoint>();
   for (const nodeChange of stagedPackage.changes.nodes) {
-    if (nodeChange.node_type === 'StoryBeat') {
+    if (nodeChange.node_type === 'PlotPoint') {
       // Skip if removed
       if (nodeChange.operation === 'add' && removedNodeIds.has(nodeChange.node_id)) {
         continue;
@@ -131,7 +131,7 @@ export function mergeProposedIntoOutline(
       const localEdits = editedNodes.get(nodeChange.node_id);
       const data = { ...nodeChange.data, ...localEdits };
 
-      const pp: MergedOutlineStoryBeat = {
+      const pp: MergedOutlinePlotPoint = {
         id: nodeChange.node_id,
         title: (data.title as string) ?? 'Untitled',
         intent: (data.intent as string) ?? 'plot',
@@ -150,7 +150,7 @@ export function mergeProposedIntoOutline(
       if (data.status !== undefined) pp.status = data.status as string;
       if (nodeChange.previous_data !== undefined) pp._previousData = nodeChange.previous_data;
 
-      proposedStoryBeats.set(nodeChange.node_id, pp);
+      proposedPlotPoints.set(nodeChange.node_id, pp);
     }
   }
 
@@ -185,47 +185,44 @@ export function mergeProposedIntoOutline(
     }
   }
 
-  // Step 3: Build alignment map: Beat ID -> proposed StoryBeat IDs (from ALIGNS_WITH edges)
-  const beatToStoryBeats = new Map<string, string[]>();
-  for (const edgeChange of stagedPackage.changes.edges) {
-    if (edgeChange.operation === 'add' && edgeChange.edge_type === 'ALIGNS_WITH') {
-      // ALIGNS_WITH: from=StoryBeat, to=Beat
-      const storyBeatId = edgeChange.from;
-      const beatId = edgeChange.to;
-
-      if (proposedStoryBeats.has(storyBeatId)) {
-        const existing = beatToStoryBeats.get(beatId) ?? [];
-        existing.push(storyBeatId);
-        beatToStoryBeats.set(beatId, existing);
-      }
+  // Step 3: Build alignment map: Beat ID -> proposed PlotPoint IDs (from alignedBeatId property)
+  const beatToPlotPoints = new Map<string, string[]>();
+  for (const [ppId] of proposedPlotPoints) {
+    // Read alignedBeatId from the node data (set during node creation)
+    const nodeChange = stagedPackage.changes.nodes.find(n => n.node_id === ppId);
+    const beatId = nodeChange?.data?.alignedBeatId as string | undefined;
+    if (beatId) {
+      const existing = beatToPlotPoints.get(beatId) ?? [];
+      existing.push(ppId);
+      beatToPlotPoints.set(beatId, existing);
     }
   }
 
-  // Step 4: Build satisfaction map: StoryBeat ID -> proposed Scene IDs (from SATISFIED_BY edges)
-  const storyBeatToScenes = new Map<string, string[]>();
+  // Step 4: Build realization map: PlotPoint ID -> proposed Scene IDs (from REALIZED_BY edges)
+  const plotPointToScenes = new Map<string, string[]>();
   for (const edgeChange of stagedPackage.changes.edges) {
-    if (edgeChange.operation === 'add' && edgeChange.edge_type === 'SATISFIED_BY') {
-      // SATISFIED_BY: from=StoryBeat, to=Scene
-      const storyBeatId = edgeChange.from;
+    if (edgeChange.operation === 'add' && edgeChange.edge_type === 'REALIZED_BY') {
+      // REALIZED_BY: from=PlotPoint, to=Scene
+      const plotPointId = edgeChange.from;
       const sceneId = edgeChange.to;
 
       if (proposedScenes.has(sceneId)) {
-        const existing = storyBeatToScenes.get(storyBeatId) ?? [];
+        const existing = plotPointToScenes.get(plotPointId) ?? [];
         existing.push(sceneId);
-        storyBeatToScenes.set(storyBeatId, existing);
+        plotPointToScenes.set(plotPointId, existing);
       }
     }
   }
 
   // Track which proposed items got assigned
-  const assignedStoryBeatIds = new Set<string>();
+  const assignedPlotPointIds = new Set<string>();
   const assignedSceneIds = new Set<string>();
 
   // Helper: attach proposed scenes to a plot point
-  const attachProposedScenes = (storyBeatId: string, existingScenes: OutlineScene[]): MergedOutlineScene[] => {
+  const attachProposedScenes = (plotPointId: string, existingScenes: OutlineScene[]): MergedOutlineScene[] => {
     const mergedScenes: MergedOutlineScene[] = existingScenes.map((s) => ({ ...s }));
 
-    const sceneIds = storyBeatToScenes.get(storyBeatId) ?? [];
+    const sceneIds = plotPointToScenes.get(plotPointId) ?? [];
     for (const sceneId of sceneIds) {
       const proposedScene = proposedScenes.get(sceneId);
       if (proposedScene) {
@@ -242,32 +239,32 @@ export function mergeProposedIntoOutline(
     ...act,
     beats: act.beats.map((beat) => {
       // Clone existing plot points with their scenes
-      const mergedStoryBeats: MergedOutlineStoryBeat[] = beat.storyBeats.map((pp) => ({
+      const mergedPlotPoints: MergedOutlinePlotPoint[] = beat.plotPoints.map((pp) => ({
         ...pp,
         scenes: attachProposedScenes(pp.id, pp.scenes),
       }));
 
       // Add proposed plot points that align to this beat
-      const proposedPpIds = beatToStoryBeats.get(beat.id) ?? [];
+      const proposedPpIds = beatToPlotPoints.get(beat.id) ?? [];
       for (const ppId of proposedPpIds) {
-        const proposedPp = proposedStoryBeats.get(ppId);
+        const proposedPp = proposedPlotPoints.get(ppId);
         if (proposedPp) {
           // Attach any proposed scenes to this proposed plot point
           proposedPp.scenes = attachProposedScenes(ppId, []);
-          mergedStoryBeats.push(proposedPp);
-          assignedStoryBeatIds.add(ppId);
+          mergedPlotPoints.push(proposedPp);
+          assignedPlotPointIds.add(ppId);
         }
       }
 
       return {
         ...beat,
-        storyBeats: mergedStoryBeats,
+        plotPoints: mergedPlotPoints,
       };
     }),
   }));
 
   // Handle existing unassigned plot points
-  const mergedUnassignedStoryBeats: MergedOutlineStoryBeat[] = outline.unassignedStoryBeats.map((pp) => ({
+  const mergedUnassignedPlotPoints: MergedOutlinePlotPoint[] = outline.unassignedPlotPoints.map((pp) => ({
     ...pp,
     scenes: attachProposedScenes(pp.id, pp.scenes),
   }));
@@ -275,13 +272,13 @@ export function mergeProposedIntoOutline(
   // Handle existing unassigned scenes (no change needed)
   const mergedUnassignedScenes: MergedOutlineScene[] = outline.unassignedScenes.map((s) => ({ ...s }));
 
-  // Step 8: Collect proposed items that have no assignment edges
-  const proposedUnassignedStoryBeats: MergedOutlineStoryBeat[] = [];
-  for (const [ppId, pp] of proposedStoryBeats) {
-    if (!assignedStoryBeatIds.has(ppId)) {
+  // Step 8: Collect proposed items that have no assignment
+  const proposedUnassignedPlotPoints: MergedOutlinePlotPoint[] = [];
+  for (const [ppId, pp] of proposedPlotPoints) {
+    if (!assignedPlotPointIds.has(ppId)) {
       // Attach any proposed scenes to this unassigned proposed plot point
       pp.scenes = attachProposedScenes(ppId, []);
-      proposedUnassignedStoryBeats.push(pp);
+      proposedUnassignedPlotPoints.push(pp);
     }
   }
 
@@ -321,10 +318,10 @@ export function mergeProposedIntoOutline(
   return {
     storyId: outline.storyId,
     acts: mergedActs,
-    unassignedStoryBeats: mergedUnassignedStoryBeats,
+    unassignedPlotPoints: mergedUnassignedPlotPoints,
     unassignedScenes: mergedUnassignedScenes,
     unassignedIdeas: outline.unassignedIdeas,
-    proposedUnassignedStoryBeats,
+    proposedUnassignedPlotPoints,
     proposedUnassignedScenes,
     proposedIdeas,
     summary: outline.summary,
@@ -334,7 +331,7 @@ export function mergeProposedIntoOutline(
 /**
  * Check if a plot point has any proposed content (itself or its scenes)
  */
-export function storyBeatHasProposedContent(pp: MergedOutlineStoryBeat): boolean {
+export function plotPointHasProposedContent(pp: MergedOutlinePlotPoint): boolean {
   if (pp._isProposed) return true;
   return pp.scenes.some((s) => s._isProposed);
 }
@@ -343,7 +340,7 @@ export function storyBeatHasProposedContent(pp: MergedOutlineStoryBeat): boolean
  * Check if a beat has any proposed content
  */
 export function beatHasProposedContent(beat: MergedOutlineBeat): boolean {
-  return beat.storyBeats.some(storyBeatHasProposedContent);
+  return beat.plotPoints.some(plotPointHasProposedContent);
 }
 
 /**

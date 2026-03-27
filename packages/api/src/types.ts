@@ -38,7 +38,7 @@ export interface StoryStats {
   characters: number;
   locations: number;
   objects: number;
-  storyBeats: number;
+  plotPoints: number;
   ideas: number;
   edges: number;
 }

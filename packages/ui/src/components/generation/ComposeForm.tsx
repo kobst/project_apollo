@@ -7,17 +7,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { ModeSelector, type GenerationMode } from './ModeSelector';
 import { ExpansionScopeToggle, type ExpansionScope } from './ExpansionScopeToggle';
 import {
-  StoryBeatsOptions,
+  PlotPointsOptions,
   CharactersOptions,
   ScenesOptions,
   ExpandOptions,
-  type StoryBeatsOptionsState,
+  type PlotPointsOptionsState,
   type CharactersOptionsState,
   type ScenesOptionsState,
   type ExpandOptionsState,
 } from './mode-options';
 import type {
-  ProposeStoryBeatsRequest,
+  ProposePlotPointsRequest,
   ProposeCharactersRequest,
   ProposeScenesRequest,
   ProposeExpandRequest,
@@ -29,7 +29,7 @@ export interface ComposeFormState {
   mode: GenerationMode;
   expansionScope: ExpansionScope;
 
-  storyBeatsOptions: StoryBeatsOptionsState;
+  plotPointsOptions: PlotPointsOptionsState;
   charactersOptions: CharactersOptionsState;
   scenesOptions: ScenesOptionsState;
   expandOptions: ExpandOptionsState;
@@ -43,10 +43,10 @@ export interface ComposeFormState {
 // Default state factory
 export function createDefaultFormState(): ComposeFormState {
   return {
-    mode: 'story-beats',
+    mode: 'plot-points',
     expansionScope: 'flexible',
 
-    storyBeatsOptions: {
+    plotPointsOptions: {
       focusType: 'all',
       priorityBeats: [],
     },
@@ -55,7 +55,7 @@ export function createDefaultFormState(): ComposeFormState {
       includeArcs: true,
     },
     scenesOptions: {
-      storyBeatIds: [],
+      plotPointIds: [],
       scenesPerBeat: 2,
     },
     expandOptions: {
@@ -77,7 +77,7 @@ interface ModeDefaults {
 }
 
 const MODE_DEFAULTS: Record<GenerationMode, ModeDefaults> = {
-  'story-beats': { creativity: 0.5, packageCount: 5 },
+  'plot-points': { creativity: 0.5, packageCount: 5 },
   'characters': { creativity: 0.6, packageCount: 4 },
   'scenes': { creativity: 0.4, packageCount: 3 },
   'expand': { creativity: 0.3, packageCount: 3 },
@@ -89,7 +89,7 @@ interface BeatInfo {
   beatType: string;
   act: number;
   positionIndex: number;
-  hasMissingStoryBeats: boolean;
+  hasMissingPlotPoints: boolean;
 }
 
 interface CharacterInfo {
@@ -98,7 +98,7 @@ interface CharacterInfo {
   role?: string | undefined;
 }
 
-interface StoryBeatInfo {
+interface PlotPointInfo {
   id: string;
   title: string;
   intent: string;
@@ -115,7 +115,7 @@ interface SelectedNodeInfo {
 
 interface ComposeFormProps {
   /** Generate Story Beats */
-  onGenerateStoryBeats: (request: ProposeStoryBeatsRequest) => Promise<void>;
+  onGeneratePlotPoints: (request: ProposePlotPointsRequest) => Promise<void>;
   /** Generate Characters */
   onGenerateCharacters: (request: ProposeCharactersRequest) => Promise<void>;
   /** Generate Scenes */
@@ -133,7 +133,7 @@ interface ComposeFormProps {
   /** Available characters */
   characters?: CharacterInfo[];
   /** Available story beats */
-  storyBeats?: StoryBeatInfo[];
+  plotPoints?: PlotPointInfo[];
   /** Currently selected node in Story Bible */
   selectedNode?: SelectedNodeInfo | undefined;
   /** Callback to enable/disable node selection mode */
@@ -141,7 +141,7 @@ interface ComposeFormProps {
 }
 
 export function ComposeForm({
-  onGenerateStoryBeats,
+  onGeneratePlotPoints,
   onGenerateCharacters,
   onGenerateScenes,
   onGenerateExpand,
@@ -150,14 +150,14 @@ export function ComposeForm({
   onFormStateChange,
   beats = [],
   characters = [],
-  storyBeats = [],
+  plotPoints = [],
   selectedNode,
   onNodeSelectionModeChange,
 }: ComposeFormProps) {
   const {
     mode,
     expansionScope,
-    storyBeatsOptions,
+    plotPointsOptions,
     charactersOptions,
     scenesOptions,
     expandOptions,
@@ -224,8 +224,8 @@ export function ComposeForm({
   // Validate form before submission
   const validateForm = (): string | null => {
     switch (mode) {
-      case 'story-beats':
-        if (storyBeatsOptions.focusType === 'beats' && storyBeatsOptions.priorityBeats.length === 0) {
+      case 'plot-points':
+        if (plotPointsOptions.focusType === 'beats' && plotPointsOptions.priorityBeats.length === 0) {
           return 'Select at least one beat when using Priority Beats focus';
         }
         break;
@@ -235,7 +235,7 @@ export function ComposeForm({
         }
         break;
       case 'scenes':
-        if (scenesOptions.storyBeatIds.length === 0) {
+        if (scenesOptions.plotPointIds.length === 0) {
           return 'Select at least one story beat to generate scenes from';
         }
         break;
@@ -262,19 +262,19 @@ export function ComposeForm({
     const inventNewEntities = expansionScope === 'flexible';
 
     switch (mode) {
-      case 'story-beats': {
-        const request: ProposeStoryBeatsRequest = {
-          focus: storyBeatsOptions.focusType,
-          targetAct: storyBeatsOptions.targetAct,
-          priorityBeatIds: storyBeatsOptions.priorityBeats.length > 0
-            ? storyBeatsOptions.priorityBeats
+      case 'plot-points': {
+        const request: ProposePlotPointsRequest = {
+          focus: plotPointsOptions.focusType,
+          targetAct: plotPointsOptions.targetAct,
+          priorityBeatIds: plotPointsOptions.priorityBeats.length > 0
+            ? plotPointsOptions.priorityBeats
             : undefined,
           direction: direction.trim() || undefined,
           creativity: effective.creativity,
           packageCount: effective.packageCount,
           inventNewEntities,
         };
-        await onGenerateStoryBeats(request);
+        await onGeneratePlotPoints(request);
         break;
       }
       case 'characters': {
@@ -292,7 +292,7 @@ export function ComposeForm({
       }
       case 'scenes': {
         const request: ProposeScenesRequest = {
-          storyBeatIds: scenesOptions.storyBeatIds,
+          plotPointIds: scenesOptions.plotPointIds,
           scenesPerBeat: scenesOptions.scenesPerBeat,
           direction: direction.trim() || undefined,
           creativity: effective.creativity,
@@ -320,14 +320,14 @@ export function ComposeForm({
   }, [
     mode,
     expansionScope,
-    storyBeatsOptions,
+    plotPointsOptions,
     charactersOptions,
     scenesOptions,
     expandOptions,
     direction,
     customCreativity,
     customPackageCount,
-    onGenerateStoryBeats,
+    onGeneratePlotPoints,
     onGenerateCharacters,
     onGenerateScenes,
     onGenerateExpand,
@@ -365,10 +365,10 @@ export function ComposeForm({
       {/* Mode-Specific Options */}
       <div className={styles.section}>
         <label className={styles.label}>Options</label>
-        {mode === 'story-beats' && (
-          <StoryBeatsOptions
-            value={storyBeatsOptions}
-            onChange={(opts) => updateField('storyBeatsOptions', opts)}
+        {mode === 'plot-points' && (
+          <PlotPointsOptions
+            value={plotPointsOptions}
+            onChange={(opts) => updateField('plotPointsOptions', opts)}
             beats={beats}
             disabled={loading}
           />
@@ -385,7 +385,7 @@ export function ComposeForm({
           <ScenesOptions
             value={scenesOptions}
             onChange={(opts) => updateField('scenesOptions', opts)}
-            storyBeats={storyBeats}
+            plotPoints={plotPoints}
             disabled={loading}
           />
         )}

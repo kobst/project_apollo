@@ -2,7 +2,7 @@ Generation Panel UI Specification
 Update to Support Four-Mode System with Expansion Scope
 
 1. Overview
-This specification describes the UI changes needed to update the Generation Panel to support the new four-mode generation system (Story Beats, Characters, Scenes, Expand) with the expansion scope parameter (Constrained/Flexible).
+This specification describes the UI changes needed to update the Generation Panel to support the new four-mode generation system (Plot Points, Characters, Scenes, Expand) with the expansion scope parameter (Constrained/Flexible).
 Current State
 The existing Generation Panel has:
 
@@ -16,7 +16,7 @@ Saved Packages section
 Target State
 The updated Generation Panel will have:
 
-Four modes: Story Beats, Characters, Scenes, Expand
+Four modes: Plot Points, Characters, Scenes, Expand
 Expansion Scope toggle (Constrained/Flexible)
 Mode-specific options (replacing Entry Point)
 Direction text area (unchanged)
@@ -33,7 +33,7 @@ src/components/generation/
 ├── ModeSelector.tsx              # NEW: Four-mode tab selector
 ├── ExpansionScopeToggle.tsx      # NEW: Constrained/Flexible toggle
 ├── mode-options/
-│   ├── StoryBeatsOptions.tsx     # NEW: Story beats mode options
+│   ├── PlotPointsOptions.tsx     # NEW: Plot points mode options
 │   ├── CharactersOptions.tsx     # NEW: Characters mode options
 │   ├── ScenesOptions.tsx         # NEW: Scenes mode options
 │   └── ExpandOptions.tsx         # NEW: Expand mode options
@@ -46,11 +46,11 @@ src/components/generation/
 2.2 State Management
 typescriptinterface GenerationState {
   // Mode selection
-  mode: 'story-beats' | 'characters' | 'scenes' | 'expand';
+  mode: 'plot-points' | 'characters' | 'scenes' | 'expand';
   expansionScope: 'constrained' | 'flexible';
   
   // Mode-specific options
-  storyBeatsOptions: {
+  plotPointsOptions: {
     focusType: 'all' | 'act' | 'beats';
     targetAct?: 1 | 2 | 3 | 4 | 5;
     priorityBeats: string[];  // Beat types or IDs
@@ -65,7 +65,7 @@ typescriptinterface GenerationState {
   };
   
   scenesOptions: {
-    storyBeatIds: string[];  // Selected committed story beats
+    plotPointIds: string[];  // Selected committed plot points
     scenesPerBeat: number;
     maxPerPackage: number;
   };
@@ -194,7 +194,7 @@ typescriptinterface ModeSelectorProps {
   disabled?: boolean;
 }
 
-type GenerationMode = 'story-beats' | 'characters' | 'scenes' | 'expand';
+type GenerationMode = 'plot-points' | 'characters' | 'scenes' | 'expand';
 ```
 
 ### 4.3 Visual States
@@ -210,7 +210,7 @@ type GenerationMode = 'story-beats' | 'characters' | 'scenes' | 'expand';
 
 | Mode | Icon | Label | Sublabel (optional) |
 |------|------|-------|---------------------|
-| story-beats | 📋 | Story Beats | Fill structure |
+| plot-points | 📋 | Plot Points | Fill structure |
 | characters | 👤 | Characters | Develop cast |
 | scenes | 🎬 | Scenes | Create scenes |
 | expand | 🔍 | Expand | Develop ideas |
@@ -241,8 +241,8 @@ The sublabel changes based on the selected mode:
 
 | Mode | Constrained Description | Flexible Description |
 |------|------------------------|---------------------|
-| story-beats | Story beats only | + Characters, Locations, Ideas |
-| characters | Character details only | + Story beat hints, Locations |
+| plot-points | Plot points only | + Characters, Locations, Ideas |
+| characters | Character details only | + Plot point hints, Locations |
 | scenes | Scenes only | + Characters, Locations, Objects |
 | expand | Enrich selected only | + Related nodes and ideas |
 
@@ -250,7 +250,7 @@ The sublabel changes based on the selected mode:
 
 ## 6. Mode-Specific Options
 
-### 6.1 Story Beats Options
+### 6.1 Plot Points Options
 ```
 FOCUS
 ○ All missing beats
@@ -277,13 +277,13 @@ FOCUS
   │ ☐ Break Into Three ☐ Finale          ☐ Final Image        │
   └────────────────────────────────────────────────────────────┘
 Props
-typescriptinterface StoryBeatsOptionsProps {
-  value: StoryBeatsOptionsState;
-  onChange: (options: StoryBeatsOptionsState) => void;
+typescriptinterface PlotPointsOptionsProps {
+  value: PlotPointsOptionsState;
+  onChange: (options: PlotPointsOptionsState) => void;
   missingBeats: MissingBeatInfo[];  // From API or computed
 }
 
-interface StoryBeatsOptionsState {
+interface PlotPointsOptionsState {
   focusType: 'all' | 'act' | 'beats';
   targetAct?: 1 | 2 | 3 | 4 | 5;
   priorityBeats: string[];
@@ -294,8 +294,8 @@ interface StoryBeatsOptionsState {
 
 | State | Appearance |
 |-------|------------|
-| Unchecked, has story beat | Normal checkbox, normal text |
-| Unchecked, missing story beat | Normal checkbox, text with warning indicator (orange dot) |
+| Unchecked, has plot point | Normal checkbox, normal text |
+| Unchecked, missing plot point | Normal checkbox, text with warning indicator (orange dot) |
 | Checked | Filled checkbox, highlighted text |
 
 ### 6.2 Characters Options
@@ -350,9 +350,9 @@ When "Develop existing character" is selected, show a searchable dropdown with e
 
 ### 6.3 Scenes Options
 ```
-SELECT STORY BEATS TO DEVELOP
+SELECT PLOT POINTS TO DEVELOP
 
-(Only showing committed story beats)
+(Only showing committed plot points)
 
 ┌────────────────────────────────────────────────────────────┐
 │ ☑ "Rigo seeks help and finds Cain"                         │
@@ -370,21 +370,21 @@ SELECT STORY BEATS TO DEVELOP
 
 Scenes per beat: [1 ▼]
 
-⚠ No committed story beats available
-   Generate and commit story beats first to create scenes.
+⚠ No committed plot points available
+   Generate and commit plot points first to create scenes.
 Props
 typescriptinterface ScenesOptionsProps {
   value: ScenesOptionsState;
   onChange: (options: ScenesOptionsState) => void;
-  committedStoryBeats: CommittedStoryBeatInfo[];
+  committedPlotPoints: CommittedPlotPointInfo[];
 }
 
 interface ScenesOptionsState {
-  storyBeatIds: string[];
+  plotPointIds: string[];
   scenesPerBeat: number;
 }
 
-interface CommittedStoryBeatInfo {
+interface CommittedPlotPointInfo {
   id: string;
   title: string;
   alignedBeat: string;  // e.g., "Setup", "Catalyst"
@@ -394,15 +394,15 @@ interface CommittedStoryBeatInfo {
 
 #### Empty State
 
-If no committed story beats exist, show a message:
+If no committed plot points exist, show a message:
 ```
 ┌────────────────────────────────────────────────────────────┐
 │                                                            │
-│  ⚠ No committed story beats available                     │
+│  ⚠ No committed plot points available                     │
 │                                                            │
-│  Generate and commit story beats first to create scenes.   │
+│  Generate and commit plot points first to create scenes.   │
 │                                                            │
-│                    [Go to Story Beats Mode]                │
+│                    [Go to Plot Points Mode]                │
 │                                                            │
 └────────────────────────────────────────────────────────────┘
 ```
@@ -504,17 +504,17 @@ When generation completes, show list of packages:
 │                                                                 │
 │ ┌─────────────────────────────────────────────────────────────┐ │
 │ │ Package 1: "The Betrayal Unfolds"                       [▶] │ │
-│ │ 2 story beats • 1 character • 2 suggestions                 │ │
+│ │ 2 plot points • 1 character • 2 suggestions                 │ │
 │ └─────────────────────────────────────────────────────────────┘ │
 │                                                                 │
 │ ┌─────────────────────────────────────────────────────────────┐ │
 │ │ Package 2: "The Conspiracy Deepens"                     [▶] │ │
-│ │ 3 story beats • 1 suggestion                                │ │
+│ │ 3 plot points • 1 suggestion                                │ │
 │ └─────────────────────────────────────────────────────────────┘ │
 │                                                                 │
 │ ┌─────────────────────────────────────────────────────────────┐ │
 │ │ Package 3: "Seeds of Doubt"                             [▶] │ │
-│ │ 2 story beats • 2 characters • 3 suggestions                │ │
+│ │ 2 plot points • 2 characters • 3 suggestions                │ │
 │ └─────────────────────────────────────────────────────────────┘ │
 │                                                                 │
 │                                              [Discard Session]  │
@@ -531,7 +531,7 @@ When user expands a package:
 │ Cain discovers the conspiracy through an unlikely source        │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│ PRIMARY: STORY BEATS (2)                                        │
+│ PRIMARY: PLOT POINTS (2)                                        │
 │ ┌─────────────────────────────────────────────────────────────┐ │
 │ │ ☑ "The Informant's Warning"                                 │ │
 │ │   → Catalyst                                                │ │
@@ -586,7 +586,7 @@ typescriptinterface PackageCardProps {
 
 Each section (Primary, Supporting, Suggestions) has a header with count and collapse toggle:
 ```
-PRIMARY: STORY BEATS (2)                                          
+PRIMARY: PLOT POINTS (2)                                          
 SUPPORTING (1)                                     [Show/Hide ▼]  
 SUGGESTIONS (2)                                    [Show/Hide ▼]  
 ```
@@ -691,18 +691,18 @@ When viewing an empty beat in Structure, the beat card includes a generation but
 │ Opening Image                                               [×] │
 │ The opening snapshot that sets tone and stakes.                 │
 │                                                                 │
-│ No story beats aligned to this beat yet.                        │
+│ No plot points aligned to this beat yet.                        │
 │                                                                 │
-│ [+ Add Story Beat]    [🤖 Generate Story Beat]                  │
+│ [+ Add Plot Point]    [🤖 Generate Plot Point]                  │
 └─────────────────────────────────────────────────────────────────┘
-Clicking "Generate Story Beat":
+Clicking "Generate Plot Point":
 
 Opens Generation Panel (if not already open)
-Sets mode to "Story Beats"
+Sets mode to "Plot Points"
 Sets focus to "Priority beats" with this beat pre-selected
 
 10.2 Node Selection
-When user clicks on a node card (Character, StoryBeat, Scene, etc.):
+When user clicks on a node card (Character, PlotPoint, Scene, etc.):
 
 Node becomes "selected" (visual highlight)
 If Generation Panel is open in Expand mode, show the node as selected target
@@ -717,7 +717,7 @@ Or add an inline button: [🤖 Generate Context Ideas]
 
 11. API Integration
 11.1 Endpoint Mapping
-ModeEndpointstory-beatsPOST /stories/:id/propose/story-beatscharactersPOST /stories/:id/propose/charactersscenesPOST /stories/:id/propose/scenesexpandPOST /stories/:id/propose/expand
+ModeEndpointplot-pointsPOST /stories/:id/propose/plot-pointscharactersPOST /stories/:id/propose/charactersscenesPOST /stories/:id/propose/scenesexpandPOST /stories/:id/propose/expand
 11.2 Request Building
 typescriptfunction buildRequest(state: GenerationState): GenerationRequest {
   const common = {
@@ -728,16 +728,16 @@ typescriptfunction buildRequest(state: GenerationState): GenerationRequest {
   };
 
   switch (state.mode) {
-    case 'story-beats':
+    case 'plot-points':
       return {
         ...common,
-        priorityBeats: state.storyBeatsOptions.focusType === 'beats' 
-          ? state.storyBeatsOptions.priorityBeats 
+        priorityBeats: state.plotPointsOptions.focusType === 'beats' 
+          ? state.plotPointsOptions.priorityBeats 
           : undefined,
-        targetAct: state.storyBeatsOptions.focusType === 'act'
-          ? state.storyBeatsOptions.targetAct
+        targetAct: state.plotPointsOptions.focusType === 'act'
+          ? state.plotPointsOptions.targetAct
           : undefined,
-        maxStoryBeatsPerPackage: state.storyBeatsOptions.maxPerPackage,
+        maxPlotPointsPerPackage: state.plotPointsOptions.maxPerPackage,
       };
     
     case 'characters':
@@ -752,7 +752,7 @@ typescriptfunction buildRequest(state: GenerationState): GenerationRequest {
     case 'scenes':
       return {
         ...common,
-        storyBeatIds: state.scenesOptions.storyBeatIds,
+        plotPointIds: state.scenesOptions.plotPointIds,
         scenesPerBeat: state.scenesOptions.scenesPerBeat,
         maxScenesPerPackage: state.scenesOptions.maxPerPackage,
       };
@@ -801,7 +801,7 @@ interface PackageModifications {
 
 ### 12.1 Mode-Specific Validation
 
-**Story Beats:**
+**Plot Points:**
 - No validation required (can always generate)
 
 **Characters:**
@@ -809,9 +809,9 @@ interface PackageModifications {
 - Show: "Select a character to develop"
 
 **Scenes:**
-- At least one story beat must be selected
-- Show: "Select at least one story beat"
-- If no committed story beats exist, show empty state with guidance
+- At least one plot point must be selected
+- Show: "Select at least one plot point"
+- If no committed plot points exist, show empty state with guidance
 
 **Expand:**
 - If target is "node", nodeId must be selected
@@ -845,7 +845,7 @@ Escape to close panel or cancel edit
 
 13.2 Screen Reader Support
 
-Mode buttons have aria-label: "Story Beats mode - Fill in narrative structure"
+Mode buttons have aria-label: "Plot Points mode - Fill in narrative structure"
 Scope toggle has aria-describedby linking to description text
 Package items have aria-expanded for collapsible sections
 
@@ -866,7 +866,7 @@ Remove old Entry Point dropdown
 
 Phase 2: Mode-Specific Options
 
-Create StoryBeatsOptions component
+Create PlotPointsOptions component
 Create CharactersOptions component
 Create ScenesOptions component
 Create ExpandOptions component

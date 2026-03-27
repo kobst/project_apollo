@@ -104,7 +104,7 @@ export function createStatusHandler(ctx: StorageContext) {
             characters: stats.nodeCountByType.Character ?? 0,
             locations: stats.nodeCountByType.Location ?? 0,
             objects: stats.nodeCountByType.Object ?? 0,
-            storyBeats: stats.nodeCountByType.StoryBeat ?? 0,
+            plotPoints: stats.nodeCountByType.PlotPoint ?? 0,
             ideas: stats.nodeCountByType.Idea ?? 0,
             edges: stats.edgeCount,
           },

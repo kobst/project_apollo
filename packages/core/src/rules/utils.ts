@@ -5,7 +5,7 @@
 
 import type { GraphState } from '../core/graph.js';
 import { getNode, getNodesByType, getEdgesFrom, getEdgesTo, getEdgesByType } from '../core/graph.js';
-import type { Beat, Scene, StoryBeat } from '../types/nodes.js';
+import type { Beat, Scene, PlotPoint } from '../types/nodes.js';
 import { BEAT_ACT_MAP, BEAT_POSITION_MAP } from '../types/nodes.js';
 import type { Edge, EdgeType } from '../types/edges.js';
 import type { LintScope, RuleViolation } from './types.js';
@@ -183,35 +183,22 @@ export function getPositionForBeat(beat: Beat): number {
 }
 
 /**
- * Get all scenes linked to a beat (includes both edge-based and beat_id-based).
- * Scenes can be linked via: StoryBeat → SATISFIED_BY → Scene, where StoryBeat → ALIGNS_WITH → Beat
- * Or via the deprecated beat_id field.
+ * Get all scenes linked to a beat.
+ * Scenes are linked via: PlotPoint.alignedBeatId → PlotPoint → REALIZED_BY → Scene
  */
 export function getScenesByBeat(graph: GraphState, beatId: string): Scene[] {
   const sceneIds = new Set<string>();
 
-  // 1. Get scenes via StoryBeat edge chain
-  // Find StoryBeats aligned to this beat
-  const alignsWithEdges = getEdgesByType(graph, 'ALIGNS_WITH');
-  for (const edge of alignsWithEdges) {
-    if (edge.to === beatId) {
-      // This StoryBeat aligns with our beat
-      const storyBeatId = edge.from;
-      // Find scenes satisfied by this StoryBeat
-      const satisfiedByEdges = getEdgesByType(graph, 'SATISFIED_BY');
-      for (const satEdge of satisfiedByEdges) {
-        if (satEdge.from === storyBeatId) {
-          sceneIds.add(satEdge.to);
+  // Find PlotPoints aligned to this beat via alignedBeatId
+  const realizedByEdges = getEdgesByType(graph, 'REALIZED_BY');
+  for (const node of graph.nodes.values()) {
+    if (node.type === 'PlotPoint' && (node as PlotPoint).alignedBeatId === beatId) {
+      // Find scenes realized by this PlotPoint
+      for (const edge of realizedByEdges) {
+        if (edge.from === node.id) {
+          sceneIds.add(edge.to);
         }
       }
-    }
-  }
-
-  // 2. Add scenes via beat_id (deprecated fallback)
-  const allScenes = getNodesByType<Scene>(graph, 'Scene');
-  for (const scene of allScenes) {
-    if (scene.beat_id === beatId) {
-      sceneIds.add(scene.id);
     }
   }
 
@@ -223,45 +210,35 @@ export function getScenesByBeat(graph: GraphState, beatId: string): Scene[] {
 
 /**
  * Get the beat for a scene.
- * Primary: Scene ← SATISFIED_BY ← StoryBeat → ALIGNS_WITH → Beat
- * Fallback: scene.beat_id (deprecated)
+ * Path: Scene ← REALIZED_BY ← PlotPoint → PlotPoint.alignedBeatId → Beat
  */
 export function getBeatForScene(graph: GraphState, scene: Scene): Beat | undefined {
-  // 1. Try edge chain: find StoryBeats that satisfy this scene
-  const satisfiedByEdges = getEdgesByType(graph, 'SATISFIED_BY');
-  for (const edge of satisfiedByEdges) {
+  // Find PlotPoints that realize this scene
+  const realizedByEdges = getEdgesByType(graph, 'REALIZED_BY');
+  for (const edge of realizedByEdges) {
     if (edge.to === scene.id) {
-      // Found a StoryBeat that satisfies this scene
-      const storyBeatId = edge.from;
-      // Find the beat this StoryBeat aligns with
-      const alignsWithEdges = getEdgesByType(graph, 'ALIGNS_WITH');
-      for (const alignEdge of alignsWithEdges) {
-        if (alignEdge.from === storyBeatId) {
-          const beat = getNode(graph, alignEdge.to);
-          if (beat?.type === 'Beat') {
-            return beat as Beat;
-          }
+      // Found a PlotPoint that realizes this scene
+      const plotPoint = getNode(graph, edge.from) as PlotPoint | undefined;
+      if (plotPoint?.type === 'PlotPoint' && plotPoint.alignedBeatId) {
+        const beat = getNode(graph, plotPoint.alignedBeatId);
+        if (beat?.type === 'Beat') {
+          return beat as Beat;
         }
       }
     }
-  }
-
-  // 2. Fallback to beat_id (deprecated)
-  if (scene.beat_id) {
-    return getNode(graph, scene.beat_id) as Beat | undefined;
   }
 
   return undefined;
 }
 
 /**
- * Get all scenes that satisfy a StoryBeat via SATISFIED_BY edges.
+ * Get all scenes that are realized by a PlotPoint via REALIZED_BY edges.
  */
-export function getScenesForStoryBeat(graph: GraphState, storyBeatId: string): Scene[] {
-  const satisfiedByEdges = getEdgesByType(graph, 'SATISFIED_BY');
+export function getScenesForPlotPoint(graph: GraphState, plotPointId: string): Scene[] {
+  const realizedByEdges = getEdgesByType(graph, 'REALIZED_BY');
   const scenes: Scene[] = [];
-  for (const edge of satisfiedByEdges) {
-    if (edge.from === storyBeatId) {
+  for (const edge of realizedByEdges) {
+    if (edge.from === plotPointId) {
       const scene = getNode(graph, edge.to);
       if (scene?.type === 'Scene') {
         scenes.push(scene as Scene);
@@ -272,20 +249,20 @@ export function getScenesForStoryBeat(graph: GraphState, storyBeatId: string): S
 }
 
 /**
- * Get the StoryBeats that satisfy a scene via SATISFIED_BY edges.
+ * Get the PlotPoints that realize a scene via REALIZED_BY edges.
  */
-export function getStoryBeatsForScene(graph: GraphState, sceneId: string): StoryBeat[] {
-  const satisfiedByEdges = getEdgesByType(graph, 'SATISFIED_BY');
-  const storyBeats: StoryBeat[] = [];
-  for (const edge of satisfiedByEdges) {
+export function getPlotPointsForScene(graph: GraphState, sceneId: string): PlotPoint[] {
+  const realizedByEdges = getEdgesByType(graph, 'REALIZED_BY');
+  const plotPoints: PlotPoint[] = [];
+  for (const edge of realizedByEdges) {
     if (edge.to === sceneId) {
-      const sb = getNode(graph, edge.from);
-      if (sb?.type === 'StoryBeat') {
-        storyBeats.push(sb as StoryBeat);
+      const pp = getNode(graph, edge.from);
+      if (pp?.type === 'PlotPoint') {
+        plotPoints.push(pp as PlotPoint);
       }
     }
   }
-  return storyBeats;
+  return plotPoints;
 }
 
 /**
@@ -297,7 +274,7 @@ export function getBeatsByAct(graph: GraphState, act: 1 | 2 | 3 | 4 | 5): Beat[]
 
 /**
  * Get all scenes in a specific act (via their beats).
- * Uses getBeatForScene to handle both edge-based and beat_id-based lookups.
+ * Uses getBeatForScene to resolve via PlotPoint chain.
  */
 export function getScenesByAct(graph: GraphState, act: 1 | 2 | 3 | 4 | 5): Scene[] {
   const scenes = getNodesByType<Scene>(graph, 'Scene');

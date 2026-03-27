@@ -13,7 +13,7 @@ import { PROMPT_VERSION, JSON_OUTPUT_RULES, getCreativityLabel } from './shared.
 export interface CharacterPromptParams {
   storyContext: string;
   existingCharacters: string;
-  existingStoryBeats: string;
+  existingPlotPoints: string;
   focus: CharacterFocus;
   characterId?: string;
   characterData?: string;
@@ -35,7 +35,7 @@ export function buildCharacterPrompt(params: CharacterPromptParams): string {
   const {
     storyContext,
     existingCharacters,
-    existingStoryBeats,
+    existingPlotPoints,
     focus,
     characterId,
     characterData,
@@ -75,8 +75,8 @@ ${focusInstructions}
 ## Existing Characters
 ${existingCharacters || '[None]'}
 
-## Story Beats (context)
-${existingStoryBeats || '[None]'}
+## Plot Points (context)
+${existingPlotPoints || '[None]'}
 ${direction ? `\n## Direction\n"${direction}"\n` : ''}${ideas ? `\n${ideas}` : ''}${guidelines ? `\n${guidelines}` : ''}
 ## Settings
 Focus: ${formatFocus(focus)} | Creativity: ${creativityLabel} (${creativity}) | Scope: ${expansionScope} | Max/pkg: ${maxCharactersPerPackage} | Arcs: ${includeArcs ? 'yes' : 'no'}

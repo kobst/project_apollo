@@ -8,10 +8,10 @@ Design Principles
 Primary Focus: Each endpoint has a clear primary output type
 Controlled Expansion: The expansionScope parameter determines whether related nodes are generated
 Universal Suggestions: All endpoints can produce Story Context additions and stashed ideas
-Dependency Ordering: Scenes require committed story beats; the API enforces this
+Dependency Ordering: Scenes require committed plot points; the API enforces this
 
 The Four Modes
-ModeEndpointPrimary OutputPurposeStory Beats/propose/story-beatsStoryBeat nodesFill in narrative structureCharacters/propose/charactersCharacter nodesDevelop the castScenes/propose/scenesScene nodesCreate scenes for story beatsExpand/propose/expandVaries by targetDevelop any existing node
+ModeEndpointPrimary OutputPurposePlot Points/propose/plot-pointsPlotPoint nodesFill in narrative structureCharacters/propose/charactersCharacter nodesDevelop the castScenes/propose/scenesScene nodesCreate scenes for plot pointsExpand/propose/expandVaries by targetDevelop any existing node
 
 2. Common Schemas
 2.1 Expansion Scope
@@ -36,7 +36,7 @@ typescriptinterface NarrativePackage {
   
   // Primary output - always present, type depends on endpoint
   primary: {
-    type: 'StoryBeat' | 'Character' | 'Scene' | 'Mixed';
+    type: 'PlotPoint' | 'Character' | 'Scene' | 'Mixed';
     nodes: Node[];
     edges: Edge[];
   };
@@ -46,7 +46,7 @@ typescriptinterface NarrativePackage {
     characters?: CharacterNode[];
     locations?: LocationNode[];
     objects?: ObjectNode[];
-    storyBeats?: StoryBeatNode[];  // For character mode hints
+    plotPoints?: PlotPointNode[];  // For character mode hints
     edges: Edge[];  // Edges connecting supporting nodes
   };
   
@@ -81,27 +81,27 @@ typescriptinterface CommonGenerationParams {
 
 ---
 
-## 3. Story Beats Endpoint
+## 3. Plot Points Endpoint
 
 ### 3.1 Purpose
 
-Generate StoryBeat nodes that align to Save the Cat structural beats. Used for filling in the narrative structure before developing scenes.
+Generate PlotPoint nodes that align to Save the Cat structural beats. Used for filling in the narrative structure before developing scenes.
 
 ### 3.2 Endpoint
 ```
-POST /stories/:storyId/propose/story-beats
+POST /stories/:storyId/propose/plot-points
 3.3 Request Schema
-typescriptinterface ProposeStoryBeatsRequest extends CommonGenerationParams {
+typescriptinterface ProposePlotPointsRequest extends CommonGenerationParams {
   // Focus options (all optional, use to narrow generation)
   priorityBeats?: string[];         // Beat IDs or BeatTypes to prioritize
                                     // e.g., ["Catalyst", "Midpoint"] or ["beat_Catalyst"]
   targetAct?: 1 | 2 | 3 | 4 | 5;    // Focus on specific act
   
   // Output limits
-  maxStoryBeatsPerPackage?: number; // default: 5, max: 10
+  maxPlotPointsPerPackage?: number; // default: 5, max: 10
 }
 3.4 Response Schema
-typescriptinterface ProposeStoryBeatsResponse {
+typescriptinterface ProposePlotPointsResponse {
   sessionId: string;
   packages: NarrativePackage[];
   
@@ -114,23 +114,23 @@ interface MissingBeatInfo {
   beatType: BeatType;  // e.g., "Catalyst", "Midpoint"
   act: 1 | 2 | 3 | 4 | 5;
   position: number;
-  hasStoryBeat: boolean;  // false if no StoryBeat aligned
+  hasPlotPoint: boolean;  // false if no PlotPoint aligned
 }
 3.5 Primary Output
 
-Node type: StoryBeat
-Required edges: ALIGNS_WITH (StoryBeat → Beat)
-Optional edges: PRECEDES (StoryBeat → StoryBeat)
+Node type: PlotPoint
+Required edges: alignedBeatId (PlotPoint → Beat)
+Optional edges: PRECEDES (PlotPoint → PlotPoint)
 
 3.6 Supporting Output (when flexible)
-Node TypeWhen GeneratedCharacterWhen story beat introduces a new character conceptLocationWhen story beat specifies a setting
+Node TypeWhen GeneratedCharacterWhen plot point introduces a new character conceptLocationWhen plot point specifies a setting
 Supporting edges:
 
-No direct edges from StoryBeat to Character/Location (those come via Scenes later)
+No direct edges from PlotPoint to Character/Location (those come via Scenes later)
 Characters and Locations are "introduced by" the package but not formally linked
 
 3.7 Example Request
-bashcurl -X POST http://localhost:3000/stories/my-story/propose/story-beats \\
+bashcurl -X POST http://localhost:3000/stories/my-story/propose/plot-points \\
   -H 'Content-Type: application/json' \\
   -d '{
     "priorityBeats": ["Catalyst", "Midpoint", "All Is Lost"],
@@ -138,7 +138,7 @@ bashcurl -X POST http://localhost:3000/stories/my-story/propose/story-beats \\
     "expansionScope": "flexible",
     "direction": "Focus on the protagonist discovering betrayal",
     "packageCount": 3,
-    "maxStoryBeatsPerPackage": 3
+    "maxPlotPointsPerPackage": 3
   }'
 3.8 Example Response
 json{
@@ -149,11 +149,11 @@ json{
       "title": "The Betrayal Unfolds",
       "summary": "Cain discovers the conspiracy through an unlikely source",
       "primary": {
-        "type": "StoryBeat",
+        "type": "PlotPoint",
         "nodes": [
           {
-            "id": "storybeat_new_1",
-            "type": "StoryBeat",
+            "id": "plotpoint_new_1",
+            "type": "PlotPoint",
             "title": "The Informant's Warning",
             "summary": "A mysterious figure approaches Cain with evidence of Morrison's corruption",
             "intent": "PLOT",
@@ -162,8 +162,8 @@ json{
         ],
         "edges": [
           {
-            "type": "ALIGNS_WITH",
-            "source": "storybeat_new_1",
+            "type": "alignedBeatId",
+            "source": "plotpoint_new_1",
             "target": "beat_Catalyst"
           }
         ]
@@ -200,9 +200,9 @@ json{
     }
   ],
   "missingBeats": [
-    { "beatId": "beat_Opening_Image", "beatType": "Opening Image", "act": 1, "position": 0, "hasStoryBeat": false },
-    { "beatId": "beat_Theme_Stated", "beatType": "Theme Stated", "act": 1, "position": 1, "hasStoryBeat": false },
-    { "beatId": "beat_Catalyst", "beatType": "Catalyst", "act": 1, "position": 3, "hasStoryBeat": false }
+    { "beatId": "beat_Opening_Image", "beatType": "Opening Image", "act": 1, "position": 0, "hasPlotPoint": false },
+    { "beatId": "beat_Theme_Stated", "beatType": "Theme Stated", "act": 1, "position": 1, "hasPlotPoint": false },
+    { "beatId": "beat_Catalyst", "beatType": "Catalyst", "act": 1, "position": 3, "hasPlotPoint": false }
   ]
 }
 ```
@@ -213,7 +213,7 @@ json{
 
 ### 4.1 Purpose
 
-Generate Character nodes with descriptions and optional arc development. Can also produce story beat hints showing how the character might interact with the structure.
+Generate Character nodes with descriptions and optional arc development. Can also produce plot point hints showing how the character might interact with the structure.
 
 ### 4.2 Endpoint
 ```
@@ -259,8 +259,8 @@ Optional nodes: CharacterArc (when includeArcs: true)
 Required edges: HAS_ARC (Character → CharacterArc) when arcs included
 
 4.6 Supporting Output (when flexible)
-Node TypeWhen GeneratedStoryBeatAs "hints" - suggestions for how character could drive structureLocationCharacter's home base, workplace, etc.
-Note: Supporting StoryBeats are marked as suggestions/hints, not fully-formed beats. They indicate structural potential.
+Node TypeWhen GeneratedPlotPointAs "hints" - suggestions for how character could drive structureLocationCharacter's home base, workplace, etc.
+Note: Supporting PlotPoints are marked as suggestions/hints, not fully-formed beats. They indicate structural potential.
 4.7 Example Request
 bashcurl -X POST http://localhost:3000/stories/my-story/propose/characters \\
   -H 'Content-Type: application/json' \\
@@ -306,10 +306,10 @@ json{
         ]
       },
       "supporting": {
-        "storyBeats": [
+        "plotPoints": [
           {
             "id": "hint_beat_1",
-            "type": "StoryBeatHint",
+            "type": "PlotPointHint",
             "title": "Morrison's true nature revealed",
             "suggestedBeat": "Midpoint",
             "description": "Cain discovers evidence of Morrison's involvement"
@@ -350,15 +350,15 @@ json{
 
 ### 5.1 Purpose
 
-Generate Scene nodes that satisfy committed StoryBeats. This endpoint enforces the dependency rule: scenes can only be created for story beats that have been committed to the graph.
+Generate Scene nodes that satisfy committed PlotPoints. This endpoint enforces the dependency rule: scenes can only be created for plot points that have been committed to the graph.
 
 ### 5.2 Endpoint
 ```
 POST /stories/:storyId/propose/scenes
 5.3 Request Schema
 typescriptinterface ProposeScenesRequest extends CommonGenerationParams {
-  // Required: which story beats to develop scenes for
-  storyBeatIds: string[];           // Must be committed StoryBeat IDs
+  // Required: which plot points to develop scenes for
+  plotPointIds: string[];           // Must be committed PlotPoint IDs
   
   // Output options
   scenesPerBeat?: number;           // default: 1, max: 3
@@ -375,13 +375,13 @@ typescriptinterface ProposeScenesResponse {
 }
 
 interface ValidatedBeatInfo {
-  storyBeatId: string;
+  plotPointId: string;
   title: string;
   alignedTo: string;  // Beat type, e.g., "Catalyst"
 }
 
 interface RejectedBeatInfo {
-  storyBeatId: string;
+  plotPointId: string;
   reason: 'not_found' | 'not_committed' | 'already_has_scenes';
 }
 5.5 Primary Output
@@ -389,7 +389,7 @@ interface RejectedBeatInfo {
 Node type: Scene
 Required edges:
 
-SATISFIED_BY (StoryBeat → Scene) - links scene to its story beat
+REALIZED_BY (PlotPoint → Scene) - links scene to its plot point
 HAS_CHARACTER (Scene → Character) - at least one character
 LOCATED_AT (Scene → Location) - scene location
 
@@ -397,18 +397,18 @@ LOCATED_AT (Scene → Location) - scene location
 
 5.6 Supporting Output (when flexible)
 Node TypeWhen GeneratedCharacterWhen scene introduces a new characterLocationWhen scene requires a new settingObjectWhen scene features a significant prop
-5.7 Constraint: Committed Story Beats Only
-The endpoint MUST validate that all requested storyBeatIds:
+5.7 Constraint: Committed Plot Points Only
+The endpoint MUST validate that all requested plotPointIds:
 
 Exist in the graph
 Are in COMMITTED status (not proposed)
 
-If any story beat is not committed, it should be returned in rejectedBeats with reason 'not_committed'.
+If any plot point is not committed, it should be returned in rejectedBeats with reason 'not_committed'.
 5.8 Example Request
 bashcurl -X POST http://localhost:3000/stories/my-story/propose/scenes \\
   -H 'Content-Type: application/json' \\
   -d '{
-    "storyBeatIds": ["storybeat_catalyst_1", "storybeat_midpoint_1"],
+    "plotPointIds": ["plotpoint_catalyst_1", "plotpoint_midpoint_1"],
     "expansionScope": "flexible",
     "scenesPerBeat": 2,
     "direction": "Noir atmosphere, tense confrontations"
@@ -436,8 +436,8 @@ json{
         ],
         "edges": [
           {
-            "type": "SATISFIED_BY",
-            "source": "storybeat_catalyst_1",
+            "type": "REALIZED_BY",
+            "source": "plotpoint_catalyst_1",
             "target": "scene_new_1"
           },
           {
@@ -493,8 +493,8 @@ json{
     }
   ],
   "validatedBeats": [
-    { "storyBeatId": "storybeat_catalyst_1", "title": "The Informant's Warning", "alignedTo": "Catalyst" },
-    { "storyBeatId": "storybeat_midpoint_1", "title": "Morrison Exposed", "alignedTo": "Midpoint" }
+    { "plotPointId": "plotpoint_catalyst_1", "title": "The Informant's Warning", "alignedTo": "Catalyst" },
+    { "plotPointId": "plotpoint_midpoint_1", "title": "Morrison Exposed", "alignedTo": "Midpoint" }
   ],
   "rejectedBeats": []
 }
@@ -552,11 +552,11 @@ Arc refinements (if arc exists)
 
 Flexible output (adds):
 
-Related StoryBeat hints ("This character could drive...")
+Related PlotPoint hints ("This character could drive...")
 Locations associated with character
 Relationships to other characters
 
-When target is a StoryBeat node:
+When target is a PlotPoint node:
 Constrained output:
 
 Enriched summary
@@ -605,7 +605,7 @@ New constraints/guidelines
 Flexible output (adds):
 
 Character concepts that embody themes
-StoryBeat hints that could explore conflicts
+PlotPoint hints that could explore conflicts
 Stashed ideas for development
 
 6.6 Example Request - Expand Character
@@ -687,10 +687,10 @@ json{
             "description": "Someone Cain showed mercy to years ago - now returns as either ally or threat"
           }
         ],
-        "storyBeats": [
+        "plotPoints": [
           {
             "id": "beat_hint_1",
-            "type": "StoryBeatHint",
+            "type": "PlotPointHint",
             "title": "The Loyalty Test",
             "suggestedBeat": "All Is Lost",
             "description": "Cain must choose: betray Rigo to save himself, or go down with the ship"
@@ -789,7 +789,7 @@ All endpoints validate:
 
 ### 8.2 Mode-Specific Options
 
-#### Story Beats Mode
+#### Plot Points Mode
 ```
 FOCUS
 ○ All missing beats
@@ -816,8 +816,8 @@ FOCUS
 
 #### Scenes Mode
 ```
-SELECT STORY BEATS TO DEVELOP
-(Only committed story beats shown)
+SELECT PLOT POINTS TO DEVELOP
+(Only committed plot points shown)
 
 ☑ "The Informant's Warning" (Catalyst) - 0 scenes
 ☑ "Morrison Exposed" (Midpoint) - 0 scenes  
@@ -851,7 +851,7 @@ DEPTH
 │ Cain discovers the conspiracy through an unlikely source        │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│ PRIMARY: STORY BEATS                                            │
+│ PRIMARY: PLOT POINTS                                            │
 │ ┌─────────────────────────────────────────────────────────────┐ │
 │ │ ☑ "The Informant's Warning" → Catalyst                      │ │
 │ │   A mysterious figure approaches Cain with evidence...      │ │
@@ -889,9 +889,9 @@ User can override or proceed
 
 When user clicks empty beat in Structure:
 
-Generation Panel could auto-switch to Story Beats mode
+Generation Panel could auto-switch to Plot Points mode
 Pre-select that beat as priority
-Or show inline "Generate story beat" button on the empty beat card
+Or show inline "Generate plot point" button on the empty beat card
 
 
 9. Ideas/Stash Feature
@@ -930,9 +930,9 @@ STORY BIBLE
 └── Ideas (3)        ← Stashed ideas bucket
 
 10. Migration Path
-Phase 1: Story Beats Endpoint (Already Exists)
+Phase 1: Plot Points Endpoint (Already Exists)
 
-Endpoint: /propose/story-beats ✓
+Endpoint: /propose/plot-points ✓
 Add expansionScope parameter
 Add supporting nodes output
 Add suggestions output
@@ -971,9 +971,9 @@ Eventually remove generic endpoint
 
 11. Open Questions for Implementation
 
-Hint vs. Real Node: When Characters mode produces story beat "hints," should these be actual StoryBeat nodes marked as suggestions, or a separate lighter-weight data structure?
+Hint vs. Real Node: When Characters mode produces plot point "hints," should these be actual PlotPoint nodes marked as suggestions, or a separate lighter-weight data structure?
 Stashed Ideas Storage: Should ideas be stored in the graph as a special node type, or in a separate collection?
 Context Additions Format: Should context additions be stored as pending operations until commit, or immediately previewed in the Story Context UI?
 Selection Sync: How does node selection in Story Bible communicate with the Generation Panel? Event bus? Shared state?
-Scenes Endpoint - Multiple Beats: If user selects multiple story beats, should scenes be grouped by beat in the package, or mixed?
+Scenes Endpoint - Multiple Beats: If user selects multiple plot points, should scenes be grouped by beat in the package, or mixed?
 

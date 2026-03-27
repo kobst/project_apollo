@@ -2,8 +2,8 @@
  * Mode-specific options components barrel export
  */
 
-export { StoryBeatsOptions } from './StoryBeatsOptions';
-export type { StoryBeatsOptionsState, StoryBeatsFocusType } from './StoryBeatsOptions';
+export { StoryBeatsOptions as PlotPointsOptions } from './StoryBeatsOptions';
+export type { StoryBeatsOptionsState as PlotPointsOptionsState, PlotPointsFocusType } from './StoryBeatsOptions';
 
 export { CharactersOptions } from './CharactersOptions';
 export type { CharactersOptionsState, CharacterFocus } from './CharactersOptions';

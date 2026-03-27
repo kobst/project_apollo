@@ -13,7 +13,7 @@ vi.mock('@apollo/core', () => ({
 }));
 
 vi.mock('../../src/ai/storyBeatOrchestrator.js', () => ({
-  proposeStoryBeats: vi.fn().mockResolvedValue({ sessionId: 's1', packages: [{ id: 'p1' }] }),
+  proposePlotPoints: vi.fn().mockResolvedValue({ sessionId: 's1', packages: [{ id: 'p1' }] }),
 }));
 vi.mock('../../src/ai/characterOrchestrator.js', () => ({
   proposeCharacters: vi.fn().mockResolvedValue({ sessionId: 's2', packages: [{ id: 'p2' }] }),
@@ -29,7 +29,7 @@ vi.mock('../../src/ai/generateOrchestrator.js', () => ({
 }));
 
 import { orchestrate } from '../../src/ai/unifiedOrchestrator.js';
-import { proposeStoryBeats } from '../../src/ai/storyBeatOrchestrator.js';
+import { proposePlotPoints } from '../../src/ai/storyBeatOrchestrator.js';
 import { proposeCharacters } from '../../src/ai/characterOrchestrator.js';
 import { proposeScenes } from '../../src/ai/sceneOrchestrator.js';
 import { proposeExpand } from '../../src/ai/expandOrchestrator.js';
@@ -41,9 +41,9 @@ describe('unifiedOrchestrator', () => {
 
   beforeEach(() => vi.clearAllMocks());
 
-  it('routes to storyBeats when intent.mode = storyBeats', async () => {
-    const res = await orchestrate({ storyId: 's', intent: { mode: 'storyBeats', focus: ['beat_1'] } }, ctx, llm);
-    expect(proposeStoryBeats).toHaveBeenCalledOnce();
+  it('routes to plotPoints when intent.mode = plotPoints', async () => {
+    const res = await orchestrate({ storyId: 's', intent: { mode: 'plotPoints', focus: ['beat_1'] } }, ctx, llm);
+    expect(proposePlotPoints).toHaveBeenCalledOnce();
     expect(res.sessionId).toBe('s1');
     expect(res.packages[0].id).toBe('p1');
   });

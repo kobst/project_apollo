@@ -43,11 +43,11 @@ export {
 } from './lint.js';
 export { createBulkAttachHandler } from './bulkAttach.js';
 export {
-  createStoryBeatHandler,
-  listStoryBeatsHandler,
-  getStoryBeatHandler,
-  updateStoryBeatHandler,
-  deleteStoryBeatHandler,
+  createPlotPointHandler,
+  listPlotPointsHandler,
+  getPlotPointHandler,
+  updatePlotPointHandler,
+  deletePlotPointHandler,
 } from './storyBeats.js';
 export { createCoverageHandler } from './coverage.js';
 export { createGapsHandler } from './gaps.js';
@@ -94,8 +94,8 @@ export {
   createDiscardProposalHandler,
   createCommitProposalHandler,
   createRefineProposalHandler,
-  // StoryBeat-only generation
-  createProposeStoryBeatsHandler,
+  // PlotPoint-only generation
+  createProposePlotPointsHandler,
   // Character-focused generation
   createProposeCharactersHandler,
   // Scene-focused generation

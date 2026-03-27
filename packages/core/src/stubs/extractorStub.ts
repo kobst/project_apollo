@@ -12,7 +12,7 @@ import type {
   Beat,
   BeatType,
   Scene,
-  StoryBeat,
+  PlotPoint,
   StoryObject,
 } from '../types/nodes.js';
 import { BEAT_ACT_MAP, BEAT_POSITION_MAP } from '../types/nodes.js';
@@ -335,7 +335,6 @@ export function extractFromInput(
       id: sceneId,
       heading,
       scene_overview: input.slice(0, 500),
-      beat_id: beatId,
       order_index: 1,
       status: 'DRAFT',
       source_provenance: 'USER',
@@ -376,8 +375,8 @@ export function extractFromInput(
     });
   }
 
-  if (targetType === 'StoryBeat' || (!targetType && (lowerInput.includes('must') || lowerInput.includes('need') || lowerInput.includes('should')))) {
-    // StoryBeat extraction proposal
+  if (targetType === 'PlotPoint' || (!targetType && (lowerInput.includes('must') || lowerInput.includes('need') || lowerInput.includes('should')))) {
+    // PlotPoint extraction proposal
     const plotPointId = `pp_extracted_${Date.now()}`;
     const patchId = `patch_pp_${Date.now()}`;
     const timestamp = new Date().toISOString();
@@ -393,8 +392,8 @@ export function extractFromInput(
       intent = 'character';
     }
 
-    const plotPoint: StoryBeat = {
-      type: 'StoryBeat',
+    const plotPoint: PlotPoint = {
+      type: 'PlotPoint',
       id: plotPointId,
       title,
       summary: input.slice(0, 300),
@@ -409,7 +408,7 @@ export function extractFromInput(
       title: `Create plot point: ${title.slice(0, 40)}${title.length > 40 ? '...' : ''}`,
       description: 'Extract a new plot point representing a story beat that must happen.',
       confidence: 0.7,
-      extractedEntities: [{ type: 'StoryBeat', name: title, id: plotPointId }],
+      extractedEntities: [{ type: 'PlotPoint', name: title, id: plotPointId }],
       patch: {
         type: 'Patch',
         id: patchId,
@@ -482,7 +481,7 @@ export function extractFromInput(
       title: 'Create plot point',
       description: 'Create a new plot point from the input.',
       confidence: 0.6,
-      extractedEntities: [{ type: 'StoryBeat', name: title, id: plotPointId }],
+      extractedEntities: [{ type: 'PlotPoint', name: title, id: plotPointId }],
       patch: {
         type: 'Patch',
         id: patchId,
@@ -492,7 +491,7 @@ export function extractFromInput(
           {
             op: 'ADD_NODE',
             node: {
-              type: 'StoryBeat',
+              type: 'PlotPoint',
               id: plotPointId,
               title,
               summary: input.slice(0, 300),
@@ -500,7 +499,7 @@ export function extractFromInput(
               status: 'proposed',
               createdAt: timestamp,
               updatedAt: timestamp,
-            } as StoryBeat,
+            } as PlotPoint,
           },
         ],
         metadata: {

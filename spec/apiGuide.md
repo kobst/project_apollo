@@ -182,7 +182,7 @@ curl http://localhost:3000/stories/my-story/status
 GET /stories/:id/outline
 ```
 
-Returns the story structure organized by acts and beats, with StoryBeats and Scenes nested appropriately. Also returns unassigned items that haven't been placed in the structure yet.
+Returns the story structure organized by acts and beats, with PlotPoints and Scenes nested appropriately. Also returns unassigned items that haven't been placed in the structure yet.
 
 ```bash
 curl http://localhost:3000/stories/my-story/outline
@@ -205,7 +205,7 @@ curl http://localhost:3000/stories/my-story/outline
             "positionIndex": 1,
             "guidance": "Visual snapshot of the hero's world...",
             "status": "REALIZED",
-            "storyBeats": [
+            "plotPoints": [
               {
                 "id": "sb_1234",
                 "title": "Establish detective's lonely life",
@@ -224,7 +224,7 @@ curl http://localhost:3000/stories/my-story/outline
         ]
       }
     ],
-    "unassignedStoryBeats": [
+    "unassignedPlotPoints": [
       {
         "id": "sb_5678",
         "title": "Car chase through downtown",
@@ -243,8 +243,8 @@ curl http://localhost:3000/stories/my-story/outline
     "summary": {
       "totalBeats": 15,
       "totalScenes": 5,
-      "totalStoryBeats": 8,
-      "unassignedStoryBeatCount": 2,
+      "totalPlotPoints": 8,
+      "unassignedPlotPointCount": 2,
       "unassignedSceneCount": 1
     }
   }
@@ -252,8 +252,8 @@ curl http://localhost:3000/stories/my-story/outline
 ```
 
 **Notes:**
-- `unassignedStoryBeats`: StoryBeats without an `ALIGNS_WITH` edge to any Beat
-- `unassignedScenes`: Scenes without a `SATISFIED_BY` edge from any StoryBeat
+- `unassignedPlotPoints`: PlotPoints without an `alignedBeatId` edge to any Beat
+- `unassignedScenes`: Scenes without a `REALIZED_BY` edge from any PlotPoint
 - Use the Edges API (`POST /stories/:id/edges`) to assign items to the structure
 
 ---
@@ -788,7 +788,6 @@ curl http://localhost:3000/stories/my-story/lint/precommit
 | Rule ID | Description | Auto-Fix |
 |---------|-------------|----------|
 | `SCENE_ORDER_UNIQUE` | Two scenes in same beat cannot share order_index | Re-index scenes sequentially |
-| `SCENE_ACT_BOUNDARY` | Scene's beat must have correct act for its beat_type | Correct beat's act field |
 | `STC_BEAT_ORDERING` | Beat's position_index must match STC canonical order | Correct position_index |
 
 #### Soft Rules (Warnings)
@@ -1023,23 +1022,23 @@ Apollo provides four specialized AI generation endpoints, each focused on a spec
 
 ---
 
-### Propose Story Beats
+### Propose Plot Points
 
 ```
-POST /stories/:id/propose/story-beats
+POST /stories/:id/propose/plot-points
 ```
 
-Generates StoryBeat nodes that align to Save the Cat structural beats.
+Generates PlotPoint nodes that align to Save the Cat structural beats.
 
 **Request Body:**
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `priorityBeats` | string[] | No | Beat IDs or BeatTypes to prioritize |
 | `targetAct` | number | No | Focus on specific act (1-5) |
-| `maxStoryBeatsPerPackage` | number | No | Max StoryBeats per package (default: 5) |
+| `maxPlotPointsPerPackage` | number | No | Max PlotPoints per package (default: 5) |
 
 ```bash
-curl -X POST http://localhost:3000/stories/my-story/propose/story-beats \
+curl -X POST http://localhost:3000/stories/my-story/propose/plot-points \
   -H 'Content-Type: application/json' \
   -d '{
     "priorityBeats": ["Catalyst", "Midpoint"],
@@ -1060,7 +1059,7 @@ curl -X POST http://localhost:3000/stories/my-story/propose/story-beats \
         "title": "Dramatic Catalyst Moment",
         "summary": "Creates a pivotal catalyst that sets the story in motion",
         "primary": {
-          "type": "StoryBeat",
+          "type": "PlotPoint",
           "nodes": [...],
           "edges": [...]
         },
@@ -1118,12 +1117,12 @@ curl -X POST http://localhost:3000/stories/my-story/propose/characters \
 POST /stories/:id/propose/scenes
 ```
 
-Generates Scene nodes that satisfy committed StoryBeats. **Note:** Only works with committed (not proposed) StoryBeats.
+Generates Scene nodes that satisfy committed PlotPoints. **Note:** Only works with committed (not proposed) PlotPoints.
 
 **Request Body:**
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `storyBeatIds` | string[] | Yes | Committed StoryBeat IDs to develop scenes for |
+| `plotPointIds` | string[] | Yes | Committed PlotPoint IDs to develop scenes for |
 | `scenesPerBeat` | number | No | Scenes per beat (default: 1, max: 3) |
 | `maxScenesPerPackage` | number | No | Max scenes per package (default: 5) |
 
@@ -1131,15 +1130,15 @@ Generates Scene nodes that satisfy committed StoryBeats. **Note:** Only works wi
 curl -X POST http://localhost:3000/stories/my-story/propose/scenes \
   -H 'Content-Type: application/json' \
   -d '{
-    "storyBeatIds": ["storybeat_catalyst_1", "storybeat_midpoint_1"],
+    "plotPointIds": ["plotpoint_catalyst_1", "plotpoint_midpoint_1"],
     "expansionScope": "flexible",
     "direction": "Noir atmosphere, tense confrontations"
   }'
 ```
 
 **Response includes:**
-- `validatedBeats`: StoryBeats that will be developed
-- `rejectedBeats`: StoryBeats that couldn't be used (with reason: `not_found`, `not_committed`, `already_has_scenes`)
+- `validatedBeats`: PlotPoints that will be developed
+- `rejectedBeats`: PlotPoints that couldn't be used (with reason: `not_found`, `not_committed`, `already_has_scenes`)
 
 ---
 
@@ -1252,57 +1251,57 @@ curl -X POST http://localhost:3000/stories/my-story/validate-package \
 
 ---
 
-## StoryBeat Management
+## PlotPoint Management
 
-### Create StoryBeat
+### Create PlotPoint
 
 ```
-POST /stories/:id/story-beats
+POST /stories/:id/plot-points
 ```
 
-Creates a new StoryBeat node.
+Creates a new PlotPoint node.
 
 **Request Body:**
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `title` | string | Yes | StoryBeat title |
+| `title` | string | Yes | PlotPoint title |
 | `summary` | string | No | Description/summary |
 | `intent` | string | No | `plot`, `character`, or `tone` |
 | `priority` | string | No | `high`, `medium`, `low` |
 | `stakes_change` | string | No | `raise`, `lower`, `maintain` |
 | `beatId` | string | No | Beat ID to align with |
 
-### List StoryBeats
+### List PlotPoints
 
 ```
-GET /stories/:id/story-beats
+GET /stories/:id/plot-points
 ```
 
-Returns all StoryBeats in the story.
+Returns all PlotPoints in the story.
 
-### Get StoryBeat
-
-```
-GET /stories/:id/story-beats/:sbId
-```
-
-Returns a specific StoryBeat by ID.
-
-### Update StoryBeat
+### Get PlotPoint
 
 ```
-PATCH /stories/:id/story-beats/:sbId
+GET /stories/:id/plot-points/:sbId
 ```
 
-Updates a StoryBeat's fields.
+Returns a specific PlotPoint by ID.
 
-### Delete StoryBeat
+### Update PlotPoint
 
 ```
-DELETE /stories/:id/story-beats/:sbId
+PATCH /stories/:id/plot-points/:sbId
 ```
 
-Deletes a StoryBeat and its edges.
+Updates a PlotPoint's fields.
+
+### Delete PlotPoint
+
+```
+DELETE /stories/:id/plot-points/:sbId
+```
+
+Deletes a PlotPoint and its edges.
 
 ---
 
@@ -1324,7 +1323,7 @@ Creates a new Scene node.
 | `mood` | string | No | Scene mood/atmosphere |
 | `int_ext` | string | No | `INT` or `EXT` |
 | `time_of_day` | string | No | `DAY`, `NIGHT`, etc. |
-| `storyBeatId` | string | No | StoryBeat to satisfy |
+| `plotPointId` | string | No | PlotPoint to satisfy |
 
 ### List Scenes
 

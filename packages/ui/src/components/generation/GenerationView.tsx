@@ -10,7 +10,7 @@ import type { ComposeFormState } from './ComposeForm';
 import type {
   SavedPackageData,
   NarrativePackage,
-  ProposeStoryBeatsRequest,
+  ProposePlotPointsRequest,
   ProposeCharactersRequest,
   ProposeScenesRequest,
   ProposeExpandRequest,
@@ -25,7 +25,7 @@ export function GenerationView() {
     session,
     loading,
     error,
-    proposeStoryBeats,
+    proposePlotPoints,
     proposeCharacters,
     proposeScenes,
     proposeExpand,
@@ -50,7 +50,7 @@ export function GenerationView() {
   } = useSavedPackages();
 
   // Fetch data needed for the generation form (beats, characters, story beats)
-  const { beats, characters, storyBeats } = useGenerationData(currentStoryId);
+  const { beats, characters, plotPoints } = useGenerationData(currentStoryId);
 
   // View state: compose (input form) or review (package details)
   const [viewState, setViewState] = useState<ViewState>('compose');
@@ -102,10 +102,10 @@ export function GenerationView() {
   }, [session, selectedPackageId, prevPackageCount]);
 
   // Mode-specific generation handlers
-  const handleGenerateStoryBeats = useCallback(async (request: ProposeStoryBeatsRequest) => {
+  const handleGeneratePlotPoints = useCallback(async (request: ProposePlotPointsRequest) => {
     if (!currentStoryId) return;
-    await proposeStoryBeats(currentStoryId, request);
-  }, [currentStoryId, proposeStoryBeats]);
+    await proposePlotPoints(currentStoryId, request);
+  }, [currentStoryId, proposePlotPoints]);
 
   const handleGenerateCharacters = useCallback(async (request: ProposeCharactersRequest) => {
     if (!currentStoryId) return;
@@ -316,7 +316,7 @@ export function GenerationView() {
     if (viewState === 'compose') {
       return (
         <ComposeForm
-          onGenerateStoryBeats={handleGenerateStoryBeats}
+          onGeneratePlotPoints={handleGeneratePlotPoints}
           onGenerateCharacters={handleGenerateCharacters}
           onGenerateScenes={handleGenerateScenes}
           onGenerateExpand={handleGenerateExpand}
@@ -325,7 +325,7 @@ export function GenerationView() {
           onFormStateChange={setFormState}
           beats={beats}
           characters={characters}
-          storyBeats={storyBeats}
+          plotPoints={plotPoints}
         />
       );
     }
@@ -352,7 +352,7 @@ export function GenerationView() {
     // No packages yet - show compose form
     return (
       <ComposeForm
-        onGenerateStoryBeats={handleGenerateStoryBeats}
+        onGeneratePlotPoints={handleGeneratePlotPoints}
         onGenerateCharacters={handleGenerateCharacters}
         onGenerateScenes={handleGenerateScenes}
         onGenerateExpand={handleGenerateExpand}
@@ -361,7 +361,7 @@ export function GenerationView() {
         onFormStateChange={setFormState}
         beats={beats}
         characters={characters}
-        storyBeats={storyBeats}
+        plotPoints={plotPoints}
       />
     );
   };

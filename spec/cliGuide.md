@@ -2,7 +2,7 @@
 
 ## Overview
 
-Project Apollo is a screenplay knowledge graph system that helps writers develop stories using a structured, graph-based approach. The system uses the **Save the Cat** 15-beat structure as its foundation and tracks story elements (characters, locations, objects, scenes, story beats) as nodes in a knowledge graph.
+Project Apollo is a screenplay knowledge graph system that helps writers develop stories using a structured, graph-based approach. The system uses the **Save the Cat** 15-beat structure as its foundation and tracks story elements (characters, locations, objects, scenes, plot points) as nodes in a knowledge graph.
 
 The CLI provides an interactive way to:
 - Initialize stories with or without a logline
@@ -26,8 +26,8 @@ packages/
 | Concept | Description |
 |---------|-------------|
 | **GraphState** | The in-memory knowledge graph containing all story nodes and edges |
-| **Nodes** | Story elements: Beat, Scene, Character, Location, Object, StoryBeat, CharacterArc, Idea |
-| **Edges** | Relationships between nodes: HAS_CHARACTER, LOCATED_AT, SATISFIED_BY, ALIGNS_WITH, etc. |
+| **Nodes** | Story elements: Beat, Scene, Character, Location, Object, PlotPoint, CharacterArc, Idea |
+| **Edges** | Relationships between nodes: HAS_CHARACTER, LOCATED_AT, REALIZED_BY, alignedBeatId, etc. |
 | **Patch** | A set of operations (ADD_NODE, UPDATE_NODE, DELETE_NODE, ADD_EDGE, DELETE_EDGE) |
 | **Open Question (OQ)** | A gap or issue in the story that needs attention |
 | **Narrative Package** | A staged bundle of changes to review and merge |
@@ -39,18 +39,18 @@ Edges connect nodes to form the knowledge graph. The system uses 9 edge types:
 
 | Edge Type | Source → Target | Required | Description |
 |-----------|-----------------|----------|-------------|
-| **FULFILLS** | Scene → Beat | Deprecated | Use StoryBeat hierarchy instead. |
+| **FULFILLS** | Scene → Beat | Deprecated | Use PlotPoint hierarchy instead. |
 | **HAS_CHARACTER** | Scene → Character | Recommended | Character appears in the scene. |
 | **LOCATED_AT** | Scene → Location | Recommended | Scene's primary location. |
 | **FEATURES_OBJECT** | Scene → Object | Optional | Significant prop/object in scene. |
 | **HAS_ARC** | Character → CharacterArc | Optional | Arc belongs to this character. |
-| **ALIGNS_WITH** | StoryBeat → Beat | Optional | StoryBeat aligns to structural beat. |
-| **SATISFIED_BY** | StoryBeat → Scene | Optional | Scene satisfies the story beat. |
-| **PRECEDES** | StoryBeat → StoryBeat | Optional | Causal ordering (must be DAG). |
+| **alignedBeatId** | PlotPoint → Beat | Optional | PlotPoint aligns to structural beat. |
+| **REALIZED_BY** | PlotPoint → Scene | Optional | Scene satisfies the plot point. |
+| **PRECEDES** | PlotPoint → PlotPoint | Optional | Causal ordering (must be DAG). |
 | **PARENT_OF** | Location → Location | Optional | Location hierarchy (replaces Setting) |
 
 **Notes:**
-- FULFILLS edges are deprecated — use StoryBeat with ALIGNS_WITH and SATISFIED_BY instead.
+- FULFILLS edges are deprecated — use PlotPoint with alignedBeatId and REALIZED_BY instead.
 - Edges are unique by `(type, from, to)` — no duplicates allowed.
 
 ### The 15-Beat Structure
@@ -337,7 +337,6 @@ Patch Operations (3 ops):
    id: scene_001
    heading: "INT. WIZARD TOWER - NIGHT"
    overview: "The young wizard accidentally unleashes a powerful spell..."
-   beat_id: beat_Catalyst
 
 2. ADD_EDGE HAS_CHARACTER
    scene_001 → char_protagonist
@@ -385,7 +384,6 @@ Patch Operations (3 ops):
    id: scene_001
    heading: "INT. WIZARD TOWER - NIGHT"
    overview: "The young wizard accidentally unleashes..."
-   beat_id: beat_Catalyst
 
 2. ADD_EDGE HAS_CHARACTER
    scene_001 → char_protagonist
@@ -404,10 +402,9 @@ If the patch fails validation, the command shows structured errors with suggeste
 Validation Failed: 2 errors
 
 1. FK_INTEGRITY
-   Scene "scene_001" references non-existent Beat "beat_INVALID"
+   Scene "scene_001" has no PlotPoint attachment
    node: scene_001
-   field: beat_id
-   fix: Ensure the beat exists before creating the scene
+   fix: Connect the scene to a PlotPoint via REALIZED_BY edge
 
 2. CONSTRAINT_VIOLATION
    Scene "scene_001" has scene_overview shorter than 20 characters
@@ -998,7 +995,6 @@ The export format includes a full `storyVersion` object per the v1 spec:
         "id": "scene_001",
         "heading": "INT. WIZARD TOWER - NIGHT",
         "scene_overview": "The young wizard accidentally unleashes...",
-        "beat_id": "beat_Catalyst",
         "order_index": 1,
         "status": "DRAFT"
       }

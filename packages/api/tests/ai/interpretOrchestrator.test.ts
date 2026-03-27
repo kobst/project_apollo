@@ -76,7 +76,7 @@ describe('interpretOrchestrator', () => {
       const proposal: InterpretationProposal = {
         type: 'node',
         operation: 'add',
-        target_type: 'StoryBeat',
+        target_type: 'PlotPoint',
         data: { title: 'Discovery', summary: 'Mike discovers the truth' },
         rationale: 'Input describes a story beat',
         relates_to: ['character_mike_001', 'scene_opening_001'],

@@ -11,8 +11,8 @@ import type {
   Motif,
   CharacterArc,
   Conflict,
-  StoryBeat,
-  StoryBeatIntent,
+  PlotPoint,
+  PlotPointIntent,
 } from '../../src/types/nodes.js';
 
 let idCounter = 0;
@@ -29,7 +29,6 @@ export function resetIdCounter(): void {
  * Create a valid Scene node
  */
 export function createScene(
-  beatId: string,
   overrides: Partial<Scene> = {}
 ): Scene {
   return {
@@ -39,7 +38,6 @@ export function createScene(
     scene_overview:
       overrides.scene_overview ??
       'This is a scene overview that meets the minimum 20 character requirement for validation.',
-    beat_id: beatId,
     order_index: overrides.order_index ?? 1,
     status: 'DRAFT',
     ...overrides,
@@ -50,8 +48,7 @@ export function createScene(
  * Create an invalid Scene (for negative tests)
  */
 export function createInvalidScene(
-  beatId: string,
-  issue: 'short_overview' | 'invalid_order' | 'missing_beat'
+  issue: 'short_overview' | 'invalid_order'
 ): Partial<Scene> {
   const base: Partial<Scene> = {
     type: 'Scene',
@@ -64,22 +61,13 @@ export function createInvalidScene(
       return {
         ...base,
         scene_overview: 'Too short',
-        beat_id: beatId,
         order_index: 1,
       };
     case 'invalid_order':
       return {
         ...base,
         scene_overview: 'Valid overview text here with enough characters.',
-        beat_id: beatId,
         order_index: 0,
-      };
-    case 'missing_beat':
-      return {
-        ...base,
-        scene_overview: 'Valid overview text here with enough characters.',
-        beat_id: 'nonexistent_beat',
-        order_index: 1,
       };
   }
 }
@@ -188,15 +176,15 @@ export function createCharacterArc(
 }
 
 /**
- * Create a valid StoryBeat node
+ * Create a valid PlotPoint node
  */
-export function createStoryBeat(overrides: Partial<StoryBeat> = {}): StoryBeat {
+export function createPlotPoint(overrides: Partial<PlotPoint> = {}): PlotPoint {
   const now = new Date().toISOString();
   return {
-    type: 'StoryBeat',
+    type: 'PlotPoint',
     id: overrides.id ?? nextId('pp'),
-    title: overrides.title ?? 'Test Story Beat',
-    intent: overrides.intent ?? ('plot' as StoryBeatIntent),
+    title: overrides.title ?? 'Test Plot Point',
+    intent: overrides.intent ?? ('plot' as PlotPointIntent),
     status: overrides.status ?? 'proposed',
     createdAt: overrides.createdAt ?? now,
     updatedAt: overrides.updatedAt ?? now,

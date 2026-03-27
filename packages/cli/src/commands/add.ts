@@ -220,7 +220,6 @@ async function addScene(options: AddSceneOptions): Promise<void> {
     id,
     heading,
     scene_overview: options.overview,
-    beat_id: `beat_${options.beat}`,
     order_index: orderIndex,
     status: 'DRAFT',
     source_provenance: 'USER',

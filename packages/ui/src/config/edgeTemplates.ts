@@ -63,19 +63,10 @@ export const EDGE_TEMPLATES: Record<EdgeType, EdgeTemplate> = {
       notes: {},
     },
   },
-  ALIGNS_WITH: {
-    label: 'Aligns With',
-    description: 'Plot point aligns with a story beat',
-    sourceTypes: ['StoryBeat'],
-    targetTypes: ['Beat'],
-    properties: {
-      notes: {},
-    },
-  },
-  SATISFIED_BY: {
-    label: 'Satisfied By',
-    description: 'Plot point is satisfied by a scene',
-    sourceTypes: ['StoryBeat'],
+  REALIZED_BY: {
+    label: 'Realized By',
+    description: 'Plot point is realized by a scene',
+    sourceTypes: ['PlotPoint'],
     targetTypes: ['Scene'],
     properties: {
       order: { required: true, default: 1, min: 1 },
@@ -85,8 +76,8 @@ export const EDGE_TEMPLATES: Record<EdgeType, EdgeTemplate> = {
   PRECEDES: {
     label: 'Precedes',
     description: 'Plot point causally precedes another plot point',
-    sourceTypes: ['StoryBeat'],
-    targetTypes: ['StoryBeat'],
+    sourceTypes: ['PlotPoint'],
+    targetTypes: ['PlotPoint'],
     properties: {
       notes: {},
     },
@@ -94,7 +85,7 @@ export const EDGE_TEMPLATES: Record<EdgeType, EdgeTemplate> = {
   ADVANCES: {
     label: 'Advances',
     description: 'Plot point advances a character arc',
-    sourceTypes: ['StoryBeat'],
+    sourceTypes: ['PlotPoint'],
     targetTypes: ['CharacterArc'],
     properties: {
       weight: { min: 0, max: 1 },

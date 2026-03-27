@@ -98,7 +98,7 @@ export const NODE_ID_FORMATS: Record<string, string> = {
   Character: 'char_{timestamp}_{5chars}',
   Location: 'loc_{timestamp}_{5chars}',
   Scene: 'scene_{timestamp}_{5chars}',
-  StoryBeat: 'storybeat_{timestamp}_{5chars}',
+  PlotPoint: 'plotpoint_{timestamp}_{5chars}',
   CharacterArc: 'arc_{timestamp}_{5chars}',
   Object: 'obj_{timestamp}_{5chars}',
 };
@@ -211,4 +211,13 @@ export function getPromptHeader(taskDescription: string): string {
   return `## Prompt v${PROMPT_VERSION}
 
 ${taskDescription}`;
+}
+
+/**
+ * Build the optional "Narrative Problem" section for a prompt.
+ * Returns empty string if no problem statement is provided.
+ */
+export function getProblemStatementSection(problemStatement?: string): string {
+  if (!problemStatement) return '';
+  return `\n## Narrative Problem\n${problemStatement}\n\nYour packages should directly address this problem.\n`;
 }

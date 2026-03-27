@@ -137,9 +137,7 @@ export interface Scene extends BaseNode {
   heading: string;
   title?: string;
   scene_overview: string;
-  /** @deprecated Use SATISFIED_BY edge to StoryBeat instead */
-  beat_id?: string;
-  /** Auto-computed order based on StoryBeat attachment. Undefined if unattached. */
+  /** Auto-computed order based on PlotPoint attachment. Undefined if unattached. */
   order_index?: number;
   int_ext?: IntExt;
   time_of_day?: string;
@@ -229,15 +227,15 @@ export interface CharacterArc extends BaseNode {
 // edge relationships in a future iteration.
 
 // =============================================================================
-// 14. StoryBeat (formerly PlotPoint)
+// 14. PlotPoint (writer-declared narrative intent)
 // =============================================================================
 
-export type StoryBeatIntent = 'plot' | 'character' | 'tone';
-export type StoryBeatPriority = 'low' | 'medium' | 'high';
-export type StoryBeatUrgency = 'low' | 'medium' | 'high';
-export type StoryBeatStakesChange = 'up' | 'down' | 'steady';
-export type StoryBeatStatus = 'proposed' | 'approved' | 'deprecated';
-export type StoryBeatNarrativeFunction =
+export type PlotPointIntent = 'plot' | 'character' | 'tone';
+export type PlotPointPriority = 'low' | 'medium' | 'high';
+export type PlotPointUrgency = 'low' | 'medium' | 'high';
+export type PlotPointStakesChange = 'up' | 'down' | 'steady';
+export type PlotPointStatus = 'proposed' | 'approved' | 'deprecated';
+export type PlotPointNarrativeFunction =
   | 'theme_establishment'
   | 'character_introduction'
   | 'character_development'
@@ -247,26 +245,28 @@ export type StoryBeatNarrativeFunction =
   | 'resolution'
   | 'tone_setter';
 
-export interface StoryBeat extends BaseNode {
-  type: 'StoryBeat';
+export interface PlotPoint extends BaseNode {
+  type: 'PlotPoint';
   /** Short, imperative title (e.g., "Begin revenge tour") */
   title: string;
   /** 1-3 sentences describing the intended event */
   summary?: string;
   /** Narrative function category (abstract intent classifier) */
-  narrative_function?: StoryBeatNarrativeFunction;
-  /** Primary purpose of this story beat */
-  intent?: StoryBeatIntent;
+  narrative_function?: PlotPointNarrativeFunction;
+  /** Primary purpose of this plot point */
+  intent?: PlotPointIntent;
   /** Auto-computed order based on Beat alignment. Undefined if unaligned. */
   order_index?: number;
+  /** FK to Beat — structural slot this plot point aligns with (nullable) */
+  alignedBeatId?: string;
   /** Importance level */
-  priority?: StoryBeatPriority;
+  priority?: PlotPointPriority;
   /** How soon this needs to be addressed */
-  urgency?: StoryBeatUrgency;
+  urgency?: PlotPointUrgency;
   /** How stakes change at this point */
-  stakes_change?: StoryBeatStakesChange;
+  stakes_change?: PlotPointStakesChange;
   /** Lifecycle status (defaults to 'proposed') */
-  status?: StoryBeatStatus;
+  status?: PlotPointStatus;
   /** Which act this belongs to */
   act?: 1 | 2 | 3 | 4 | 5;
   /** Importance in overall plan (0-1) */
@@ -296,11 +296,11 @@ export interface StoryBeat extends BaseNode {
 
 /**
  * Idea - Story ideas that are more formalized than Story Context prose
- * but not yet ready to be StoryBeats or Scenes.
+ * but not yet ready to be PlotPoints or Scenes.
  * Serves as an intermediate stage in the idea lifecycle.
  */
 export type IdeaSource = 'user' | 'ai';
-export type IdeaSuggestedType = 'StoryBeat' | 'Scene' | 'Character' | 'Location' | 'Object';
+export type IdeaSuggestedType = 'PlotPoint' | 'Scene' | 'Character' | 'Location' | 'Object';
 export type IdeaStatus = 'active' | 'promoted' | 'dismissed';
 export type IdeaCategory = 'character' | 'plot' | 'scene' | 'worldbuilding' | 'general';
 
@@ -365,7 +365,7 @@ export interface Idea extends BaseNode {
   /** Provenance: artifacts this idea informed */
   informedArtifacts?: Array<{
     artifactId: string;
-    artifactType: 'StoryBeat' | 'Scene' | 'Character';
+    artifactType: 'PlotPoint' | 'Scene' | 'Character';
     packageId: string;
     timestamp: string;
   }>;
@@ -391,7 +391,7 @@ export type ContentNode =
   | Location
   | StoryObject
   | CharacterArc
-  | StoryBeat
+  | PlotPoint
   | Idea;
 
 /**
@@ -406,7 +406,7 @@ export type NodeType =
   | 'Location'
   | 'Object'
   | 'CharacterArc'
-  | 'StoryBeat'
+  | 'PlotPoint'
   | 'Idea';
 
 /**
@@ -421,6 +421,6 @@ export const NODE_TYPES: NodeType[] = [
   'Location',
   'Object',
   'CharacterArc',
-  'StoryBeat',
+  'PlotPoint',
   'Idea',
 ];

@@ -53,7 +53,7 @@ export function StoryBible({
   // Split: concrete artifacts (storybeats, scenes, typed ideas) vs abstract planning ideas
   const artifactItems = useMemo(() => {
     return items.filter((item): item is StashItem => {
-      if (item.kind === 'storybeat' || item.kind === 'scene') return true;
+      if (item.kind === 'plotpoint' || item.kind === 'scene') return true;
       if (item.kind === 'idea' && item.suggestedType) return true;
       return false;
     });
@@ -117,10 +117,10 @@ export function StoryBible({
     if (!outline) return [];
 
     return outline.acts.map((act) => {
-      const filledBeats = act.beats.filter((b) => b.storyBeats.length > 0).length;
+      const filledBeats = act.beats.filter((b) => b.plotPoints.length > 0).length;
       const totalBeats = act.beats.length;
       const sceneCount = act.beats.reduce(
-        (sum, b) => sum + b.storyBeats.reduce((s, pp) => s + pp.scenes.length, 0),
+        (sum, b) => sum + b.plotPoints.reduce((s, pp) => s + pp.scenes.length, 0),
         0
       );
 
@@ -154,7 +154,7 @@ export function StoryBible({
     for (const act of outline.acts) {
       for (const beat of act.beats) {
         total++;
-        if (beat.storyBeats.length > 0) {
+        if (beat.plotPoints.length > 0) {
           filled++;
         }
       }

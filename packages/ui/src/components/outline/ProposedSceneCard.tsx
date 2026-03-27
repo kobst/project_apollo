@@ -1,5 +1,5 @@
 /**
- * ProposedSceneCard - Displays a proposed Scene within a story beat.
+ * ProposedSceneCard - Displays a proposed Scene within a plot point.
  * Features inline editing with expand/collapse.
  */
 
@@ -11,7 +11,7 @@ import { useStashContext } from '../../context/StashContext';
 
 interface ProposedSceneCardProps {
   scene: MergedOutlineScene;
-  parentStoryBeatId: string;
+  parentPlotPointId: string;
   onEdit: (nodeId: string, updates: Partial<Record<string, unknown>>) => void;
   onRemove?: ((nodeId: string) => void) | undefined;
   isRemoved?: boolean | undefined;
@@ -26,7 +26,7 @@ const INT_EXT_OPTIONS = [
 
 export function ProposedSceneCard({
   scene,
-  parentStoryBeatId: _parentStoryBeatId,
+  parentPlotPointId: _parentPlotPointId,
   onEdit,
   onRemove,
   isRemoved = false,

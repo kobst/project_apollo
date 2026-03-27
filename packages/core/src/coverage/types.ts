@@ -28,7 +28,7 @@ export type GapTier =
   | 'premise' // Top: Premise/Logline in constitution
   | 'foundations' // Character, Location, Object
   | 'structure' // Beat nodes (15 STC beats)
-  | 'storyBeats' // StoryBeat nodes
+  | 'storyBeats' // PlotPoint nodes
   | 'scenes'; // Scene nodes
 
 /**
@@ -306,14 +306,14 @@ export const GAP_DOMAINS: GapDomain[] = [
 ];
 
 // =============================================================================
-// Missing Beat Info (for StoryBeat generation)
+// Missing Beat Info (for PlotPoint generation)
 // =============================================================================
 
 import type { BeatType } from '../types/nodes.js';
 
 /**
- * Information about a Beat that lacks StoryBeat alignment.
- * Used for StoryBeat generation to identify structural gaps.
+ * Information about a Beat that lacks PlotPoint alignment.
+ * Used for PlotPoint generation to identify structural gaps.
  */
 export interface MissingBeatInfo {
   /** Beat node ID */
@@ -324,6 +324,6 @@ export interface MissingBeatInfo {
   act: 1 | 2 | 3 | 4 | 5;
   /** Position index within the story structure */
   position: number;
-  /** Whether there is a StoryBeat aligned to this beat (false if missing) */
-  hasStoryBeat: boolean;
+  /** Whether there is a PlotPoint aligned to this beat (false if missing) */
+  hasPlotPoint: boolean;
 }

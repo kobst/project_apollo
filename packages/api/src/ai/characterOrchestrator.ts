@@ -16,7 +16,7 @@ import {
   getEdgesByType,
   getNode,
   type Character,
-  type StoryBeat,
+  type PlotPoint,
   type Scene,
   type GraphState,
 } from '@apollo/core';
@@ -148,7 +148,7 @@ export async function proposeCharacters(
 
   const storyContext = ai.serializeStoryState(graph, metadata);
   const existingCharactersText = serializeExistingCharacters(activeCharacters);
-  const existingStoryBeatsText = serializeExistingStoryBeats(graph);
+  const existingPlotPointsText = serializeExistingPlotPoints(graph);
 
   // 6. Get filtered ideas for character task
   const ideasResult = ai.getIdeasForTask(graph, 'character', characterId, 5);
@@ -163,7 +163,7 @@ export async function proposeCharacters(
   const promptParams: CharacterPromptParams = {
     storyContext,
     existingCharacters: existingCharactersText,
-    existingStoryBeats: existingStoryBeatsText,
+    existingPlotPoints: existingPlotPointsText,
     focus,
     includeArcs,
     packageCount,
@@ -339,20 +339,20 @@ function serializeCharacterDetails(char: Character, graph: GraphState): string {
 /**
  * Serialize existing story beats for context.
  */
-function serializeExistingStoryBeats(graph: GraphState): string {
-  const storyBeats = getNodesByType<StoryBeat>(graph, 'StoryBeat');
-  const activeBeats = storyBeats.filter((sb) => sb.status !== 'deprecated');
+function serializeExistingPlotPoints(graph: GraphState): string {
+  const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
+  const activePoints = plotPoints.filter((sb) => sb.status !== 'deprecated');
 
-  if (activeBeats.length === 0) {
-    return '[No story beats defined]';
+  if (activePoints.length === 0) {
+    return '[No plot points defined]';
   }
 
   const lines: string[] = [];
-  for (const sb of activeBeats.slice(0, 10)) {
+  for (const sb of activePoints.slice(0, 10)) {
     lines.push(`- ${sb.title}: ${truncate(sb.summary ?? '', 60)}`);
   }
-  if (activeBeats.length > 10) {
-    lines.push(`... and ${activeBeats.length - 10} more`);
+  if (activePoints.length > 10) {
+    lines.push(`... and ${activePoints.length - 10} more`);
   }
 
   return lines.join('\n');

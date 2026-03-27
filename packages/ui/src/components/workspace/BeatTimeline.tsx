@@ -25,12 +25,12 @@ function formatBeatType(beatType: string): string {
 
 // Check if beat has any content
 function beatHasContent(beat: MergedOutlineBeat): boolean {
-  return beat.storyBeats.length > 0;
+  return beat.plotPoints.length > 0;
 }
 
 // Check if beat has proposed content
 function beatHasProposed(beat: MergedOutlineBeat): boolean {
-  return beat.storyBeats.some(pp => pp._isProposed || pp.scenes.some(s => s._isProposed));
+  return beat.plotPoints.some(pp => pp._isProposed || pp.scenes.some(s => s._isProposed));
 }
 
 export function BeatTimeline({ beats, selectedBeatId, onBeatClick, onClearSelection }: BeatTimelineProps) {

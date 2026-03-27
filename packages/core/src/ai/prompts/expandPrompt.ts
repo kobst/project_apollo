@@ -4,7 +4,7 @@
  */
 
 import type { ExpansionScope, ExpandTarget, ContextSection } from '../types.js';
-import { PROMPT_VERSION, JSON_OUTPUT_RULES, getCreativityLabel } from './shared.js';
+import { PROMPT_VERSION, JSON_OUTPUT_RULES, getCreativityLabel, getProblemStatementSection } from './shared.js';
 
 // =============================================================================
 // Types
@@ -23,6 +23,8 @@ export interface ExpandPromptParams {
   expansionScope?: ExpansionScope;
   ideas?: string;
   guidelines?: string;
+  /** Optional problem statement describing what narrative problem to solve */
+  problemStatement?: string;
 }
 
 // =============================================================================
@@ -43,6 +45,7 @@ export function buildExpandPrompt(params: ExpandPromptParams): string {
     expansionScope = 'flexible',
     ideas,
     guidelines,
+    problemStatement,
   } = params;
 
   const creativityLabel = getCreativityLabel(creativity);
@@ -53,6 +56,7 @@ export function buildExpandPrompt(params: ExpandPromptParams): string {
   return `## Expand Generator v${PROMPT_VERSION}
 
 Expand and deepen story elements.
+${getProblemStatementSection(problemStatement)}
 
 ## Rules
 - Generate content appropriate to expansion target
@@ -64,10 +68,9 @@ ${isConstrained ? '- No supporting content' : '- SUPPORTING: May include related
 - HAS_CHARACTER: Scene → Character
 - LOCATED_AT: Scene → Location
 - FEATURES_OBJECT: Scene → Object
-- ALIGNS_WITH: StoryBeat → Beat
-- SATISFIED_BY: StoryBeat → Scene
-- PRECEDES: StoryBeat → StoryBeat
-- ADVANCES: StoryBeat → CharacterArc
+- REALIZED_BY: PlotPoint → Scene
+- PRECEDES: PlotPoint → PlotPoint
+- ADVANCES: PlotPoint → CharacterArc
 - HAS_ARC: Character → CharacterArc
 
 ## Story Context
@@ -82,7 +85,7 @@ Type: ${expandType} | Depth: ${depth} | Creativity: ${creativityLabel} (${creati
 - Character: name, description, archetype, traits[]
 - Location: name, description
 - Object: name, description
-- StoryBeat: title, summary, intent, priority, stakes_change
+- PlotPoint: title, summary, alignedBeatId, intent, priority, stakes_change
 - Scene: heading, scene_overview, mood, key_actions[]
 
 ## Output
@@ -103,7 +106,7 @@ function getTargetInstructions(target: ExpandTarget, nodeType?: string, nodeData
     
     const nodeExpansions: Record<string, { output: string; content: string }> = {
       Character: { output: 'Character-related (arcs, scenes)', content: 'CharacterArcs, relationships, scenes, locations' },
-      StoryBeat: { output: 'Scenes and elements', content: 'Scenes realizing this beat, characters, locations' },
+      PlotPoint: { output: 'Scenes and elements', content: 'Scenes realizing this plot point, characters, locations' },
       Scene: { output: 'Scene elements', content: 'Characters, objects, connected scenes' },
       Location: { output: 'Location elements', content: 'Sub-locations, scenes, characters, objects' },
     };

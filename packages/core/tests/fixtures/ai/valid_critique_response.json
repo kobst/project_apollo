@@ -1,0 +1,48 @@
+[
+  {
+    "packageId": "pkg_catalyst_test",
+    "strengths": [
+      "The data center setting creates strong noir atmosphere and fits the tech-noir genre",
+      "Introducing Ghost as a rogue AI fragment adds a compelling mystery element that can drive the B-story",
+      "The revelation that informants volunteered to be digitized inverts expectations — it's not a kidnapping story, it's a transcendence story"
+    ],
+    "weaknesses": [
+      "Max 'stumbling onto' the data feels coincidental — the catalyst should feel more earned or inevitable",
+      "Ghost is introduced but has no established relationship to any existing character — risks feeling like a deus ex machina"
+    ],
+    "thematicFit": "strong",
+    "structuralRisks": [
+      "No existing B-story thread to anchor Ghost's introduction — may need BStory beat filled first",
+      "The 'voluntary digitization' reveal is a major plot pivot that could contradict earlier setup if OpeningImage or Setup scenes establish a kidnapping premise"
+    ],
+    "tradeoffProfile": "High dramatic impact with strong thematic resonance, but introduces a major AI character without B-story infrastructure to support it."
+  },
+  {
+    "packageId": "pkg_debate_bare",
+    "strengths": [
+      "The rooftop contemplation is a classic noir beat — visually iconic and emotionally resonant",
+      "Positioning this as a character-driven moment balances against the plot-heavy Catalyst"
+    ],
+    "weaknesses": [
+      "No characters assigned — a contemplation scene needs at least the protagonist present",
+      "No location node despite the scene heading specifying a rooftop — incomplete data",
+      "The summary is vague about what specific choice the protagonist is weighing"
+    ],
+    "thematicFit": "moderate",
+    "structuralRisks": [
+      "Without characters, this scene cannot be rendered or connected to character arcs",
+      "The Debate beat should establish clear stakes — 'weighing whether to pursue the truth' needs more specificity about what truth and what cost"
+    ],
+    "tradeoffProfile": "Emotionally resonant concept but structurally incomplete — needs character assignment and a more specific dramatic question to be effective."
+  },
+  {
+    "packageId": "pkg_empty",
+    "strengths": [],
+    "weaknesses": [
+      "No content generated — does not advance the story in any direction"
+    ],
+    "thematicFit": "weak",
+    "structuralRisks": [],
+    "tradeoffProfile": "No tradeoff — this package contributes nothing."
+  }
+]

@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
-import type { OutlineStoryBeat, CreateStoryBeatRequest } from '../../api/types';
-import type { MergedOutlineBeat, MergedOutlineStoryBeat } from '../../utils/outlineMergeUtils';
+import type { OutlinePlotPoint, CreatePlotPointRequest } from '../../api/types';
+import type { MergedOutlineBeat, MergedOutlinePlotPoint } from '../../utils/outlineMergeUtils';
 import { useStory } from '../../context/StoryContext';
-import { useStoryBeats } from '../../hooks/useStoryBeats';
+import { usePlotPoints } from '../../hooks/useStoryBeats';
 import { useStructureEdit } from '../workspace/StructureSection';
 import { SceneCard } from './SceneCard';
 import { ProposedStoryBeatCard } from './ProposedStoryBeatCard';
@@ -26,14 +26,14 @@ function formatBeatType(beatType: string): string {
     .trim();
 }
 
-// Render a single StoryBeat with its nested scenes (existing nodes only)
-function StoryBeatContainer({ pp, beatId }: { pp: MergedOutlineStoryBeat; beatId: string }) {
-  const { onEditStoryBeat } = useStructureEdit();
+// Render a single PlotPoint with its nested scenes (existing nodes only)
+function PlotPointContainer({ pp, beatId }: { pp: MergedOutlinePlotPoint; beatId: string }) {
+  const { onEditPlotPoint } = useStructureEdit();
   const hasScenes = pp.scenes.length > 0;
 
   const handleClick = () => {
-    // Cast to OutlineStoryBeat for the edit handler (it only needs id, title, intent, scenes)
-    onEditStoryBeat(pp as unknown as OutlineStoryBeat);
+    // Cast to OutlinePlotPoint for the edit handler (it only needs id, title, intent, scenes)
+    onEditPlotPoint(pp as unknown as OutlinePlotPoint);
   };
 
   return (
@@ -47,7 +47,7 @@ function StoryBeatContainer({ pp, beatId }: { pp: MergedOutlineStoryBeat; beatId
       <div className={styles.nestedScenes}>
         {hasScenes ? (
           pp.scenes.map((scene) => (
-            <SceneCard key={scene.id} scene={scene} beatId={beatId} parentStoryBeatId={pp.id} />
+            <SceneCard key={scene.id} scene={scene} beatId={beatId} parentPlotPointId={pp.id} />
           ))
         ) : (
           <div className={styles.emptyStoryBeat}>
@@ -66,13 +66,13 @@ export function BeatColumn({
   removedNodeIds,
 }: BeatColumnProps) {
   const { currentStoryId, refreshStatus } = useStory();
-  const { createStoryBeat, isLoading } = useStoryBeats({
+  const { createPlotPoint, isLoading } = usePlotPoints({
     storyId: currentStoryId ?? '',
   });
 
   const [showAddPPModal, setShowAddPPModal] = useState(false);
 
-  const hasContent = beat.storyBeats.length > 0;
+  const hasContent = beat.plotPoints.length > 0;
 
   const statusClass = beat.status === 'REALIZED'
     ? styles.realized
@@ -80,15 +80,15 @@ export function BeatColumn({
     ? styles.planned
     : styles.empty;
 
-  const handleAddStoryBeat = useCallback(
-    async (data: CreateStoryBeatRequest) => {
-      const result = await createStoryBeat(data);
+  const handleAddPlotPoint = useCallback(
+    async (data: CreatePlotPointRequest) => {
+      const result = await createPlotPoint(data);
       if (result) {
         setShowAddPPModal(false);
         refreshStatus?.();
       }
     },
-    [createStoryBeat, refreshStatus]
+    [createPlotPoint, refreshStatus]
   );
 
   return (
@@ -103,21 +103,21 @@ export function BeatColumn({
       </div>
 
       <div className={styles.content}>
-        {/* Story Beats with nested scenes - mix of existing and proposed */}
-        {beat.storyBeats.length > 0 && (
+        {/* Plot Points with nested scenes - mix of existing and proposed */}
+        {beat.plotPoints.length > 0 && (
           <div className={styles.storyBeatsSection}>
-            {beat.storyBeats.map((pp) =>
+            {beat.plotPoints.map((pp) =>
               pp._isProposed ? (
                 <ProposedStoryBeatCard
                   key={pp.id}
-                  storyBeat={pp}
+                  plotPoint={pp}
                   beatId={beat.id}
                   onEdit={onEditProposed!}
                   onRemove={pp._operation === 'add' ? onRemoveProposed : undefined}
                   isRemoved={removedNodeIds?.has(pp.id)}
                 />
               ) : (
-                <StoryBeatContainer key={pp.id} pp={pp} beatId={beat.id} />
+                <PlotPointContainer key={pp.id} pp={pp} beatId={beat.id} />
               )
             )}
           </div>
@@ -129,14 +129,14 @@ export function BeatColumn({
         )}
       </div>
 
-      {/* Add Story Beat button */}
+      {/* Add Plot Point button */}
       <button
         className={styles.addStoryBeatBtn}
         onClick={() => setShowAddPPModal(true)}
         type="button"
         title="Add a plot point aligned to this beat"
       >
-        + Story Beat
+        + Plot Point
       </button>
 
       {beat.notes && (
@@ -145,13 +145,13 @@ export function BeatColumn({
         </div>
       )}
 
-      {/* Add Story Beat Modal */}
+      {/* Add Plot Point Modal */}
       {showAddPPModal && (
         <AddStoryBeatModal
           beatId={beat.id}
           beatType={beat.beatType}
           act={beat.act as 1 | 2 | 3 | 4 | 5}
-          onAdd={handleAddStoryBeat}
+          onAdd={handleAddPlotPoint}
           onCancel={() => setShowAddPPModal(false)}
           saving={isLoading}
         />

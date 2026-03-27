@@ -100,7 +100,7 @@ export type {
   ContextSection,
   ContextAddition,
   StashedIdea,
-  StoryBeatHint,
+  PlotPointHint,
   CharacterFocus,
   CharacterSummary,
   ValidatedBeatInfo,
@@ -111,7 +111,7 @@ export type {
   PrimaryOutput,
   SupportingOutput,
   PackageSuggestions,
-  ProposeStoryBeatsRequest,
+  ProposePlotPointsRequest,
   ProposeCharactersRequest,
   ProposeCharactersResponse,
   ProposeScenesRequest,
@@ -120,6 +120,11 @@ export type {
   ProposeExpandResponse,
   // Impact Enrichment
   ImpactEnrichment,
+  // Critique
+  PackageCritique,
+  // Clarification
+  ClarificationRequest,
+  ClarificationQuestion,
 } from './types.js';
 
 // =============================================================================
@@ -274,16 +279,21 @@ export {
   buildInterpretationPrompt,
   buildGenerationPrompt,
   buildRefinementPrompt,
-  buildStoryBeatPrompt,
+  buildPlotPointPrompt,
   buildCharacterPrompt,
   buildScenePrompt,
   buildExpandPrompt,
   buildCriticPrompt,
 } from './prompts/index.js';
-export type { StoryBeatPromptParams, CharacterPromptParams, ScenePromptParams, ExpandPromptParams, CriticPromptParams } from './prompts/index.js';
+export type { PlotPointPromptParams, CharacterPromptParams, ScenePromptParams, ExpandPromptParams, CriticPromptParams } from './prompts/index.js';
 
 // Idea refinement prompt
 export { buildIdeaRefinementPrompt } from './prompts/ideaRefinementPrompt.js';
+
+// Critique prompt and parser
+export { buildCritiquePrompt } from './prompts/critiquePrompt.js';
+export type { CritiqueParams, CritiquePackageSummary } from './prompts/critiquePrompt.js';
+export { parseCritiqueResponse } from './critiqueParser.js';
 
 // =============================================================================
 // Text Similarity

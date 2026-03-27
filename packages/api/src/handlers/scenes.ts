@@ -25,7 +25,7 @@ import type { APIResponse, NodeData } from '../types.js';
 // =============================================================================
 
 interface SceneData extends NodeData {
-  connectedStoryBeatId?: string | undefined;
+  connectedPlotPointId?: string | undefined;
 }
 
 interface ScenesListData {
@@ -74,13 +74,13 @@ function sanitizeSceneData(scene: Scene): Record<string, unknown> {
   return rest;
 }
 
-function toSceneData(scene: Scene, connectedStoryBeatId?: string): SceneData {
+function toSceneData(scene: Scene, connectedPlotPointId?: string): SceneData {
   return {
     id: scene.id,
     type: scene.type,
     label: getSceneLabel(scene),
     data: sanitizeSceneData(scene),
-    connectedStoryBeatId,
+    connectedPlotPointId,
   };
 }
 
@@ -94,8 +94,8 @@ interface CreateSceneBody {
   int_ext?: IntExt;
   time_of_day?: string;
   mood?: string;
-  /** Optional: immediately attach to a StoryBeat */
-  attachToStoryBeatId?: string;
+  /** Optional: immediately attach to a PlotPoint */
+  attachToPlotPointId?: string;
 }
 
 export function createSceneHandler(ctx: StorageContext) {
@@ -106,7 +106,7 @@ export function createSceneHandler(ctx: StorageContext) {
   ): Promise<void> => {
     try {
       const { id } = req.params;
-      const { heading, scene_overview, int_ext, time_of_day, mood, attachToStoryBeatId } = req.body;
+      const { heading, scene_overview, int_ext, time_of_day, mood, attachToPlotPointId } = req.body;
 
       if (!heading || heading.trim() === '') {
         throw new BadRequestError('heading is required');
@@ -128,11 +128,11 @@ export function createSceneHandler(ctx: StorageContext) {
 
       const graph = deserializeGraph(currentVersion.graph);
 
-      // If attaching to StoryBeat, verify it exists
-      if (attachToStoryBeatId) {
-        const storyBeat = getNode(graph, attachToStoryBeatId);
-        if (!storyBeat || storyBeat.type !== 'StoryBeat') {
-          throw new NotFoundError(`StoryBeat "${attachToStoryBeatId}"`);
+      // If attaching to PlotPoint, verify it exists
+      if (attachToPlotPointId) {
+        const plotPoint = getNode(graph, attachToPlotPointId);
+        if (!plotPoint || plotPoint.type !== 'PlotPoint') {
+          throw new NotFoundError(`PlotPoint "${attachToPlotPointId}"`);
         }
       }
 
@@ -161,15 +161,15 @@ export function createSceneHandler(ctx: StorageContext) {
         { op: 'ADD_NODE', node: scene },
       ];
 
-      // Add SATISFIED_BY edge if attaching to StoryBeat
-      // Edge direction: StoryBeat --SATISFIED_BY--> Scene
-      if (attachToStoryBeatId) {
+      // Add REALIZED_BY edge if attaching to PlotPoint
+      // Edge direction: PlotPoint --REALIZED_BY--> Scene
+      if (attachToPlotPointId) {
         ops.push({
           op: 'ADD_EDGE',
           edge: {
             id: generateEdgeId(),
-            type: 'SATISFIED_BY',
-            from: attachToStoryBeatId,
+            type: 'REALIZED_BY',
+            from: attachToPlotPointId,
             to: sceneId,
           },
         });
@@ -206,7 +206,7 @@ export function createSceneHandler(ctx: StorageContext) {
       res.status(201).json({
         success: true,
         data: {
-          scene: toSceneData(scene, attachToStoryBeatId),
+          scene: toSceneData(scene, attachToPlotPointId),
           newVersionId,
         },
       });
@@ -254,17 +254,17 @@ export function listScenesHandler(ctx: StorageContext) {
       // Get all scenes
       let scenes = getNodesByType<Scene>(graph, 'Scene');
 
-      // Build scene -> StoryBeat mapping
-      const sceneToStoryBeat = new Map<string, string>();
+      // Build scene -> PlotPoint mapping
+      const sceneToPlotPoint = new Map<string, string>();
       for (const edge of graph.edges) {
-        if (edge.type === 'SATISFIED_BY') {
-          sceneToStoryBeat.set(edge.to, edge.from);
+        if (edge.type === 'REALIZED_BY') {
+          sceneToPlotPoint.set(edge.to, edge.from);
         }
       }
 
       // Apply filters
       if (unassigned === 'true') {
-        scenes = scenes.filter((s) => !sceneToStoryBeat.has(s.id));
+        scenes = scenes.filter((s) => !sceneToPlotPoint.has(s.id));
       }
 
       // Apply pagination
@@ -275,7 +275,7 @@ export function listScenesHandler(ctx: StorageContext) {
 
       // Convert to response format
       const sceneData: SceneData[] = paginatedScenes.map((s) => {
-        return toSceneData(s, sceneToStoryBeat.get(s.id));
+        return toSceneData(s, sceneToPlotPoint.get(s.id));
       });
 
       res.json({
@@ -326,13 +326,13 @@ export function getSceneHandler(ctx: StorageContext) {
         throw new NotFoundError(`Scene "${sceneId}"`);
       }
 
-      const satisfiedByEdge = graph.edges.find(
-        (e) => e.type === 'SATISFIED_BY' && e.to === scene.id
+      const realizedByEdge = graph.edges.find(
+        (e) => e.type === 'REALIZED_BY' && e.to === scene.id
       );
 
       res.json({
         success: true,
-        data: toSceneData(scene, satisfiedByEdge?.from),
+        data: toSceneData(scene, realizedByEdge?.from),
       });
     } catch (error) {
       next(error);
@@ -427,14 +427,14 @@ export function updateSceneHandler(ctx: StorageContext) {
       // Save state
       await saveVersionedStateById(id, state, ctx);
 
-      const satisfiedByEdge = updatedGraph.edges.find(
-        (e) => e.type === 'SATISFIED_BY' && e.to === sceneId
+      const realizedByEdge = updatedGraph.edges.find(
+        (e) => e.type === 'REALIZED_BY' && e.to === sceneId
       );
 
       res.json({
         success: true,
         data: {
-          scene: toSceneData(updatedScene, satisfiedByEdge?.from),
+          scene: toSceneData(updatedScene, realizedByEdge?.from),
           newVersionId,
           fieldsUpdated: Object.keys(changes),
         },

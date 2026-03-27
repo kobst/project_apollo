@@ -1,8 +1,8 @@
 /**
  * POST /stories/:id/recompute-order
  *
- * Recomputes order_index for all StoryBeats and Scenes based on their
- * attachment relationships (ALIGNS_WITH and SATISFIED_BY edges).
+ * Recomputes order_index for all PlotPoints and Scenes based on their
+ * attachment relationships (alignedBeatId property and REALIZED_BY edges).
  *
  * Use this endpoint to migrate existing stories to the new auto-computed
  * ordering system, or to fix any inconsistencies.
@@ -29,9 +29,9 @@ interface RecomputeOrderResponse {
 /**
  * POST /stories/:id/recompute-order
  *
- * Recomputes order_index for all StoryBeats and Scenes.
- * - StoryBeats get order_index based on ALIGNS_WITH edges to Beats
- * - Scenes get order_index based on SATISFIED_BY edges to StoryBeats
+ * Recomputes order_index for all PlotPoints and Scenes.
+ * - PlotPoints get order_index based on alignedBeatId property
+ * - Scenes get order_index based on REALIZED_BY edges to PlotPoints
  * - Unattached items have order_index set to undefined
  */
 export function createRecomputeOrderHandler(ctx: StorageContext) {
@@ -84,7 +84,7 @@ export function createRecomputeOrderHandler(ctx: StorageContext) {
       let scenesUpdated = 0;
       for (const op of orderResult.ops) {
         const node = graph.nodes.get(op.id);
-        if (node?.type === 'StoryBeat') {
+        if (node?.type === 'PlotPoint') {
           plotPointsUpdated++;
         } else if (node?.type === 'Scene') {
           scenesUpdated++;
@@ -98,7 +98,7 @@ export function createRecomputeOrderHandler(ctx: StorageContext) {
       state.history.versions[newVersionId] = {
         id: newVersionId,
         parent_id: currentVersionId,
-        label: `Recomputed order: ${plotPointsUpdated} StoryBeats, ${scenesUpdated} Scenes`,
+        label: `Recomputed order: ${plotPointsUpdated} PlotPoints, ${scenesUpdated} Scenes`,
         created_at: timestamp,
         graph: serializeGraph(updatedGraph),
       };

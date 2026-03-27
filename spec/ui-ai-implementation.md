@@ -8,7 +8,7 @@
 
 ## Overview
 
-UI components exposing the four-mode AI generation system defined in `aiIntegration.md` and `unifiedAPI.md`. The system provides specialized endpoints for Story Beats, Characters, Scenes, and Expand modes with expansion scope control.
+UI components exposing the four-mode AI generation system defined in `aiIntegration.md` and `unifiedAPI.md`. The system provides specialized endpoints for Plot Points, Characters, Scenes, and Expand modes with expansion scope control.
 
 ---
 
@@ -19,7 +19,7 @@ UI components exposing the four-mode AI generation system defined in `aiIntegrat
 **Four-Mode Generation:**
 | Endpoint | Purpose |
 |----------|---------|
-| `POST /stories/:id/propose/story-beats` | Generate StoryBeat nodes |
+| `POST /stories/:id/propose/plot-points` | Generate PlotPoint nodes |
 | `POST /stories/:id/propose/characters` | Generate Character nodes |
 | `POST /stories/:id/propose/scenes` | Generate Scene nodes |
 | `POST /stories/:id/propose/expand` | Expand nodes/Story Context |
@@ -52,7 +52,7 @@ UI components exposing the four-mode AI generation system defined in `aiIntegrat
 - `ComposeForm.tsx` - Mode selector and options
 - `ModeSelector.tsx` - Four-mode tab selector
 - `ExpansionScopeToggle.tsx` - Constrained/Flexible toggle
-- `StoryBeatsOptions.tsx`, `CharactersOptions.tsx`, `ScenesOptions.tsx`, `ExpandOptions.tsx` - Mode-specific forms
+- `PlotPointsOptions.tsx`, `CharactersOptions.tsx`, `ScenesOptions.tsx`, `ExpandOptions.tsx` - Mode-specific forms
 - `PackageCard.tsx` - Package display with Primary/Supporting/Suggestions sections
 - `StashSection.tsx` - Unified stash for unassigned items and ideas
 - `IdeasSection.tsx` - Ideas management
@@ -202,10 +202,10 @@ Display a single package with its contents organized by hierarchy.
 │   + Location: Evidence Room                                 │
 │                                                             │
 │ OUTLINE                                                     │
-│   + StoryBeat: Mike discovers betrayal                      │
-│     └─ ALIGNS_WITH → Midpoint                              │
+│   + PlotPoint: Mike discovers betrayal                      │
+│     └─ alignedBeatId → Midpoint                              │
 │   + Scene: INT. EVIDENCE ROOM - NIGHT                       │
-│     └─ SATISFIED_BY ← StoryBeat                            │
+│     └─ REALIZED_BY ← PlotPoint                            │
 │     └─ HAS_CHARACTER → Mike, Torres                        │
 │                                                             │
 │ IMPACT                                                      │
@@ -322,7 +322,7 @@ Regenerate Mode:
 **OutlineView - Beat entry point:**
 Add "Generate" button to EmptyBeatSlot or Beat with no scenes.
 
-**NodeDetailPanel - Character/StoryBeat entry point:**
+**NodeDetailPanel - Character/PlotPoint entry point:**
 Add "Generate for this..." action button.
 
 **GapList - Gap entry point:**
@@ -403,7 +403,7 @@ Display interpretation results with options:
 │ └────────────────────────────────────────────────────────────┘ │
 │                                                                │
 │ ALTERNATIVES                                                   │
-│ • "Add confrontation as StoryBeat instead" (78%)              │
+│ • "Add confrontation as PlotPoint instead" (78%)              │
 │ • "Add to Story Context as conflict theme" (65%)              │
 └─────────────────────────────────────────────────────────────────┘
 ```

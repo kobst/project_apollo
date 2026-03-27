@@ -29,6 +29,28 @@ export interface InterpretationResult {
     summary: string;
     confidence: number;
   }[];
+  /** Clarification request — set when the input is too ambiguous to proceed */
+  clarification?: ClarificationRequest;
+}
+
+/**
+ * A request for clarification before generation proceeds.
+ * Returned by the interpretation phase when user input is ambiguous.
+ */
+export interface ClarificationRequest {
+  /** Whether clarification is needed */
+  needed: boolean;
+  /** 2-4 targeted questions to resolve ambiguity */
+  questions: ClarificationQuestion[];
+  /** Why clarification is needed */
+  reason: string;
+}
+
+export interface ClarificationQuestion {
+  /** The question to ask the user */
+  question: string;
+  /** Suggested options (prefer options over open-ended) */
+  options?: string[];
 }
 
 /**
@@ -123,6 +145,9 @@ export interface NarrativePackage {
 
   /** LLM-enriched narrative analysis (populated on-demand via critic) */
   enrichment?: ImpactEnrichment;
+
+  /** LLM-generated critique evaluating this package (populated by critique pass) */
+  critique?: PackageCritique;
 
   /** Validation results (temporal violations, missing dependencies, etc.) */
   validation?: {
@@ -282,6 +307,25 @@ export interface ImpactEnrichment {
   thematic_analysis: string;
 }
 
+/**
+ * LLM-generated critique of a package.
+ * Evaluates the package against story context, thematic pillars, and structural fit.
+ */
+export interface PackageCritique {
+  /** Which package this critique is for */
+  packageId: string;
+  /** What this package does well */
+  strengths: string[];
+  /** Potential issues or downsides */
+  weaknesses: string[];
+  /** How well it fits the story's thematic pillars */
+  thematicFit: 'strong' | 'moderate' | 'weak';
+  /** Structural risks (continuity, pacing, dependency issues) */
+  structuralRisks: string[];
+  /** One-line tradeoff summary for quick scanning */
+  tradeoffProfile: string;
+}
+
 // =============================================================================
 // Prompt Parameter Types
 // =============================================================================
@@ -298,7 +342,7 @@ export type GenerationCount = 'few' | 'standard' | 'many';
  */
 export interface GenerationEntryPoint {
   /** Type of entry point */
-  type: 'beat' | 'storyBeat' | 'character' | 'gap' | 'idea' | 'naked';
+  type: 'beat' | 'plotPoint' | 'character' | 'gap' | 'idea' | 'naked';
   /** Target ID if applicable */
   targetId?: string;
   /** Additional data about the target */
@@ -325,6 +369,8 @@ export interface GenerationParams {
   ideas?: string;
   /** Optional serialized soft guidelines filtered for this task */
   guidelines?: string;
+  /** Optional problem statement describing what narrative problem to solve */
+  problemStatement?: string;
 }
 
 /**
@@ -578,11 +624,11 @@ export interface StashedIdea {
 }
 
 /**
- * Lightweight hint for a potential StoryBeat.
+ * Lightweight hint for a potential PlotPoint.
  * Generated as suggestions, not full nodes.
  */
-export interface StoryBeatHint {
-  /** Suggested title for the story beat */
+export interface PlotPointHint {
+  /** Suggested title for the plot point */
   title: string;
   /** Brief summary of what could happen */
   summary: string;
@@ -617,23 +663,23 @@ export interface CharacterSummary {
 }
 
 /**
- * Information about a validated StoryBeat for scene generation.
+ * Information about a validated PlotPoint for scene generation.
  */
 export interface ValidatedBeatInfo {
-  /** StoryBeat node ID */
-  storyBeatId: string;
-  /** StoryBeat title */
+  /** PlotPoint node ID */
+  plotPointId: string;
+  /** PlotPoint title */
   title: string;
   /** Beat type it aligns with */
   alignedTo: string;
 }
 
 /**
- * Information about a rejected StoryBeat for scene generation.
+ * Information about a rejected PlotPoint for scene generation.
  */
 export interface RejectedBeatInfo {
-  /** StoryBeat node ID that was rejected */
-  storyBeatId: string;
+  /** PlotPoint node ID that was rejected */
+  plotPointId: string;
   /** Reason for rejection */
   reason: 'not_found' | 'not_committed' | 'already_has_scenes';
 }
@@ -667,7 +713,7 @@ export interface CommonGenerationParams {
 /**
  * Primary output type indicator for categorized packages.
  */
-export type PrimaryOutputType = 'StoryBeat' | 'Character' | 'Scene' | 'Mixed';
+export type PrimaryOutputType = 'PlotPoint' | 'Character' | 'Scene' | 'Mixed';
 
 /**
  * Primary output section of a NarrativePackage.
@@ -702,8 +748,8 @@ export interface PackageSuggestions {
   contextAdditions?: ContextAddition[];
   /** Ideas to stash for later */
   stashedIdeas?: StashedIdea[];
-  /** Hints for potential StoryBeats */
-  storyBeatHints?: StoryBeatHint[];
+  /** Hints for potential PlotPoints */
+  plotPointHints?: PlotPointHint[];
 }
 
 // =============================================================================
@@ -711,13 +757,13 @@ export interface PackageSuggestions {
 // =============================================================================
 
 /**
- * Request for POST /propose/story-beats (enhanced).
+ * Request for POST /propose/plot-points (enhanced).
  */
-export interface ProposeStoryBeatsRequest extends CommonGenerationParams {
+export interface ProposePlotPointsRequest extends CommonGenerationParams {
   /** Beat IDs or BeatTypes to prioritize */
   priorityBeats?: string[];
-  /** Max StoryBeats per package */
-  maxStoryBeatsPerPackage?: number;
+  /** Max PlotPoints per package */
+  maxPlotPointsPerPackage?: number;
   /** Target specific act */
   targetAct?: 1 | 2 | 3 | 4 | 5;
 }
@@ -752,9 +798,9 @@ export interface ProposeCharactersResponse {
  * Request for POST /propose/scenes.
  */
 export interface ProposeScenesRequest extends CommonGenerationParams {
-  /** StoryBeat IDs to generate scenes for (must be committed) */
-  storyBeatIds: string[];
-  /** Number of scenes per StoryBeat */
+  /** PlotPoint IDs to generate scenes for (must be committed) */
+  plotPointIds: string[];
+  /** Number of scenes per PlotPoint */
   scenesPerBeat?: number;
   /** Max scenes per package */
   maxScenesPerPackage?: number;
@@ -768,9 +814,9 @@ export interface ProposeScenesResponse {
   sessionId: string;
   /** Generated packages */
   packages: NarrativePackage[];
-  /** StoryBeats that were validated and used */
+  /** PlotPoints that were validated and used */
   validatedBeats: ValidatedBeatInfo[];
-  /** StoryBeats that were rejected with reasons */
+  /** PlotPoints that were rejected with reasons */
   rejectedBeats: RejectedBeatInfo[];
 }
 

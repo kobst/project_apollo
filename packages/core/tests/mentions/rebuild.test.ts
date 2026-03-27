@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { GraphState } from '../../src/core/graph.js';
-import type { Beat, Character, StoryBeat } from '../../src/types/nodes.js';
+import type { Beat, Character, PlotPoint } from '../../src/types/nodes.js';
 import {
   rebuildMentionsForNode,
   rebuildAllMentions,
@@ -49,14 +49,14 @@ function addCharacter(graph: GraphState, id: string, name: string): void {
 }
 
 // Helper to add story beat to graph
-function addStoryBeat(
+function addPlotPoint(
   graph: GraphState, 
   id: string, 
   title: string, 
   summary: string
 ): void {
-  const sb: StoryBeat = {
-    type: 'StoryBeat',
+  const sb: PlotPoint = {
+    type: 'PlotPoint',
     id,
     title,
     summary,
@@ -75,7 +75,7 @@ describe('rebuildMentionsForNode', () => {
 
   it('should create MENTIONS edges for character references', () => {
     addCharacter(graph, 'char_1', 'John');
-    addStoryBeat(graph, 'sb_1', 'John acts', 'John makes a big decision');
+    addPlotPoint(graph, 'sb_1', 'John acts', 'John makes a big decision');
     
     const result = rebuildMentionsForNode(graph, 'sb_1');
     
@@ -89,7 +89,7 @@ describe('rebuildMentionsForNode', () => {
 
   it('should remove old MENTIONS before rebuilding', () => {
     addCharacter(graph, 'char_1', 'John');
-    addStoryBeat(graph, 'sb_1', 'John acts', 'John decides');
+    addPlotPoint(graph, 'sb_1', 'John acts', 'John decides');
     
     // Build mentions first time
     rebuildMentionsForNode(graph, 'sb_1');
@@ -131,8 +131,8 @@ describe('rebuildAllMentions', () => {
   it('should rebuild all mentions across the graph', () => {
     addCharacter(graph, 'char_1', 'John');
     addCharacter(graph, 'char_2', 'Sarah');
-    addStoryBeat(graph, 'sb_1', 'John meets Sarah', 'John and Sarah meet for the first time');
-    addStoryBeat(graph, 'sb_2', 'Sarah decides', 'Sarah makes up her mind');
+    addPlotPoint(graph, 'sb_1', 'John meets Sarah', 'John and Sarah meet for the first time');
+    addPlotPoint(graph, 'sb_2', 'Sarah decides', 'Sarah makes up her mind');
     
     const result = rebuildAllMentions(graph);
     
@@ -145,7 +145,7 @@ describe('rebuildAllMentions', () => {
 
   it('should remove all existing MENTIONS before rebuild', () => {
     addCharacter(graph, 'char_1', 'John');
-    addStoryBeat(graph, 'sb_1', 'John acts', 'John decides');
+    addPlotPoint(graph, 'sb_1', 'John acts', 'John decides');
     
     // First build
     rebuildAllMentions(graph);
@@ -168,8 +168,8 @@ describe('removeMentionsFromNode', () => {
 
   it('should remove all MENTIONS edges from a specific node', () => {
     addCharacter(graph, 'char_1', 'John');
-    addStoryBeat(graph, 'sb_1', 'John acts', 'John decides');
-    addStoryBeat(graph, 'sb_2', 'John returns', 'John comes back');
+    addPlotPoint(graph, 'sb_1', 'John acts', 'John decides');
+    addPlotPoint(graph, 'sb_2', 'John returns', 'John comes back');
     
     rebuildAllMentions(graph);
     const totalBefore = graph.edges.filter(e => e.type === 'MENTIONS').length;

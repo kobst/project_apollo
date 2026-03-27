@@ -60,8 +60,8 @@ export function computeImpact(
  * Determine which existing gaps this package would resolve.
  *
  * Checks:
- * - ALIGNS_WITH edges to unaligned Beats → fulfills BeatUnrealized gaps
- * - SATISFIED_BY edges from Scenes to StoryBeats → fulfills BeatUnrealized gaps (scene realization)
+ * - alignedBeatId property on PlotPoints to unaligned Beats → fulfills BeatUnrealized gaps
+ * - REALIZED_BY edges from Scenes to PlotPoints → fulfills BeatUnrealized gaps (scene realization)
  * - HAS_CHARACTER edges on new Scenes → fulfills SceneHasNoCast gaps
  * - LOCATED_AT edges on new Scenes → fulfills SceneNeedsLocation gaps
  * - New Character descriptions → fulfills CharacterUnderspecified gaps
@@ -106,47 +106,55 @@ function computeFulfillsGaps(
     return `"${charId}"`;
   };
 
-  // 1. Check ALIGNS_WITH edges — fulfills unaligned beats
+  // 1. Check alignedBeatId on PlotPoint nodes — fulfills unaligned beats
   const unalignedBeats = computeUnalignedBeats(graph);
   const unalignedBeatIds = new Set(unalignedBeats.map((b) => b.beatId));
 
-  for (const edge of pkg.changes.edges) {
-    if (edge.operation === 'add' && edge.edge_type === 'ALIGNS_WITH') {
-      if (unalignedBeatIds.has(edge.to)) {
-        const gapId = `gap_beat_${edge.to}`;
-        fulfilled.set(gapId, `Aligns StoryBeat with Beat ${describeBeat(edge.to)}`);
+  for (const node of pkg.changes.nodes) {
+    if (node.operation === 'add' && node.node_type === 'PlotPoint' && node.data) {
+      const alignedBeatId = (node.data as Record<string, unknown>).alignedBeatId as string | undefined;
+      if (alignedBeatId && unalignedBeatIds.has(alignedBeatId)) {
+        const gapId = `gap_beat_${alignedBeatId}`;
+        fulfilled.set(gapId, `Aligns PlotPoint with Beat ${describeBeat(alignedBeatId)}`);
       }
     }
   }
 
-  // 2. Check SATISFIED_BY edges — Scene satisfies a StoryBeat, which may realize a Beat
-  const existingAlignsWithEdges = getEdgesByType(graph, 'ALIGNS_WITH');
-  const storyBeatToBeat = new Map<string, string>();
-  for (const e of existingAlignsWithEdges) {
-    storyBeatToBeat.set(e.from, e.to);
+  // 2. Check REALIZED_BY edges — Scene realizes a PlotPoint, which may realize a Beat
+  // Build PlotPoint → Beat mapping from existing graph (PlotPoints with alignedBeatId)
+  const plotPointToBeat = new Map<string, string>();
+  const existingPlotPoints = getNodesByType(graph, 'PlotPoint');
+  for (const pp of existingPlotPoints) {
+    const data = pp as unknown as Record<string, unknown>;
+    if (data.alignedBeatId && typeof data.alignedBeatId === 'string') {
+      plotPointToBeat.set(pp.id, data.alignedBeatId);
+    }
   }
-  // Also include ALIGNS_WITH edges from this package
-  for (const edge of pkg.changes.edges) {
-    if (edge.operation === 'add' && edge.edge_type === 'ALIGNS_WITH') {
-      storyBeatToBeat.set(edge.from, edge.to);
+  // Also include alignedBeatId from this package's new PlotPoints
+  for (const node of pkg.changes.nodes) {
+    if (node.operation === 'add' && node.node_type === 'PlotPoint' && node.data) {
+      const alignedBeatId = (node.data as Record<string, unknown>).alignedBeatId as string | undefined;
+      if (alignedBeatId) {
+        plotPointToBeat.set(node.node_id, alignedBeatId);
+      }
     }
   }
 
-  // Check if existing StoryBeats already have scenes (SATISFIED_BY)
-  const existingSatisfiedBy = getEdgesByType(graph, 'SATISFIED_BY');
-  const storyBeatsWithScenes = new Set<string>();
-  for (const e of existingSatisfiedBy) {
-    storyBeatsWithScenes.add(e.to); // SATISFIED_BY: Scene → StoryBeat (to is StoryBeat)
+  // Check if existing PlotPoints already have scenes (REALIZED_BY)
+  const existingRealizedBy = getEdgesByType(graph, 'REALIZED_BY');
+  const plotPointsWithScenes = new Set<string>();
+  for (const e of existingRealizedBy) {
+    plotPointsWithScenes.add(e.to); // REALIZED_BY: Scene → PlotPoint (to is PlotPoint)
   }
 
   for (const edge of pkg.changes.edges) {
-    if (edge.operation === 'add' && edge.edge_type === 'SATISFIED_BY') {
-      const storyBeatId = edge.to;
-      const beatId = storyBeatToBeat.get(storyBeatId);
-      if (beatId && !storyBeatsWithScenes.has(storyBeatId)) {
+    if (edge.operation === 'add' && edge.edge_type === 'REALIZED_BY') {
+      const plotPointId = edge.to;
+      const beatId = plotPointToBeat.get(plotPointId);
+      if (beatId && !plotPointsWithScenes.has(plotPointId)) {
         const gapId = `gap_beat_${beatId}`;
         if (!fulfilled.has(gapId)) {
-          fulfilled.set(gapId, `Realizes Beat ${describeBeat(beatId)} by adding scene to StoryBeat`);
+          fulfilled.set(gapId, `Realizes Beat ${describeBeat(beatId)} by adding scene to PlotPoint`);
         }
       }
     }
@@ -231,7 +239,7 @@ function formatBeatType(beatType: string): string {
  *
  * Checks:
  * - New Characters without description
- * - New StoryBeats without Scenes (via SATISFIED_BY)
+ * - New PlotPoints without Scenes (via REALIZED_BY)
  * - New Scenes without characters (HAS_CHARACTER)
  * - New Scenes without location (LOCATED_AT)
  */
@@ -272,11 +280,11 @@ function computeCreatesGaps(
         }
         break;
       }
-      case 'StoryBeat': {
-        // Check if any SATISFIED_BY edge targets this StoryBeat
-        const hasSatisfiedBy = edgeToMap.get(node.node_id)?.has('SATISFIED_BY') ?? false;
-        if (!hasSatisfiedBy) {
-          created.push(`New StoryBeat "${data.title ?? node.node_id}" has no scene`);
+      case 'PlotPoint': {
+        // Check if any REALIZED_BY edge targets this PlotPoint
+        const hasRealizedBy = edgeToMap.get(node.node_id)?.has('REALIZED_BY') ?? false;
+        if (!hasRealizedBy) {
+          created.push(`New PlotPoint "${data.title ?? node.node_id}" has no scene`);
         }
         break;
       }
@@ -306,7 +314,7 @@ function computeCreatesGaps(
  * Checks:
  * - Duplicate node names (Character/Location names already in graph)
  * - Invalid edge references (edges pointing to non-existent nodes)
- * - Missing required edges (StoryBeat without ALIGNS_WITH)
+ * - Missing required alignedBeatId (PlotPoint without alignment)
  */
 function computeStructuralConflicts(
   pkg: NarrativePackage,
@@ -364,55 +372,48 @@ function computeStructuralConflicts(
     }
   }
 
-  // 3. Missing required ALIGNS_WITH for StoryBeats
-  const newStoryBeatIds = new Set(
-    pkg.changes.nodes
-      .filter((n) => n.operation === 'add' && n.node_type === 'StoryBeat')
-      .map((n) => n.node_id)
-  );
+  // 3. Missing required alignedBeatId for PlotPoints
+  const newPlotPointNodes = pkg.changes.nodes
+    .filter((n) => n.operation === 'add' && n.node_type === 'PlotPoint');
 
-  const storyBeatsWithAlignment = new Set<string>();
-  for (const edge of pkg.changes.edges) {
-    if (edge.operation === 'add' && edge.edge_type === 'ALIGNS_WITH') {
-      storyBeatsWithAlignment.add(edge.from);
-    }
-  }
-
-  for (const sbId of newStoryBeatIds) {
-    if (!storyBeatsWithAlignment.has(sbId)) {
+  for (const ppNode of newPlotPointNodes) {
+    const data = (ppNode.data ?? {}) as Record<string, unknown>;
+    if (!data.alignedBeatId) {
       conflicts.push({
         type: 'interferes',
-        existing_node_id: sbId,
-        description: `New StoryBeat "${sbId}" has no ALIGNS_WITH edge to a Beat`,
+        existing_node_id: ppNode.node_id,
+        description: `New PlotPoint "${ppNode.node_id}" has no alignedBeatId property`,
         source: 'lint',
         resolution_included: false,
       });
     }
   }
 
-  // 4. Missing required SATISFIED_BY for Scenes connected to StoryBeats
+  const newPlotPointIds = new Set(newPlotPointNodes.map((n) => n.node_id));
+
+  // 4. Missing required REALIZED_BY for Scenes connected to PlotPoints
   const newSceneIds = new Set(
     pkg.changes.nodes
       .filter((n) => n.operation === 'add' && n.node_type === 'Scene')
       .map((n) => n.node_id)
   );
 
-  const scenesWithSatisfiedBy = new Set<string>();
+  const scenesWithRealizedBy = new Set<string>();
   for (const edge of pkg.changes.edges) {
-    if (edge.operation === 'add' && edge.edge_type === 'SATISFIED_BY') {
-      scenesWithSatisfiedBy.add(edge.from);
+    if (edge.operation === 'add' && edge.edge_type === 'REALIZED_BY') {
+      scenesWithRealizedBy.add(edge.from);
     }
   }
 
-  // Only flag scenes that don't have a SATISFIED_BY if there are StoryBeats in the graph
-  const existingStoryBeats = getNodesByType(graph, 'StoryBeat');
-  if (existingStoryBeats.length > 0 || newStoryBeatIds.size > 0) {
+  // Only flag scenes that don't have a REALIZED_BY if there are PlotPoints in the graph
+  const existingPlotPoints2 = getNodesByType(graph, 'PlotPoint');
+  if (existingPlotPoints2.length > 0 || newPlotPointIds.size > 0) {
     for (const sceneId of newSceneIds) {
-      if (!scenesWithSatisfiedBy.has(sceneId)) {
+      if (!scenesWithRealizedBy.has(sceneId)) {
         conflicts.push({
           type: 'interferes',
           existing_node_id: sceneId,
-          description: `New Scene "${sceneId}" has no SATISFIED_BY edge to a StoryBeat`,
+          description: `New Scene "${sceneId}" has no REALIZED_BY edge to a PlotPoint`,
           source: 'lint',
           resolution_included: false,
         });

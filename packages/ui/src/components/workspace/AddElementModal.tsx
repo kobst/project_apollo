@@ -13,7 +13,7 @@ import type {
 } from '../../api/types';
 import styles from './AddElementModal.module.css';
 
-export type AddElementType = 'Character' | 'Location' | 'Object' | 'Scene' | 'StoryBeat';
+export type AddElementType = 'Character' | 'Location' | 'Object' | 'Scene' | 'PlotPoint';
 
 interface AddElementModalProps {
   elementType: AddElementType;
@@ -40,7 +40,7 @@ interface FormValues {
   heading?: string;
   summary?: string;
   beatId?: string;
-  // StoryBeat-specific
+  // PlotPoint-specific
   intent?: string;
 }
 
@@ -51,7 +51,7 @@ const ELEMENT_CONFIG: Record<AddElementType, { icon: string; label: string; node
   Location: { icon: '📍', label: 'Location', nodeType: 'Location' },
   Object: { icon: '📦', label: 'Object', nodeType: 'Object' },
   Scene: { icon: '🎬', label: 'Scene', nodeType: 'Scene' },
-  StoryBeat: { icon: '📍', label: 'Story Beat', nodeType: 'StoryBeat' },
+  PlotPoint: { icon: '📍', label: 'Plot Point', nodeType: 'PlotPoint' },
 };
 
 const ROLE_OPTIONS = [
@@ -122,7 +122,7 @@ export function AddElementModal({
     if (elementType === 'Scene') {
       return formValues.heading?.trim();
     }
-    if (elementType === 'StoryBeat') {
+    if (elementType === 'PlotPoint') {
       return formValues.summary?.trim();
     }
     return formValues.name.trim();
@@ -147,7 +147,7 @@ export function AddElementModal({
       } else if (elementType === 'Scene') {
         if (formValues.heading) structured.heading = formValues.heading;
         if (formValues.summary) structured.scene_overview = formValues.summary;
-      } else if (elementType === 'StoryBeat') {
+      } else if (elementType === 'PlotPoint') {
         if (formValues.summary) structured.title = formValues.summary;
         if (formValues.intent) structured.intent = formValues.intent;
       }
@@ -354,7 +354,7 @@ export function AddElementModal({
               )}
 
               {/* Name field (most element types) */}
-              {elementType !== 'Scene' && elementType !== 'StoryBeat' && (
+              {elementType !== 'Scene' && elementType !== 'PlotPoint' && (
                 <div className={styles.field}>
                   <label className={styles.label} htmlFor="el-name">
                     Name <span className={styles.required}>*</span>
@@ -391,8 +391,8 @@ export function AddElementModal({
                 </div>
               )}
 
-              {/* StoryBeat summary */}
-              {elementType === 'StoryBeat' && (
+              {/* PlotPoint summary */}
+              {elementType === 'PlotPoint' && (
                 <div className={styles.field}>
                   <label className={styles.label} htmlFor="el-summary">
                     Summary <span className={styles.required}>*</span>
@@ -542,8 +542,8 @@ export function AddElementModal({
                 </div>
               )}
 
-              {/* StoryBeat-specific fields */}
-              {elementType === 'StoryBeat' && (
+              {/* PlotPoint-specific fields */}
+              {elementType === 'PlotPoint' && (
                 <div className={styles.field}>
                   <label className={styles.label} htmlFor="el-intent">
                     Intent

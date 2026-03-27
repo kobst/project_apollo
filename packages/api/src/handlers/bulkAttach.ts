@@ -113,7 +113,7 @@ function getChildId(edge: Edge, parentIsSource: boolean): string {
  *
  * Bulk attach targets to a parent node with support for:
  * - Multi-select attachment
- * - Ordering (for SATISFIED_BY and other ordered edge types)
+ * - Ordering (for REALIZED_BY and other ordered edge types)
  * - Automatic order normalization
  * - Detach others (sync mode)
  */
@@ -381,8 +381,8 @@ export function createBulkAttachHandler(ctx: StorageContext) {
         }
       }
 
-      // Auto-compute order_index for StoryBeats and Scenes when attachment edges change
-      if (edgeType === 'ALIGNS_WITH' || edgeType === 'SATISFIED_BY') {
+      // Auto-compute order_index for PlotPoints and Scenes when attachment edges change
+      if (edgeType === 'REALIZED_BY') {
         const orderResult = computeOrder(finalGraph);
         if (orderResult.ops.length > 0) {
           finalGraph = applyOrderUpdates(finalGraph, orderResult);

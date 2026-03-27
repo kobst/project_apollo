@@ -166,7 +166,7 @@ Patch Operations (3 ops):
      id: scene_001
      heading: "INT. WIZARD TOWER - NIGHT"
      scene_overview: "The young wizard accidentally unleashes..."
-     beat_id: beat_Catalyst
+     // beat_id removed; use PlotPoint REALIZED_BY edge
      order_index: 1
 
   2. ADD_EDGE HAS_CHARACTER

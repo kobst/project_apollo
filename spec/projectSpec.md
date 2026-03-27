@@ -130,7 +130,6 @@ Proposals are represented as NarrativePackages within a Generation Session and a
         "id": "scene_01J0SC001",
         "heading": "INT. AIR FORCE ONE – MEDICAL BAY – DAY",
         "scene_overview": "The president collapses mid-flight. Guards suspect sabotage. The disgraced surgeon is forced to stabilize him as panic spreads.",
-        "beat_id": "beat_CATALYST",
         "order_index": 1,
         "scene_tags": ["INTRO_CHARACTER", "ESCALATION"]
       }
@@ -194,7 +193,7 @@ Proposals are represented as NarrativePackages within a Generation Session and a
 | id | string | ✅ | Scene id |
 | heading | string | ✅ | Raw scene heading |
 | scene_overview | string | ✅ | Narrative summary (v1 causal carrier) |
-| beat_id | string | ⚠️ | **DEPRECATED** - Use StoryBeat attachment instead |
+| ~~beat_id~~ | ~~string~~ | ❌ | **REMOVED** - Use PlotPoint attachment via REALIZED_BY edge |
 | order_index | integer (>=1) | ❌ | Auto-computed screenplay order (see Ordering) |
 | int_ext | string (enum) | ❌ | INT/EXT/OTHER |
 | time_of_day | string | ❌ | DAY/NIGHT/UNKNOWN/freeform |
@@ -212,20 +211,19 @@ Proposals are represented as NarrativePackages within a Generation Session and a
 - `source_provenance`: USER, AI, MIXED
 
 ### Constraints
- - `beat_id` (**deprecated**): Previously required to reference a Beat. Now optional; prefer using StoryBeat attachment via SATISFIED_BY edge.
- - `order_index`: Optional integer ≥ 1. Auto-computed when Scene is attached to a StoryBeat via SATISFIED_BY edge. Undefined for unattached scenes.
+ - `beat_id` (**removed**): Previously referenced a Beat. Fully removed; use PlotPoint attachment via REALIZED_BY edge.
+ - `order_index`: Optional integer ≥ 1. Auto-computed when Scene is attached to a PlotPoint via REALIZED_BY edge. Undefined for unattached scenes.
 - `scene_overview` length 20–2000 (recommended).
 
 ### Scene Ordering (Auto-computed)
-Scenes get their `order_index` automatically based on their StoryBeat attachment:
-1. Scene is attached to StoryBeat via `SATISFIED_BY` edge
-2. StoryBeat is attached to Beat via `ALIGNS_WITH` edge
-3. Order is computed: Beat position → StoryBeat order → Scene order within StoryBeat
+Scenes get their `order_index` automatically based on their PlotPoint attachment:
+1. Scene is attached to PlotPoint via `REALIZED_BY` edge
+2. PlotPoint aligns to Beat via `alignedBeatId` FK property
+3. Order is computed: Beat position → PlotPoint order → Scene order within PlotPoint
 4. Unattached scenes have `order_index = undefined`
 
 ### Note on FULFILLS Edge (Deprecated)
-The `beat_id` field implicitly creates the FULFILLS relationship. This approach is **deprecated**.
-New implementations should use StoryBeats with SATISFIED_BY edges instead.
+The former `beat_id` field has been removed. New implementations should use PlotPoints with REALIZED_BY edges instead.
 
 ### Example
 ```json
@@ -234,7 +232,6 @@ New implementations should use StoryBeats with SATISFIED_BY edges instead.
   "id": "scene_01J0SC001",
   "heading": "INT. AIR FORCE ONE – MEDICAL BAY – DAY",
   "scene_overview": "The president collapses mid-flight. Guards suspect sabotage. The disgraced surgeon is forced to stabilize him as panic spreads.",
-  "beat_id": "beat_CATALYST",
   "order_index": 1,
   "int_ext": "INT",
   "time_of_day": "DAY",
@@ -388,16 +385,16 @@ New implementations should use StoryBeats with SATISFIED_BY edges instead.
 
 ---
 
-## 1.11 StoryBeat
+## 1.11 PlotPoint
 
-StoryBeats are intermediate narrative units that bridge Beats and Scenes. They represent specific story points or events that must be satisfied by one or more Scenes.
+PlotPoints are intermediate narrative units that bridge Beats and Scenes. They represent specific story points or events that must be satisfied by one or more Scenes.
 
 ### Fields
 | Field | Type | Req? | Description |
 |---|---|:---:|---|
-| id | string | ✅ | StoryBeat id |
+| id | string | ✅ | PlotPoint id |
 | title | string | ✅ | Short descriptive title |
-| description | string | ❌ | Detailed description of the story beat |
+| description | string | ❌ | Detailed description of the plot point |
 | order_index | integer (>=1) | ❌ | Auto-computed based on Beat attachment |
 | status | string (enum) | ❌ | UNSATISFIED/SATISFIED |
 | notes | string | ❌ | Notes |
@@ -407,19 +404,19 @@ StoryBeats are intermediate narrative units that bridge Beats and Scenes. They r
 
 ### Constraints
 - `title` length 1–120.
-- `order_index`: Optional integer ≥ 1. Auto-computed when attached to a Beat via ALIGNS_WITH edge. Undefined for unattached StoryBeats.
+- `order_index`: Optional integer ≥ 1. Auto-computed when attached to a Beat via alignedBeatId edge. Undefined for unattached PlotPoints.
 
-### StoryBeat Ordering (Auto-computed)
-StoryBeats get their `order_index` automatically based on Beat attachment:
-1. StoryBeat is attached to Beat via `ALIGNS_WITH` edge
+### PlotPoint Ordering (Auto-computed)
+PlotPoints get their `order_index` automatically based on Beat attachment:
+1. PlotPoint is attached to Beat via `alignedBeatId` edge
 2. Order is determined by Beat's `position_index` (1-15 for STC beats)
-3. Multiple StoryBeats on the same Beat are ordered by: edge createdAt → StoryBeat createdAt → ID
-4. Unattached StoryBeats have `order_index = undefined`
+3. Multiple PlotPoints on the same Beat are ordered by: edge createdAt → PlotPoint createdAt → ID
+4. Unattached PlotPoints have `order_index = undefined`
 
 ### Example
 ```json
 {
-  "type": "StoryBeat",
+  "type": "PlotPoint",
   "id": "pp_01J0PP001",
   "title": "President collapses",
   "description": "The president suddenly collapses during the flight, creating the inciting incident.",
@@ -450,35 +447,35 @@ StoryBeats get their `order_index` automatically based on Beat attachment:
 |---|---|
 | Source → Target | Scene → Beat |
 | Cardinality | many-to-one |
-| Required | ⚠️ Deprecated - use StoryBeat hierarchy instead |
+| Required | ⚠️ Deprecated - use PlotPoint hierarchy instead |
 | Meaning | Scene is assigned to and realizes that Beat |
 
-**Note:** This edge is *derived* from Scene.beat_id. This approach is **deprecated**.
-New implementations should use StoryBeats with ALIGNS_WITH and SATISFIED_BY edges.
+**Note:** This edge was formerly derived from `Scene.beat_id` (now removed). Use PlotPoints with `alignedBeatId` and `REALIZED_BY` edges instead.
 
 ---
 
-## 2.2 ALIGNS_WITH
+## 2.2 alignedBeatId (FK property, replaces ALIGNS_WITH edge)
 | Property | Value |
 |---|---|
-| Source → Target | StoryBeat → Beat |
+| Location | `PlotPoint.alignedBeatId` |
+| References | Beat |
 | Cardinality | many-to-one |
-| Required | ❌ Optional (StoryBeats may be unattached) |
-| Meaning | StoryBeat aligns with this Beat in the story structure |
+| Required | ❌ Optional (PlotPoints may be unattached) |
+| Meaning | PlotPoint aligns with this Beat in the story structure |
 
-**Note:** When a StoryBeat has an ALIGNS_WITH edge to a Beat, its `order_index` is auto-computed based on the Beat's `position_index`.
+**Note:** When a PlotPoint has `alignedBeatId` set to a Beat, its `order_index` is auto-computed based on the Beat's `position_index`. This was formerly the `ALIGNS_WITH` edge type.
 
 ---
 
-## 2.3 SATISFIED_BY
+## 2.3 REALIZED_BY
 | Property | Value |
 |---|---|
-| Source → Target | StoryBeat → Scene |
+| Source → Target | PlotPoint → Scene |
 | Cardinality | one-to-many |
 | Required | ❌ Optional |
-| Meaning | Scene satisfies/realizes this StoryBeat |
+| Meaning | Scene satisfies/realizes this PlotPoint |
 
-**Note:** When a Scene is attached via SATISFIED_BY, its `order_index` is auto-computed based on the StoryBeat's order and position within the StoryBeat.
+**Note:** When a Scene is attached via REALIZED_BY, its `order_index` is auto-computed based on the PlotPoint's order and position within the PlotPoint.
 
 ---
 
@@ -549,7 +546,7 @@ New implementations should use StoryBeats with ALIGNS_WITH and SATISFIED_BY edge
 | FinalImage | 15 | 5 |
 
 ## 3.3 Scene–Beat Rules
-- Each Scene **MUST** be assigned to exactly one Beat via `Scene.beat_id`.
+- Each Scene should be linked to a PlotPoint via a `REALIZED_BY` edge (the former `Scene.beat_id` field has been removed).
 - A Beat **MAY** have:
   - Zero scenes (early outline)
   - One scene (typical MVP)
@@ -581,8 +578,7 @@ Validation runs on a staged graph after applying a Patch. A Patch may be committ
 - StoryVersion must contain exactly 15 beats
 
 ### Scene
-- Required fields: id, heading, scene_overview, beat_id, order_index
-- `beat_id` references existing Beat
+- Required fields: id, heading, scene_overview, order_index
 - `order_index` ≥ 1
 - Exactly one Beat per Scene
 - **DRAFT enforcement:** at least one HAS_CHARACTER edge, exactly one LOCATED_AT edge
@@ -675,7 +671,7 @@ When validation fails, return:
 {
   "op": "ADD_NODE",
   "node": {
-    "type": "StoryBeat",
+    "type": "PlotPoint",
     "id": "sb_01J0SB001",
     "title": "Hero discovers the truth",
     "status": "proposed"
@@ -754,7 +750,7 @@ When validation fails, return:
 {
   "op": "ADD_EDGE",
   "edge": {
-    "type": "SATISFIED_BY",
+    "type": "REALIZED_BY",
     "from": "sb_01J0SB001",
     "to": "scene_01J0SC001"
   }

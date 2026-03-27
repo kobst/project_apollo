@@ -11,7 +11,7 @@ import type { StorageContext } from '../config.js';
 import { loadGraphById } from '../storage.js';
 import { LLMClient } from './llmClient.js';
 import { resolveIntent, type OrchestrationIntent, type ResolvedIntent } from './intentResolver.js';
-import { proposeStoryBeats, type ProposeStoryBeatsRequest } from './storyBeatOrchestrator.js';
+import { proposePlotPoints, type ProposePlotPointsRequest } from './storyBeatOrchestrator.js';
 import { proposeCharacters, type ProposeCharactersRequest } from './characterOrchestrator.js';
 import { proposeScenes, type ProposeScenesRequest } from './sceneOrchestrator.js';
 import { proposeExpand, type ProposeExpandRequest } from './expandOrchestrator.js';
@@ -23,6 +23,8 @@ export interface OrchestrationRequest {
   direction?: string;
   packageCount?: number;
   creativity?: number;
+  /** Optional problem statement describing what narrative problem to solve */
+  problemStatement?: string;
 }
 
 export interface StateAnalysis { gaps: any[]; coverage: unknown; suggestions: string[] }
@@ -60,14 +62,14 @@ export async function orchestrate(
   let packages: ai.NarrativePackage[] = [];
 
   switch (resolvedIntent.mode) {
-    case 'storyBeats': {
-      const req: ProposeStoryBeatsRequest = {
+    case 'plotPoints': {
+      const req: ProposePlotPointsRequest = {
         priorityBeats: resolvedIntent.targets,
-      } as ProposeStoryBeatsRequest;
+      } as ProposePlotPointsRequest;
       if (resolvedIntent.direction) (req as any).direction = resolvedIntent.direction;
       if (packageCount !== undefined) (req as any).packageCount = packageCount;
       if (creativity !== undefined) (req as any).creativity = creativity;
-      const result = await proposeStoryBeats(storyId, req, ctx, llmClient);
+      const result = await proposePlotPoints(storyId, req, ctx, llmClient);
       sessionId = result.sessionId;
       packages = result.packages;
       break;
@@ -86,7 +88,8 @@ export async function orchestrate(
     }
     case 'scenes': {
       const req: ProposeScenesRequest = {
-        storyBeatIds: resolvedIntent.targets,
+        storyBeatIds: resolvedIntent.targets, // maps to plotPointIds internally
+
       } as ProposeScenesRequest;
       if (resolvedIntent.direction) (req as any).direction = resolvedIntent.direction;
       if (packageCount !== undefined) (req as any).packageCount = packageCount;

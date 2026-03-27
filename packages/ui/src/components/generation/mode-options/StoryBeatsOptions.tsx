@@ -6,10 +6,10 @@
 import { useMemo } from 'react';
 import styles from './ModeOptions.module.css';
 
-export type StoryBeatsFocusType = 'all' | 'act' | 'beats';
+export type PlotPointsFocusType = 'all' | 'act' | 'beats';
 
 export interface StoryBeatsOptionsState {
-  focusType: StoryBeatsFocusType;
+  focusType: PlotPointsFocusType;
   targetAct?: 1 | 2 | 3 | 4 | 5 | undefined;
   priorityBeats: string[];
 }
@@ -19,7 +19,7 @@ interface BeatInfo {
   beatType: string;
   act: number;
   positionIndex: number;
-  hasMissingStoryBeats: boolean;
+  hasMissingPlotPoints: boolean;
 }
 
 interface StoryBeatsOptionsProps {
@@ -63,7 +63,7 @@ export function StoryBeatsOptions({
     return grouped;
   }, [beats]);
 
-  const handleFocusChange = (focusType: StoryBeatsFocusType) => {
+  const handleFocusChange = (focusType: PlotPointsFocusType) => {
     onChange({
       ...value,
       focusType,
@@ -93,7 +93,7 @@ export function StoryBeatsOptions({
           <label className={styles.radioOption}>
             <input
               type="radio"
-              name="storyBeatsFocus"
+              name="plotPointsFocus"
               value="all"
               checked={value.focusType === 'all'}
               onChange={() => handleFocusChange('all')}
@@ -105,7 +105,7 @@ export function StoryBeatsOptions({
           <label className={styles.radioOption}>
             <input
               type="radio"
-              name="storyBeatsFocus"
+              name="plotPointsFocus"
               value="act"
               checked={value.focusType === 'act'}
               onChange={() => handleFocusChange('act')}
@@ -117,7 +117,7 @@ export function StoryBeatsOptions({
           <label className={styles.radioOption}>
             <input
               type="radio"
-              name="storyBeatsFocus"
+              name="plotPointsFocus"
               value="beats"
               checked={value.focusType === 'beats'}
               onChange={() => handleFocusChange('beats')}
@@ -167,7 +167,7 @@ export function StoryBeatsOptions({
                       {actBeats.map((beat) => (
                         <label
                           key={beat.id}
-                          className={`${styles.beatOption} ${beat.hasMissingStoryBeats ? styles.missing : ''}`}
+                          className={`${styles.beatOption} ${beat.hasMissingPlotPoints ? styles.missing : ''}`}
                         >
                           <input
                             type="checkbox"
@@ -177,7 +177,7 @@ export function StoryBeatsOptions({
                           />
                           <span className={styles.beatLabel}>
                             {beat.beatType}
-                            {beat.hasMissingStoryBeats && (
+                            {beat.hasMissingPlotPoints && (
                               <span className={styles.missingIndicator} title="Missing story beats">
                                 {'\u25CF'}
                               </span>

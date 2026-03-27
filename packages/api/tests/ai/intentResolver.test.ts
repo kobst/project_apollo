@@ -41,7 +41,7 @@ describe('intentResolver', () => {
       freeform: 'fill the Catalyst beat in Act 1',
       storyState: baseState,
     });
-    expect(result.mode).toBe('storyBeats');
+    expect(result.mode).toBe('plotPoints');
   });
 
   it('suggests from state when no inputs', () => {
@@ -51,7 +51,7 @@ describe('intentResolver', () => {
         coverage: { gaps: [], summary: [] } as any,
       },
     });
-    expect(result.mode).toBe('storyBeats');
+    expect(result.mode).toBe('plotPoints');
     expect(result.targets).toEqual(['beat_Catalyst']);
   });
 });

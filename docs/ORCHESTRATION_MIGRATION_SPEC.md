@@ -38,7 +38,7 @@ Migrate from a dual-path generation system (Manual Mode vs Smart Mode toggle) to
    (Mode, Scope, Focus)    (Direction text)
         │                       │
         ▼                       ▼
-   /propose/story-beats    /agents/run
+   /propose/plot-points    /agents/run
    /propose/characters     (interpreter)
    /propose/scenes
    /propose/expand
@@ -68,7 +68,7 @@ Migrate from a dual-path generation system (Manual Mode vs Smart Mode toggle) to
 │  Gaps: Catalyst, Midpoint | Act 2 thin | Sarah orphan   │
 ├─────────────────────────────────────────────────────────┤
 │  🎯 INTENT (structured controls)                         │
-│  What: [StoryBeats ▼]  Where: [Act 2 ▼] [Catalyst ▼]   │
+│  What: [PlotPoints ▼]  Where: [Act 2 ▼] [Catalyst ▼]   │
 ├─────────────────────────────────────────────────────────┤
 │  💬 DIRECTION (freeform text)                            │
 │  "Focus on building tension"                             │
@@ -96,7 +96,7 @@ Migrate from a dual-path generation system (Manual Mode vs Smart Mode toggle) to
                           │
           ┌───────────────┼───────────────┐
           ▼               ▼               ▼
-   storyBeatOrch    characterOrch    sceneOrch    (internal)
+   plotPointOrch    characterOrch    sceneOrch    (internal)
           │               │               │
           └───────────────┴───────────────┘
                           │
@@ -121,7 +121,7 @@ The orchestrator combines multiple signals to determine generation strategy:
 
 | Signal | Source | Priority | Example |
 |--------|--------|----------|---------|
-| Structured intent | UI controls | High | `mode: StoryBeats, focus: Catalyst` |
+| Structured intent | UI controls | High | `mode: PlotPoints, focus: Catalyst` |
 | Freeform direction | Text input | High | "Focus on tension" |
 | Story state | Auto-analyzed | Medium | "Catalyst gap detected" |
 | Defaults | System | Low | "Generate 3 packages" |
@@ -136,10 +136,10 @@ The orchestrator combines multiple signals to determine generation strategy:
 
 | Structured | Freeform | State | Result |
 |------------|----------|-------|--------|
-| `StoryBeats, Catalyst` | — | — | Call storyBeatOrch targeting Catalyst |
+| `PlotPoints, Catalyst` | — | — | Call plotPointOrch targeting Catalyst |
 | — | "add a villain" | Has characters | Call characterOrch |
-| — | "fill out act 2" | Act 2 gaps | Call storyBeatOrch for Act 2 beats |
-| `Scenes` | "tense confrontation" | StoryBeats exist | Call sceneOrch with direction |
+| — | "fill out act 2" | Act 2 gaps | Call plotPointOrch for Act 2 beats |
+| `Scenes` | "tense confrontation" | PlotPoints exist | Call sceneOrch with direction |
 | — | — | Catalyst missing | Suggest: "Generate Catalyst beat?" |
 
 ---
@@ -156,7 +156,7 @@ export interface OrchestrationRequest {
   
   // Structured intent (from UI controls)
   intent?: {
-    mode?: 'storyBeats' | 'characters' | 'scenes' | 'expand';
+    mode?: 'plotPoints' | 'characters' | 'scenes' | 'expand';
     scope?: 'act1' | 'act2' | 'act3' | 'full';
     focus?: string[];  // beat IDs, node IDs, etc.
   };
@@ -182,7 +182,7 @@ export interface OrchestrationResponse {
 }
 
 export interface ResolvedIntent {
-  mode: 'storyBeats' | 'characters' | 'scenes' | 'expand' | 'interpret';
+  mode: 'plotPoints' | 'characters' | 'scenes' | 'expand' | 'interpret';
   targets: string[];
   direction?: string;
   confidence: number;
@@ -266,7 +266,7 @@ function interpretFreeformIntent(
   // Beat/structure signals
   if (lowerText.match(/beat|catalyst|midpoint|act \d|structure/)) {
     return {
-      mode: 'storyBeats',
+      mode: 'plotPoints',
       targets: extractBeatReferences(text),
       direction: text,
       confidence: 0.8,
@@ -293,7 +293,7 @@ function suggestFromState(
   
   if (priorityGap) {
     return {
-      mode: 'storyBeats',
+      mode: 'plotPoints',
       targets: [priorityGap.beatId],
       confidence: 0.6,
       reasoning: `Suggesting to fill ${priorityGap.beatType} gap`
@@ -338,8 +338,8 @@ export async function orchestrate(
   let result: GenerationResult;
   
   switch (resolvedIntent.mode) {
-    case 'storyBeats':
-      result = await proposeStoryBeats(storyId, {
+    case 'plotPoints':
+      result = await proposePlotPoints(storyId, {
         priorityBeats: resolvedIntent.targets,
         direction: resolvedIntent.direction,
         packageCount,
@@ -356,7 +356,7 @@ export async function orchestrate(
       
     case 'scenes':
       result = await proposeScenes(storyId, {
-        storyBeatIds: resolvedIntent.targets,
+        plotPointIds: resolvedIntent.targets,
         direction: resolvedIntent.direction,
         packageCount
       }, ctx, llmClient);
@@ -557,7 +557,7 @@ function PackageCard({ pkg, orchestrationInfo }) {
 interface GenerateRequest {
   // Structured intent (optional)
   intent?: {
-    mode?: 'storyBeats' | 'characters' | 'scenes' | 'expand';
+    mode?: 'plotPoints' | 'characters' | 'scenes' | 'expand';
     scope?: 'act1' | 'act2' | 'act3' | 'full';
     focus?: string[];
   };
@@ -590,7 +590,7 @@ These remain but are called by the orchestrator, not directly by UI:
 
 | Endpoint | Status | Called By |
 |----------|--------|-----------|
-| `POST /propose/story-beats` | Internal | Orchestrator |
+| `POST /propose/plot-points` | Internal | Orchestrator |
 | `POST /propose/characters` | Internal | Orchestrator |
 | `POST /propose/scenes` | Internal | Orchestrator |
 | `POST /propose/expand` | Internal | Orchestrator |
@@ -700,7 +700,7 @@ Package with full impact data
    - Recommendation: Structured intent takes priority, show warning
 
 3. **Should we show orchestration reasoning to users?**
-   - "I'm generating story beats because you have a Catalyst gap"
+   - "I'm generating plot points because you have a Catalyst gap"
    - Recommendation: Yes, in collapsible "AI reasoning" section
 
 4. **Proactive generation suggestions?**

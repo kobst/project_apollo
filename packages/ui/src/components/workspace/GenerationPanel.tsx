@@ -14,7 +14,7 @@ import { SavedPackagesPanel } from '../generation/SavedPackagesPanel';
 import { PackageCarousel } from './PackageCarousel';
 import type {
   SavedPackageData,
-  ProposeStoryBeatsRequest,
+  ProposePlotPointsRequest,
   ProposeCharactersRequest,
   ProposeScenesRequest,
   ProposeExpandRequest,
@@ -51,7 +51,7 @@ export function GenerationPanel({
 }: GenerationPanelProps) {
   const { currentStoryId, refreshStatus } = useStory();
   const {
-    proposeStoryBeats,
+    proposePlotPoints,
     proposeCharacters,
     proposeScenes,
     proposeExpand,
@@ -73,7 +73,7 @@ export function GenerationPanel({
   const { savedPackages, loadSavedPackages, savePackage, applySavedPackage, deleteSavedPackage } = useSavedPackages();
 
   // Fetch data needed for the generation form (beats, characters, story beats)
-  const { beats, characters, storyBeats, refresh: refreshGenerationData } = useGenerationData(currentStoryId);
+  const { beats, characters, plotPoints, refresh: refreshGenerationData } = useGenerationData(currentStoryId);
 
   // Form state preserved during collapse
   const [formState, setFormState] = useState<ComposeFormState>(createDefaultFormState);
@@ -106,26 +106,26 @@ export function GenerationPanel({
   // CTA: Generate for a selected gap
   const handleGenerateGap = useCallback(async (gap: GapData) => {
     if (!currentStoryId) return;
-    // Keep it simple: route to storyBeats with direction hint from gap
+    // Keep it simple: route to plotPoints with direction hint from gap
     const direction = `Fill gap: ${gap.title}`;
-    await proposeStoryBeats(currentStoryId, {
+    await proposePlotPoints(currentStoryId, {
       focus: 'all',
       direction,
       packageCount: 3,
     });
     refreshStatus();
     refreshGenerationData();
-  }, [currentStoryId, proposeStoryBeats, refreshStatus, refreshGenerationData]);
+  }, [currentStoryId, proposePlotPoints, refreshStatus, refreshGenerationData]);
 
   // Mode-specific generation handlers
-  const handleGenerateStoryBeats = useCallback(
-    async (request: ProposeStoryBeatsRequest) => {
+  const handleGeneratePlotPoints = useCallback(
+    async (request: ProposePlotPointsRequest) => {
       if (!currentStoryId) return;
-      await proposeStoryBeats(currentStoryId, request);
+      await proposePlotPoints(currentStoryId, request);
       refreshStatus();
       refreshGenerationData();
     },
-    [currentStoryId, proposeStoryBeats, refreshStatus, refreshGenerationData]
+    [currentStoryId, proposePlotPoints, refreshStatus, refreshGenerationData]
   );
 
   const handleGenerateCharacters = useCallback(
@@ -349,7 +349,7 @@ export function GenerationPanel({
 
         {/* Compose Form */}
         <ComposeForm
-          onGenerateStoryBeats={handleGenerateStoryBeats}
+          onGeneratePlotPoints={handleGeneratePlotPoints}
           onGenerateCharacters={handleGenerateCharacters}
           onGenerateScenes={handleGenerateScenes}
           onGenerateExpand={handleGenerateExpand}
@@ -358,7 +358,7 @@ export function GenerationPanel({
           onFormStateChange={setFormState}
           beats={beats}
           characters={characters}
-          storyBeats={storyBeats}
+          plotPoints={plotPoints}
           selectedNode={selectedNode ?? undefined}
           onNodeSelectionModeChange={onNodeSelectionModeChange}
         />

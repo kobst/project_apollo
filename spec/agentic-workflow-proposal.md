@@ -74,7 +74,7 @@ Re-use and extend the contracts in `aiIntegration.md`.
   - `GET /stories/:id/status`, `GET /stories/:id/outline`, `GET /stories/:id/open-questions`
 - Stage Packages
   - Unified: `POST /stories/:id/propose`
-  - Specializations: `POST /stories/:id/propose/story-beats | /characters | /scenes | /expand`
+  - Specializations: `POST /stories/:id/propose/plot-points | /characters | /scenes | /expand`
   - Inspect: `GET /stories/:id/propose/active`
 - Refine/Edit Package
   - `POST /stories/:id/regenerate-element`
@@ -149,7 +149,7 @@ Map lint codes to fixers on a staged package (not live graph):
 
 - `ORDER_UNIQUE`: Reindex order within beat.
 - `PP_DAG_NO_CYCLES`: Suggest edge removals/reorders to preserve DAG.
-- `ACT_ALIGNMENT`: Add/adjust `ALIGNS_WITH` for StoryBeats.
+- `ACT_ALIGNMENT`: Add/adjust `alignedBeatId` for PlotPoints.
 - `HAS_CHARACTER`/`LOCATED_AT`: Attach prominent characters/location from context.
 - `ID_HYGIENE`: Normalize temp IDs; ensure uniqueness.
 

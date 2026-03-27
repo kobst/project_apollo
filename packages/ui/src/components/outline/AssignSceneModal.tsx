@@ -1,31 +1,31 @@
 /**
- * AssignSceneModal - Modal for assigning a scene to a story beat.
+ * AssignSceneModal - Modal for assigning a scene to a plot point.
  */
 
 import { useState } from 'react';
-import type { OutlineStoryBeat } from '../../api/types';
+import type { OutlinePlotPoint } from '../../api/types';
 import styles from './AssignModal.module.css';
 
 interface AssignSceneModalProps {
   sceneHeading: string;
-  storyBeats: OutlineStoryBeat[];
-  onAssign: (storyBeatId: string) => void;
+  plotPoints: OutlinePlotPoint[];
+  onAssign: (plotPointId: string) => void;
   onCancel: () => void;
   saving?: boolean | undefined;
 }
 
 export function AssignSceneModal({
   sceneHeading,
-  storyBeats,
+  plotPoints,
   onAssign,
   onCancel,
   saving = false,
 }: AssignSceneModalProps) {
-  const [selectedStoryBeatId, setSelectedStoryBeatId] = useState<string | null>(null);
+  const [selectedPlotPointId, setSelectedPlotPointId] = useState<string | null>(null);
 
   const handleAssign = () => {
-    if (selectedStoryBeatId) {
-      onAssign(selectedStoryBeatId);
+    if (selectedPlotPointId) {
+      onAssign(selectedPlotPointId);
     }
   };
 
@@ -46,33 +46,33 @@ export function AssignSceneModal({
 
         <div className={styles.content}>
           <p className={styles.description}>
-            Assign &quot;{sceneHeading}&quot; to a story beat:
+            Assign &quot;{sceneHeading}&quot; to a plot point:
           </p>
 
           <div className={styles.optionsList}>
-            {storyBeats.length > 0 ? (
-              storyBeats.map((storyBeat) => (
+            {plotPoints.length > 0 ? (
+              plotPoints.map((plotPoint) => (
                 <label
-                  key={storyBeat.id}
-                  className={`${styles.option} ${selectedStoryBeatId === storyBeat.id ? styles.optionSelected : ''}`}
+                  key={plotPoint.id}
+                  className={`${styles.option} ${selectedPlotPointId === plotPoint.id ? styles.optionSelected : ''}`}
                 >
                   <input
                     type="radio"
-                    name="storyBeat"
-                    value={storyBeat.id}
-                    checked={selectedStoryBeatId === storyBeat.id}
-                    onChange={() => setSelectedStoryBeatId(storyBeat.id)}
+                    name="plotPoint"
+                    value={plotPoint.id}
+                    checked={selectedPlotPointId === plotPoint.id}
+                    onChange={() => setSelectedPlotPointId(plotPoint.id)}
                     className={styles.radio}
                   />
-                  <span className={styles.optionLabel}>{storyBeat.title}</span>
-                  <span className={`${styles.optionIntent} ${styles[`intent_${storyBeat.intent}`]}`}>
-                    {storyBeat.intent}
+                  <span className={styles.optionLabel}>{plotPoint.title}</span>
+                  <span className={`${styles.optionIntent} ${styles[`intent_${plotPoint.intent}`]}`}>
+                    {plotPoint.intent}
                   </span>
                 </label>
               ))
             ) : (
               <div className={styles.emptyMessage}>
-                No story beats available. Create a story beat first.
+                No plot points available. Create a plot point first.
               </div>
             )}
           </div>
@@ -91,7 +91,7 @@ export function AssignSceneModal({
             className={styles.assignBtn}
             onClick={handleAssign}
             type="button"
-            disabled={!selectedStoryBeatId || saving}
+            disabled={!selectedPlotPointId || saving}
           >
             {saving ? 'Assigning...' : 'Assign'}
           </button>

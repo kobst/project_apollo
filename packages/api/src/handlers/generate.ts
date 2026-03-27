@@ -70,8 +70,8 @@ import {
   discardActiveProposal,
 } from '../ai/proposeOrchestrator.js';
 import {
-  proposeStoryBeats,
-  type ProposeStoryBeatsRequest,
+  proposePlotPoints,
+  type ProposePlotPointsRequest,
 } from '../ai/storyBeatOrchestrator.js';
 import {
   proposeCharacters,
@@ -235,7 +235,7 @@ export function createGenerateHandler(ctx: StorageContext) {
     req: Request<{ id: string }, unknown, GenerateRequestBody & {
       // Unified orchestration shape (optional)
       intent?: {
-        mode?: 'storyBeats' | 'characters' | 'scenes' | 'expand';
+        mode?: 'plotPoints' | 'characters' | 'scenes' | 'expand';
         scope?: 'act1' | 'act2' | 'act3' | 'full';
         focus?: string[];
       };
@@ -2121,19 +2121,19 @@ export function createRefineProposalHandler(ctx: StorageContext) {
 }
 
 // =============================================================================
-// Propose StoryBeats Handler (StoryBeat-only generation)
+// Propose PlotPoints Handler (PlotPoint-only generation)
 // =============================================================================
 
-interface ProposeStoryBeatsResponseData {
+interface ProposePlotPointsResponseData {
   sessionId: string;
   packages: ai.NarrativePackage[];
   missingBeats: MissingBeatInfo[];
 }
 
-interface ProposeStoryBeatsRequestBody {
+interface ProposePlotPointsRequestBody {
   priorityBeats?: string[];
   packageCount?: number;
-  maxStoryBeatsPerPackage?: number;
+  maxPlotPointsPerPackage?: number;
   direction?: string;
   creativity?: number;
   expansionScope?: ai.ExpansionScope;
@@ -2141,31 +2141,31 @@ interface ProposeStoryBeatsRequestBody {
 }
 
 /**
- * POST /stories/:id/propose/story-beats
+ * POST /stories/:id/propose/plot-points
  *
- * Generate StoryBeat nodes to fill structural gaps (beats without alignment).
- * Returns only StoryBeat nodes with ALIGNS_WITH and PRECEDES edges.
+ * Generate PlotPoint nodes to fill structural gaps (beats without alignment).
+ * Returns only PlotPoint nodes with PRECEDES edges and alignedBeatId properties.
  */
-export function createProposeStoryBeatsHandler(ctx: StorageContext) {
+export function createProposePlotPointsHandler(ctx: StorageContext) {
   return async (
-    req: Request<{ id: string }, unknown, ProposeStoryBeatsRequestBody>,
-    res: Response<APIResponse<ProposeStoryBeatsResponseData>>,
+    req: Request<{ id: string }, unknown, ProposePlotPointsRequestBody>,
+    res: Response<APIResponse<ProposePlotPointsResponseData>>,
     next: NextFunction
   ): Promise<void> => {
-    console.log('[proposeStoryBeatsHandler] Received propose story-beats request');
+    console.log('[proposePlotPointsHandler] Received propose plot-points request');
     try {
       const { id } = req.params;
       const {
         priorityBeats = [],
         packageCount = 3,
-        maxStoryBeatsPerPackage = 5,
+        maxPlotPointsPerPackage = 5,
         direction,
         creativity = 0.5,
         expansionScope = 'flexible',
         targetAct,
       } = req.body;
 
-      console.log(`[proposeStoryBeatsHandler] Story: ${id}, priorityBeats: ${priorityBeats.length}, packageCount: ${packageCount}`);
+      console.log(`[proposePlotPointsHandler] Story: ${id}, priorityBeats: ${priorityBeats.length}, packageCount: ${packageCount}`);
 
       if (!isLLMConfigured()) {
         const { message, suggestion } = getMissingKeyError();
@@ -2174,10 +2174,10 @@ export function createProposeStoryBeatsHandler(ctx: StorageContext) {
 
       const llmClient = createLLMClient({ enableCache: false });
 
-      const request: ProposeStoryBeatsRequest = {
+      const request: ProposePlotPointsRequest = {
         priorityBeats,
         packageCount,
-        maxStoryBeatsPerPackage,
+        maxPlotPointsPerPackage,
         creativity,
         expansionScope,
       };
@@ -2210,7 +2210,7 @@ export function createProposeStoryBeatsHandler(ctx: StorageContext) {
           },
         };
 
-        const result = await proposeStoryBeats(id, request, ctx, llmClient, streamCallbacks);
+        const result = await proposePlotPoints(id, request, ctx, llmClient, streamCallbacks);
 
         // Enrich packages with edge names
         const graph = await loadGraphById(id, ctx);
@@ -2223,7 +2223,7 @@ export function createProposeStoryBeatsHandler(ctx: StorageContext) {
         res.write('data: [DONE]\n\n');
         res.end();
       } else {
-        const result = await proposeStoryBeats(id, request, ctx, llmClient);
+        const result = await proposePlotPoints(id, request, ctx, llmClient);
 
         // Enrich packages with edge names
         const graph = await loadGraphById(id, ctx);
@@ -2388,7 +2388,7 @@ interface ProposeScenesResponseData {
 }
 
 interface ProposeScenesRequestBody {
-  storyBeatIds: string[];
+  plotPointIds: string[];
   scenesPerBeat?: number;
   maxScenesPerPackage?: number;
   expansionScope?: ai.ExpansionScope;
@@ -2400,7 +2400,7 @@ interface ProposeScenesRequestBody {
 /**
  * POST /stories/:id/propose/scenes
  *
- * Generate Scene nodes for committed StoryBeats.
+ * Generate Scene nodes for committed PlotPoints.
  */
 export function createProposeScenesHandler(ctx: StorageContext) {
   return async (
@@ -2412,7 +2412,7 @@ export function createProposeScenesHandler(ctx: StorageContext) {
     try {
       const { id } = req.params;
       const {
-        storyBeatIds,
+        plotPointIds,
         scenesPerBeat = 1,
         maxScenesPerPackage = 5,
         expansionScope = 'flexible',
@@ -2421,11 +2421,11 @@ export function createProposeScenesHandler(ctx: StorageContext) {
         creativity = 0.5,
       } = req.body;
 
-      if (!storyBeatIds || storyBeatIds.length === 0) {
-        throw new BadRequestError('storyBeatIds is required and must contain at least one ID');
+      if (!plotPointIds || plotPointIds.length === 0) {
+        throw new BadRequestError('plotPointIds is required and must contain at least one ID');
       }
 
-      console.log(`[proposeScenesHandler] Story: ${id}, storyBeatIds: ${storyBeatIds.length}`);
+      console.log(`[proposeScenesHandler] Story: ${id}, plotPointIds: ${plotPointIds.length}`);
 
       if (!isLLMConfigured()) {
         const { message, suggestion } = getMissingKeyError();
@@ -2435,7 +2435,7 @@ export function createProposeScenesHandler(ctx: StorageContext) {
       const llmClient = createLLMClient({ enableCache: false });
 
       const request: ProposeScenesRequest = {
-        storyBeatIds,
+        storyBeatIds: plotPointIds,
         scenesPerBeat,
         maxScenesPerPackage,
         expansionScope,

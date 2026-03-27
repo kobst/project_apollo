@@ -14,6 +14,7 @@ import {
   createCharacter,
   createLocation,
   createCharacterArc,
+  createPlotPoint,
   resetIdCounter,
 } from './helpers/index.js';
 import { edges } from './helpers/index.js';
@@ -29,7 +30,7 @@ describe('Validator', () => {
 
   describe('Valid patch commits successfully', () => {
     it('should validate patch that adds valid Scene', () => {
-      const scene = createScene('beat_Catalyst');
+      const scene = createScene();
       const patch = createMinimalPatch('sv0', [{ op: 'ADD_NODE', node: scene }]);
 
       const result = validatePatch(graph, patch);
@@ -40,7 +41,7 @@ describe('Validator', () => {
 
     it('should validate patch with Character and edges', () => {
       const char = createCharacter({ id: 'char_1' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_1' });
+      const scene = createScene({ id: 'scene_1' });
       const patch = createMinimalPatch('sv0', [
         { op: 'ADD_NODE', node: char },
         { op: 'ADD_NODE', node: scene },
@@ -86,7 +87,7 @@ describe('Validator', () => {
 
   describe('Missing required fields', () => {
     it('should reject Scene with scene_overview under 20 chars', () => {
-      const shortOverviewScene = createScene('beat_Catalyst', {
+      const shortOverviewScene = createScene({
         id: 'scene_short',
         scene_overview: 'Too short',
       });
@@ -107,7 +108,7 @@ describe('Validator', () => {
     });
 
     it('should reject Scene with order_index < 1', () => {
-      const invalidOrderScene = createScene('beat_Catalyst', {
+      const invalidOrderScene = createScene({
         id: 'scene_bad_order',
         order_index: 0,
       });
@@ -125,17 +126,20 @@ describe('Validator', () => {
   });
 
   describe('FK integrity violations', () => {
-    it('should reject Scene referencing non-existent Beat', () => {
-      const scene = createScene('nonexistent_beat', { id: 'scene_orphan' });
+    it('should reject PlotPoint referencing non-existent Beat via alignedBeatId', () => {
+      const pp = createPlotPoint({
+        id: 'pp_orphan',
+        alignedBeatId: 'nonexistent_beat',
+      });
 
       const patch = createMinimalPatch('sv0', [
-        { op: 'ADD_NODE', node: scene },
+        { op: 'ADD_NODE', node: pp },
       ]);
 
       const result = validatePatch(graph, patch);
 
       expect(result.success).toBe(false);
-      expect(result.errors.some((e) => e.code === 'FK_INTEGRITY')).toBe(true);
+      expect(result.errors.some((e) => e.code === 'FK_INTEGRITY' && e.field === 'alignedBeatId')).toBe(true);
     });
 
     it('should reject CharacterArc referencing non-existent Character', () => {
@@ -154,7 +158,7 @@ describe('Validator', () => {
     });
 
     it('should reject edge to non-existent node', () => {
-      const scene = createScene('beat_Catalyst', { id: 'scene_1' });
+      const scene = createScene({ id: 'scene_1' });
       graph.nodes.set(scene.id, scene);
 
       const patch = createMinimalPatch('sv0', [
@@ -207,7 +211,7 @@ describe('Validator', () => {
   describe('Delete node cascades edges', () => {
     it('DELETE_NODE should cascade edge deletion automatically', () => {
       const char = createCharacter({ id: 'char_to_delete' });
-      const scene = createScene('beat_Catalyst', { id: 'scene_1' });
+      const scene = createScene({ id: 'scene_1' });
       graph.nodes.set(char.id, char);
       graph.nodes.set(scene.id, scene);
       graph.edges.push(edges.hasCharacter('scene_1', 'char_to_delete'));
@@ -247,7 +251,7 @@ describe('Validator', () => {
     });
 
     it('should detect invalid scene_overview in graph', () => {
-      const badScene = createScene('beat_Catalyst', {
+      const badScene = createScene({
         id: 'scene_bad',
         scene_overview: 'Too short',
       });
@@ -264,15 +268,15 @@ describe('Validator', () => {
 
   describe('isPatchValid', () => {
     it('should return true for valid patch', () => {
-      const scene = createScene('beat_Catalyst');
+      const scene = createScene();
       const patch = createMinimalPatch('sv0', [{ op: 'ADD_NODE', node: scene }]);
 
       expect(isPatchValid(graph, patch)).toBe(true);
     });
 
     it('should return false for invalid patch', () => {
-      const scene = createScene('nonexistent_beat');
-      const patch = createMinimalPatch('sv0', [{ op: 'ADD_NODE', node: scene }]);
+      const pp = createPlotPoint({ alignedBeatId: 'nonexistent_beat' });
+      const patch = createMinimalPatch('sv0', [{ op: 'ADD_NODE', node: pp }]);
 
       expect(isPatchValid(graph, patch)).toBe(false);
     });

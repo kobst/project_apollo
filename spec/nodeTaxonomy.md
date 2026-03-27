@@ -128,8 +128,8 @@ These foundational context concepts have been consolidated into the structured `
 - `scene_overview`
 - `order_index`
 
-**Deprecated:**
-- `beat_id` *(use SATISFIED_BY edge to StoryBeat instead)*
+**Removed:**
+- ~~`beat_id`~~ *(removed; use REALIZED_BY edge from PlotPoint instead)*
 
 **Optional:**
 - `int_ext`
@@ -198,7 +198,7 @@ These foundational context concepts have been consolidated into the structured `
 
 ---
 
-### 13) `StoryBeat`
+### 13) `PlotPoint`
 **Purpose:** Writer-declared "this must happen" unit of story causality
 
 **Required:**
@@ -215,16 +215,17 @@ These foundational context concepts have been consolidated into the structured `
 - `stakes_change` (enum: `up`, `down`, `steady`)
 - `status` (enum: `proposed`, `approved`, `deprecated`)
 - `act` (1–5)
+- `alignedBeatId` (FK to Beat – replaces the former `ALIGNS_WITH` edge)
 - `weight` (0–1)
 - `confidence` (0–1)
 - `tags[]`
 - `ownerId`
 
 **Notes:**
-- Story beats can exist before scenes are created
+- Plot points can exist before scenes are created
 - They represent narrative promises that must be fulfilled
-- Align to STC beats via `ALIGNS_WITH` edge
-- Fulfilled by one or more scenes via `SATISFIED_BY` edge
+- Align to STC beats via `alignedBeatId` FK property
+- Fulfilled by one or more scenes via `REALIZED_BY` edge
 - Form causal chains via `PRECEDES` edge (must be DAG)
 
 ---
@@ -269,11 +270,11 @@ These foundational context concepts have been consolidated into the structured `
 - `createdAt`
 
 **Optional:**
-- `suggestedType` (`StoryBeat`, `Scene`, `Character`, `Location`, `Object`)
+- `suggestedType` (`PlotPoint`, `Scene`, `Character`, `Location`, `Object`)
 
 **Notes:**
 - Ideas live in the "Unassigned" area of the Outline view
-- Can be promoted to a concrete node type (StoryBeat, Scene, etc.)
+- Can be promoted to a concrete node type (PlotPoint, Scene, etc.)
 - Allows capturing creative thoughts without immediately committing to structure
 - When promoted, the Idea is deleted and a new node of the target type is created
 
@@ -322,12 +323,12 @@ Evolving guidance that the AI receives selectively based on the current task.
 ## 3. Relationships (Edges)
 
 ### Structure & Realization
-- `Scene -[FULFILLS]-> Beat` *(deprecated - use StoryBeat edges instead)*
+- `Scene -[FULFILLS]-> Beat` *(deprecated - use PlotPoint edges instead)*
 - `Beat -[REALIZED_BY]-> Scene` *(derived, deprecated)*
 
 **Preferred hierarchy (v1.1+):**
-- `StoryBeat -[ALIGNS_WITH]-> Beat` *(StoryBeat aligns to structural beat)*
-- `StoryBeat -[SATISFIED_BY]-> Scene` *(Scene realizes the StoryBeat)*
+- `PlotPoint.alignedBeatId -> Beat` *(PlotPoint aligns to structural beat via FK)*
+- `PlotPoint -[REALIZED_BY]-> Scene` *(Scene realizes the PlotPoint)*
 
 ### Participation & Setting
 - `Scene -[HAS_CHARACTER]-> Character`
@@ -339,11 +340,11 @@ Evolving guidance that the AI receives selectively based on the current task.
 - `CharacterArc -[HAS_TURN_IN]-> Scene`
 - `Character -[HAS_ARC]-> CharacterArc`
 
-### StoryBeat
-- `StoryBeat -[ALIGNS_WITH]-> Beat` *(optional alignment to STC beat)*
-- `StoryBeat -[SATISFIED_BY]-> Scene` *(with order property)*
-- `StoryBeat -[PRECEDES]-> StoryBeat` *(causal chain, must be DAG)*
-- `StoryBeat -[ADVANCES]-> CharacterArc`
+### PlotPoint
+- `PlotPoint.alignedBeatId -> Beat` *(optional alignment to STC beat via FK property)*
+- `PlotPoint -[REALIZED_BY]-> Scene` *(with order property)*
+- `PlotPoint -[PRECEDES]-> PlotPoint` *(causal chain, must be DAG)*
+- `PlotPoint -[ADVANCES]-> CharacterArc`
 
 ### Workflow
 - `StoryVersion -[HAS]-> Beat/Scene/Character/...`
@@ -373,17 +374,17 @@ Evolving guidance that the AI receives selectively based on the current task.
 - **CharacterArc exists, no turn_refs**
   → `ArcUngrounded(character_arc_id)`
 
-### StoryBeat (hard rules - block commit)
+### PlotPoint (hard rules - block commit)
 - **PRECEDES edges form a cycle**
-  → `SB_DAG_NO_CYCLES` *(no auto-fix)*
-- **Multiple SATISFIED_BY edges have same order**
-  → `SB_ORDER_UNIQUE` *(auto-fix: reindex)*
-- **StoryBeat.act mismatches aligned Beat.act**
-  → `SB_ACT_ALIGNMENT` *(auto-fix: update act)*
+  → `PP_DAG_NO_CYCLES` *(no auto-fix)*
+- **Multiple REALIZED_BY edges have same order**
+  → `PP_ORDER_UNIQUE` *(auto-fix: reindex)*
+- **PlotPoint.act mismatches aligned Beat.act**
+  → `PP_ACT_ALIGNMENT` *(auto-fix: update act)*
 
-### StoryBeat (soft rules - warnings)
-- **Approved StoryBeat has no SATISFIED_BY scenes**
-  → `SB_EVENT_REALIZATION` *(Draft)*
+### PlotPoint (soft rules - warnings)
+- **Approved PlotPoint has no REALIZED_BY scenes**
+  → `PP_EVENT_REALIZATION` *(Draft)*
 
 ### Context Layer (soft rules - warnings)
 - **StoryContext.constitution is missing required fields (logline, premise, genre)**
@@ -394,8 +395,8 @@ Evolving guidance that the AI receives selectively based on the current task.
 ## 5. Notes & Known v1 Limitations
 
 - No explicit `StateChange` node (deferred to v2)
-- Causality captured via `StoryBeat` nodes and `PRECEDES` edges
-- StoryBeats represent writer intent; scenes realize that intent via `SATISFIED_BY`
+- Causality captured via `PlotPoint` nodes and `PRECEDES` edges
+- PlotPoints represent writer intent; scenes realize that intent via `REALIZED_BY`
 - DialogueLine deferred; notable dialogue stored on Scene
 - Conflicts, themes, and motifs are captured as prose in Story Context, not as graph nodes
 - Structure is enforced as an attractor, not a gate

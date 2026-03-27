@@ -29,6 +29,8 @@ export {
   getPositionForBeat,
   getScenesByBeat,
   getBeatForScene,
+  getScenesForPlotPoint,
+  getPlotPointsForScene,
   getBeatsByAct,
   getScenesByAct,
   expandScope,
@@ -63,9 +65,10 @@ export {
 
 // Hard Rules
 export {
-  SCENE_ACT_BOUNDARY,
   STC_BEAT_ORDERING,
   EDGE_ORDER_UNIQUE,
+  PP_DAG_NO_CYCLES,
+  PP_ACT_ALIGNMENT,
   HARD_RULES,
   registerHardRules,
 } from './hardRules.js';
@@ -74,6 +77,9 @@ export {
 export {
   SCENE_HAS_CHARACTER,
   SCENE_HAS_LOCATION,
+  SCENE_HAS_PLOTPOINT,
+  PP_EVENT_REALIZATION,
+  PLOTPOINT_TOO_CONCRETE,
   SOFT_RULES,
   registerSoftRules,
 } from './softRules.js';

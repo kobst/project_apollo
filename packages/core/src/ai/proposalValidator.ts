@@ -124,7 +124,7 @@ const NODE_TYPE_TO_TIER: Record<string, GapTier> = {
   Location: 'foundations',
   Object: 'foundations',
   Beat: 'structure',
-  StoryBeat: 'storyBeats',
+  PlotPoint: 'storyBeats',
   Scene: 'scenes',
 };
 
@@ -134,7 +134,7 @@ const SIMILARITY_FIELDS: Record<string, string[]> = {
   Location: ['name'],
   Object: ['name'],
   Scene: ['heading', 'title'],
-  StoryBeat: ['title'],
+  PlotPoint: ['title'],
   Idea: ['title'],
 };
 
@@ -149,9 +149,8 @@ const OUTGOING_EDGES: Record<string, Array<{ edgeType: EdgeType; targetType: str
     { edgeType: 'HAS_ARC', targetType: 'CharacterArc' },
   ],
   Location: [],
-  StoryBeat: [
-    { edgeType: 'ALIGNS_WITH', targetType: 'Beat' },
-    { edgeType: 'PRECEDES', targetType: 'StoryBeat' },
+  PlotPoint: [
+    { edgeType: 'PRECEDES', targetType: 'PlotPoint' },
     { edgeType: 'ADVANCES', targetType: 'CharacterArc' },
   ],
 };
@@ -169,13 +168,10 @@ const INCOMING_EDGES: Record<string, Array<{ edgeType: EdgeType; sourceType: str
   ],
   CharacterArc: [
     { edgeType: 'HAS_ARC', sourceType: 'Character' },
-    { edgeType: 'ADVANCES', sourceType: 'StoryBeat' },
-  ],
-  Beat: [
-    { edgeType: 'ALIGNS_WITH', sourceType: 'StoryBeat' },
+    { edgeType: 'ADVANCES', sourceType: 'PlotPoint' },
   ],
   Scene: [
-    { edgeType: 'SATISFIED_BY', sourceType: 'StoryBeat' },
+    { edgeType: 'REALIZED_BY', sourceType: 'PlotPoint' },
   ],
 };
 

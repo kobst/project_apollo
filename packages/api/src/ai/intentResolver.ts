@@ -7,10 +7,10 @@
 
 // Avoid tight coupling to core types for coverage/gaps in this layer
 
-export type ResolvedMode = 'storyBeats' | 'characters' | 'scenes' | 'expand' | 'interpret';
+export type ResolvedMode = 'plotPoints' | 'characters' | 'scenes' | 'expand' | 'interpret';
 
 export interface OrchestrationIntent {
-  mode?: 'storyBeats' | 'characters' | 'scenes' | 'expand';
+  mode?: 'plotPoints' | 'characters' | 'scenes' | 'expand';
   scope?: 'act1' | 'act2' | 'act3' | 'full';
   focus?: string[]; // beat IDs, node IDs, etc.
 }
@@ -85,7 +85,7 @@ function interpretFreeformIntent(
 
   if (/beat|catalyst|midpoint|act \d|structure/.test(lowerText)) {
     return {
-      mode: 'storyBeats',
+      mode: 'plotPoints',
       targets: [],
       direction: text,
       confidence: 0.8,
@@ -108,7 +108,7 @@ function suggestFromState(
   const priorityGap = [...(state.gaps ?? [])].sort((a: any, b: any) => (b.priority ?? 0) - (a.priority ?? 0))[0];
   if (priorityGap && (priorityGap as any).beatId) {
     return {
-      mode: 'storyBeats',
+      mode: 'plotPoints',
       targets: [(priorityGap as any).beatId as string],
       confidence: 0.6,
       reasoning: `Suggesting to fill ${String((priorityGap as any).beatType ?? 'structure')} gap`,

@@ -105,7 +105,7 @@ describe('prompts', () => {
       expect(prompt).toContain('## Node Types');
       expect(prompt).toContain('Character');
       expect(prompt).toContain('Location');
-      expect(prompt).toContain('StoryBeat');
+      expect(prompt).toContain('PlotPoint');
       expect(prompt).toContain('Scene');
     });
 
@@ -115,7 +115,7 @@ describe('prompts', () => {
       expect(prompt).toContain('## Edge Types');
       expect(prompt).toContain('HAS_CHARACTER');
       expect(prompt).toContain('LOCATED_AT');
-      expect(prompt).toContain('ALIGNS_WITH');
+      expect(prompt).toContain('REALIZED_BY');
     });
 
     it('should include JSON output schema', () => {
@@ -138,15 +138,15 @@ describe('prompts', () => {
         expect(prompt).toContain('structural beat: beat_Catalyst');
       });
 
-      it('should describe storyBeat entry point', () => {
+      it('should describe plotPoint entry point', () => {
         const params: GenerationParams = {
           ...baseParams,
-          entryPoint: { type: 'storyBeat', targetId: 'sb_001' },
+          entryPoint: { type: 'plotPoint', targetId: 'sb_001' },
         };
 
         const prompt = buildGenerationPrompt(params);
 
-        expect(prompt).toContain('scenes for StoryBeat: sb_001');
+        expect(prompt).toContain('PlotPoint: sb_001');
       });
 
       it('should describe character entry point', () => {
@@ -238,7 +238,7 @@ describe('prompts', () => {
       expect(prompt).toContain('## Node Types');
       expect(prompt).toContain('Character');
       expect(prompt).toContain('Location');
-      expect(prompt).toContain('StoryBeat');
+      expect(prompt).toContain('PlotPoint');
       expect(prompt).toContain('Scene');
       expect(prompt).toContain('Idea');
     });

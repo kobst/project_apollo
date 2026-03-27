@@ -20,22 +20,21 @@ import type { NodeType } from './nodes.js';
  * Character edges:
  * HAS_ARC: Character → CharacterArc
  *
- * StoryBeat edges:
- * ALIGNS_WITH: StoryBeat → Beat (optional alignment to STC beat)
- * SATISFIED_BY: StoryBeat → Scene (with properties.order for sequencing)
- * PRECEDES: StoryBeat → StoryBeat (causal/temporal chain, DAG)
- * ADVANCES: StoryBeat → CharacterArc
+ * PlotPoint edges:
+ * REALIZED_BY: PlotPoint → Scene (with properties.order for sequencing)
+ * PRECEDES: PlotPoint → PlotPoint (causal/temporal chain, DAG)
+ * ADVANCES: PlotPoint → CharacterArc
  *
- * Note: Conflict, Theme, Motif, Setting, Logline, and GenreTone nodes have been removed.
- * These concepts are now stored as prose in Story Context.
+ * Note: PlotPoint alignment to Beat is via alignedBeatId FK on the PlotPoint node,
+ * not an edge. Conflict, Theme, Motif, Setting, Logline, and GenreTone nodes have
+ * been removed. These concepts are now stored as prose in Story Context.
  */
 export type EdgeType =
   | 'HAS_CHARACTER'
   | 'LOCATED_AT'
   | 'FEATURES_OBJECT'
   | 'HAS_ARC'
-  | 'ALIGNS_WITH'
-  | 'SATISFIED_BY'
+  | 'REALIZED_BY'
   | 'PRECEDES'
   | 'ADVANCES'
   | 'MENTIONS';
@@ -148,34 +147,28 @@ export const EDGE_RULES: Record<EdgeType, EdgeRule> = {
     target: ['CharacterArc'],
   },
 
-  // StoryBeat → Beat (optional alignment to STC beat)
-  ALIGNS_WITH: {
-    source: ['StoryBeat'],
-    target: ['Beat'],
-  },
-
-  // StoryBeat → Scene (with properties.order for sequencing)
-  SATISFIED_BY: {
-    source: ['StoryBeat'],
+  // PlotPoint → Scene (with properties.order for sequencing)
+  REALIZED_BY: {
+    source: ['PlotPoint'],
     target: ['Scene'],
   },
 
-  // StoryBeat → StoryBeat (causal/temporal chain, must be DAG)
+  // PlotPoint → PlotPoint (causal/temporal chain, must be DAG)
   PRECEDES: {
-    source: ['StoryBeat'],
-    target: ['StoryBeat'],
+    source: ['PlotPoint'],
+    target: ['PlotPoint'],
   },
 
-  // StoryBeat → CharacterArc
+  // PlotPoint → CharacterArc
   ADVANCES: {
-    source: ['StoryBeat'],
+    source: ['PlotPoint'],
     target: ['CharacterArc'],
   },
 
   // * → Character|Location|Object (derived from text content)
   // MENTIONS edges are system-generated to track entity references in text
   MENTIONS: {
-    source: ['Scene', 'StoryBeat', 'Character', 'Location', 'CharacterArc'],
+    source: ['Scene', 'PlotPoint', 'Character', 'Location', 'CharacterArc'],
     target: ['Character', 'Location', 'Object'],
   },
 };
@@ -188,8 +181,7 @@ export const EDGE_TYPES: EdgeType[] = [
   'LOCATED_AT',
   'FEATURES_OBJECT',
   'HAS_ARC',
-  'ALIGNS_WITH',
-  'SATISFIED_BY',
+  'REALIZED_BY',
   'PRECEDES',
   'ADVANCES',
   'MENTIONS',

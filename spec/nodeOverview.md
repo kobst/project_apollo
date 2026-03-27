@@ -100,7 +100,7 @@ This document catalogs the node types used to represent narrative structure, cau
 
 ## 5. Causality Nodes (Critical)
 
-### StoryBeat
+### PlotPoint
 
 **Purpose:** Writer-declared "this must happen" unit of story causality
 

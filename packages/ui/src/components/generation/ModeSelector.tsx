@@ -1,11 +1,11 @@
 /**
  * ModeSelector - Four-mode generation selector for the new generation system.
- * Modes: Story Beats, Characters, Scenes, Expand
+ * Modes: Plot Points, Characters, Scenes, Expand
  */
 
 import styles from './ModeSelector.module.css';
 
-export type GenerationMode = 'story-beats' | 'characters' | 'scenes' | 'expand';
+export type GenerationMode = 'plot-points' | 'characters' | 'scenes' | 'expand';
 
 interface ModeConfig {
   icon: string;
@@ -14,9 +14,9 @@ interface ModeConfig {
 }
 
 const MODE_CONFIGS: Record<GenerationMode, ModeConfig> = {
-  'story-beats': {
+  'plot-points': {
     icon: '\uD83D\uDCCB', // 📋
-    label: 'Story Beats',
+    label: 'Plot Points',
     description: 'Generate narrative beats aligned to structure',
   },
   'characters': {
@@ -36,7 +36,7 @@ const MODE_CONFIGS: Record<GenerationMode, ModeConfig> = {
   },
 };
 
-const MODE_ORDER: GenerationMode[] = ['story-beats', 'characters', 'scenes', 'expand'];
+const MODE_ORDER: GenerationMode[] = ['plot-points', 'characters', 'scenes', 'expand'];
 
 interface ModeSelectorProps {
   /** Currently selected mode */

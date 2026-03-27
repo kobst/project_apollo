@@ -76,7 +76,7 @@ However, in practice:
 
 | Tier | What | How | Reliability |
 |------|------|-----|-------------|
-| **Tier 1: Deterministic** | `fulfills_gaps` | Computed from ALIGNS_WITH edges | 100% accurate |
+| **Tier 1: Deterministic** | `fulfills_gaps` | Computed from alignedBeatId edges | 100% accurate |
 | **Tier 2: Deterministic** | `conflicts` (structural) | Edge validation, duplicate detection | 100% accurate |
 | **Tier 3: LLM-assisted** | `creates_gaps` | Semantic analysis agent | ~80% useful |
 | **Tier 4: LLM-assisted** | `conflicts` (semantic) | Constitution/theme analysis | ~80% useful |
@@ -122,14 +122,14 @@ Remove impact from JSON schema examples in all generation prompts:
 
 | File | Change |
 |------|--------|
-| `storyBeatPrompt.ts` | Remove impact from schema example |
+| `plotPointPrompt.ts` | Remove impact from schema example |
 | `characterPrompt.ts` | Remove impact from schema example |
 | `scenePrompt.ts` | Remove impact from schema example |
 | `expandPrompt.ts` | Remove impact from schema example |
 | `generationPrompt.ts` | Remove impact from schema example |
 | `refinementPrompt.ts` | Remove impact from schema example (or keep for context) |
 
-#### 3.1.3 Prompt Diff Example (storyBeatPrompt.ts)
+#### 3.1.3 Prompt Diff Example (plotPointPrompt.ts)
 
 ```diff
 ## Output
@@ -147,7 +147,7 @@ Remove impact from JSON schema examples in all generation prompts:
   "confidence": 0.85,
   "style_tags": ["..."],
   "primary": {
-    "type": "StoryBeat",
+    "type": "PlotPoint",
     "nodes": [...],
     "edges": [...]
   },
@@ -236,7 +236,7 @@ export function computeImpact(
 ): ComputedImpact {
   const { graph, missingBeats = [], constitution } = options;
   
-  // Tier 1: Compute fulfills_gaps from ALIGNS_WITH edges
+  // Tier 1: Compute fulfills_gaps from alignedBeatId edges
   const fulfills_gaps = computeFulfillsGaps(pkg, missingBeats);
   
   // Tier 2: Compute structural conflicts
@@ -268,9 +268,9 @@ function computeFulfillsGaps(
   const fulfilled: string[] = [];
   const missingBeatSet = new Set(missingBeats);
   
-  // Check ALIGNS_WITH edges in the package
+  // Check alignedBeatId edges in the package
   for (const edge of pkg.changes.edges) {
-    if (edge.operation === 'add' && edge.edge_type === 'ALIGNS_WITH') {
+    if (edge.operation === 'add' && edge.edge_type === 'alignedBeatId') {
       const targetBeat = edge.to;
       if (missingBeatSet.has(targetBeat)) {
         fulfilled.push(targetBeat);
@@ -278,13 +278,13 @@ function computeFulfillsGaps(
     }
   }
   
-  // Check SATISFIED_BY edges (Scene satisfies StoryBeat)
+  // Check REALIZED_BY edges (Scene satisfies PlotPoint)
   for (const edge of pkg.changes.edges) {
-    if (edge.operation === 'add' && edge.edge_type === 'SATISFIED_BY') {
-      // Scene satisfies a story beat - check if that beat was a gap
-      const targetStoryBeat = edge.to;
+    if (edge.operation === 'add' && edge.edge_type === 'REALIZED_BY') {
+      // Scene satisfies a plot point - check if that beat was a gap
+      const targetPlotPoint = edge.to;
       // Add to fulfilled if this was a gap
-      fulfilled.push(`storybeat:${targetStoryBeat}`);
+      fulfilled.push(`plotpoint:${targetPlotPoint}`);
     }
   }
   
@@ -366,16 +366,16 @@ function computeStructuralConflicts(
   // Check for missing required edges
   for (const node of pkg.changes.nodes) {
     if (node.operation === 'add') {
-      if (node.node_type === 'StoryBeat') {
-        // StoryBeats should have ALIGNS_WITH edge
+      if (node.node_type === 'PlotPoint') {
+        // PlotPoints should have alignedBeatId edge
         const hasAlignment = pkg.changes.edges.some(
-          e => e.edge_type === 'ALIGNS_WITH' && e.from === node.node_id
+          e => e.edge_type === 'alignedBeatId' && e.from === node.node_id
         );
         if (!hasAlignment) {
           conflicts.push({
             type: 'missing_dependency',
             severity: 'warning',
-            message: `StoryBeat "${node.data?.title || node.node_id}" has no ALIGNS_WITH edge to a Beat`,
+            message: `PlotPoint "${node.data?.title || node.node_id}" has no alignedBeatId edge to a Beat`,
             nodeId: node.node_id
           });
         }
@@ -565,15 +565,15 @@ export async function enrichImpactWithAgent(
 #### 3.5.1 Updated Flow
 
 ```typescript
-// In storyBeatOrchestrator.ts (and similar for other orchestrators)
+// In plotPointOrchestrator.ts (and similar for other orchestrators)
 
-export async function proposeStoryBeats(
+export async function proposePlotPoints(
   storyId: string,
-  request: ProposeStoryBeatsRequest,
+  request: ProposePlotPointsRequest,
   ctx: StorageContext,
   llmClient: LLMClient,
   streamCallbacks?: StreamCallbacks
-): Promise<ProposeStoryBeatsResponse> {
+): Promise<ProposePlotPointsResponse> {
   // ... existing code to load graph, build prompt, call LLM ...
   
   // Parse response (impact now optional in schema)
@@ -631,7 +631,7 @@ export async function proposeStoryBeats(
 ```typescript
 // Add to request types
 
-export interface ProposeStoryBeatsRequest {
+export interface ProposePlotPointsRequest {
   // ... existing fields ...
   
   /** Whether to enrich impact with LLM analysis (adds latency) */
@@ -740,7 +740,7 @@ All generation endpoints now:
 
 ```typescript
 // Request
-POST /stories/:id/propose/story-beats
+POST /stories/:id/propose/plot-points
 {
   // ... existing params ...
   "enrichImpact": true  // Optional, default false
@@ -761,7 +761,7 @@ POST /stories/:id/propose/story-beats
             {
               "type": "missing_dependency",
               "severity": "warning",
-              "message": "StoryBeat has no ALIGNS_WITH edge"
+              "message": "PlotPoint has no alignedBeatId edge"
             }
           ],
           "computed": true,
@@ -965,10 +965,10 @@ function ConflictItem({ conflict, onResolve }: { conflict: ConflictInfo; onResol
 
 ```typescript
 describe('computeFulfillsGaps', () => {
-  it('detects fulfilled beats from ALIGNS_WITH edges', () => {
+  it('detects fulfilled beats from alignedBeatId edges', () => {
     const pkg = createPackage({
       edges: [
-        { operation: 'add', edge_type: 'ALIGNS_WITH', from: 'sb_1', to: 'beat_Catalyst' }
+        { operation: 'add', edge_type: 'alignedBeatId', from: 'sb_1', to: 'beat_Catalyst' }
       ]
     });
     const missingBeats = ['beat_Catalyst', 'beat_Debate'];
@@ -982,7 +982,7 @@ describe('computeFulfillsGaps', () => {
   it('ignores beats not in missing list', () => {
     const pkg = createPackage({
       edges: [
-        { operation: 'add', edge_type: 'ALIGNS_WITH', from: 'sb_1', to: 'beat_Setup' }
+        { operation: 'add', edge_type: 'alignedBeatId', from: 'sb_1', to: 'beat_Setup' }
       ]
     });
     const missingBeats = ['beat_Catalyst']; // beat_Setup not missing
@@ -1010,13 +1010,13 @@ describe('computeStructuralConflicts', () => {
     expect(conflicts[0].type).toBe('duplicate_node');
   });
   
-  it('detects missing ALIGNS_WITH for StoryBeats', () => {
+  it('detects missing alignedBeatId for PlotPoints', () => {
     const graph = createGraph({ nodes: [], edges: [] });
     const pkg = createPackage({
       nodes: [
-        { operation: 'add', node_type: 'StoryBeat', node_id: 'sb_1', data: { title: 'Test' } }
+        { operation: 'add', node_type: 'PlotPoint', node_id: 'sb_1', data: { title: 'Test' } }
       ],
-      edges: [] // No ALIGNS_WITH
+      edges: [] // No alignedBeatId
     });
     
     const conflicts = computeStructuralConflicts(pkg, graph);
@@ -1062,9 +1062,9 @@ describe('enrichImpactWithAgent', () => {
 ### 9.2 Integration Tests
 
 ```typescript
-describe('proposeStoryBeats with impact', () => {
+describe('proposePlotPoints with impact', () => {
   it('returns computed impact for all packages', async () => {
-    const response = await proposeStoryBeats(storyId, {
+    const response = await proposePlotPoints(storyId, {
       packageCount: 3,
       direction: 'Focus on Act 1'
     }, ctx, llmClient);
@@ -1078,7 +1078,7 @@ describe('proposeStoryBeats with impact', () => {
   });
   
   it('enriches impact when requested', async () => {
-    const response = await proposeStoryBeats(storyId, {
+    const response = await proposePlotPoints(storyId, {
       packageCount: 1,
       enrichImpact: true
     }, ctx, llmClient);
@@ -1105,7 +1105,7 @@ describe('proposeStoryBeats with impact', () => {
 - [ ] Add tests for parsing packages without impact
 
 ### Phase 3: Orchestrator Integration
-- [ ] Add `computeImpact` call to `storyBeatOrchestrator`
+- [ ] Add `computeImpact` call to `plotPointOrchestrator`
 - [ ] Add `computeImpact` call to `characterOrchestrator`
 - [ ] Add `computeImpact` call to `sceneOrchestrator`
 - [ ] Add `computeImpact` call to `expandOrchestrator`
@@ -1114,7 +1114,7 @@ describe('proposeStoryBeats with impact', () => {
 - [ ] Add integration tests
 
 ### Phase 4: Prompt Updates
-- [ ] Remove impact from `storyBeatPrompt.ts` schema
+- [ ] Remove impact from `plotPointPrompt.ts` schema
 - [ ] Remove impact from `characterPrompt.ts` schema
 - [ ] Remove impact from `scenePrompt.ts` schema
 - [ ] Remove impact from `expandPrompt.ts` schema

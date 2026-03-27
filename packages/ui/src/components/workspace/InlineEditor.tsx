@@ -61,7 +61,7 @@ const NODE_FIELD_CONFIGS: Record<string, FieldConfig[]> = {
       ],
     },
   ],
-  StoryBeat: [
+  PlotPoint: [
     { key: 'title', label: 'Title', type: 'text' },
     {
       key: 'intent',

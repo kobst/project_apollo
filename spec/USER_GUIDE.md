@@ -173,7 +173,7 @@ The Generation Panel is integrated into the Workspace as a slide-out panel on th
 │ AI GENERATION                                           [×]  │
 ├──────────────────────────────────────────────────────────────┤
 │ MODE                                                         │
-│ [Story Beats] [Characters] [Scenes] [Expand]                 │
+│ [Plot Points] [Characters] [Scenes] [Expand]                 │
 │                                                              │
 │ SCOPE                                                        │
 │ ○ Constrained    ● Flexible                                  │
@@ -195,9 +195,9 @@ The Generation Panel is integrated into the Workspace as a slide-out panel on th
 
 | Mode | Endpoint | Primary Output | Use Case |
 |------|----------|----------------|----------|
-| **Story Beats** | `/propose/story-beats` | StoryBeat nodes | Fill in narrative structure |
+| **Plot Points** | `/propose/plot-points` | PlotPoint nodes | Fill in narrative structure |
 | **Characters** | `/propose/characters` | Character nodes | Develop the cast |
-| **Scenes** | `/propose/scenes` | Scene nodes | Create scenes for story beats |
+| **Scenes** | `/propose/scenes` | Scene nodes | Create scenes for plot points |
 | **Expand** | `/propose/expand` | Varies | Develop any existing node |
 
 ### Expansion Scope
@@ -209,12 +209,12 @@ The Generation Panel is integrated into the Workspace as a slide-out panel on th
 
 ### Compose Form
 
-- **Mode Selection**: Four-mode tabs (Story Beats, Characters, Scenes, Expand)
+- **Mode Selection**: Four-mode tabs (Plot Points, Characters, Scenes, Expand)
 - **Scope Toggle**: Constrained or Flexible expansion
 - **Mode-Specific Options**:
-  - Story Beats: Focus type (all/act/priority beats), beat selection
+  - Plot Points: Focus type (all/act/priority beats), beat selection
   - Characters: Focus type, character selection for develop_existing, include arcs toggle
-  - Scenes: Story beat selection (committed only), scenes per beat
+  - Scenes: Plot point selection (committed only), scenes per beat
   - Expand: Target selection (node or Story Context section), depth
 - **Direction**: Freeform guidance text
 - **Advanced Options** (collapsible):
@@ -224,7 +224,7 @@ The Generation Panel is integrated into the Workspace as a slide-out panel on th
 ### Package Review
 
 Packages display elements organized by sections:
-- **Primary**: The main output type (e.g., StoryBeats, Characters, Scenes)
+- **Primary**: The main output type (e.g., PlotPoints, Characters, Scenes)
 - **Supporting**: Additional nodes created when scope is Flexible
 - **Suggestions**: Context additions and stashed ideas (can be included or dismissed)
 
@@ -264,7 +264,7 @@ The Stash Section appears at the bottom of the Structure Board and provides a un
 ┌─────────────────────────────────────────────────────────────────┐
 │ STASH                                                           │
 ├─────────────────────────────────────────────────────────────────┤
-│ Unassigned Story Beats (2)                              [▼]     │
+│ Unassigned Plot Points (2)                              [▼]     │
 │ ┌─────────────────────────────────────────────────────────────┐ │
 │ │ "The revelation"                              [Assign] [×]  │ │
 │ │ "Character moment"                            [Assign] [×]  │ │
@@ -286,13 +286,13 @@ The Stash Section appears at the bottom of the Structure Board and provides a un
 
 | Type | Description | Actions |
 |------|-------------|---------|
-| **Unassigned Story Beats** | Story beats without ALIGNS_WITH edge to a Beat | Assign, Delete |
-| **Unassigned Scenes** | Scenes without SATISFIED_BY edge from a StoryBeat | Assign, Delete |
+| **Unassigned Plot Points** | Plot points without alignedBeatId edge to a Beat | Assign, Delete |
+| **Unassigned Scenes** | Scenes without REALIZED_BY edge from a PlotPoint | Assign, Delete |
 | **Ideas** | Stashed concepts from AI generation | Develop, Delete |
 
 ### Actions
 
-- **Assign**: Opens modal to select which Beat (for StoryBeats) or StoryBeat (for Scenes) to assign to
+- **Assign**: Opens modal to select which Beat (for PlotPoints) or PlotPoint (for Scenes) to assign to
 - **Develop**: Opens Generation Panel in Expand mode with the idea as direction
 - **Delete**: Removes the item (with confirmation)
 
@@ -314,7 +314,7 @@ Story Map
 │
 └── Outline
     ├── Structure Board [==========] 15/15 ✓
-    ├── Story Beats     [          ] 0/3
+    ├── Plot Points     [          ] 0/3
     └── Scenes          [==        ] 3/40
 ```
 
@@ -410,23 +410,23 @@ The beat-by-beat structure view (same as previous Outline tab).
 │  │              │              │ ┌──────────┐ │                        │
 │  │              │              │ │INT. DINER│ │                        │
 │  │              │              │ └──────────┘ │                        │
-│  │ + Story Beat │ + Story Beat │ + Story Beat │                        │
+│  │ + Plot Point │ + Plot Point │ + Plot Point │                        │
 │  └──────────────┴──────────────┴──────────────┘                        │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
 - **Beats**: 15 Save the Cat beats organized by act
-- **Story Beats**: Aligned to beats via ALIGNS_WITH edges, shown as collapsible containers
-- **Scenes**: Nested under story beats they satisfy via SATISFIED_BY edges
-- **Stash Section**: Shows unassigned story beats, scenes, and stashed ideas at bottom
+- **Plot Points**: Aligned to beats via alignedBeatId edges, shown as collapsible containers
+- **Scenes**: Nested under plot points they satisfy via REALIZED_BY edges
+- **Stash Section**: Shows unassigned plot points, scenes, and stashed ideas at bottom
 
-### Story Beats
+### Plot Points
 
-List view of all story beats (narrative milestones that align to structural beats).
+List view of all plot points (narrative milestones that align to structural beats).
 
 - **Fields**: title, summary, intent, priority, stakes_change
 - **Intent Types**: PLOT, CHARACTER, TONE
-- **Progress**: Based on SATISFIED_BY edges from scenes
+- **Progress**: Based on REALIZED_BY edges from scenes
 
 ### Scenes
 
@@ -465,7 +465,7 @@ The **Node Editor** allows direct modification of committed graph nodes within t
 | **Scene** | title, heading, scene_overview, mood, int_ext, time_of_day, status |
 | **Character** | name, description, archetype, status |
 | **Location** | name, description, atmosphere |
-| **StoryBeat** | title, summary, intent, priority, stakes_change, status |
+| **PlotPoint** | title, summary, intent, priority, stakes_change, status |
 | **Object** | name, description |
 | **CharacterArc** | arc_type, start_state, end_state, turn_refs, status |
 
@@ -536,7 +536,7 @@ When viewing a node, the Relations section shows:
 │                                                         │
 │ INCOMING (1)                                            │
 │ ┌─────────────────────────────────────────────────────┐ │
-│ │ Hero's Call  StoryBeat → SATISFIED_BY  [✎] [×]     │ │
+│ │ Hero's Call  PlotPoint → REALIZED_BY  [✎] [×]     │ │
 │ └─────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -560,13 +560,13 @@ Choose the relationship type based on the current node:
 | Edge Type | Source → Target |
 |-----------|-----------------|
 | **PARENT_OF** | Location → Location (hierarchy) |
-| **SATISFIED_BY** | StoryBeat → Scene |
-| **ALIGNS_WITH** | StoryBeat → Beat |
+| **REALIZED_BY** | PlotPoint → Scene |
+| **alignedBeatId** | PlotPoint → Beat |
 | **HAS_CHARACTER** | Scene → Character |
 | **LOCATED_AT** | Scene → Location |
 | **FEATURES_OBJECT** | Scene → Object |
-| **PRECEDES** | StoryBeat → StoryBeat |
-| **ADVANCES** | StoryBeat → CharacterArc |
+| **PRECEDES** | PlotPoint → PlotPoint |
+| **ADVANCES** | PlotPoint → CharacterArc |
 | **HAS_ARC** | Character → CharacterArc |
 | **HAS_TURN_IN** | CharacterArc → Beat/Scene |
 
@@ -584,8 +584,8 @@ Set optional properties based on the edge type:
 
 | Property | Description | Edge Types |
 |----------|-------------|------------|
-| **Order** | Sequence number (≥1) | SATISFIED_BY, HAS_CHARACTER |
-| **Confidence** | AI confidence score (0-1) | ALIGNS_WITH |
+| **Order** | Sequence number (≥1) | REALIZED_BY, HAS_CHARACTER |
+| **Confidence** | AI confidence score (0-1) | alignedBeatId |
 | **Notes** | Human-readable annotation | All types |
 
 ### Editing an Existing Edge
@@ -656,7 +656,7 @@ Found in the right column of the FoundationsPanel, visible when any category is 
 | **Character** | Extract character nodes |
 | **Location** | Extract location nodes |
 | **Scene** | Extract scene nodes |
-| **StoryBeat** | Extract story beat nodes |
+| **PlotPoint** | Extract plot point nodes |
 | **Object** | Extract significant props/items |
 
 ### Extraction Workflow
@@ -667,7 +667,7 @@ Found in the right column of the FoundationsPanel, visible when any category is 
 4. Review generated proposals
 5. Click **Accept** on proposals you want to apply
 
-**Note:** Extracted scenes will appear in the Stash section of the Structure Board until they are connected to a StoryBeat via SATISFIED_BY edge.
+**Note:** Extracted scenes will appear in the Stash section of the Structure Board until they are connected to a PlotPoint via REALIZED_BY edge.
 
 ### Proposal Cards
 
@@ -712,10 +712,10 @@ Soft rules check completeness. They warn but don't block commits.
 | **Location Tagged** | Locations should include a descriptive tag or parent |
 | **Scene Has Character** | Scene should have at least one character assigned |
 | **Scene Has Location** | Scene should have a location assigned |
-| **Scene Has StoryBeat** | Scene should be connected to a StoryBeat |
-| **StoryBeat Has Intent** | StoryBeat should have intent specified |
-| **StoryBeat Event Realization** | Approved StoryBeat should have scenes satisfying it |
-| **StoryBeat Has Criteria** | StoryBeat should have satisfaction criteria |
+| **Scene Has PlotPoint** | Scene should be connected to a PlotPoint |
+| **PlotPoint Has Intent** | PlotPoint should have intent specified |
+| **PlotPoint Event Realization** | Approved PlotPoint should have scenes satisfying it |
+| **PlotPoint Has Criteria** | PlotPoint should have satisfaction criteria |
 
 ### Lint Panel Display
 
@@ -897,8 +897,8 @@ When you click **Commit Changes**, the system checks for violations:
 | **OutlineView** | Main | Container for outline grid |
 | **ActRow** | Main | Horizontal row for each act |
 | **BeatColumn** | Within ActRow | Column for each beat |
-| **SceneCard** | Within BeatColumn | Scene display within StoryBeat |
-| **EmptyBeatSlot** | Within BeatColumn | Visual indicator for beats with no StoryBeats |
+| **SceneCard** | Within BeatColumn | Scene display within PlotPoint |
+| **EmptyBeatSlot** | Within BeatColumn | Visual indicator for beats with no PlotPoints |
 
 ### All User Interactions
 

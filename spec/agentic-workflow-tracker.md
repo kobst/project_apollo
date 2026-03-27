@@ -29,7 +29,7 @@ Links
     - [x] AI-assisted toggle merges Interpreter with Direction
     - [x] Review section: Critic (staged lint), Impact (non-empty only), Refine, Lineage
     - [x] Accept banner with compact overlay diff + actions
-    - [x] “Send to Ideas” on Elements, StoryBeats, and Scenes proposed cards
+    - [x] “Send to Ideas” on Elements, PlotPoints, and Scenes proposed cards
 - [ ] M2: Targeted assistance
   - [ ] Gap Scout agent + UI (list opportunities → enqueue)
   - [ ] Refiner: keep/regenerate list UI + lineage nav

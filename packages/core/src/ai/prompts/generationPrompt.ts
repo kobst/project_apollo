@@ -5,17 +5,17 @@
 
 import type { GenerationParams, GenerationEntryPoint } from '../types.js';
 import { getDepthBudget } from '../config.js';
-import { PROMPT_VERSION, JSON_OUTPUT_RULES } from './shared.js';
+import { PROMPT_VERSION, JSON_OUTPUT_RULES, getProblemStatementSection } from './shared.js';
 
 export function buildGenerationPrompt(params: GenerationParams): string {
-  const { entryPoint, storyContext, gaps, direction, depth, count, ideas, guidelines } = params;
+  const { entryPoint, storyContext, gaps, direction, depth, count, ideas, guidelines, problemStatement } = params;
   const budget = getDepthBudget(depth);
   const entryDescription = describeEntryPoint(entryPoint);
 
   return `## Package Generator v${PROMPT_VERSION}
 
 Generate exactly ${count} complete narrative packages from the entry point.
-
+${getProblemStatementSection(problemStatement)}
 ## Entry Point
 ${entryDescription}
 
@@ -32,17 +32,16 @@ Depth: ${depth} | Max nodes/pkg: ${budget.maxNodes} | Max ops/pkg: ${budget.maxO
 - Character: name, description, archetype, traits[]
 - Location: name, description, parent_location_id
 - Object: name, description
-- StoryBeat: title, summary, intent (plot|character|tone), priority, stakes_change
+- PlotPoint: title, summary, alignedBeatId, intent (plot|character|tone), priority, stakes_change
 - Scene: heading, scene_overview, order_index, mood, key_actions[]
 
 ## Edge Types (use ONLY these)
 - HAS_CHARACTER: Scene → Character
 - LOCATED_AT: Scene → Location
 - FEATURES_OBJECT: Scene → Object
-- ALIGNS_WITH: StoryBeat → Beat
-- SATISFIED_BY: StoryBeat → Scene
-- PRECEDES: StoryBeat → StoryBeat
-- ADVANCES: StoryBeat → CharacterArc
+- REALIZED_BY: PlotPoint → Scene
+- PRECEDES: PlotPoint → PlotPoint
+- ADVANCES: PlotPoint → CharacterArc
 
 ## Output
 ${JSON_OUTPUT_RULES}
@@ -77,7 +76,7 @@ function describeEntryPoint(entryPoint: GenerationEntryPoint): string {
 
   switch (entryPoint.type) {
     case 'beat': return `Realize structural beat: ${entryPoint.targetId}${targetInfo}`;
-    case 'storyBeat': return `Generate scenes for StoryBeat: ${entryPoint.targetId}${targetInfo}`;
+    case 'plotPoint': return `Generate scenes for PlotPoint: ${entryPoint.targetId}${targetInfo}`;
     case 'character': return `Develop story for Character: ${entryPoint.targetId}${targetInfo}`;
     case 'gap': return `Resolve gap: ${entryPoint.targetId}${targetInfo}`;
     case 'idea': return `Develop Idea: ${entryPoint.targetId}${targetInfo}`;

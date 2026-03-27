@@ -1,6 +1,6 @@
 /**
  * StashContext - Unified state for the Stash section.
- * Combines Ideas (via listIdeas API) with unassigned StoryBeats and Scenes
+ * Combines Ideas (via listIdeas API) with unassigned PlotPoints and Scenes
  * (via getOutline API) into a single collection of StashItems.
  */
 
@@ -17,9 +17,9 @@ import type {
   IdeaData,
   CreateIdeaRequest,
   IdeaSuggestedType,
-  OutlineStoryBeat,
+  OutlinePlotPoint,
   OutlineScene,
-  CreateStoryBeatRequest,
+  CreatePlotPointRequest,
   CreateSceneRequest,
 } from '../api/types';
 import { useStory } from './StoryContext';
@@ -28,7 +28,7 @@ export type IdeaStatus = 'active' | 'promoted' | 'dismissed';
 export type IdeaCategory = 'character' | 'plot' | 'scene' | 'worldbuilding' | 'general';
 
 // Discriminated union for items in the stash
-export type StashItemKind = 'idea' | 'storybeat' | 'scene';
+export type StashItemKind = 'idea' | 'plotpoint' | 'scene';
 
 export interface StashIdeaItem {
   kind: 'idea';
@@ -52,8 +52,8 @@ export interface StashIdeaItem {
   informedCount?: number;
 }
 
-export interface StashStoryBeatItem {
-  kind: 'storybeat';
+export interface StashPlotPointItem {
+  kind: 'plotpoint';
   id: string;
   title: string;
   summary?: string | undefined;
@@ -71,7 +71,7 @@ export interface StashSceneItem {
   intExt?: string | undefined;
 }
 
-export type StashItem = StashIdeaItem | StashStoryBeatItem | StashSceneItem;
+export type StashItem = StashIdeaItem | StashPlotPointItem | StashSceneItem;
 
 // Re-export IdeaWithMeta as alias for backward compat
 export type IdeaWithMeta = StashIdeaItem;
@@ -82,7 +82,7 @@ function getCategory(suggestedType?: IdeaSuggestedType): IdeaCategory {
   switch (suggestedType) {
     case 'Character':
       return 'character';
-    case 'StoryBeat':
+    case 'PlotPoint':
       return 'plot';
     case 'Scene':
       return 'scene';
@@ -127,15 +127,15 @@ function transformIdea(idea: IdeaData): StashIdeaItem {
   return base;
 }
 
-function transformStoryBeat(sb: OutlineStoryBeat): StashStoryBeatItem {
+function transformPlotPoint(pp: OutlinePlotPoint): StashPlotPointItem {
   return {
-    kind: 'storybeat',
-    id: sb.id,
-    title: sb.title,
-    summary: sb.summary,
-    intent: sb.intent,
-    priority: sb.priority,
-    scenes: sb.scenes,
+    kind: 'plotpoint',
+    id: pp.id,
+    title: pp.title,
+    summary: pp.summary,
+    intent: pp.intent,
+    priority: pp.priority,
+    scenes: pp.scenes,
   };
 }
 
@@ -153,7 +153,7 @@ function transformScene(scene: OutlineScene): StashSceneItem {
 // ---- Context ----
 
 interface StashContextValue {
-  /** All stash items (ideas + unassigned story beats + unassigned scenes) */
+  /** All stash items (ideas + unassigned plot points + unassigned scenes) */
   items: StashItem[];
   /** Just the idea items (convenience accessor) */
   ideas: StashIdeaItem[];
@@ -186,8 +186,8 @@ interface StashContextValue {
     themes?: string[];
   }) => Promise<void>;
   deleteIdea: (ideaId: string) => Promise<void>;
-  /** Create a real StoryBeat node (unassigned) and refresh the stash */
-  createStoryBeat: (data: CreateStoryBeatRequest) => Promise<void>;
+  /** Create a real PlotPoint node (unassigned) and refresh the stash */
+  createPlotPoint: (data: CreatePlotPointRequest) => Promise<void>;
   /** Create a real Scene node (unassigned) and refresh the stash */
   createScene: (data: CreateSceneRequest) => Promise<void>;
 }
@@ -197,7 +197,7 @@ const StashContext = createContext<StashContextValue | null>(null);
 export function StashProvider({ children }: { children: ReactNode }) {
   const { currentStoryId } = useStory();
   const [ideaItems, setIdeaItems] = useState<StashIdeaItem[]>([]);
-  const [storyBeatItems, setStoryBeatItems] = useState<StashStoryBeatItem[]>([]);
+  const [plotPointItems, setPlotPointItems] = useState<StashPlotPointItem[]>([]);
   const [sceneItems, setSceneItems] = useState<StashSceneItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -215,7 +215,7 @@ export function StashProvider({ children }: { children: ReactNode }) {
       ]);
 
       setIdeaItems(ideasData.ideas.map(transformIdea));
-      setStoryBeatItems((outlineData?.unassignedStoryBeats ?? []).map(transformStoryBeat));
+      setPlotPointItems((outlineData?.unassignedPlotPoints ?? []).map(transformPlotPoint));
       setSceneItems((outlineData?.unassignedScenes ?? []).map(transformScene));
     } catch (err) {
       setError((err as Error).message);
@@ -229,7 +229,7 @@ export function StashProvider({ children }: { children: ReactNode }) {
       void refresh();
     } else {
       setIdeaItems([]);
-      setStoryBeatItems([]);
+      setPlotPointItems([]);
       setSceneItems([]);
     }
   }, [currentStoryId, refresh]);
@@ -338,10 +338,10 @@ export function StashProvider({ children }: { children: ReactNode }) {
     }
   }, [currentStoryId]);
 
-  const createStoryBeat = useCallback(async (data: CreateStoryBeatRequest) => {
+  const createPlotPoint = useCallback(async (data: CreatePlotPointRequest) => {
     if (!currentStoryId) return;
     try {
-      await api.createStoryBeat(currentStoryId, data);
+      await api.createPlotPoint(currentStoryId, data);
       await refresh();
     } catch (err) {
       setError((err as Error).message);
@@ -360,7 +360,7 @@ export function StashProvider({ children }: { children: ReactNode }) {
     }
   }, [currentStoryId, refresh]);
 
-  const items: StashItem[] = [...storyBeatItems, ...sceneItems, ...ideaItems];
+  const items: StashItem[] = [...plotPointItems, ...sceneItems, ...ideaItems];
 
   const value: StashContextValue = {
     items,
@@ -371,7 +371,7 @@ export function StashProvider({ children }: { children: ReactNode }) {
     createIdea,
     updateIdea,
     deleteIdea,
-    createStoryBeat,
+    createPlotPoint,
     createScene,
   };
 

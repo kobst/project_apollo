@@ -1,5 +1,5 @@
 {
-  "description": "Graph state after first Scene is added to Catalyst beat (via StoryBeat)",
+  "description": "Graph state after first Scene is added to Catalyst beat (via PlotPoint)",
   "storyVersion": {
     "type": "StoryVersion",
     "id": "sv1",
@@ -37,12 +37,13 @@
       "description": "A small mountain town threatened by flooding."
     },
     {
-      "type": "StoryBeat",
+      "type": "PlotPoint",
       "id": "pp_catalyst_001",
       "title": "Dam Discovery",
       "intent": "plot",
       "status": "satisfied",
       "order_index": 1,
+      "alignedBeatId": "beat_Catalyst",
       "createdAt": "2025-01-01T00:04:00.000Z",
       "updatedAt": "2025-01-01T00:04:00.000Z"
     },
@@ -62,7 +63,6 @@
   "edges": [
     { "id": "edge_acc_002", "type": "HAS_CHARACTER", "from": "scene_catalyst_001", "to": "char_protagonist", "status": "approved", "createdAt": "2025-01-01T00:04:30.000Z" },
     { "id": "edge_acc_003", "type": "LOCATED_AT", "from": "scene_catalyst_001", "to": "loc_hometown", "status": "approved", "createdAt": "2025-01-01T00:04:30.000Z" },
-    { "id": "edge_acc_005", "type": "ALIGNS_WITH", "from": "pp_catalyst_001", "to": "beat_Catalyst", "status": "approved", "createdAt": "2025-01-01T00:04:00.000Z" },
-    { "id": "edge_acc_006", "type": "SATISFIED_BY", "from": "pp_catalyst_001", "to": "scene_catalyst_001", "status": "approved", "createdAt": "2025-01-01T00:04:30.000Z", "properties": { "order": 1 } }
+    { "id": "edge_acc_006", "type": "REALIZED_BY", "from": "pp_catalyst_001", "to": "scene_catalyst_001", "status": "approved", "createdAt": "2025-01-01T00:04:30.000Z", "properties": { "order": 1 } }
   ]
 }

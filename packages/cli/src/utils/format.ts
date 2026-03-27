@@ -166,9 +166,6 @@ export function formatPatchOp(op: PatchOp, index: number): string {
       if ('name' in node && node.name) {
         lines.push(`   ${pc.dim('name:')} "${node.name}"`);
       }
-      if ('beat_id' in node && node.beat_id) {
-        lines.push(`   ${pc.dim('beat_id:')} ${node.beat_id}`);
-      }
       if ('description' in node && node.description) {
         const desc = String(node.description);
         const truncated = desc.length > 60 ? desc.slice(0, 60) + '...' : desc;
@@ -247,9 +244,6 @@ export function formatPatch(patch: Patch): string {
 function getSuggestedFix(error: ValidationError): string | null {
   switch (error.code) {
     case 'FK_INTEGRITY':
-      if (error.field === 'beat_id') {
-        return 'Ensure the beat exists before creating the scene';
-      }
       if (error.field === 'character_id') {
         return 'Create the character first: project-apollo add character --name "..."';
       }

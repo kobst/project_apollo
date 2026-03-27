@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { GraphState } from '../../src/core/graph.js';
-import type { Beat, Character, StoryBeat, Scene } from '../../src/types/nodes.js';
+import type { Beat, Character, PlotPoint, Scene } from '../../src/types/nodes.js';
 import type { Edge } from '../../src/types/edges.js';
 import {
   computeIntroductionPoints,
@@ -50,33 +50,24 @@ function addCharacter(graph: GraphState, id: string, name: string): void {
   graph.nodes.set(id, char as any);
 }
 
-// Helper to add story beat to graph
-function addStoryBeat(
-  graph: GraphState, 
-  id: string, 
-  title: string, 
+// Helper to add plot point to graph
+function addPlotPoint(
+  graph: GraphState,
+  id: string,
+  title: string,
   summary: string,
   alignedToBeat: string
 ): void {
-  const sb: StoryBeat = {
-    type: 'StoryBeat',
+  const pp: PlotPoint = {
+    type: 'PlotPoint',
     id,
     title,
     summary,
+    alignedBeatId: alignedToBeat,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
-  graph.nodes.set(id, sb as any);
-  
-  // Add ALIGNS_WITH edge
-  const edge: Edge = {
-    id: `edge_${id}_${alignedToBeat}`,
-    type: 'ALIGNS_WITH',
-    from: id,
-    to: alignedToBeat,
-    status: 'approved'
-  };
-  graph.edges.push(edge);
+  graph.nodes.set(id, pp as any);
 }
 
 // Helper to add scene to graph
@@ -85,7 +76,7 @@ function addScene(
   id: string,
   heading: string,
   overview: string,
-  storyBeatId: string
+  plotPointId: string
 ): void {
   const scene: Scene = {
     type: 'Scene',
@@ -94,12 +85,12 @@ function addScene(
     scene_overview: overview
   };
   graph.nodes.set(id, scene as any);
-  
-  // Add SATISFIED_BY edge from StoryBeat to Scene
+
+  // Add REALIZED_BY edge from PlotPoint to Scene
   const edge: Edge = {
-    id: `edge_${storyBeatId}_${id}`,
-    type: 'SATISFIED_BY',
-    from: storyBeatId,
+    id: `edge_${plotPointId}_${id}`,
+    type: 'REALIZED_BY',
+    from: plotPointId,
     to: id,
     status: 'approved'
   };
@@ -135,7 +126,7 @@ describe('computeIntroductionPoints', () => {
     addCharacter(graph, 'char_1', 'John');
     
     // Add story beat at Catalyst
-    addStoryBeat(graph, 'sb_1', 'John arrives', 'John arrives at the station', 'beat_Catalyst');
+    addPlotPoint(graph, 'sb_1', 'John arrives', 'John arrives at the station', 'beat_Catalyst');
     
     // Add scene for that beat
     addScene(graph, 'scene_1', 'INT. STATION - DAY', 'John enters the station', 'sb_1');
@@ -152,12 +143,12 @@ describe('computeIntroductionPoints', () => {
     addCharacter(graph, 'char_1', 'John');
     
     // First appearance at Setup (position 3)
-    addStoryBeat(graph, 'sb_1', 'Meet John', 'We meet John', 'beat_Setup');
+    addPlotPoint(graph, 'sb_1', 'Meet John', 'We meet John', 'beat_Setup');
     addScene(graph, 'scene_1', 'INT. OFFICE - DAY', 'John at work', 'sb_1');
     addHasCharacter(graph, 'scene_1', 'char_1');
     
     // Second appearance at Midpoint (position 9)
-    addStoryBeat(graph, 'sb_2', 'John returns', 'John comes back', 'beat_Midpoint');
+    addPlotPoint(graph, 'sb_2', 'John returns', 'John comes back', 'beat_Midpoint');
     addScene(graph, 'scene_2', 'INT. OFFICE - NIGHT', 'John returns', 'sb_2');
     addHasCharacter(graph, 'scene_2', 'char_1');
     
@@ -178,12 +169,12 @@ describe('validateTemporalConsistency', () => {
   it('should return empty violations for valid graph', () => {
     // Add character introduced at Setup
     addCharacter(graph, 'char_1', 'John');
-    addStoryBeat(graph, 'sb_1', 'Meet John', 'John arrives', 'beat_Setup');
+    addPlotPoint(graph, 'sb_1', 'Meet John', 'John arrives', 'beat_Setup');
     addScene(graph, 'scene_1', 'INT. OFFICE - DAY', 'John enters', 'sb_1');
     addHasCharacter(graph, 'scene_1', 'char_1');
     
     // Story beat at Midpoint mentions John (after introduction)
-    addStoryBeat(graph, 'sb_2', 'John decides', 'John makes a decision', 'beat_Midpoint');
+    addPlotPoint(graph, 'sb_2', 'John decides', 'John makes a decision', 'beat_Midpoint');
     
     const violations = validateTemporalConsistency(graph);
     
@@ -193,12 +184,12 @@ describe('validateTemporalConsistency', () => {
   it('should detect character mentioned before introduction', () => {
     // Add character, introduced at Midpoint
     addCharacter(graph, 'char_1', 'Sarah');
-    addStoryBeat(graph, 'sb_intro', 'Sarah arrives', 'Sarah joins', 'beat_Midpoint');
+    addPlotPoint(graph, 'sb_intro', 'Sarah arrives', 'Sarah joins', 'beat_Midpoint');
     addScene(graph, 'scene_intro', 'INT. OFFICE - DAY', 'Sarah enters', 'sb_intro');
     addHasCharacter(graph, 'scene_intro', 'char_1');
     
     // Story beat at Setup (before Midpoint) mentions Sarah
-    addStoryBeat(graph, 'sb_early', 'Sarah mentioned', 'Sarah calls ahead', 'beat_Setup');
+    addPlotPoint(graph, 'sb_early', 'Sarah mentioned', 'Sarah calls ahead', 'beat_Setup');
     
     const violations = validateTemporalConsistency(graph);
     
@@ -233,39 +224,28 @@ describe('validateProposalMentions', () => {
           },
           {
             operation: 'add',
-            node_type: 'StoryBeat',
+            node_type: 'PlotPoint',
             node_id: 'sb_1',
-            data: { 
-              title: 'Marcus intro', 
+            data: {
+              title: 'Marcus intro',
               summary: 'Marcus enters the scene',
-              type: 'StoryBeat'
+              type: 'PlotPoint',
+              alignedBeatId: 'beat_Setup' // Position 3
             }
           },
           {
             operation: 'add',
-            node_type: 'StoryBeat',
+            node_type: 'PlotPoint',
             node_id: 'sb_2',
-            data: { 
-              title: 'Marcus acts', 
+            data: {
+              title: 'Marcus acts',
               summary: 'Marcus makes his move',
-              type: 'StoryBeat'
+              type: 'PlotPoint',
+              alignedBeatId: 'beat_Midpoint' // Position 9
             }
           }
         ],
-        edges: [
-          {
-            operation: 'add',
-            edge_type: 'ALIGNS_WITH',
-            from: 'sb_1',
-            to: 'beat_Setup' // Position 3
-          },
-          {
-            operation: 'add',
-            edge_type: 'ALIGNS_WITH',
-            from: 'sb_2',
-            to: 'beat_Midpoint' // Position 9
-          }
-        ]
+        edges: []
       },
       impact: { fulfills_gaps: [], creates_gaps: [], conflicts: [] }
     };
@@ -279,11 +259,11 @@ describe('validateProposalMentions', () => {
   it('should detect proposal referencing existing character before their introduction', () => {
     // Add an existing character introduced at Midpoint
     addCharacter(graph, 'char_existing', 'Elena');
-    addStoryBeat(graph, 'sb_intro_existing', 'Elena appears', 'Elena arrives at the party', 'beat_Midpoint');
+    addPlotPoint(graph, 'sb_intro_existing', 'Elena appears', 'Elena arrives at the party', 'beat_Midpoint');
     addScene(graph, 'scene_intro', 'INT. PARTY - NIGHT', 'Elena enters', 'sb_intro_existing');
     addHasCharacter(graph, 'scene_intro', 'char_existing');
     
-    // Proposal adds a story beat at Setup (before Midpoint) that mentions Elena
+    // Proposal adds a plot point at Setup (before Midpoint) that mentions Elena
     const pkg: NarrativePackage = {
       id: 'pkg_1',
       title: 'Test Package',
@@ -294,23 +274,17 @@ describe('validateProposalMentions', () => {
         nodes: [
           {
             operation: 'add',
-            node_type: 'StoryBeat',
+            node_type: 'PlotPoint',
             node_id: 'sb_early',
-            data: { 
-              title: 'Elena discussed', 
+            data: {
+              title: 'Elena discussed',
               summary: 'Elena is mentioned by the others before she arrives',
-              type: 'StoryBeat'
+              type: 'PlotPoint',
+              alignedBeatId: 'beat_Setup' // Position 3, before Midpoint position 9
             }
           }
         ],
-        edges: [
-          {
-            operation: 'add',
-            edge_type: 'ALIGNS_WITH',
-            from: 'sb_early',
-            to: 'beat_Setup' // Position 3, before Midpoint position 9
-          }
-        ]
+        edges: []
       },
       impact: { fulfills_gaps: [], creates_gaps: [], conflicts: [] }
     };

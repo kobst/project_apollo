@@ -3,25 +3,25 @@
  * Has an Assign button to assign to a structural beat.
  */
 
-import type { OutlineStoryBeat } from '../../api/types';
-import type { MergedOutlineStoryBeat } from '../../utils/outlineMergeUtils';
+import type { OutlinePlotPoint } from '../../api/types';
+import type { MergedOutlinePlotPoint } from '../../utils/outlineMergeUtils';
 import styles from './UnassignedStoryBeatCard.module.css';
 
 interface UnassignedStoryBeatCardProps {
-  storyBeat: OutlineStoryBeat | MergedOutlineStoryBeat;
+  plotPoint: OutlinePlotPoint | MergedOutlinePlotPoint;
   onClick?: (() => void) | undefined;
   onDelete?: (() => void) | undefined;
   onAssign?: (() => void) | undefined;
 }
 
 export function UnassignedStoryBeatCard({
-  storyBeat,
+  plotPoint,
   onClick,
   onDelete,
   onAssign,
 }: UnassignedStoryBeatCardProps) {
-  const sceneCount = storyBeat.scenes?.length ?? 0;
-  const isProposed = '_isProposed' in storyBeat && storyBeat._isProposed;
+  const sceneCount = plotPoint.scenes?.length ?? 0;
+  const isProposed = '_isProposed' in plotPoint && plotPoint._isProposed;
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -42,7 +42,7 @@ export function UnassignedStoryBeatCard({
       onKeyDown={(e) => e.key === 'Enter' && onClick?.()}
     >
       <div className={styles.header}>
-        <span className={styles.title}>{storyBeat.title}</span>
+        <span className={styles.title}>{plotPoint.title}</span>
         <div className={styles.actions}>
           {!isProposed && onAssign && (
             <button
@@ -60,8 +60,8 @@ export function UnassignedStoryBeatCard({
               className={styles.deleteBtn}
               onClick={handleDeleteClick}
               type="button"
-              title="Delete story beat"
-              aria-label="Delete story beat"
+              title="Delete plot point"
+              aria-label="Delete plot point"
             >
               &times;
             </button>
@@ -70,13 +70,13 @@ export function UnassignedStoryBeatCard({
       </div>
 
       <div className={styles.meta}>
-        {storyBeat.intent && (
-          <span className={`${styles.badge} ${styles[`intent_${storyBeat.intent}`]}`}>
-            {storyBeat.intent}
+        {plotPoint.intent && (
+          <span className={`${styles.badge} ${styles[`intent_${plotPoint.intent}`]}`}>
+            {plotPoint.intent}
           </span>
         )}
-        {storyBeat.status && (
-          <span className={styles.badge}>{storyBeat.status}</span>
+        {plotPoint.status && (
+          <span className={styles.badge}>{plotPoint.status}</span>
         )}
       </div>
 

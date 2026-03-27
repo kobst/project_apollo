@@ -3,14 +3,14 @@
  */
 
 import type { GraphState } from '../core/graph.js';
-import type { Beat } from '../types/nodes.js';
-import { getNodesByType, getEdgesByType } from '../core/graph.js';
+import type { Beat, PlotPoint } from '../types/nodes.js';
+import { getNodesByType, getEdgesByType, getNode } from '../core/graph.js';
 
 /**
  * Fields to extract entity mentions from, by node type.
  */
 export const EXTRACTABLE_FIELDS: Record<string, string[]> = {
-  StoryBeat: ['title', 'summary'],
+  PlotPoint: ['title', 'summary'],
   Scene: ['heading', 'scene_overview', 'key_actions'],
   Character: ['description'],
   Location: ['description'],
@@ -38,26 +38,26 @@ export function getBeatOrder(graph: GraphState): BeatOrder {
 }
 
 /**
- * Get the beat that a StoryBeat is aligned to.
+ * Get the beat that a PlotPoint is aligned to via its alignedBeatId property.
  */
-export function getAlignedBeat(graph: GraphState, storyBeatId: string): string | undefined {
-  const alignsWithEdges = getEdgesByType(graph, 'ALIGNS_WITH');
-  const edge = alignsWithEdges.find(e => e.from === storyBeatId);
-  return edge?.to;
+export function getAlignedBeat(graph: GraphState, plotPointId: string): string | undefined {
+  const node = getNode(graph, plotPointId);
+  if (!node || node.type !== 'PlotPoint') return undefined;
+  return (node as PlotPoint).alignedBeatId;
 }
 
 /**
- * Get the beat that a Scene is aligned to (via StoryBeat).
+ * Get the beat that a Scene is aligned to (via PlotPoint).
  */
 export function getSceneAlignedBeat(graph: GraphState, sceneId: string): string | undefined {
-  // Scene -> StoryBeat via SATISFIED_BY (inverse: StoryBeat satisfied by Scene)
-  const satisfiedByEdges = getEdgesByType(graph, 'SATISFIED_BY');
-  const storyBeatEdge = satisfiedByEdges.find(e => e.to === sceneId);
-  
-  if (!storyBeatEdge) return undefined;
-  
-  // StoryBeat -> Beat via ALIGNS_WITH
-  return getAlignedBeat(graph, storyBeatEdge.from);
+  // Scene -> PlotPoint via REALIZED_BY (inverse: PlotPoint realized by Scene)
+  const realizedByEdges = getEdgesByType(graph, 'REALIZED_BY');
+  const plotPointEdge = realizedByEdges.find(e => e.to === sceneId);
+
+  if (!plotPointEdge) return undefined;
+
+  // PlotPoint -> Beat via alignedBeatId property
+  return getAlignedBeat(graph, plotPointEdge.from);
 }
 
 /**

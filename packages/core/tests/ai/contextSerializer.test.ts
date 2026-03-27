@@ -214,7 +214,7 @@ describe('contextSerializer', () => {
       const charResult = serializeNodeContext(graph, 'character_mike_001');
       expect(charResult).toContain('"Detective Mike Reyes"');
 
-      // StoryBeat has title
+      // PlotPoint has title
       const ppResult = serializeNodeContext(graph, 'storybeat_murder_001');
       expect(ppResult).toContain('"Murder Discovery"');
 
@@ -317,7 +317,7 @@ describe('contextSerializer', () => {
       const gaps: Gap[] = [
         { id: '1', tier: 'scenes', type: 't', title: 'Scenes', description: '', scopeRefs: {} },
         { id: '2', tier: 'premise', type: 't', title: 'Premise', description: '', scopeRefs: {} },
-        { id: '3', tier: 'storyBeats', type: 't', title: 'StoryBeats', description: '', scopeRefs: {} },
+        { id: '3', tier: 'storyBeats', type: 't', title: 'Plot Points', description: '', scopeRefs: {} },
         { id: '4', tier: 'foundations', type: 't', title: 'Foundations', description: '', scopeRefs: {} },
         { id: '5', tier: 'structure', type: 't', title: 'Structure', description: '', scopeRefs: {} },
       ];

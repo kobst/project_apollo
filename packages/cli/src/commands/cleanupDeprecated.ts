@@ -2,7 +2,7 @@
  * project-apollo cleanup:deprecated
  *
  * Delete deprecated nodes and their incident edges.
- * Default target: StoryBeat nodes with status 'deprecated'.
+ * Default target: PlotPoint nodes with status 'deprecated'.
  */
 
 import type { Command } from 'commander';
@@ -12,13 +12,13 @@ import { loadGraph, updateState, getCurrentStoryId } from '../state/store.js';
 import { CLIError } from '../utils/errors.js';
 import { heading, success, formatPatch, formatValidationErrors } from '../utils/format.js';
 
-type TargetType = 'StoryBeat' | 'Scene' | 'Character' | 'Location' | 'Object' | 'ALL';
+type TargetType = 'PlotPoint' | 'Scene' | 'Character' | 'Location' | 'Object' | 'ALL';
 
 export function cleanupDeprecatedCommand(program: Command): void {
   program
     .command('cleanup:deprecated')
-    .description('Delete deprecated nodes (default: StoryBeats) and incident edges')
-    .option('-t, --type <type>', 'Target type (StoryBeat|Scene|Character|Location|Object|ALL)', 'StoryBeat')
+    .description('Delete deprecated nodes (default: PlotPoints) and incident edges')
+    .option('-t, --type <type>', 'Target type (PlotPoint|Scene|Character|Location|Object|ALL)', 'PlotPoint')
     .option('-y, --yes', 'Apply without confirmation')
     .option('--dry-run', 'Show the generated patch without applying')
     .action(async (opts: { type?: string; yes?: boolean; dryRun?: boolean }) => {
@@ -35,10 +35,10 @@ export function cleanupDeprecatedCommand(program: Command): void {
         throw new CLIError('Current story not found.');
       }
 
-      const target = (opts.type ?? 'StoryBeat').toUpperCase();
-      const valid: TargetType[] = ['StoryBeat', 'Scene', 'Character', 'Location', 'Object', 'ALL'];
+      const target = (opts.type ?? 'PlotPoint').toUpperCase();
+      const valid: TargetType[] = ['PlotPoint', 'Scene', 'Character', 'Location', 'Object', 'ALL'];
       if (!valid.map((v) => v.toUpperCase()).includes(target)) {
-        throw new CLIError('Invalid --type', 'Use one of: StoryBeat|Scene|Character|Location|Object|ALL');
+        throw new CLIError('Invalid --type', 'Use one of: PlotPoint|Scene|Character|Location|Object|ALL');
       }
 
       // Collect nodes to delete

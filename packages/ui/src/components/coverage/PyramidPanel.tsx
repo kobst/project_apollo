@@ -11,7 +11,7 @@ const TIER_ORDER: GapTier[] = [
   'premise',
   'foundations',
   'structure',
-  'storyBeats',
+  'plotPoints',
   'scenes',
 ];
 

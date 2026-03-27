@@ -17,7 +17,7 @@ Parse user input and propose structured story changes.
 - Character: person/entity with agency
 - Location: physical space for scenes
 - Object: significant prop or item
-- StoryBeat: narrative event (story causality)
+- PlotPoint: narrative event (story causality)
 - Scene: dramatic action unit (heading + overview)
 - Idea: unassigned concept (use when uncertain)
 - Story Context: thematic/directional content
@@ -36,6 +36,11 @@ ${JSON_OUTPUT_RULES}
 \`\`\`json
 {
   "interpretation": {"summary": "What you understood", "confidence": 0.85},
+  "clarification": {
+    "needed": false,
+    "questions": [],
+    "reason": ""
+  },
   "proposals": [{
     "type": "node",
     "operation": "add",
@@ -50,10 +55,12 @@ ${JSON_OUTPUT_RULES}
 
 Rules:
 - Concrete element → specific node type
-- Thematic/directional → Story Context addition  
+- Thematic/directional → Story Context addition
 - Uncertain → Idea node (can be promoted later)
 - Reference existing nodes when related
 - Confidence reflects certainty
+- If the input is ambiguous about tone, scope, or direction, set clarification.needed = true and provide 2-4 targeted questions. Each question should have 2-4 options when possible. Only request clarification when genuinely needed — clear, specific requests should proceed directly.
+- When clarification is needed, still provide your best-guess proposals (they will be used if the user skips clarification)
 
 Output JSON only.`;
 }

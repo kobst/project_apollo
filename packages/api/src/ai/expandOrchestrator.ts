@@ -5,7 +5,7 @@
  * into related content based on the target type.
  *
  * Key features:
- * - Node-based expansion (Character, StoryBeat, Scene, Location)
+ * - Node-based expansion (Character, PlotPoint, Scene, Location)
  * - Story Context expansion (all or specific section)
  * - Session management for reviewing/accepting packages
  */
@@ -15,7 +15,7 @@ import {
   getNode,
   type GraphState,
   type Character,
-  type StoryBeat,
+  type PlotPoint,
   type Scene,
   type Location,
 } from '@apollo/core';
@@ -297,7 +297,7 @@ export async function proposeExpand(
 // =============================================================================
 
 // Union type for nodes we handle
-type ExpandableNode = Character | StoryBeat | Scene | Location | { type: string; id: string; [key: string]: unknown };
+type ExpandableNode = Character | PlotPoint | Scene | Location | { type: string; id: string; [key: string]: unknown };
 
 /**
  * Serialize a node for expansion context.
@@ -322,8 +322,8 @@ function serializeNodeForExpansion(
       if (char.traits && char.traits.length > 0) lines.push(`Traits: ${char.traits.join(', ')}`);
       break;
     }
-    case 'StoryBeat': {
-      const sb = node as StoryBeat;
+    case 'PlotPoint': {
+      const sb = node as PlotPoint;
       lines.push(`Title: ${sb.title}`);
       if (sb.summary) lines.push(`Summary: ${sb.summary}`);
       if (sb.intent) lines.push(`Intent: ${sb.intent}`);

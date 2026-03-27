@@ -1,6 +1,6 @@
 /**
  * ArtifactStashSection - Displays unassigned concrete artifacts:
- * StoryBeats, Scenes, and Ideas with a suggestedType (Character, Location, etc.).
+ * PlotPoints, Scenes, and Ideas with a suggestedType (Character, Location, etc.).
  * Abstract planning ideas (no suggestedType) live in the Planning tab instead.
  */
 
@@ -8,7 +8,7 @@ import { useState, useMemo } from 'react';
 import type {
   StashItem,
   StashIdeaItem,
-  StashStoryBeatItem,
+  StashPlotPointItem,
   StashSceneItem,
 } from '../../context/StashContext';
 import styles from './ArtifactStashSection.module.css';
@@ -17,11 +17,11 @@ interface ArtifactStashSectionProps {
   items: StashItem[];
 }
 
-type ArtifactFilter = 'all' | 'storybeat' | 'scene' | 'Character' | 'Location' | 'Object';
+type ArtifactFilter = 'all' | 'plotpoint' | 'scene' | 'Character' | 'Location' | 'Object';
 
 const FILTER_OPTIONS: { value: ArtifactFilter; label: string }[] = [
   { value: 'all', label: 'All' },
-  { value: 'storybeat', label: 'Story Beats' },
+  { value: 'plotpoint', label: 'Story Beats' },
   { value: 'scene', label: 'Scenes' },
   { value: 'Character', label: 'Characters' },
   { value: 'Location', label: 'Locations' },
@@ -29,18 +29,18 @@ const FILTER_OPTIONS: { value: ArtifactFilter; label: string }[] = [
 ];
 
 const TYPE_ICONS: Record<string, string> = {
-  storybeat: '\uD83D\uDCCB',
+  plotpoint: '\uD83D\uDCCB',
   scene: '\uD83C\uDFAC',
   Character: '\uD83D\uDC64',
   Location: '\uD83C\uDF0D',
   Object: '\uD83D\uDCE6',
-  StoryBeat: '\uD83D\uDCCB',
+  PlotPoint:'\uD83D\uDCCB',
   Scene: '\uD83C\uDFAC',
 };
 
 function matchesFilter(item: StashItem, filter: ArtifactFilter): boolean {
   if (filter === 'all') return true;
-  if (filter === 'storybeat' || filter === 'scene') return item.kind === filter;
+  if (filter === 'plotpoint' || filter === 'scene') return item.kind === filter;
   // Character, Location, Object — match typed ideas
   return item.kind === 'idea' && item.suggestedType === filter;
 }
@@ -57,14 +57,14 @@ export function ArtifactStashSection({ items }: ArtifactStashSectionProps) {
   const counts = useMemo(() => {
     const c: Record<ArtifactFilter, number> = {
       all: items.length,
-      storybeat: 0,
+      plotpoint: 0,
       scene: 0,
       Character: 0,
       Location: 0,
       Object: 0,
     };
     for (const item of items) {
-      if (item.kind === 'storybeat') c.storybeat++;
+      if (item.kind === 'plotpoint') c.plotpoint++;
       else if (item.kind === 'scene') c.scene++;
       else if (item.kind === 'idea' && item.suggestedType) {
         const st = item.suggestedType as ArtifactFilter;
@@ -111,8 +111,8 @@ export function ArtifactStashSection({ items }: ArtifactStashSectionProps) {
         <div className={styles.list}>
           {filtered.map((item) => {
             switch (item.kind) {
-              case 'storybeat':
-                return <StoryBeatCard key={item.id} storyBeat={item} />;
+              case 'plotpoint':
+                return <PlotPointCard key={item.id} plotPoint={item} />;
               case 'scene':
                 return <SceneCard key={item.id} scene={item} />;
               case 'idea':
@@ -125,23 +125,23 @@ export function ArtifactStashSection({ items }: ArtifactStashSectionProps) {
   );
 }
 
-function StoryBeatCard({ storyBeat }: { storyBeat: StashStoryBeatItem }) {
+function PlotPointCard({ plotPoint }: { plotPoint: StashPlotPointItem }) {
   return (
     <div className={styles.card}>
       <div className={styles.cardHeader}>
-        <span className={styles.cardIcon}>{TYPE_ICONS.storybeat}</span>
-        <span className={styles.cardTitle}>{storyBeat.title}</span>
+        <span className={styles.cardIcon}>{TYPE_ICONS.plotpoint}</span>
+        <span className={styles.cardTitle}>{plotPoint.title}</span>
         <span className={styles.typeBadge}>Story Beat</span>
-        {storyBeat.priority && (
-          <span className={styles.metaBadge}>{storyBeat.priority}</span>
+        {plotPoint.priority && (
+          <span className={styles.metaBadge}>{plotPoint.priority}</span>
         )}
       </div>
-      {storyBeat.summary && (
-        <p className={styles.cardDescription}>{storyBeat.summary}</p>
+      {plotPoint.summary && (
+        <p className={styles.cardDescription}>{plotPoint.summary}</p>
       )}
-      {storyBeat.scenes.length > 0 && (
+      {plotPoint.scenes.length > 0 && (
         <p className={styles.cardMeta}>
-          {storyBeat.scenes.length} scene{storyBeat.scenes.length !== 1 ? 's' : ''} attached
+          {plotPoint.scenes.length} scene{plotPoint.scenes.length !== 1 ? 's' : ''} attached
         </p>
       )}
     </div>

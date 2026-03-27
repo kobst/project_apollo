@@ -15,13 +15,14 @@
         "nodes": [
           {
             "operation": "add",
-            "node_type": "StoryBeat",
+            "node_type": "PlotPoint",
             "node_id": "plotpoint_1736700000000_xyz45",
             "data": {
               "title": "Mike Discovers Partner's Betrayal",
               "summary": "Mike finds evidence that his partner has been taking bribes from the cartel.",
               "intent": "character",
-              "priority": 1
+              "priority": 1,
+              "alignedBeatId": "beat_Midpoint"
             }
           },
           {
@@ -49,13 +50,7 @@
         "edges": [
           {
             "operation": "add",
-            "edge_type": "ALIGNS_WITH",
-            "from": "plotpoint_1736700000000_xyz45",
-            "to": "beat_Midpoint"
-          },
-          {
-            "operation": "add",
-            "edge_type": "SATISFIED_BY",
+            "edge_type": "REALIZED_BY",
             "from": "plotpoint_1736700000000_xyz45",
             "to": "scene_1736700000001_def67"
           },
@@ -83,24 +78,18 @@
         "nodes": [
           {
             "operation": "add",
-            "node_type": "StoryBeat",
+            "node_type": "PlotPoint",
             "node_id": "plotpoint_1736700000004_mno56",
             "data": {
               "title": "Mike Is Framed",
               "summary": "Evidence is planted to make Mike look like the corrupt cop.",
               "intent": "plot",
-              "priority": 1
+              "priority": 1,
+              "alignedBeatId": "beat_Midpoint"
             }
           }
         ],
-        "edges": [
-          {
-            "operation": "add",
-            "edge_type": "ALIGNS_WITH",
-            "from": "plotpoint_1736700000004_mno56",
-            "to": "beat_Midpoint"
-          }
-        ]
+        "edges": []
       },
       "impact": {
         "fulfills_gaps": ["gap_midpoint_plotpoint"],
@@ -118,13 +107,14 @@
         "nodes": [
           {
             "operation": "add",
-            "node_type": "StoryBeat",
+            "node_type": "PlotPoint",
             "node_id": "plotpoint_1736700000006_stu90",
             "data": {
               "title": "The Partner's Secret",
               "summary": "Mike learns his partner was coerced into corruption to protect his family.",
               "intent": "character",
-              "priority": 1
+              "priority": 1,
+              "alignedBeatId": "beat_Midpoint"
             }
           },
           {
@@ -141,14 +131,7 @@
             }
           }
         ],
-        "edges": [
-          {
-            "operation": "add",
-            "edge_type": "ALIGNS_WITH",
-            "from": "plotpoint_1736700000006_stu90",
-            "to": "beat_Midpoint"
-          }
-        ]
+        "edges": []
       },
       "impact": {
         "fulfills_gaps": ["gap_midpoint_plotpoint"],

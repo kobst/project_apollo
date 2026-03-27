@@ -3,7 +3,7 @@
  */
 
 import type { GraphState } from '../core/graph.js';
-import type { Character, StoryBeat, Scene } from '../types/nodes.js';
+import type { Character, PlotPoint, Scene } from '../types/nodes.js';
 import type { NarrativePackage } from '../ai/types.js';
 import { getNodesByType, getEdgesByType, getNode } from '../core/graph.js';
 import { extractMentions, extractTextFromNode, type EntityInfo } from './extraction.js';
@@ -74,7 +74,7 @@ export function computeIntroductionPoints(graph: GraphState): IntroductionMap {
         const node = getNode(graph, edge.from);
         if (!node) continue;
         
-        if (node.type === 'StoryBeat') {
+        if (node.type === 'PlotPoint') {
           const alignedBeat = getAlignedBeat(graph, node.id);
           if (alignedBeat) {
             const pos = beatOrder.get(alignedBeat) ?? Infinity;
@@ -116,35 +116,35 @@ export function validateTemporalConsistency(graph: GraphState): TemporalViolatio
   // Get all entities for mention extraction
   const entities = getAllEntities(graph);
   
-  // Check each StoryBeat
-  const storyBeats = getNodesByType<StoryBeat>(graph, 'StoryBeat');
-  
-  for (const beat of storyBeats) {
-    const alignedTo = getAlignedBeat(graph, beat.id);
+  // Check each PlotPoint
+  const plotPoints = getNodesByType<PlotPoint>(graph, 'PlotPoint');
+
+  for (const pp of plotPoints) {
+    const alignedTo = getAlignedBeat(graph, pp.id);
     if (!alignedTo) continue;
-    
+
     const beatPosition = beatOrder.get(alignedTo);
     if (beatPosition === undefined) continue;
-    
+
     // Get text to check for mentions
-    const fields = EXTRACTABLE_FIELDS['StoryBeat'] || [];
-    const text = extractTextFromNode(beat as unknown as Record<string, unknown>, fields);
-    
+    const fields = EXTRACTABLE_FIELDS['PlotPoint'] || [];
+    const text = extractTextFromNode(pp as unknown as Record<string, unknown>, fields);
+
     const mentions = extractMentions(text, entities);
-    
+
     for (const mention of mentions) {
       const introBeat = introductions.get(mention.entityId);
       if (!introBeat) continue; // Entity has no tracked introduction
-      
+
       const introPosition = beatOrder.get(introBeat);
       if (introPosition === undefined) continue;
-      
+
       // Check if mentioned before introduction
       if (introPosition > beatPosition) {
         const entity = entities.find(e => e.id === mention.entityId);
         violations.push({
-          nodeId: beat.id,
-          nodeType: 'StoryBeat',
+          nodeId: pp.id,
+          nodeType: 'PlotPoint',
           mentionedEntity: mention.entityId,
           mentionedEntityName: entity?.name || mention.entityId,
           atBeat: alignedTo,
@@ -229,27 +229,27 @@ export function validateProposalMentions(
   // Track where proposed entities are introduced (first mention in proposal)
   const proposedIntroductions = new Map<string, { beat: string; position: number }>();
   
-  // Find introduction points for proposed story beats (sorted by position)
-  const proposedStoryBeats = pkg.changes.nodes
-    .filter(n => n.operation === 'add' && n.node_type === 'StoryBeat')
+  // Find introduction points for proposed plot points (sorted by position)
+  const proposedPlotPoints = pkg.changes.nodes
+    .filter(n => n.operation === 'add' && n.node_type === 'PlotPoint')
     .map(n => {
-      const alignsEdge = pkg.changes.edges.find(
-        e => e.operation === 'add' && e.edge_type === 'ALIGNS_WITH' && e.from === n.node_id
-      );
+      // PlotPoint uses alignedBeatId property instead of ALIGNS_WITH edge
+      const data = n.data as Record<string, unknown>;
+      const alignedBeatId = data?.alignedBeatId as string | undefined;
       return {
         node: n,
-        alignedTo: alignsEdge?.to,
-        position: alignsEdge?.to ? beatOrder.get(alignsEdge.to) : undefined
+        alignedTo: alignedBeatId,
+        position: alignedBeatId ? beatOrder.get(alignedBeatId) : undefined
       };
     })
     .filter(x => x.position !== undefined)
     .sort((a, b) => (a.position as number) - (b.position as number));
-  
+
   // Process in order to track introductions
-  for (const { node, alignedTo, position } of proposedStoryBeats) {
+  for (const { node, alignedTo, position } of proposedPlotPoints) {
     if (!alignedTo || position === undefined) continue;
-    
-    const fields = EXTRACTABLE_FIELDS['StoryBeat'] || [];
+
+    const fields = EXTRACTABLE_FIELDS['PlotPoint'] || [];
     const data = node.data as Record<string, unknown>;
     const text = extractTextFromNode(data, fields);
     
@@ -289,7 +289,7 @@ export function validateProposalMentions(
         const entity = allEntities.find(e => e.id === mention.entityId);
         violations.push({
           nodeId: node.node_id,
-          nodeType: 'StoryBeat',
+          nodeType: 'PlotPoint',
           mentionedEntity: mention.entityId,
           mentionedEntityName: entity?.name || mention.entityId,
           atBeat: alignedTo,

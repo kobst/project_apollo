@@ -167,7 +167,6 @@
       "id": "scene_extracted_1767490321406",
       "heading": "INT. LOCATION - DAY",
       "scene_overview": "Cain shows up at Rigo's warehouse, ready to begin work.",
-      "beat_id": "beat_Setup",
       "status": "DRAFT",
       "source_provenance": "USER",
       "mood": "Nervous",
@@ -176,8 +175,9 @@
       "order_index": 3
     },
     {
-      "type": "StoryBeat",
+      "type": "PlotPoint",
       "id": "pp_extracted_1767576713934",
+      "alignedBeatId": "beat_Midpoint",
       "title": "Cain gets arrested",
       "summary": "Cain gets arrested",
       "intent": "plot",
@@ -191,15 +191,15 @@
       "id": "scene_extracted_1767583980454",
       "heading": "INT. LOCATION - DAY",
       "scene_overview": "Cain is in an interrogation room with Detective Rogers.",
-      "beat_id": "beat_Setup",
       "order_index": 5,
       "status": "DRAFT",
       "source_provenance": "USER",
       "title": "Cain is in an interrogation room with Detective Rogers."
     },
     {
-      "type": "StoryBeat",
+      "type": "PlotPoint",
       "id": "pp_extracted_1767585226496",
+      "alignedBeatId": "beat_Setup",
       "title": "Rigo seeks help and finds Cain",
       "summary": "Rigo seeks help and finds Cain",
       "intent": "plot",
@@ -209,8 +209,9 @@
       "order_index": 1
     },
     {
-      "type": "StoryBeat",
+      "type": "PlotPoint",
       "id": "pp_extracted_1767663062839",
+      "alignedBeatId": "beat_Setup",
       "title": "Rigo decides to return to Cain for this one last job",
       "summary": "Rigo decides to return to Cain for this one last job",
       "intent": "plot",
@@ -254,7 +255,7 @@
       ]
     },
     {
-      "type": "StoryBeat",
+      "type": "PlotPoint",
       "id": "pp_1768500003_badge",
       "title": "Police involvement revealed",
       "summary": "Cain realizes the thefts are being carried out by corrupt cops using their authority to seize shipments legally then resell them",
@@ -312,8 +313,9 @@
       ]
     },
     {
-      "type": "StoryBeat",
+      "type": "PlotPoint",
       "id": "pp_1768952140_n7c1h",
+      "alignedBeatId": "beat_AllIsLost",
       "title": "Dante sells Cain out to Morrison",
       "summary": "Terrified and tempted, Dante tips Morrison to Cain's next move; Morrison's crew ambushes Cain, seizes the drive and uses the chaos to justify Cain's arrest.",
       "intent": "plot",
@@ -391,8 +393,9 @@
       "suggestedType": "Character"
     },
     {
-      "type": "StoryBeat",
+      "type": "PlotPoint",
       "id": "sb_migrated_pp_1768952140_u0m4x",
+      "alignedBeatId": "beat_FunAndGames",
       "title": "Cain meets Dante for a lead on the theft crew",
       "summary": "Introduce an informant who can provide proof of police involvement but whose loyalty is transactional and unreliable; set expectation that any cooperation will come at a cost.",
       "intent": "plot",
@@ -423,8 +426,9 @@
       "source_provenance": "MIGRATION"
     },
     {
-      "type": "StoryBeat",
+      "type": "PlotPoint",
       "id": "sb_migrated_storybeat_1769972152796_dzf9a",
+      "alignedBeatId": "beat_OpeningImage",
       "title": "Container Heist: Blue Lights, Black Masks",
       "summary": "Reveal the theft ring’s professional modus operandi: a highly coordinated crew uses pseudo-official tactics to seize containers quickly and cleanly, signaling institutional cover or infiltration.",
       "intent": "plot",
@@ -446,8 +450,9 @@
       "source_provenance": "MIGRATION"
     },
     {
-      "type": "StoryBeat",
+      "type": "PlotPoint",
       "id": "sb_migrated_storybeat_1770332001_k4v9p",
+      "alignedBeatId": "beat_ThemeStated",
       "title": "Keys Code: No Badges, No Oaths",
       "summary": "Establish Cain's personal code—he honors kept promises over institutional authority and is skeptical of badges; state the theme without specifying execution.",
       "intent": "tone",
@@ -480,20 +485,8 @@
   ],
   "edges": [
     {
-      "id": "edge_85ddd11e-68fb-4ca2-81c7-d47910ccff8b",
-      "type": "ALIGNS_WITH",
-      "from": "pp_extracted_1767576713934",
-      "to": "beat_Midpoint",
-      "provenance": {
-        "source": "human",
-        "createdBy": "user"
-      },
-      "status": "approved",
-      "createdAt": "2026-01-05T02:45:14.199Z"
-    },
-    {
       "id": "edge_526ea177-ba11-4fe3-8715-77f152392769",
-      "type": "SATISFIED_BY",
+      "type": "REALIZED_BY",
       "from": "pp_extracted_1767576713934",
       "to": "scene_extracted_1767583980454",
       "properties": {
@@ -507,20 +500,8 @@
       "createdAt": "2026-01-05T03:39:55.025Z"
     },
     {
-      "id": "edge_992da5a7-c5c3-470d-b327-97050ca0e761",
-      "type": "ALIGNS_WITH",
-      "from": "pp_extracted_1767585226496",
-      "to": "beat_Setup",
-      "provenance": {
-        "source": "human",
-        "createdBy": "user"
-      },
-      "status": "approved",
-      "createdAt": "2026-01-05T03:54:03.927Z"
-    },
-    {
       "id": "edge_7f4fe94d-e7aa-49b2-9c09-d9cf9675d4a9",
-      "type": "SATISFIED_BY",
+      "type": "REALIZED_BY",
       "from": "pp_extracted_1767663062839",
       "to": "scene_extracted_1767490321406",
       "properties": {
@@ -532,18 +513,6 @@
       },
       "status": "approved",
       "createdAt": "2026-01-06T01:31:18.127Z"
-    },
-    {
-      "id": "edge_0b9a768c-8882-4896-bcea-afb34fdeb399",
-      "type": "ALIGNS_WITH",
-      "from": "pp_extracted_1767663062839",
-      "to": "beat_Setup",
-      "provenance": {
-        "source": "human",
-        "createdBy": "user"
-      },
-      "status": "approved",
-      "createdAt": "2026-01-06T01:31:58.892Z"
     },
     {
       "id": "edge_5fef6ff3-b5a8-4886-be51-c3876b3aa486",
@@ -579,19 +548,8 @@
       "createdAt": "2026-01-21T04:52:34.761Z"
     },
     {
-      "id": "edge_d5412c41-ea04-42e0-ab00-f78072dffa6d",
-      "type": "ALIGNS_WITH",
-      "from": "pp_1768952140_n7c1h",
-      "to": "beat_AllIsLost",
-      "provenance": {
-        "source": "import"
-      },
-      "status": "approved",
-      "createdAt": "2026-01-21T04:52:34.761Z"
-    },
-    {
       "id": "edge_c2a0fb50-8be1-45f8-8fec-f942347c8472",
-      "type": "SATISFIED_BY",
+      "type": "REALIZED_BY",
       "from": "pp_1768952140_n7c1h",
       "to": "scene_1768952140_6w9ja",
       "provenance": {
@@ -701,7 +659,7 @@
     },
     {
       "id": "edge_f2a1fd25-0de4-4299-945f-d4cfb2829351",
-      "type": "SATISFIED_BY",
+      "type": "REALIZED_BY",
       "from": "pp_extracted_1767585226496",
       "to": "scene_1769033201_2n1vd",
       "provenance": {
@@ -711,19 +669,8 @@
       "createdAt": "2026-01-25T20:49:42.345Z"
     },
     {
-      "id": "edge_ml47c1mk_psm7w8w",
-      "type": "ALIGNS_WITH",
-      "from": "sb_migrated_pp_1768952140_u0m4x",
-      "to": "beat_FunAndGames",
-      "provenance": {
-        "source": "import"
-      },
-      "status": "approved",
-      "createdAt": "2026-02-01T20:37:03.169Z"
-    },
-    {
       "id": "edge_ml47c1mk_130gls8",
-      "type": "SATISFIED_BY",
+      "type": "REALIZED_BY",
       "from": "sb_migrated_pp_1768952140_u0m4x",
       "to": "scene_from_pp_1768952140_u0m4x",
       "provenance": {
@@ -733,19 +680,8 @@
       "createdAt": "2026-02-01T20:37:03.169Z"
     },
     {
-      "id": "edge_ml47c1mk_pekwvo5",
-      "type": "ALIGNS_WITH",
-      "from": "sb_migrated_storybeat_1769972152796_dzf9a",
-      "to": "beat_OpeningImage",
-      "provenance": {
-        "source": "import"
-      },
-      "status": "approved",
-      "createdAt": "2026-02-01T20:37:03.169Z"
-    },
-    {
       "id": "edge_ml47c1mk_oe0zyvc",
-      "type": "SATISFIED_BY",
+      "type": "REALIZED_BY",
       "from": "sb_migrated_storybeat_1769972152796_dzf9a",
       "to": "scene_from_storybeat_1769972152796_dzf9a",
       "provenance": {
@@ -755,19 +691,8 @@
       "createdAt": "2026-02-01T20:37:03.169Z"
     },
     {
-      "id": "edge_ml47c1ml_d2wu76k",
-      "type": "ALIGNS_WITH",
-      "from": "sb_migrated_storybeat_1770332001_k4v9p",
-      "to": "beat_ThemeStated",
-      "provenance": {
-        "source": "import"
-      },
-      "status": "approved",
-      "createdAt": "2026-02-01T20:37:03.169Z"
-    },
-    {
       "id": "edge_ml47c1ml_9vmlruv",
-      "type": "SATISFIED_BY",
+      "type": "REALIZED_BY",
       "from": "sb_migrated_storybeat_1770332001_k4v9p",
       "to": "scene_from_storybeat_1770332001_k4v9p",
       "provenance": {

@@ -4,14 +4,14 @@
  */
 
 import { useState, useCallback } from 'react';
-import type { MergedOutlineStoryBeat, MergedOutlineScene } from '../../utils/outlineMergeUtils';
+import type { MergedOutlinePlotPoint, MergedOutlineScene } from '../../utils/outlineMergeUtils';
 import { useStashContext } from '../../context/StashContext';
 import { SwimlaneSceneCard } from './SwimlaneSceneCard';
 import styles from './StoryBeatSwimlane.module.css';
 
 interface StoryBeatSwimlaneProps {
-  storyBeat: MergedOutlineStoryBeat;
-  onEditStoryBeat?: (() => void) | undefined;
+  plotPoint: MergedOutlinePlotPoint;
+  onEditPlotPoint?: (() => void) | undefined;
   onEditScene?: ((scene: MergedOutlineScene) => void) | undefined;
   onDeleteScene?: ((scene: MergedOutlineScene) => void) | undefined;
   onAddScene?: (() => void) | undefined;
@@ -31,8 +31,8 @@ const INTENT_COLORS: Record<string, string> = {
 };
 
 export function StoryBeatSwimlane({
-  storyBeat,
-  onEditStoryBeat,
+  plotPoint,
+  onEditPlotPoint,
   onEditScene,
   onDeleteScene,
   onAddScene,
@@ -40,23 +40,23 @@ export function StoryBeatSwimlane({
   onDelete,
   isRemoved,
 }: StoryBeatSwimlaneProps) {
-  const { createStoryBeat } = useStashContext();
+  const { createPlotPoint } = useStashContext();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const isProposed = storyBeat._isProposed;
-  const operation = storyBeat._operation;
-  const hasScenes = storyBeat.scenes.length > 0;
+  const isProposed = plotPoint._isProposed;
+  const operation = plotPoint._operation;
+  const hasScenes = plotPoint.scenes.length > 0;
 
   const handleRemove = useCallback(() => {
     if (onRemoveProposed) {
-      onRemoveProposed(storyBeat.id);
+      onRemoveProposed(plotPoint.id);
     }
-  }, [storyBeat.id, onRemoveProposed]);
+  }, [plotPoint.id, onRemoveProposed]);
 
-  const intentColor = INTENT_COLORS[storyBeat.intent] || '#888';
+  const intentColor = INTENT_COLORS[plotPoint.intent] || '#888';
 
   // Check if any scene is proposed
-  const hasProposedScenes = storyBeat.scenes.some(s => s._isProposed);
+  const hasProposedScenes = plotPoint.scenes.some(s => s._isProposed);
 
   return (
     <div
@@ -75,7 +75,7 @@ export function StoryBeatSwimlane({
           </span>
         </button>
 
-        <div className={styles.titleArea} onClick={onEditStoryBeat}>
+        <div className={styles.titleArea} onClick={onEditPlotPoint}>
           {/* Operation badge for proposed */}
           {isProposed && operation && (
             <span className={`${styles.badge} ${styles[`badge${operation}`]}`}>
@@ -83,32 +83,32 @@ export function StoryBeatSwimlane({
             </span>
           )}
 
-          <span className={styles.title}>{storyBeat.title}</span>
+          <span className={styles.title}>{plotPoint.title}</span>
 
           <span
             className={styles.intent}
             style={{ backgroundColor: `${intentColor}20`, color: intentColor }}
           >
-            {storyBeat.intent}
+            {plotPoint.intent}
           </span>
 
-          {storyBeat.status && (
-            <span className={`${styles.status} ${styles[`status${storyBeat.status}`]}`}>
-              {storyBeat.status}
+          {plotPoint.status && (
+            <span className={`${styles.status} ${styles[`status${plotPoint.status}`]}`}>
+              {plotPoint.status}
             </span>
           )}
 
           {/* Scene count indicator */}
           <span className={`${styles.sceneCount} ${hasProposedScenes ? styles.hasProposed : ''}`}>
-            {storyBeat.scenes.length} scene{storyBeat.scenes.length !== 1 ? 's' : ''}
+            {plotPoint.scenes.length} scene{plotPoint.scenes.length !== 1 ? 's' : ''}
             {hasProposedScenes && ' +proposed'}
           </span>
         </div>
 
         {/* Actions */}
         <div className={styles.actions}>
-          {onEditStoryBeat && (
-            <button type="button" className={styles.actionBtn} onClick={onEditStoryBeat}>
+          {onEditPlotPoint && (
+            <button type="button" className={styles.actionBtn} onClick={onEditPlotPoint}>
               Edit
             </button>
           )}
@@ -122,10 +122,10 @@ export function StoryBeatSwimlane({
               type="button"
               className={styles.actionBtn}
               onClick={async () => {
-                const summary = (storyBeat as unknown as { summary?: string }).summary;
-                await createStoryBeat({
-                  title: storyBeat.title,
-                  intent: storyBeat.intent as 'plot' | 'character' | 'tone',
+                const summary = (plotPoint as unknown as { summary?: string }).summary;
+                await createPlotPoint({
+                  title: plotPoint.title,
+                  intent: plotPoint.intent as 'plot' | 'character' | 'tone',
                   ...(summary ? { summary } : {}),
                 });
               }}
@@ -152,35 +152,35 @@ export function StoryBeatSwimlane({
       {isExpanded && !isRemoved && (
         <div className={styles.expandedContent}>
           {/* Summary */}
-          {storyBeat.summary && (
-            <p className={styles.summary}>{storyBeat.summary}</p>
+          {plotPoint.summary && (
+            <p className={styles.summary}>{plotPoint.summary}</p>
           )}
 
           {/* Details row */}
           <div className={styles.detailsRow}>
-            {storyBeat.priority && (
-              <span className={`${styles.detailBadge} ${styles[`priority${storyBeat.priority}`]}`}>
-                {storyBeat.priority} priority
+            {plotPoint.priority && (
+              <span className={`${styles.detailBadge} ${styles[`priority${plotPoint.priority}`]}`}>
+                {plotPoint.priority} priority
               </span>
             )}
-            {storyBeat.stakesChange && (
-              <span className={`${styles.detailBadge} ${styles[`stakes${storyBeat.stakesChange}`]}`}>
-                stakes {storyBeat.stakesChange}
+            {plotPoint.stakesChange && (
+              <span className={`${styles.detailBadge} ${styles[`stakes${plotPoint.stakesChange}`]}`}>
+                stakes {plotPoint.stakesChange}
               </span>
             )}
-            {storyBeat.urgency && (
+            {plotPoint.urgency && (
               <span className={styles.detailBadge}>
-                {storyBeat.urgency} urgency
+                {plotPoint.urgency} urgency
               </span>
             )}
           </div>
 
           {/* Previous data for modified nodes */}
-          {storyBeat._previousData && (
+          {plotPoint._previousData && (
             <div className={styles.previousData}>
               <span className={styles.previousLabel}>Previous:</span>
               <span className={styles.previousValue}>
-                {(storyBeat._previousData.title as string) || 'No title'}
+                {(plotPoint._previousData.title as string) || 'No title'}
               </span>
             </div>
           )}
@@ -191,7 +191,7 @@ export function StoryBeatSwimlane({
       {!isRemoved && (
         <div className={styles.scenesRow}>
           <div className={styles.scenesScroll}>
-            {storyBeat.scenes.map((scene) => (
+            {plotPoint.scenes.map((scene) => (
               <SwimlaneSceneCard
                 key={scene.id}
                 scene={scene}

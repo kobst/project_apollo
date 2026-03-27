@@ -7,7 +7,7 @@
  *
  * Category mapping:
  * - character tasks: character, general
- * - storyBeat tasks: plot, general
+ * - plotPoint tasks: plot, general
  * - scene tasks: scene, plot, general
  * - expand/generate tasks: all categories
  */
@@ -25,7 +25,7 @@ import type { Idea, IdeaCategory, IdeaKind, IdeaResolutionStatus } from '../type
  */
 export type IdeaTaskType =
   | 'character'
-  | 'storyBeat'
+  | 'plotPoint'
   | 'scene'
   | 'expand'
   | 'generate'
@@ -93,7 +93,7 @@ export function getCategoryForTaskType(taskType: IdeaTaskType): IdeaCategory[] {
     case 'character':
       return ['character', 'general'];
 
-    case 'storyBeat':
+    case 'plotPoint':
       return ['plot', 'general'];
 
     case 'scene':
@@ -372,7 +372,7 @@ export function getIdeasForTask(
 
   // Kinds always include proposals; add questions/directions/notes for generative tasks
   const relevantKinds: IdeaKind[] = ['proposal'];
-  if (['storyBeat', 'scene', 'generate', 'expand'].includes(taskType)) {
+  if (['plotPoint', 'scene', 'generate', 'expand'].includes(taskType)) {
     relevantKinds.push('question', 'direction', 'note');
   }
 
@@ -428,8 +428,8 @@ function isIdeaFulfilled(idea: Idea, graph: GraphState): boolean {
       const locs = getNodesByType<any>(graph, 'Location');
       return locs.some((l) => (l.name || '').toLowerCase().includes(title));
     }
-    case 'StoryBeat': {
-      const beats = getNodesByType<any>(graph, 'StoryBeat');
+    case 'PlotPoint': {
+      const beats = getNodesByType<any>(graph, 'PlotPoint');
       return beats.some((b) =>
         (b.title || '').toLowerCase().includes(title) || title.includes((b.title || '').toLowerCase())
       );

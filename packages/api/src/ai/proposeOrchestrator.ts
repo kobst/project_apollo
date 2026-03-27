@@ -369,7 +369,7 @@ function selectStrategy(request: ResolvedRequest): ProposeStrategy {
  */
 function mapEntryPointType(
   entryPoint: ai.ProposeEntryPointType
-): 'beat' | 'storyBeat' | 'character' | 'gap' | 'idea' | 'naked' {
+): 'beat' | 'plotPoint' | 'character' | 'gap' | 'idea' | 'naked' {
   switch (entryPoint) {
     case 'freeText':
       return 'naked';

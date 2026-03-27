@@ -74,10 +74,10 @@ January 2026 was a transformational month for Apollo. The project evolved from a
 - Detailed proposed change counts in TOC navigation
 - Remove action for individual elements within packages
 
-### PlotPoint -> StoryBeat Rename
-- Renamed `PlotPoint` to `StoryBeat` throughout codebase and UI
-- Added StoryBeat-only generation API endpoint
-- Added EditPanel fields for StoryBeat properties
+### PlotPoint -> PlotPoint Rename
+- Renamed `PlotPoint` to `PlotPoint` throughout codebase and UI
+- Added PlotPoint-only generation API endpoint
+- Added EditPanel fields for PlotPoint properties
 
 ### Four-Mode Generation
 - Implemented four generation modes: Explore (naked), Expand (from node), Focus (from beat), Refine (from package)
@@ -92,7 +92,7 @@ January 2026 was a transformational month for Apollo. The project evolved from a
 - Added system prompt caching for stable creative direction (constitution)
 - Story Context changes now applied on package accept
 - Stashed ideas support with unified Stash section
-- Delete functionality for assigned story beats and scenes
+- Delete functionality for assigned plot points and scenes
 
 ### StoryContext Restructuring
 - **Refactored StoryContext from freeform markdown string to structured type**:
@@ -105,11 +105,11 @@ January 2026 was a transformational month for Apollo. The project evolved from a
 ### Legacy Pipeline Removal
 - Removed Clusters/Moves pipeline entirely (endpoints, UI, types, client code)
 - Removed unused preview components (PatchPreview, ValidationStatus)
-- Migrated documentation to StoryBeat + package-first staging model
+- Migrated documentation to PlotPoint + package-first staging model
 
 ### UI Improvements
 - Completed Review section in GenerationPanel with accept/reject workflow
-- "Send to Ideas" action for StoryBeats and Scenes
+- "Send to Ideas" action for PlotPoints and Scenes
 - Removed Staging tab (replaced by inline staging)
 - Two-tier package carousel with collapsible review sections
 
@@ -154,7 +154,7 @@ January 2026 was a transformational month for Apollo. The project evolved from a
 
 | Metric | Start of Jan | End of Jan |
 |---|---|---|
-| Node types | 10+ (Character, Location, Scene, Beat, Conflict, Theme, Motif, ...) | 8 focused (Character, Location, Object, Beat, StoryBeat, Scene, Idea, CharacterArc) |
+| Node types | 10+ (Character, Location, Scene, Beat, Conflict, Theme, Motif, ...) | 8 focused (Character, Location, Object, Beat, PlotPoint, Scene, Idea, CharacterArc) |
 | AI providers | 0 | 2 (Anthropic, OpenAI) |
 | Generation modes | 0 | 4 (Explore, Expand, Focus, Refine) |
 | Test count (core) | ~200 | 361 |

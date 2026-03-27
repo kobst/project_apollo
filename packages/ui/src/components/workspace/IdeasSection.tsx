@@ -1,5 +1,5 @@
 /**
- * StashSection - Unified display for unassigned StoryBeats, Scenes, and Ideas.
+ * StashSection - Unified display for unassigned PlotPoints, Scenes, and Ideas.
  * Replaces the old IdeasSection with type filter tabs and kind-specific cards.
  */
 
@@ -8,7 +8,7 @@ import {
   useStashContext,
   type IdeaStatus,
   type StashIdeaItem,
-  type StashStoryBeatItem,
+  type StashPlotPointItem,
   type StashSceneItem,
   type StashItemKind,
 } from '../../context/StashContext';
@@ -19,7 +19,7 @@ import styles from './IdeasSection.module.css';
 
 const TYPE_FILTER_OPTIONS: { value: StashItemKind | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
-  { value: 'storybeat', label: 'Story Beats' },
+  { value: 'plotpoint', label: 'Plot Points' },
   { value: 'scene', label: 'Scenes' },
   { value: 'idea', label: 'Ideas' },
 ];
@@ -59,7 +59,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 const TYPE_OPTIONS: { value: IdeaSuggestedType | ''; label: string }[] = [
   { value: '', label: 'None' },
   { value: 'Character', label: 'Character' },
-  { value: 'StoryBeat', label: 'Story Beat' },
+  { value: 'PlotPoint', label: 'Plot Point' },
   { value: 'Scene', label: 'Scene' },
   { value: 'Location', label: 'Location' },
   { value: 'Object', label: 'Object' },
@@ -223,12 +223,12 @@ export function StashSection({ onDevelop }: StashSectionProps) {
   const generateFromDirection = async (title: string, description: string) => {
     if (!currentStoryId) return;
     try {
-      await api.proposeStoryBeats(currentStoryId, {
+      await api.proposePlotPoints(currentStoryId, {
         focus: 'all',
         direction: `${title}: ${description}`.slice(0, 300),
         packageCount: 3,
       });
-      showToast('Generation started for StoryBeats');
+      showToast('Generation started for PlotPoints');
     } catch {
       // ignore
     }
@@ -403,14 +403,14 @@ export function StashSection({ onDevelop }: StashSectionProps) {
           <p>No items found.</p>
           <p className={styles.emptyHint}>
             {typeFilter !== 'all'
-              ? `No ${typeFilter === 'storybeat' ? 'story beats' : typeFilter === 'scene' ? 'scenes' : 'ideas'} in stash. Try changing the filter.`
+              ? `No ${typeFilter === 'plotpoint' ? 'story beats' : typeFilter === 'scene' ? 'scenes' : 'ideas'} in stash. Try changing the filter.`
               : 'Unassigned story beats, scenes, and ideas will appear here.'}
           </p>
         </div>
       ) : (
         <div className={styles.ideaList}>
           {/* Bulk actions for filtered view: minimal implementation */}
-          {typeFilter !== 'scene' && typeFilter !== 'storybeat' && (
+          {typeFilter !== 'scene' && typeFilter !== 'plotpoint' && (
             <div className={styles.bulkActions}>
               <button
                 type="button"
@@ -457,11 +457,11 @@ export function StashSection({ onDevelop }: StashSectionProps) {
                     loading={loading}
                   />
                 );
-              case 'storybeat':
+              case 'plotpoint':
                 return (
-                  <StoryBeatCard
+                  <PlotPointCard
                     key={item.id}
-                    storyBeat={item}
+                    plotPoint={item}
                   />
                 );
               case 'scene':
@@ -605,7 +605,7 @@ function IdeaCard({
                 onClick={onGenerateDirection}
                 disabled={loading}
               >
-                Generate StoryBeat
+                Generate PlotPoint
               </button>
             )}
             <button
@@ -641,27 +641,27 @@ function IdeaCard({
   );
 }
 
-// ---- StoryBeat Card ----
+// ---- PlotPoint Card ----
 
-function StoryBeatCard({ storyBeat }: { storyBeat: StashStoryBeatItem }) {
+function PlotPointCard({ plotPoint }: { plotPoint: StashPlotPointItem }) {
   return (
     <div className={styles.ideaCard}>
       <div className={styles.ideaHeader}>
         <span className={styles.categoryIcon}>{'\uD83D\uDCCB'}</span>
-        <span className={styles.ideaTitle}>{storyBeat.title}</span>
-        <span className={styles.typeBadge}>Story Beat</span>
-        {storyBeat.priority && (
-          <span className={styles.sourceBadge}>{storyBeat.priority}</span>
+        <span className={styles.ideaTitle}>{plotPoint.title}</span>
+        <span className={styles.typeBadge}>Plot Point</span>
+        {plotPoint.priority && (
+          <span className={styles.sourceBadge}>{plotPoint.priority}</span>
         )}
       </div>
 
-      {storyBeat.summary && (
-        <p className={styles.ideaDescription}>{storyBeat.summary}</p>
+      {plotPoint.summary && (
+        <p className={styles.ideaDescription}>{plotPoint.summary}</p>
       )}
 
-      {storyBeat.scenes.length > 0 && (
+      {plotPoint.scenes.length > 0 && (
         <p className={styles.ideaDescription}>
-          {storyBeat.scenes.length} scene{storyBeat.scenes.length !== 1 ? 's' : ''} attached
+          {plotPoint.scenes.length} scene{plotPoint.scenes.length !== 1 ? 's' : ''} attached
         </p>
       )}
     </div>
