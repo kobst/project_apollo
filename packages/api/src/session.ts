@@ -3,47 +3,30 @@
  * Stores in ~/.apollo/stories/<story-id>/session.json
  */
 
-import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
-import { join } from 'path';
-import type { Patch } from '@apollo/core';
 import type { ai } from '@apollo/core';
 import type { StorageContext } from './config.js';
+import { getSessionRepository } from './persistence/index.js';
+import type {
+  ExtractionProposal,
+  SessionState,
+  GenerationSessionParams,
+  GenerationSession,
+  GenerationEntryPoint,
+  IdeaRefinementSession,
+} from './persistence/sessionTypes.js';
 
-// =============================================================================
-// Types
-// =============================================================================
+export type {
+  ExtractionProposal,
+  SessionState,
+  GenerationEntryPointType,
+  GenerationEntryPoint,
+  GenerationSessionParams,
+  GenerationSession,
+  IdeaRefinementVariant,
+  IdeaRefinementSession,
+} from './persistence/sessionTypes.js';
 
-export interface ExtractionProposal {
-  id: string;
-  title: string;
-  description: string;
-  confidence: number;
-  extractedEntities: Array<{
-    type: string;
-    name: string;
-    id: string;
-  }>;
-  patch: Patch;
-}
-
-export interface SessionState {
-  lastSeeds?: Record<string, number>;
-  extractionProposals?: ExtractionProposal[];
-}
-
-// =============================================================================
-// Paths
-// =============================================================================
-
-const SESSION_FILE = 'session.json';
-
-function getSessionPath(storyId: string, ctx: StorageContext): string {
-  return join(ctx.dataDir, 'stories', storyId, SESSION_FILE);
-}
-
-function getStoryDir(storyId: string, ctx: StorageContext): string {
-  return join(ctx.dataDir, 'stories', storyId);
-}
+const sessionRepository = getSessionRepository();
 
 // =============================================================================
 // Session Operations
@@ -56,12 +39,7 @@ export async function loadSessionById(
   storyId: string,
   ctx: StorageContext
 ): Promise<SessionState> {
-  try {
-    const content = await readFile(getSessionPath(storyId, ctx), 'utf-8');
-    return JSON.parse(content) as SessionState;
-  } catch {
-    return {};
-  }
+  return sessionRepository.loadSession(storyId, ctx);
 }
 
 /**
@@ -72,12 +50,7 @@ export async function saveSessionById(
   session: SessionState,
   ctx: StorageContext
 ): Promise<void> {
-  await mkdir(getStoryDir(storyId, ctx), { recursive: true });
-  await writeFile(
-    getSessionPath(storyId, ctx),
-    JSON.stringify(session, null, 2),
-    'utf-8'
-  );
+  await sessionRepository.saveSession(storyId, session, ctx);
 }
 
 /**
@@ -87,11 +60,7 @@ export async function clearSessionById(
   storyId: string,
   ctx: StorageContext
 ): Promise<void> {
-  try {
-    await unlink(getSessionPath(storyId, ctx));
-  } catch {
-    // Ignore if file doesn't exist
-  }
+  await sessionRepository.clearSession(storyId, ctx);
 }
 
 /**
@@ -176,103 +145,12 @@ export async function removeExtractionProposalById(
   await saveSessionById(storyId, session, ctx);
 }
 
-// =============================================================================
-// Generation Session Types
-// =============================================================================
-
-export type GenerationEntryPointType = 'beat' | 'plotPoint' | 'character' | 'gap' | 'idea' | 'naked';
-
-export interface GenerationEntryPoint {
-  type: GenerationEntryPointType;
-  targetId?: string;
-  targetData?: Record<string, unknown>;
-}
-
-export interface GenerationSessionParams {
-  depth: ai.GenerationDepth;
-  count: ai.GenerationCount;
-  direction?: string;
-}
-
-export interface GenerationSession {
-  id: string;
-  storyId: string;
-  createdAt: string;
-  updatedAt: string;
-
-  // Entry point context
-  entryPoint: GenerationEntryPoint;
-  initialParams: GenerationSessionParams;
-
-  // Version anchoring - track which story version packages were generated against
-  sourceVersionId?: string;
-  sourceVersionLabel?: string;
-
-  // Package tree
-  packages: ai.NarrativePackage[];
-
-  // Context per package (e.g., included idea IDs used in prompting)
-  packageContext?: Record<string, { includedIdeaIds?: string[] }>;
-
-  // Navigation state
-  currentPackageId?: string;
-
-  // Status
-  status: 'active' | 'accepted' | 'abandoned';
-  acceptedPackageId?: string;
-
-  // Archive tracking - set when session is auto-archived by new generation
-  archivedAt?: string;
-}
-
-// =============================================================================
-// Idea Refinement Sessions
-// =============================================================================
-
-export interface IdeaRefinementVariant {
-  id: string;
-  kind?: 'proposal' | 'question' | 'direction' | 'constraint' | 'note';
-  title: string;
-  description: string;
-  resolution?: string;
-  confidence?: number;
-  suggestedArtifacts?: Array<{
-    type: 'PlotPoint' | 'Scene';
-    title: string;
-    summary?: string;
-    rationale?: string;
-  }>;
-}
-
-export interface IdeaRefinementSession {
-  id: string;
-  storyId: string;
-  ideaId: string;
-  guidance: string;
-  createdAt: string;
-  updatedAt: string;
-  status: 'active' | 'committed' | 'abandoned';
-  variants: IdeaRefinementVariant[];
-  committedVariantIndex?: number;
-}
-
-const IDEA_REFINEMENT_DIR = 'idea-refine';
-
-function getIdeaRefineDir(storyId: string, ctx: StorageContext): string {
-  return join(ctx.dataDir, 'stories', storyId, IDEA_REFINEMENT_DIR);
-}
-
-function getIdeaRefineSessionPath(storyId: string, ideaId: string, ctx: StorageContext): string {
-  return join(getIdeaRefineDir(storyId, ctx), `${ideaId}.json`);
-}
-
 export async function saveIdeaRefinementSession(
   storyId: string,
   session: IdeaRefinementSession,
   ctx: StorageContext
 ): Promise<void> {
-  await mkdir(getIdeaRefineDir(storyId, ctx), { recursive: true });
-  await writeFile(getIdeaRefineSessionPath(storyId, session.ideaId, ctx), JSON.stringify(session, null, 2), 'utf-8');
+  await sessionRepository.saveIdeaRefinementSession(storyId, session, ctx);
 }
 
 export async function loadIdeaRefinementSession(
@@ -280,12 +158,7 @@ export async function loadIdeaRefinementSession(
   ideaId: string,
   ctx: StorageContext
 ): Promise<IdeaRefinementSession | null> {
-  try {
-    const content = await readFile(getIdeaRefineSessionPath(storyId, ideaId, ctx), 'utf-8');
-    return JSON.parse(content) as IdeaRefinementSession;
-  } catch {
-    return null;
-  }
+  return sessionRepository.loadIdeaRefinementSession(storyId, ideaId, ctx);
 }
 
 export async function deleteIdeaRefinementSession(
@@ -293,22 +166,12 @@ export async function deleteIdeaRefinementSession(
   ideaId: string,
   ctx: StorageContext
 ): Promise<void> {
-  try {
-    await unlink(getIdeaRefineSessionPath(storyId, ideaId, ctx));
-  } catch {
-    // ignore
-  }
+  await sessionRepository.deleteIdeaRefinementSession(storyId, ideaId, ctx);
 }
 
 // =============================================================================
 // Generation Session Operations
 // =============================================================================
-
-const GENERATION_SESSION_FILE = 'generation-session.json';
-
-function getGenerationSessionPath(storyId: string, ctx: StorageContext): string {
-  return join(ctx.dataDir, 'stories', storyId, GENERATION_SESSION_FILE);
-}
 
 /**
  * Create a new generation session.
@@ -386,13 +249,8 @@ export async function loadGenerationSession(
   storyId: string,
   ctx: StorageContext
 ): Promise<GenerationSession | null> {
-  try {
-    const content = await readFile(getGenerationSessionPath(storyId, ctx), 'utf-8');
-    const session = JSON.parse(content) as GenerationSession;
-    return migrateGenerationSession(session);
-  } catch {
-    return null;
-  }
+  const session = await sessionRepository.loadGenerationSession(storyId, ctx);
+  return session ? migrateGenerationSession(session) : null;
 }
 
 /**
@@ -403,13 +261,7 @@ export async function saveGenerationSession(
   session: GenerationSession,
   ctx: StorageContext
 ): Promise<void> {
-  const storyDir = join(ctx.dataDir, 'stories', storyId);
-  await mkdir(storyDir, { recursive: true });
-  await writeFile(
-    getGenerationSessionPath(storyId, ctx),
-    JSON.stringify(session, null, 2),
-    'utf-8'
-  );
+  await sessionRepository.saveGenerationSession(storyId, session, ctx);
 }
 
 /**
@@ -555,11 +407,7 @@ export async function deleteGenerationSession(
   storyId: string,
   ctx: StorageContext
 ): Promise<void> {
-  try {
-    await unlink(getGenerationSessionPath(storyId, ctx));
-  } catch {
-    // Ignore if file doesn't exist
-  }
+  await sessionRepository.deleteGenerationSession(storyId, ctx);
 }
 
 /**

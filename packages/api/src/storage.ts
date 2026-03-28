@@ -3,12 +3,40 @@
  * Re-implements CLI's store functions with configurable data directory.
  */
 
-import { readFile, writeFile, mkdir, access, readdir, rename } from 'fs/promises';
-import { join } from 'path';
-import { randomBytes } from 'crypto';
-import type { GraphState, KGNode, Edge, StoryContext } from '@apollo/core';
+import type { GraphState, KGNode } from '@apollo/core';
 import { normalizeEdge, createDefaultStoryContext } from '@apollo/core';
 import type { StorageContext } from './config.js';
+import { getStoryStateRepository } from './persistence/index.js';
+import {
+  isVersionedState,
+  type SerializedGraph,
+  type StoryMetadata,
+  type StoredVersion,
+  type Branch,
+  type PersistedState,
+  type VersionedState,
+  type StoredState,
+  type StoryInfo,
+  type VersionInfo,
+  type BranchInfo,
+} from './persistence/storyStateTypes.js';
+
+export {
+  isVersionedState,
+} from './persistence/storyStateTypes.js';
+
+export type {
+  SerializedGraph,
+  StoryMetadata,
+  StoredVersion,
+  Branch,
+  PersistedState,
+  VersionedState,
+  StoredState,
+  StoryInfo,
+  VersionInfo,
+  BranchInfo,
+} from './persistence/storyStateTypes.js';
 
 // =============================================================================
 // Per-story lock to prevent concurrent read-write race conditions
@@ -32,116 +60,7 @@ function withStoryLock<T>(storyId: string, fn: () => Promise<T>): Promise<T> {
   return next;
 }
 
-// =============================================================================
-// Types (mirror CLI's store types)
-// =============================================================================
-
-export interface SerializedGraph {
-  nodes: Record<string, KGNode>;
-  edges: Edge[];
-}
-
-export interface StoryMetadata {
-  name?: string;
-  storyContext?: StoryContext;     // Structured story context
-  storyContextModifiedAt?: string; // ISO timestamp for version tracking
-}
-
-export interface StoredVersion {
-  id: string;
-  parent_id: string | null;
-  label: string;
-  created_at: string;
-  graph: SerializedGraph;
-  enrichmentSummary?: string;
-  packageTitle?: string;
-}
-
-export interface Branch {
-  name: string;
-  headVersionId: string;
-  createdAt: string;
-  description?: string;
-}
-
-export interface VersionHistory {
-  versions: Record<string, StoredVersion>;
-  branches: Record<string, Branch>;
-  currentBranch: string | null;
-  currentVersionId: string;
-}
-
-export interface PersistedState {
-  version: string;
-  storyId: string;
-  storyVersionId: string;
-  createdAt: string;
-  updatedAt: string;
-  graph: SerializedGraph;
-  metadata?: StoryMetadata;
-}
-
-export interface VersionedState {
-  version: string;
-  storyId: string;
-  createdAt: string;
-  updatedAt: string;
-  metadata?: StoryMetadata;
-  history: VersionHistory;
-}
-
-export type StoredState = PersistedState | VersionedState;
-
-export interface StoryInfo {
-  id: string;
-  name?: string;
-  updatedAt: string;
-}
-
-export interface VersionInfo {
-  id: string;
-  label: string;
-  parent_id: string | null;
-  created_at: string;
-  isCurrent: boolean;
-  branch?: string;
-  enrichmentSummary?: string;
-  packageTitle?: string;
-}
-
-export interface BranchInfo {
-  name: string;
-  headVersionId: string;
-  createdAt: string;
-  description?: string;
-  isCurrent: boolean;
-}
-
-// =============================================================================
-// Type Guards
-// =============================================================================
-
-export function isVersionedState(state: StoredState): state is VersionedState {
-  return 'history' in state && state.history !== undefined;
-}
-
-// =============================================================================
-// Path Utilities (context-aware)
-// =============================================================================
-
-const STATE_FILE = 'state.json';
-
-function getStoriesDir(ctx: StorageContext): string {
-  return join(ctx.dataDir, 'stories');
-}
-
-function getStoryDir(storyId: string, ctx: StorageContext): string {
-  return join(getStoriesDir(ctx), storyId);
-}
-
-function getStatePath(storyId: string, ctx: StorageContext): string {
-  return join(getStoryDir(storyId, ctx), STATE_FILE);
-}
+const storyStateRepository = getStoryStateRepository();
 
 // =============================================================================
 // Serialization
@@ -217,12 +136,7 @@ function generateVersionId(): string {
  * Check if a story exists.
  */
 export async function storyExists(storyId: string, ctx: StorageContext): Promise<boolean> {
-  try {
-    await access(getStatePath(storyId, ctx));
-    return true;
-  } catch {
-    return false;
-  }
+  return storyStateRepository.storyExists(storyId, ctx);
 }
 
 /**
@@ -231,25 +145,21 @@ export async function storyExists(storyId: string, ctx: StorageContext): Promise
 export async function listStories(ctx: StorageContext): Promise<StoryInfo[]> {
   const stories: StoryInfo[] = [];
 
-  try {
-    const dirs = await readdir(getStoriesDir(ctx));
+  const storyIds = await storyStateRepository.listStoryIds(ctx);
 
-    for (const dir of dirs) {
-      try {
-        const state = await loadStateById(dir, ctx);
-        if (state) {
-          stories.push({
-            id: dir,
-            ...(state.metadata?.name && { name: state.metadata.name }),
-            updatedAt: state.updatedAt,
-          });
-        }
-      } catch {
-        // Skip invalid directories
+  for (const storyId of storyIds) {
+    try {
+      const state = await loadStateById(storyId, ctx);
+      if (state) {
+        stories.push({
+          id: storyId,
+          ...(state.metadata?.name && { name: state.metadata.name }),
+          updatedAt: state.updatedAt,
+        });
       }
+    } catch {
+      // Skip invalid directories
     }
-  } catch {
-    // Stories directory doesn't exist yet
   }
 
   stories.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -288,12 +198,7 @@ export async function findStory(nameOrId: string, ctx: StorageContext): Promise<
  * Load raw state by story ID.
  */
 export async function loadStateById(storyId: string, ctx: StorageContext): Promise<StoredState | null> {
-  try {
-    const content = await readFile(getStatePath(storyId, ctx), 'utf-8');
-    return JSON.parse(content) as StoredState;
-  } catch {
-    return null;
-  }
+  return storyStateRepository.loadState(storyId, ctx);
 }
 
 /**
@@ -508,12 +413,7 @@ export async function saveVersionedStateById(
   state: VersionedState,
   ctx: StorageContext
 ): Promise<void> {
-  const dir = getStoryDir(storyId, ctx);
-  await mkdir(dir, { recursive: true });
-  const statePath = getStatePath(storyId, ctx);
-  const tmpPath = join(dir, `.state.${randomBytes(4).toString('hex')}.tmp`);
-  await writeFile(tmpPath, JSON.stringify(state, null, 2), 'utf-8');
-  await rename(tmpPath, statePath);
+  await storyStateRepository.saveVersionedState(storyId, state, ctx);
 }
 
 /**

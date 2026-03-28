@@ -10,8 +10,6 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { EventEmitter } from 'events';
-import { mkdir, readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
 import type { StorageContext } from '../config.js';
 import type { APIResponse } from '../types.js';
 import { NotFoundError, BadRequestError } from '../middleware/error.js';
@@ -25,12 +23,16 @@ import {
 } from '../session.js';
 import { loadVersionedStateById } from '../storage.js';
 import { ai } from '@apollo/core';
+import { getAgentJobRepository } from '../persistence/index.js';
+import type {
+  AgentName,
+  AgentJobEvent,
+  AgentJobRecord,
+} from '../persistence/agentJobTypes.js';
 
 // =============================================================================
 // Types
 // =============================================================================
-
-type AgentName = 'interpreter' | 'generator'; // extend later with critic/gapScout/refiner/merger
 
 interface RunAgentRequest {
   agent: AgentName;
@@ -42,51 +44,22 @@ interface RunAgentResponse {
   eventsUrl: string;
 }
 
-interface AgentJobEvent {
-  type: 'status' | 'progress' | 'packages' | 'error' | 'metrics';
-  data: any;
-}
-
-interface AgentJobRecord {
-  id: string;
-  storyId: string;
-  agent: AgentName;
-  params?: any;
-  status: 'queued' | 'running' | 'succeeded' | 'failed' | 'canceled';
-  createdAt: string;
-  updatedAt: string;
-  events: AgentJobEvent[];
-}
-
 // =============================================================================
 // Simple Job Store (in-memory + optional persistence)
 // =============================================================================
 
 const jobEvents = new EventEmitter();
 const jobs = new Map<string, AgentJobRecord>();
-
-function jobsDir(ctx: StorageContext): string {
-  return join(ctx.dataDir, 'agents');
-}
-
-function jobsPath(ctx: StorageContext): string {
-  return join(jobsDir(ctx), 'jobs.json');
-}
+const agentJobRepository = getAgentJobRepository();
 
 async function loadJobs(ctx: StorageContext): Promise<void> {
-  try {
-    const data = await readFile(jobsPath(ctx), 'utf-8');
-    const arr = JSON.parse(data) as AgentJobRecord[];
-    for (const j of arr) jobs.set(j.id, j);
-  } catch {
-    // ignore
-  }
+  const arr = await agentJobRepository.loadJobs(ctx);
+  for (const j of arr) jobs.set(j.id, j);
 }
 
 async function saveJobs(ctx: StorageContext): Promise<void> {
-  await mkdir(jobsDir(ctx), { recursive: true });
   const arr = Array.from(jobs.values());
-  await writeFile(jobsPath(ctx), JSON.stringify(arr, null, 2), 'utf-8');
+  await agentJobRepository.saveJobs(arr, ctx);
 }
 
 function emitJobEvent(jobId: string, event: AgentJobEvent): void {

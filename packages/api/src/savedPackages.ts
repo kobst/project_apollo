@@ -7,10 +7,16 @@
  * compatibility with the current graph state.
  */
 
-import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
-import { join } from 'path';
 import type { ai, GraphState } from '@apollo/core';
 import type { StorageContext } from './config.js';
+import { getSavedPackageRepository } from './persistence/index.js';
+import type {
+  SavedPackage,
+  PackageCompatibility,
+  CompatibilityConflict,
+  SavedPackageWithCompatibility,
+  SavedPackagesState,
+} from './persistence/savedPackageTypes.js';
 import {
   loadVersionedStateById,
   loadGraphById,
@@ -19,76 +25,15 @@ import {
   type StoredVersion,
 } from './storage.js';
 
-// =============================================================================
-// Types
-// =============================================================================
+export type {
+  SavedPackage,
+  PackageCompatibility,
+  CompatibilityConflict,
+  SavedPackageWithCompatibility,
+  SavedPackagesState,
+} from './persistence/savedPackageTypes.js';
 
-/**
- * A saved package with version anchoring metadata.
- */
-export interface SavedPackage {
-  id: string;                          // sp_${timestamp}_${random}
-  storyId: string;
-  package: ai.NarrativePackage;        // The original package data
-
-  // Version anchoring
-  sourceVersionId: string;             // Version ID when package was generated
-  sourceVersionLabel: string;          // Human-readable version label
-
-  // User metadata
-  savedAt: string;                     // ISO timestamp
-  userNote?: string;                   // Optional user annotation
-}
-
-/**
- * Compatibility status for a saved package against current graph.
- */
-export interface PackageCompatibility {
-  status: 'compatible' | 'outdated' | 'conflicting';
-  currentVersionId: string;
-  currentVersionLabel: string;
-  versionsBehind: number;
-  conflicts: CompatibilityConflict[];
-}
-
-/**
- * A specific conflict detected when checking compatibility.
- */
-export interface CompatibilityConflict {
-  type: 'node_deleted' | 'node_modified' | 'edge_deleted';
-  nodeId?: string;
-  edgeId?: string;
-  description: string;
-}
-
-/**
- * Saved package with computed compatibility information.
- */
-export interface SavedPackageWithCompatibility extends SavedPackage {
-  compatibility: PackageCompatibility;
-}
-
-/**
- * Storage format for saved packages file.
- */
-export interface SavedPackagesState {
-  version: '1.0.0';
-  packages: SavedPackage[];
-}
-
-// =============================================================================
-// Path Utilities
-// =============================================================================
-
-const SAVED_PACKAGES_FILE = 'saved-packages.json';
-
-function getSavedPackagesPath(storyId: string, ctx: StorageContext): string {
-  return join(ctx.dataDir, 'stories', storyId, SAVED_PACKAGES_FILE);
-}
-
-function getStoryDir(storyId: string, ctx: StorageContext): string {
-  return join(ctx.dataDir, 'stories', storyId);
-}
+const savedPackageRepository = getSavedPackageRepository();
 
 // =============================================================================
 // ID Generation
@@ -123,16 +68,9 @@ export async function loadSavedPackages(
   storyId: string,
   ctx: StorageContext
 ): Promise<SavedPackagesState> {
-  try {
-    const content = await readFile(getSavedPackagesPath(storyId, ctx), 'utf-8');
-    const state = JSON.parse(content) as SavedPackagesState;
-    // Migrate packages to current schema
-    state.packages = state.packages.map(migratePackage);
-    return state;
-  } catch {
-    // Return empty state if file doesn't exist
-    return { version: '1.0.0', packages: [] };
-  }
+  const state = await savedPackageRepository.loadSavedPackages(storyId, ctx);
+  state.packages = state.packages.map(migratePackage);
+  return state;
 }
 
 /**
@@ -143,12 +81,7 @@ export async function saveSavedPackagesState(
   state: SavedPackagesState,
   ctx: StorageContext
 ): Promise<void> {
-  await mkdir(getStoryDir(storyId, ctx), { recursive: true });
-  await writeFile(
-    getSavedPackagesPath(storyId, ctx),
-    JSON.stringify(state, null, 2),
-    'utf-8'
-  );
+  await savedPackageRepository.saveSavedPackages(storyId, state, ctx);
 }
 
 /**
@@ -240,11 +173,7 @@ export async function deleteSavedPackagesFile(
   storyId: string,
   ctx: StorageContext
 ): Promise<void> {
-  try {
-    await unlink(getSavedPackagesPath(storyId, ctx));
-  } catch {
-    // Ignore if file doesn't exist
-  }
+  await savedPackageRepository.deleteSavedPackages(storyId, ctx);
 }
 
 // =============================================================================
